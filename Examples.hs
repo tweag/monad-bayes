@@ -163,20 +163,6 @@ die n = liftM2 (+) (die 1) (die (n-1))
 conditionalDie n = condition (\n -> 1 / fromIntegral n) (die n)
 
 ------------------------------------------------------------
---GP examples
-
-gpRegression :: (Conditional d, MonadGP d) => d Double
-gpRegression = do
-  let mean x = 0
-  let cov x y = 1
-  let f = gp mean cov
-  let score y = condition (prob . \x -> pdf (Normal x 1) 1) y
-  score $ f 0
-  f 1
-
-gpResult = escape gpRegression :: Dist Double
-
-------------------------------------------------------------
 --Anglican examples
 
 anglicanHMMValues :: [Double]
