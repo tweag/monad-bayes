@@ -26,7 +26,7 @@ mh d =
           return $ next:rest
 
 mh' :: (Functor d, Monad d, Bayesian d, DiscreteDist d) =>
-               d a -> d a
+               Int -> d a -> d a
 mh' n d = fmap (!! n) (mh d)
 
 -- | The Particle Independent Metrpolis-Hastings algorithm.

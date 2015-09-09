@@ -9,10 +9,6 @@ import Explicit
 import Sampler
 import SMC
 import MCMC
-import GP
-
-import Testing.HMMexact (hmmExact, hmmExactMarginal)
-import qualified Testing.DPexact as DP
 
 import Data.Random.Distribution.Beta (Beta(Beta))
 import Data.Random.Distribution.Uniform (Uniform(Uniform))
@@ -28,6 +24,22 @@ import Data.Maybe (mapMaybe)
 
 -----------------------------------------------------
 --HMM
+
+exampleHMM :: Dist [Int]
+exampleHMM = liftM reverse states where
+  states = foldl expand start values
+  expand :: Dist [Int] -> Double -> Dist [Int]
+  expand d y = condition (score y . head) $ do
+    rest <- d
+    x    <- trans $ head rest
+    return (x:rest)
+  score y x = prob $ pdf (Normal (fromIntegral x) 1) y
+  trans (-1) = categorical $ zip [-1..1] [0.1, 0.4, 0.5]
+  trans 0    = categorical $ zip [-1..1] [0.2, 0.6, 0.2]
+  trans 1    = categorical $ zip [-1..1] [0.15,0.7,0.15]
+  start   = uniform [[-1], [0], [1]]
+  values = [0.9,0.8,0.7,0,-0.025,5,2,0.1,0,
+            0.13,0.45,6,0.2,0.3,-1,-1]
 
 hmm :: (Functor d, Monad d) => d a -> (a -> d a) -> (a -> d b) -> d ([a],[b])
 -- | A Hidden Markov Model defines a distribution over a pair of two lists:
@@ -120,17 +132,6 @@ normalizePartition xs = mapMaybe (`lookup` trans) xs where
   trans = zip unique [1..]
   unique = nub xs
 
-dpFinal :: Dist [Int]
-dpFinal = fmap (normalizePartition) dpMixture
-
-dpPrior = (0, 1, 1, 1)
-
-dpMixtureExact :: [Int] -> Prob
-dpMixtureExact = prob . DP.exact dpPrior dpData
-
-dpClusterExact :: Int -> Prob
-dpClusterExact = prob . DP.exactCluster dpPrior dpData
-
 ------------------------------------------------------------
 --Coin tossing
 
@@ -162,89 +163,11 @@ die n = liftM2 (+) (die 1) (die (n-1))
 
 conditionalDie n = condition (\n -> 1 / fromIntegral n) (die n)
 
-------------------------------------------------------------
---Anglican examples
-
-anglicanHMMValues :: [Double]
-
-anglicanHMMStates = [0,1,2]
-anglicanHMMStart  = replicate n (1 / fromIntegral n) where n = length anglicanHMMStates
-anglicanHMMTrans 0 = [0.1 ,0.5 ,0.4]
-anglicanHMMTrans 1 = [0.2 ,0.2 ,0.6]
-anglicanHMMTrans 2 = [0.15,0.15,0.7]
-anglicanHMMValues = [0.9,0.8,0.7,0,-0.025,5,2,0.1,0,0.13,0.45,6,0.2,0.3,-1,-1]
-anglicanHMMMean 0 = -1
-anglicanHMMMean 1 = 1
-anglicanHMMMean 2 = 0
-anglicanHMMWeight s = pdf (Normal (anglicanHMMMean s) 1)
-
-anglicanHMMInit = fromList anglicanHMMStart
-anglicanHMMMatrix = fromColumns (map (fromList . anglicanHMMTrans) anglicanHMMStates)
-anglicanHMMScores = map (\y -> fromList (map (`anglicanHMMWeight` y) anglicanHMMStates)) anglicanHMMValues
-
-anglicanHMMExact = prob . hmmExact (fromList anglicanHMMStart) anglicanHMMMatrix anglicanHMMScores
-
-anglicanHMMExactMarginals = hmmExactMarginal (fromList anglicanHMMStart) anglicanHMMMatrix anglicanHMMScores
-
-anglicanHMM :: (Functor d, Monad d, DiscreteDist d, Conditional d) => d [Int]
-anglicanHMM = fmap (tail. take (length values + 1) . fst) $ score (length values) (hmm init trans gen) where
-    states = anglicanHMMStates
-    init = categorical $ zip states $ map prob anglicanHMMStart
-    trans = categorical . zip states . map prob . anglicanHMMTrans
-    gen = return . anglicanHMMMean
-    values = anglicanHMMValues
-    addNoise = flip Normal 1
-    score 0 d = d
-    score n d = score (n-1) $ condition (prob . (`pdf` (values !! (n - 1)))
-                                              . addNoise . (!! n) . snd) d
-
-anglicanFiniteHMM :: (Functor d, Monad d, Conditional d, DiscreteDist d, Integral n) => d [n]
-anglicanFiniteHMM = fmap (tail . fst) $ score (length values) (finiteHMM (length values + 1) init trans gen) where
-    states = [0,1,2]
-    init = uniform states
-    trans 0 = categorical $ zip states [0.1,0.5,0.4]
-    trans 1 = categorical $ zip states [0.2,0.2,0.6]
-    trans 2 = categorical $ zip states [0.15,0.15,0.7]
-    gen 0 = certainly (-1)
-    gen 1 = certainly 1
-    gen 2 = certainly 0
-    values = anglicanHMMValues
-    addNoise = flip Normal 1
-    score 0 d = d
-    score n d = score (n-1) $ condition (prob . (`pdf` (values !! (n - 1)))
-                                              . addNoise . (!! n) . snd) d
-
-anglicanStepHMM :: (Functor d, Monad d, Conditional d, DiscreteDist d) => d [Int]
-anglicanStepHMM = fmap (tail . reverse) $ generate anglicanHMMValues $ fmap (:[]) init where
-    trans = categorical . zip states . anglicanHMMTrans
-    init = categorical $ zip states $ map prob anglicanHMMStart
-    states = anglicanHMMStates
-    generate [] d = d
-    generate (y:ys) d = generate ys d' where
-        d' = condition (prob . (`anglicanHMMWeight` y) . head) $ do
-            rest <- d
-            x    <- trans $ head rest
-            return (x:rest)
-
-
-
----------------------------------------------------
+------------------------------------
 --Linear regression
---Three equivalent definitions of a linear regression model
 
-linearConcrete :: Dist (Double -> Double)
-linearConcrete =
-  Bind (normal 0 1) (\a ->
-    Bind (normal 0 1) (\b -> Return (\x -> a*x + b)) )
-
-linearMonad :: Dist (Double -> Double)
-linearMonad =
-  normal 0 1 >>= \a ->
-  normal 0 1 >>= \b ->
-  return (\x -> a*x + b)
-
-linearDo :: Dist (Double -> Double)
-linearDo = do
+linear :: Dist (Double -> Double)
+linear = do
   a <- normal 0 1
   b <- normal 0 1
   return (\x -> a*x + b)
