@@ -1,4 +1,8 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+ TupleSections,
+ FlexibleInstances,
+ FlexibleContexts
+ #-}
 
 module Examples where
 
