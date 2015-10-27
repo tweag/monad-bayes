@@ -13,7 +13,7 @@ import qualified Data.Random as Ext
 -- This extra level of indirection is created mostly to allow seamless
 -- migration between using probabilities and log-probabilities.
 newtype Prob = Prob {toDouble :: Double}
-    deriving (Show, Eq, Ord, Num, Fractional, Real, RealFrac, Floating, Random, Ext.Distribution Ext.StdUniform)
+    deriving (Show, Eq, Ord, Num, Fractional, Real, RealFrac, Floating, Random, Ext.Distribution Ext.StdUniform, Ext.Distribution Ext.Uniform)
 prob :: Double -> Prob
 prob = Prob
 toLog :: Prob -> Double
@@ -28,32 +28,47 @@ class Sampleable d where
 class Scoreable d where
     score :: Eq a => d a -> a -> Prob
 
--- | An interface for constructing discrete probability distributions.
-class DiscreteDist d where
+-- | An interface for constructing Dirac distributions.
+class Dirac d where
+    dirac :: a -> d a
+
+-- | An interface for constructing Bernoulli distributions. The argument should be between 0 and 1.
+class Bernoulli d where
+    bernoulli :: Prob -> d Bool
+    choice :: Monad d => Prob -> d a -> d a -> d a
+    choice p x y = bernoulli p >>= \c -> if c then x else y
+
+-- | An interface for constructing discrete uniform distributions. The argument should be a non-empty, finite list.
+class UniformD d where
+    uniformd :: [a] -> d a
+
+-- | An interface for constructing categorical distributions. The argument should be a non-empty, finite list of weighed elements. The weights need not sum to 1.
+class Categorical d where
     categorical :: [(a,Prob)] -> d a
 
-    certainly :: a -> d a
-    certainly x = categorical [(x,1)]
-    uniform :: [a] -> d a
-    uniform = categorical . map (,1)
-    bernoulli :: Prob -> d Bool
-    bernoulli p = categorical [(True,p), (False,1-p)]
-    --binomial :: Int -> Prob -> m Int
-    --multinomial
-    --poisson :: Double -> m Int
-
-    choice :: Monad d => Prob -> d a -> d a -> d a
-    choice p x y = categorical [(True, p), (False, 1-p)] >>=
-                   \c -> if c then x else y
-
--- | An interface for probabilistic programs that can include continuous distributions.
-class ContinuousDist d where
+-- | An interface for constructing normal distributions. The parameters are mean and standard deviation.
+class Normal d where
+    -- mean stddev
     normal :: Double -> Double -> d Double
-    --mvnormal :: Vector Double -> Matrix Double -> d (Vector Double)
-    gamma :: Double -> Double -> d Double
-    --invgamma
-    beta :: Double -> Double -> d Double
+
+-- | An interface for constructing continuous uniform distributions. The parameters are boundaries of the interval.
+class UniformC d where
+    uniformc :: Double -> Double -> d Double
+
+-- | An interface for constructing exponential distributions. The parameter is rate.
+class Exponential d where
+    -- rate
     exponential :: Double -> d Double
+
+-- | An interface for constructing gamma distributions. The parameters are shape and rate.
+class Exponential d => Gamma d where
+    -- shape rate
+    gamma :: Double -> Double -> d Double
+
+-- | An interface for constructing beta distributions. The parameters are alpha and beta.
+class Beta d where
+    -- alpha beta
+    beta :: Double -> Double -> d Double
 
 -- | An interface for probabilistic programs that allow local conditioning.
 class Conditional d where

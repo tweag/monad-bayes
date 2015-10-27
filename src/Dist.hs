@@ -1,19 +1,17 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Dist where
 
 import System.Random
-import Data.Random.Distribution.Beta (Beta(Beta))
-import Data.Random.Distribution.Exponential (Exponential(Exp))
-import qualified Data.Random as Ext
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
 
 import Base
 import Explicit hiding (djoin)
-import Sampler (external)
+import Sampler (external, StdSampler)
 
 -- | A symbolic representation of a probabilistic program which basically remembers all applications of 'return' and '>>='.
 -- Formally a free model for a probability monad.
@@ -39,14 +37,34 @@ instance Monad Dist where
     return = Return
     (>>=)  = Bind
 
-instance DiscreteDist Dist where
-    categorical = Primitive . (categorical :: [(a,Prob)] -> Explicit a)
+instance Dirac Dist where
+    dirac = return
 
-instance ContinuousDist Dist where
-    normal m s     = external $ Ext.Normal m s
-    gamma  k t     = external $ Ext.Gamma  k t
-    beta   a b     = external $ Beta       a b
-    exponential  l = external $ Exp        l
+instance Bernoulli Dist where
+    bernoulli p = Primitive (bernoulli p :: StdSampler Bool)
+
+instance UniformD Dist where
+    uniformd = Primitive . (uniformd :: [a] -> StdSampler a)
+
+instance Categorical Dist where
+    categorical = Primitive . (categorical :: [(a,Prob)] -> StdSampler a)
+
+instance Normal Dist where
+    normal m s     = Primitive (normal m s :: StdSampler Double)
+
+instance UniformC Dist where
+    uniformc a b = Primitive (uniformc a b :: StdSampler Double)
+
+instance Exponential Dist where
+    exponential l = Primitive (exponential l :: StdSampler Double)
+
+instance Gamma Dist where
+    gamma a b = Primitive (gamma a b :: StdSampler Double)
+
+instance Beta Dist where
+    beta a b = Primitive (beta a b :: StdSampler Double)
+
+
 
 instance Conditional Dist where
     condition c d = Conditional c d

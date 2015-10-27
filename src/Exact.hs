@@ -12,7 +12,7 @@ import Dist
 -- | Uses rejection sampling to generate exact samples from the posterior.
 -- The first argument is an upper bound on likelihood scores.
 -- The tighter this bound, the more efficient the algorithm is.
-rejectionSampling :: (Monad d, Bayesian d, DiscreteDist d) =>
+rejectionSampling :: (Monad d, Bayesian d, Bernoulli d) =>
                    Prob -> d a -> d a
 rejectionSampling cap d =
     iterate where

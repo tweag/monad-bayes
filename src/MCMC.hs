@@ -13,7 +13,7 @@ import Control.Monad (liftM)
 -- Produces an infinite list of subsequent samples from a Markov chain.
 -- Note that this is not RandomDB, but rather the whole 'trace' is proposed
 -- from the prior at each step.
-mh :: (Functor d, Monad d, Bayesian d, DiscreteDist d) =>
+mh :: (Functor d, Monad d, Bayesian d, Bernoulli d) =>
                d a -> d [a]
 mh d =
     fmap (map fst) $ proposal >>= iterate where
@@ -25,7 +25,7 @@ mh d =
           rest  <- iterate next
           return $ next:rest
 
-mh' :: (Functor d, Monad d, Bayesian d, DiscreteDist d) =>
+mh' :: (Functor d, Monad d, Bayesian d, Bernoulli d) =>
                Int -> d a -> d a
 mh' n d = fmap (!! n) (mh d)
 

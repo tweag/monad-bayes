@@ -46,7 +46,16 @@ instance Foldable Explicit where
 instance Traversable Explicit where
     sequenceA (Explicit ys) = liftA Explicit $ sequenceA $ fmap (\(d,p) -> liftA (,p) d) ys
 
-instance DiscreteDist Explicit where
+instance Dirac Explicit where
+    dirac = return
+
+instance Bernoulli Explicit where
+    bernoulli p = Explicit [(True,p), (False,1-p)]
+
+instance UniformD Explicit where
+    uniformd xs = Explicit $ normalize $ map (,1) xs
+
+instance Categorical Explicit where
     categorical = Explicit . normalize
 
 instance Conditional Explicit where
