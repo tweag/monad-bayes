@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Base, Explicit, Exact, Sampler, Dist, Importance
-                     , SMC, MCMC
+                     , SMC, MCMC, Examples
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random
