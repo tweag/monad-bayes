@@ -1,5 +1,6 @@
-
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+  TupleSections
+ #-}
 
 module SMC where
 

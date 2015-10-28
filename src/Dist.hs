@@ -1,6 +1,10 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE
+  GADTs,
+  TupleSections,
+  ScopedTypeVariables,
+  MultiParamTypeClasses,
+  FlexibleInstances
+ #-}
 
 module Dist where
 
@@ -37,16 +41,16 @@ instance Monad Dist where
     return = Return
     (>>=)  = Bind
 
-instance Dirac Dist where
+instance Dirac a Dist where
     dirac = return
 
 instance Bernoulli Dist where
     bernoulli p = Primitive (bernoulli p :: StdSampler Bool)
 
-instance UniformD Dist where
+instance UniformD a Dist where
     uniformd = Primitive . (uniformd :: [a] -> StdSampler a)
 
-instance Categorical Dist where
+instance Categorical a Dist where
     categorical = Primitive . (categorical :: [(a,Prob)] -> StdSampler a)
 
 instance Normal Dist where

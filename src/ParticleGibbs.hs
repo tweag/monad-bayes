@@ -1,4 +1,6 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+ TupleSections
+ #-}
 
 module ParticleGibbs (pgibbs) where
 

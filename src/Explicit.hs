@@ -1,4 +1,8 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+  TupleSections,
+  MultiParamTypeClasses,
+  FlexibleInstances
+ #-}
 
 module Explicit where
 
@@ -46,16 +50,16 @@ instance Foldable Explicit where
 instance Traversable Explicit where
     sequenceA (Explicit ys) = liftA Explicit $ sequenceA $ fmap (\(d,p) -> liftA (,p) d) ys
 
-instance Dirac Explicit where
+instance Dirac a Explicit where
     dirac = return
 
 instance Bernoulli Explicit where
     bernoulli p = Explicit [(True,p), (False,1-p)]
 
-instance UniformD Explicit where
+instance UniformD a Explicit where
     uniformd xs = Explicit $ normalize $ map (,1) xs
 
-instance Categorical Explicit where
+instance Categorical a Explicit where
     categorical = Explicit . normalize
 
 instance Conditional Explicit where

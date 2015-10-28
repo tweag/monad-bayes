@@ -159,7 +159,7 @@ coinExact alpha beta results =
 ------------------------------------------------------------
 --Die rolling
 
-die :: (Monad d, UniformD d, Integral n) => n -> d n
+die :: (Monad d, UniformD n d, Integral n) => n -> d n
 -- | A distribution over the sums of results of n independent rolls of a fair die
 die 0 = return 0
 die 1 = uniformd [1,2,3,4,5,6]

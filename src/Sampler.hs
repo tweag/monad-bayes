@@ -1,5 +1,8 @@
-
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+  TupleSections,
+  MultiParamTypeClasses,
+  FlexibleInstances
+ #-}
 
 module Sampler where
 
@@ -33,16 +36,16 @@ instance Monad StdSampler where
     (StdSampler x) >>= f =
       StdSampler (uncurry ($) . first (run . f . x) . split)
 
-instance Dirac StdSampler where
+instance Dirac a StdSampler where
     dirac = return
 
 instance Bernoulli StdSampler where
     bernoulli p = external $ Bern.Bernoulli p
 
-instance UniformD StdSampler where
+instance UniformD a StdSampler where
     uniformd xs = categorical $ map (,1) xs
 
-instance Categorical StdSampler where
+instance Categorical a StdSampler where
     categorical xs = external $ Cat.fromWeightedList $ map swap xs
 
 instance Normal StdSampler where

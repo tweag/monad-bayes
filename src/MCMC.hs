@@ -1,4 +1,6 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE
+  TupleSections
+ #-}
 
 module MCMC (mh, pimh) where
 

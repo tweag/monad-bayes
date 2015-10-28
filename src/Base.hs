@@ -1,6 +1,8 @@
-
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE
+  TupleSections,
+  GeneralizedNewtypeDeriving,
+  MultiParamTypeClasses
+ #-}
 
 
 module Base where
@@ -29,7 +31,7 @@ class Scoreable d where
     score :: Eq a => d a -> a -> Prob
 
 -- | An interface for constructing Dirac distributions.
-class Dirac d where
+class Dirac a d where
     dirac :: a -> d a
 
 -- | An interface for constructing Bernoulli distributions. The argument should be between 0 and 1.
@@ -39,11 +41,11 @@ class Bernoulli d where
     choice p x y = bernoulli p >>= \c -> if c then x else y
 
 -- | An interface for constructing discrete uniform distributions. The argument should be a non-empty, finite list.
-class UniformD d where
+class UniformD a d where
     uniformd :: [a] -> d a
 
 -- | An interface for constructing categorical distributions. The argument should be a non-empty, finite list of weighed elements. The weights need not sum to 1.
-class Categorical d where
+class Categorical a d where
     categorical :: [(a,Prob)] -> d a
 
 -- | An interface for constructing normal distributions. The parameters are mean and standard deviation.
