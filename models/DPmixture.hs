@@ -8,8 +8,7 @@ module DPmixture (
                   dp,
                   dpMixture,
                   dpClusters,
-                  exact,
-                  exactClusters
+                  posteriorClustersDist
                  ) where
 
 -- Dirichlet Process mixture of Gaussians
@@ -23,6 +22,16 @@ import Numeric.SpecFunctions (logGamma, factorial)
 
 import Base
 import Dist
+
+type NormalInvGamma = (Double,Double,Double,Double)
+
+-- | Prior over cluster parameters used in 'dpMixture'
+params :: NormalInvGamma
+params = (0,1/10,1,10)
+(m,k,a,b) = params
+
+obs :: [Double]
+obs = [1.0,1.1,1.2,-1.0,-1.5,-2.0,0.001,0.01,0.005,0.0]
 
 -- | Stick-breaking function.
 stick :: (Monad d, Bernoulli d) => [Prob] -> [a] -> d a
@@ -39,7 +48,7 @@ dp concentration base = do
   return $ stick breaks atoms
 
 -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
-dpMixture :: Dist [Int]
+dpMixture :: (Functor d, Monad d, Bernoulli d, Normal d, Beta d, Gamma d, Conditional d) => d [Int]
 dpMixture =
   let
     --lazily generate clusters
@@ -47,11 +56,9 @@ dpMixture =
       let atoms = [1..]
       breaks <- sequence $ repeat $ fmap prob $ beta 1 1
       let classgen = stick breaks atoms
-      vars <- sequence $ repeat $ fmap (1/) $ gamma 1 1
-      means <- mapM (normal 0) vars
+      vars <- sequence $ repeat $ fmap ((1/) . (*k)) $ gamma a b
+      means <- mapM (normal m) vars
       return (classgen, vars, means)
-    obs = [1.0,1.1,1.2,-1.0,-1.5,-2.0,
-           0.001,0.01,0.005,0.0]
     n = length obs
     --start with no data points
     start = fmap (,[]) clusters
@@ -76,6 +83,7 @@ dpMixture =
    fmap (reverse . map (\(x,_,_) -> x) . snd) points
 
 -- | 'dpMixture' restricted to the number of clusters only
+dpClusters :: (Functor d, Monad d, Bernoulli d, Normal d, Beta d, Gamma d, Conditional d) => d Int
 dpClusters = fmap (maximum . normalizePartition) dpMixture
 
 -- | Renames identifiers so that they range from 1 to n
@@ -88,12 +96,6 @@ normalizePartition xs = mapMaybe (`lookup` trans) xs where
 
 ----------------------------------------------------------
 -- Exact posterior
-
-type NormalInvGamma = (Double,Double,Double,Double)
-
--- | Prior over cluster parameters used in 'dpMixture'
-prior :: NormalInvGamma
-prior = (0,1/10,1,10)
 
 -- | Posterior for parameters of a cluster
 posterior :: NormalInvGamma -> [Double] -> NormalInvGamma
@@ -163,3 +165,9 @@ partitions n = generate n 1 where
     let k' = max k (x+1)      -- next empty cluster
     xs <- generate (n-1) k'
     return (x:xs)
+
+-- | Posterior over the number of clusters
+posteriorClustersDist :: Categorical Int d => d Int
+posteriorClustersDist = categorical $ zip ns $ map lookup ns where
+    ns = [1 .. length obs]
+    lookup = prob . exactClusters params obs
