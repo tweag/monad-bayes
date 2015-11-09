@@ -70,10 +70,7 @@ instance Sampleable Explicit where
         pick xs $ fst $ randomR (0.0,1.0) g
 
 instance Scoreable Explicit where
-    score (Explicit xs) x =
-        case lookup x xs of
-          Just p -> p
-          Nothing -> 0
+    score (Explicit xs) x = sum $ map snd $ filter ((== x) . fst) $ xs
 
 instance Density Explicit where
     density = score
