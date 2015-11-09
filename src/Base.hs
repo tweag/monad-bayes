@@ -30,6 +30,15 @@ class Sampleable d where
 class Scoreable d where
     score :: Eq a => d a -> a -> Prob
 
+-- | Similar to `Scoreable`, only normalized.
+class Scoreable d => Density d where
+    density :: Eq a => d a -> a -> Prob
+
+-- | Data structures representing distributions for which Cumulative Distribution Function (CDF) can be computed.
+class Cumulative d where
+    -- | cdf x = P(X <= x)
+    cdf :: Ord a => d a -> a -> Prob
+
 -- | An interface for constructing Dirac distributions.
 class Dirac a d where
     dirac :: a -> d a

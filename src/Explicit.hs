@@ -75,6 +75,12 @@ instance Scoreable Explicit where
           Just p -> p
           Nothing -> 0
 
+instance Density Explicit where
+    density = score
+
+instance Cumulative Explicit where
+    cdf (Explicit xs) x = sum $ map snd $ filter ((<= x) . fst) $ xs
+
 ---------------------------------------------------
 -- Some useful functions
 
