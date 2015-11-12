@@ -100,42 +100,9 @@ compact (Explicit xs) =
     distinct = nub $ map fst xs
     p x = sum $ map snd $ filter ((== x) . fst) xs
 
-kl :: Eq a => Explicit a -> Explicit a -> Double
--- | Computes the Kullback-Leibler divergence between two distributions.
--- Generality comes with a quadratic time cost.
-kl d d' =
-  sum $ map f xs where
-    xs = toList $ compact d
-    ys = toList $ compact d'
-    f (x,p) = case find ((== x) . fst) ys of
-      Just (y,q) -> toDouble p * (toLog p - toLog q)
-      Nothing -> error "Undefined KL divergence - q is 0 when p is not"
-
 fastCompact :: Ord a => Explicit a -> Explicit a
 -- | Faster version of 'compact' for ordered types.
 -- Internally uses a 'Map' to achieve O(n log n) runtime.
 -- Returns an ascending list.
 fastCompact = Explicit . Map.toAscList . Map.fromListWith (+) . toList
 
-fastKL :: Ord a => Explicit a -> Explicit a -> Double
--- | Faster version of 'kl' for ordered types.
--- Internally uses a 'Map' to achieve O(n log n) runtime.
-fastKL d d' =
-  scan xs ys where
-    xs = toList $ fastCompact d
-    ys = toList $ fastCompact d'
-    scan [] _ = 0
-    scan ((x,p):xs) ((y,q):ys) =
-      if x == y then
-      toDouble p * (toLog p - toLog q) + scan xs ys
-      else scan((x,p):xs) ys
-    scan xs [] = error "Undefined KL divergence - q is 0 when p is not"
-
-kl' :: Ord a => (a -> Prob) -> Explicit a -> Double
--- | Fast KL with an external function computing the reference probabilities.
-kl' reference d = if result < 0 then error "Negative KL" else result where
-    result = sum $ map component $ toList $ fastCompact d where
-        component (x,p) = toDouble p * (toLog p - toLog q) where
-            q' = reference x
-            q  = if q' == 0 then error "Undefined KL divergence - q is 0 when p is not"
-                 else q'
