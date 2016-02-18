@@ -1,7 +1,8 @@
 {-# LANGUAGE
   TupleSections,
   GeneralizedNewtypeDeriving,
-  FlexibleInstances
+  FlexibleInstances,
+  FlexibleContexts
  #-}
 
 module Dist where
@@ -11,7 +12,7 @@ import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
 import Data.Number.LogFloat (LogFloat, fromLogFloat, logFloat)
-import Data.Foldable (toList)
+import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 
 import Control.Monad.State.Lazy
@@ -28,7 +29,7 @@ instance MonadDist Dist where
     categorical d = 
         Dist $ StateT $ \s ->
             do
-              (x,p) <- toList d
+              (x,p) <- Fold.toList d
               return (x, logFloat p * s)
     normal = error "Dist does not support continuous distributions"
     gamma  = error "Dist does not support continuous distributions"
@@ -36,6 +37,9 @@ instance MonadDist Dist where
 
 instance MonadBayes Dist where
     factor w = modify (* w)
+
+toList :: Dist a -> [(a,Double)]
+toList (Dist d) = map (second fromLogFloat) $ runStateT d 1
 
 enumerate :: Ord a => Dist a -> [(a,Double)]
 enumerate (Dist d) = simplify (runStateT d 1) where
@@ -101,28 +105,38 @@ importance d = runStateT d 1
 
 
 
-
-
-data ParticleT m a = Finished (m a) | Running (m (ParticleT m a))
+data ParticleT m a = ParticleT (m (Either a (ParticleT m a)))
+runParticleT (ParticleT m) = m
 
 synchronize :: Monad m => ParticleT m ()
-synchronize = Running (return (return ()))
+synchronize = ParticleT $ return $ Right $ return ()
+
+flatten :: Monad m => ParticleT m a -> m a
+flatten (ParticleT m) = do
+  e <- m
+  case e of Left x  -> return x
+            Right p -> flatten p
 
 instance Functor m => Functor (ParticleT m) where
-    fmap f (Finished d) = Finished (fmap f d)
-    fmap f (Running d)  = Running (fmap (fmap f) d)
+    fmap f (ParticleT d) = ParticleT $ fmap (emap f) d where
+                                            emap f (Left x) = Left (f x)
+                                            emap f (Right d) = Right (fmap f d)
 
 instance Monad m => Applicative (ParticleT m) where
     pure = return
     (<*>) = liftM2 ($)
 
 instance Monad m => Monad (ParticleT m) where
-    return x = Finished (return x)
-    Finished d >>= f = Running (fmap f d)
-    Running  d >>= f = Running (fmap (>>= f) d)
+    return x = ParticleT $ return $ Left x
+    ParticleT d >>= f =
+        ParticleT $ do
+          p <- d
+          case p of Left x  -> runParticleT (f x)
+                    Right q -> return $ Right $ q >>= f
+    fail = lift . fail
 
 instance MonadTrans ParticleT where
-    lift = Finished
+    lift = ParticleT . fmap Left
 
 instance MonadDist m => MonadDist (ParticleT m) where
     categorical = lift . categorical
@@ -132,3 +146,41 @@ instance MonadDist m => MonadDist (ParticleT m) where
 
 instance MonadBayes m => MonadBayes (ParticleT m) where
     factor w = lift (factor w) >> synchronize
+
+
+advance :: Monad m => Either a (ParticleT m a) -> m (Either a (ParticleT m a))
+advance (Left x)  = return (Left x)
+advance (Right p) = runParticleT p
+
+
+
+
+-- data ParticleT m a = Finished (m a) | Running (m (ParticleT m a))
+
+-- synchronize :: Monad m => ParticleT m ()
+-- synchronize = Running (return (return ()))
+
+-- instance Functor m => Functor (ParticleT m) where
+--     fmap f (Finished d) = Finished (fmap f d)
+--     fmap f (Running d)  = Running (fmap (fmap f) d)
+
+-- instance Monad m => Applicative (ParticleT m) where
+--     pure = return
+--     (<*>) = liftM2 ($)
+
+-- instance Monad m => Monad (ParticleT m) where
+--     return x = Finished (return x)
+--     Finished d >>= f = Running (fmap f d)
+--     Running  d >>= f = Running (fmap (>>= f) d)
+
+-- instance MonadTrans ParticleT where
+--     lift = Finished
+
+-- instance MonadDist m => MonadDist (ParticleT m) where
+--     categorical = lift . categorical
+--     normal m s  = lift (normal m s)
+--     gamma a b   = lift (gamma a b)
+--     beta a b    = lift (beta a b)
+
+-- instance MonadBayes m => MonadBayes (ParticleT m) where
+--     factor w = lift (factor w) >> synchronize
