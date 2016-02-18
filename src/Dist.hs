@@ -12,12 +12,15 @@ import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
 import Data.Number.LogFloat (LogFloat, fromLogFloat, logFloat)
+import qualified Data.Number.LogFloat as LogFloat
 import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
+import Data.Either
 
 import Control.Monad.State.Lazy
 import Control.Monad.List
 import Control.Monad.Trans.Maybe
+import Control.Monad.Identity
 
 import Base
 
@@ -38,16 +41,57 @@ instance MonadDist Dist where
 instance MonadBayes Dist where
     factor w = modify (* w)
 
-toList :: Dist a -> [(a,Double)]
-toList (Dist d) = map (second fromLogFloat) $ runStateT d 1
+toList :: Dist a -> [(a,LogFloat)]
+toList (Dist d) = runStateT d 1
+
+toCategorical :: Dist a -> [(a,Double)]
+toCategorical = map (second fromLogFloat) . toList
 
 enumerate :: Ord a => Dist a -> [(a,Double)]
-enumerate (Dist d) = simplify (runStateT d 1) where
+enumerate d = simplify $ toCategorical d where
     simplify = normalize . compact
-    compact = Map.toAscList . Map.fromListWith (+) . map (second fromLogFloat)
+    compact = Map.toAscList . Map.fromListWith (+)
     normalize xs = map (second (/ norm)) xs where
         norm = sum (map snd xs)
 
+
+newtype EmpiricalT m a = EmpiricalT (StateT LogFloat (ListT m) a)
+    deriving (Functor, Applicative, Monad, MonadState LogFloat)
+
+runEmpiricalT :: EmpiricalT m a -> StateT LogFloat (ListT m) a
+runEmpiricalT (EmpiricalT d) = d
+
+instance MonadTrans EmpiricalT where
+    lift = EmpiricalT . lift . lift
+
+instance MonadDist m => MonadDist (EmpiricalT m) where
+    categorical = lift . categorical
+    normal m s  = lift (normal m s)
+    gamma a b   = lift (gamma a b)
+    beta a b    = lift (beta a b)
+
+instance MonadDist m => MonadBayes (EmpiricalT m) where
+    factor w = modify (* w)
+
+population :: Monad m => Int -> EmpiricalT m ()
+population n = EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()
+
+fold :: Monad m => (b -> a -> b) -> b -> EmpiricalT m a -> m b
+fold f z (EmpiricalT d) = fmap (foldl f z) $ runListT $ evalStateT d 1
+
+all :: Monad m => (a -> Bool) -> EmpiricalT m a -> m Bool
+all cond d = fold (\b x -> b && cond x) True d
+
+toCat :: Monad m => EmpiricalT m a -> m [(a,Double)]
+toCat (EmpiricalT d) = fmap (map (second fromLogFloat)) $ runListT $ runStateT d 1
+
+resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
+resample d = do
+  cat <- lift $ toCat d
+  --let evidence = LogFloat.sum $ map snd cat
+  -- EmpiricalT $ modify (* evidence) --to keep track of model evidence
+  population (length cat)
+  lift $ categorical $ cat
 
 newtype Sampler a = Sampler (StdGen -> a)
     deriving (Functor)
@@ -153,7 +197,17 @@ advance (Left x)  = return (Left x)
 advance (Right p) = runParticleT p
 
 
-
+smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
+smc n d =
+    let
+        ParticleT start = lift (population n) >> d
+        step particles = resample $ particles >>= advance
+        resample = undefined
+        run particles = do
+          finished <- lift $ Dist.all isLeft particles
+          if finished then particles else run (step particles)
+    in
+      fmap (\(Left x) -> x) $ run start
 
 -- data ParticleT m a = Finished (m a) | Running (m (ParticleT m a))
 
