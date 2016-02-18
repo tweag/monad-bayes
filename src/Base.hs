@@ -8,7 +8,7 @@ module Base where
 import Data.Number.LogFloat
 
 class Monad m => MonadDist m where
-    categorical :: Foldable t => t (a,Double) -> m a
+    categorical :: Foldable t => t (a,LogFloat) -> m a
     normal :: Double -> Double -> m Double
     gamma :: Double -> Double -> m Double
     beta :: Double -> Double -> m Double

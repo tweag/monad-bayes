@@ -33,7 +33,7 @@ instance MonadDist Dist where
         Dist $ StateT $ \s ->
             do
               (x,p) <- Fold.toList d
-              return (x, logFloat p * s)
+              return (x, p * s)
     normal = error "Dist does not support continuous distributions"
     gamma  = error "Dist does not support continuous distributions"
     beta   = error "Dist does not support continuous distributions"
@@ -44,11 +44,11 @@ instance MonadBayes Dist where
 toList :: Dist a -> [(a,LogFloat)]
 toList (Dist d) = runStateT d 1
 
-toCategorical :: Dist a -> [(a,Double)]
-toCategorical = map (second fromLogFloat) . toList
+explicit :: Dist a -> [(a,Double)]
+explicit = map (second fromLogFloat) . toList
 
 enumerate :: Ord a => Dist a -> [(a,Double)]
-enumerate d = simplify $ toCategorical d where
+enumerate d = simplify $ explicit d where
     simplify = normalize . compact
     compact = Map.toAscList . Map.fromListWith (+)
     normalize xs = map (second (/ norm)) xs where
@@ -82,14 +82,14 @@ fold f z (EmpiricalT d) = fmap (foldl f z) $ runListT $ evalStateT d 1
 all :: Monad m => (a -> Bool) -> EmpiricalT m a -> m Bool
 all cond d = fold (\b x -> b && cond x) True d
 
-toCat :: Monad m => EmpiricalT m a -> m [(a,Double)]
-toCat (EmpiricalT d) = fmap (map (second fromLogFloat)) $ runListT $ runStateT d 1
+toCat :: Monad m => EmpiricalT m a -> m [(a,LogFloat)]
+toCat (EmpiricalT d) = runListT $ runStateT d 1
 
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
   cat <- lift $ toCat d
-  --let evidence = LogFloat.sum $ map snd cat
-  -- EmpiricalT $ modify (* evidence) --to keep track of model evidence
+  let evidence = LogFloat.sum $ map snd cat
+  modify (* evidence) --to keep track of model evidence
   population (length cat)
   lift $ categorical $ cat
 
@@ -208,33 +208,3 @@ smc n d =
           if finished then particles else run (step particles)
     in
       fmap (\(Left x) -> x) $ run start
-
--- data ParticleT m a = Finished (m a) | Running (m (ParticleT m a))
-
--- synchronize :: Monad m => ParticleT m ()
--- synchronize = Running (return (return ()))
-
--- instance Functor m => Functor (ParticleT m) where
---     fmap f (Finished d) = Finished (fmap f d)
---     fmap f (Running d)  = Running (fmap (fmap f) d)
-
--- instance Monad m => Applicative (ParticleT m) where
---     pure = return
---     (<*>) = liftM2 ($)
-
--- instance Monad m => Monad (ParticleT m) where
---     return x = Finished (return x)
---     Finished d >>= f = Running (fmap f d)
---     Running  d >>= f = Running (fmap (>>= f) d)
-
--- instance MonadTrans ParticleT where
---     lift = Finished
-
--- instance MonadDist m => MonadDist (ParticleT m) where
---     categorical = lift . categorical
---     normal m s  = lift (normal m s)
---     gamma a b   = lift (gamma a b)
---     beta a b    = lift (beta a b)
-
--- instance MonadBayes m => MonadBayes (ParticleT m) where
---     factor w = lift (factor w) >> synchronize
