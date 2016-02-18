@@ -15,13 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Base, Explicit, Exact, Sampler, Dist, Importance
-                     , SMC, MCMC
+  exposed-modules:     Base, Dist
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random
                      , random-fu
-                     , hmatrix
+                     , logfloat
+                     , mtl
+                     , transformers
   default-language:    Haskell2010
 
 test-suite monad-bayes-test
