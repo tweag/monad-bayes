@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Base, Dist, Examples
+  exposed-modules:     Base, Dist, Empirical, Sampler, Particle, Inference,
+                       Examples
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random
@@ -23,6 +24,7 @@ library
                      , logfloat
                      , mtl
                      , transformers
+                     , math-functions
   default-language:    Haskell2010
 
 test-suite monad-bayes-test
