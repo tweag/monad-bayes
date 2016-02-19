@@ -51,11 +51,18 @@ toList (Dist d) = runStateT d 1
 explicit :: Dist a -> [(a,Double)]
 explicit = map (second fromLogFloat) . toList
 
+-- | Aggregate weights of equal values.
+compact :: Ord a => [(a,Double)] -> [(a,Double)]
+compact = Map.toAscList . Map.fromListWith (+)
+
+-- | Normalize the weights to sum to 1.
+normalize :: [(a,Double)] -> [(a,Double)]
+normalize xs = map (second (/ norm)) xs where
+    norm = sum (map snd xs)
+
 -- | Aggregation and normalization of weights.
 enumerate :: Ord a => Dist a -> [(a,Double)]
 enumerate d = simplify $ explicit d where
-    simplify = normalize . compact
-    compact = Map.toAscList . Map.fromListWith (+)
-    normalize xs = map (second (/ norm)) xs where
-        norm = sum (map snd xs)
+    simplify = normalize . compact    
+    
 

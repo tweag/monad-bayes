@@ -76,7 +76,7 @@ instance MonadDist m => MonadDist (MaybeT m) where
     beta a b    = lift (beta a b)
 
 instance MonadDist m => MonadBayes (MaybeT m) where
-    factor = undefined
+    factor = error "MaybeT does not support soft conditioning"
 
 
 
