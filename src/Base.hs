@@ -1,6 +1,7 @@
 {-# LANGUAGE
   TupleSections,
-  FlexibleInstances
+  FlexibleInstances,
+  GADTs
  #-}
 
 
@@ -11,12 +12,15 @@ import Numeric.SpecFunctions
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 
+import Primitive
+
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
 class Monad m => MonadDist m where
+    {-# MINIMAL (categorical, primitive) | (categorical, normal, gamma, beta) #-}
     -- | Categorical distribution, weights need not be normalized.
-    categorical :: Foldable t => t (a,LogFloat) -> m a
+    categorical :: [(a,LogFloat)] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
     normal :: Double -> Double -> m Double
     -- | Gamma distribution parameterized by shape and rate.
@@ -24,6 +28,19 @@ class Monad m => MonadDist m where
     -- | Beta distribution.
     beta :: Double -> Double -> m Double
 
+
+    -- | One of `Primitive` distributions.
+    primitive :: Primitive a -> m a
+    primitive (Categorical d) = categorical d
+    primitive (Normal m s) = normal m s
+    primitive (Gamma  a b) = gamma  a b
+    primitive (Beta   a b) = beta   a b
+
+    -- defaults based on primitive
+    --categorical d = primitive $ Categorical d -- woudl work if it weren't for Eq constraint
+    normal m s    = primitive $ Normal m s
+    gamma  a b    = primitive $ Gamma  a b
+    beta   a b    = primitive $ Beta   a b
 
     -- | Bernoulli distribution.
     bernoulli :: LogFloat -> m Bool
