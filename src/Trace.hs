@@ -24,9 +24,10 @@ data RandomDB where
 -- print the stochastic choices for debugging
 instance Show RandomDB where
   show None = "None"
-  show (Node (Normal m s) x) = printf "Node (Normal %f %f) %f" m s x
-  show (Node (Gamma  a b) x) = printf "Node (Gamma %f %f) %f" a b x
-  show (Node (Beta   a b) x) = printf "Node (Beta %f %f) %f" a b x
+  show (Node (Normal m s) x) = printf "(Node (Normal %f %f) %f)" m s x
+  show (Node (Gamma  a b) x) = printf "(Node (Gamma %f %f) %f)" a b x
+  show (Node (Beta   a b) x) = printf "(Node (Beta %f %f) %f)" a b x
+  show (Bind t1 t2) = printf "(Bind %s %s)" (show t1) (show t2)
 
 -- consider saving the score for MonadBayes:
 --   TraceM a = TraceM RandomDB a LogFloat
