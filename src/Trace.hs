@@ -7,7 +7,8 @@
 module Trace where
 
 import Control.Monad (liftM,liftM2)
-import Data.Number.LogFloat
+import Data.List (unfoldr)
+import Data.Number.LogFloat hiding (sum)
 import System.Random
 import Text.Printf
 
@@ -221,12 +222,11 @@ mhStep p r = do
   -- in the absence of conditioning.
   runTrace p r1
 
-------------------
--- DEBUG TRIALS --
-------------------
+mhRun :: Trace Double -> Int -> Int -> [Double]
+mhRun = mhRunWithDebugger (const id)
 
-mhDebug :: Trace Double -> Int -> Int -> [Double]
-mhDebug p seed steps = sample (loop None steps) (mkStdGen seed)
+mhRunWithDebugger :: (RandomDB -> [Double] -> [Double]) -> Trace Double -> Int -> Int -> [Double]
+mhRunWithDebugger debugger p seed steps = sample (loop None steps) (mkStdGen seed)
   where
     loop :: RandomDB -> Int -> Sampler [Double]
     -- done
@@ -236,7 +236,55 @@ mhDebug p seed steps = sample (loop None steps) (mkStdGen seed)
       TraceM r' x' <- mhStep p r
       z <- primitive (Normal 0 1)
       xs <- loop r' (steps - 1)
-      return $  x' : trace ("  " ++ show r') xs
+      return $  x' : debugger r' xs
+
+------------------
+-- DEBUG TRIALS --
+------------------
+
+mhDebug :: Trace Double -> Int -> Int -> [Double]
+mhDebug = mhRunWithDebugger (trace . ("  " ++) . show)
+
+-- Run a sampler many times to produce many samples.
+-- A reference to check MH against.
+sampleMany :: Sampler a -> Int -> Int -> [a]
+sampleMany sampler seed size = sample (sequence $ replicate size $ sampler) (mkStdGen seed)
+
+data Histo = Histo { xmin :: Double -- lower bound of samples
+                   , step :: Double -- size of bins
+                   , xmax :: Double -- upper bound of samples
+                   , ymax :: Double -- maximum density value to plot as a bar
+                   , cols :: Int    -- number of characters in longest bar
+                   }
+
+-- | plot @[Double]@ as histogram
+histogram :: Histo -> [Double] -> IO ()
+histogram (Histo xmin step xmax ymax cols) xs0 =
+  let
+    -- remove out of bound data from the pool
+    xs = filter (\x -> xmin <= x && x <= xmax) xs0
+    -- create the next interval starting from x
+    --
+    --  nextInterval :: Double -> Maybe ((Double -> Bool, Double), Double)
+    --                  ^^^^^^            ^^^^^^^^^^^^^^  ^^^^^^   ^^^^^^
+    --                  lower bound       interval        middle   upper bound
+    nextInterval x = if x >= xmax then
+                       Nothing
+                     else
+                       let y = x + step in Just ((\z -> x <= z && z < y, x + 0.5 * step), y)
+    intervals = unfoldr nextInterval xmin
+    size = length xs
+    bins = map (flip filter xs . fst) intervals
+    mids = map snd intervals
+    range = step * fromIntegral (length bins)
+    -- 1 == sum_{ys in bins} factor * step * (length ys)
+    --   == factor * step * size
+    factor = 1 / (step * fromIntegral size)
+    densities = map (\ys -> factor * fromIntegral (length ys)) bins
+    bars = map (\d -> concat $ replicate (min cols $ round (d / ymax * fromIntegral cols)) "#") densities
+    annotatedBars = zipWith3 (printf "%5.3f @ %6.3f %s") densities mids bars
+  in
+    putStrLn $ unlines annotatedBars
 
 -- Successive lines in do-notation generates right-skewed trace.
 --
