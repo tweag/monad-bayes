@@ -355,13 +355,16 @@ varChoices = do
   xs <- sequence $ replicate n $ normal 0 1
   return $ sum xs
 
--- | Figure 8b of
+-- Figure 8b of
 -- Hur, Nori, Rajamani, Samuel:
 -- A provably correct sampler for probabilistic programs.
 --
 -- Not using fig 2 because I don't know how they parametrize the
 -- Gamma distribution. Histogram produced by MH looks okay so far.
---
+-- In fact, it agrees with WolframAlpha better than the histogram
+-- in Hur et al. The maximum density of Normal 10 2 is 0.19947,
+-- so the maximum density of fig8b should be half of that, i. e.,
+-- around 0.1.
 fig8b :: MonadDist m => m Double
 fig8b = do
   x <- normal 0 1
