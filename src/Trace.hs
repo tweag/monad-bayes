@@ -62,6 +62,77 @@ weight None = 1
 weight (Node d x) = pdf d x
 weight (Bind t1 t2) = weight t1 * weight t2
 
+-- | If old primitive distribution is equal to the new one, cast the old sample for reuse.
+samePrimitive :: Primitive a -> Primitive b -> Maybe (a -> b)
+samePrimitive (Normal m s) (Normal m' s') | m == m' && s == s' = Just id
+samePrimitive (Gamma  a b) (Gamma  a' b') | a == a' && b == b' = Just id
+samePrimitive (Beta   a b) (Beta   a' b') | a == a' && b == b' = Just id
+samePrimitive _ _ = Nothing
+
+-- | Test whether two sample-distribution pairs are completely identical
+sameSample :: Primitive a -> a -> Primitive b -> b -> Bool
+sameSample (Normal m s) x (Normal m' s') x' = m == m' && s == s' && x == x'
+sameSample (Gamma  a b) x (Gamma  a' b') x' = a == a' && b == b' && x == x'
+sameSample (Beta   a b) x (Beta   a' b') x' = a == a' && b == b' && x == x'
+sameSample _ _ _ _ = False
+
+-- | Computes the parts of the new trace not in the old trace.
+-- Used to compute proposal densities:
+-- q(old, new) = weight (new `minus` old)
+-- q(new, old) = weight (old `minus` new)
+minus :: RandomDB -> RandomDB -> RandomDB
+Node d' x' `minus` Node d x | sameSample d x d' x' = None
+Bind t1' t2' `minus` Bind t1 t2 = Bind (t1' `minus` t1) (t2' `minus` t2)
+new `minus` old = new
+-- Caution: Without conditioning, acceptance ratio is always 1.
+--
+-- Proof. Without conditioning,
+--
+--   pi(x)  = weight x.
+--
+-- Recall that
+--
+--   q(x,y) = weight (y `minus` x).
+--
+-- Since for all RandomDB x, y
+--
+--   y = x  `union` (y `minus` x) `minus` (x `minus` y),
+--
+-- we have
+--
+--   pi(new) = pi(old `union` (new `minus` old) `minus` (old `minus` new))
+--           = pi(old) * pi(new `minus` old) / pi(old `minus` new)
+--           = pi(old) * q(old, new) / q(new, old).
+--
+-- If pi(old) * pi(old, new) != 0, then
+--
+--     (pi(new) * q(new, old)) / (pi(old) * q(old, new))
+--   = ((pi(old) * q(old, new) / q(new, old)) * q(new, old)) / (pi(old) * q(old, new))
+--   = 1.
+--
+-- If pi(old) * pi(old, new) == 0, then the acceptance ratio is 1
+-- by definition. QED
+
+-- | From two @RandomDB@, compute the acceptance ratio.
+-- Precondition: Program is @MonadDist@ but not @MonadBayes@
+--               (i.e., it doesn't call @condition@ or @factor@),
+--               so that the target density of an execution is completely
+--               determined by the stochastic choices made.
+--
+-- Caveat: Always returns 1. See comment after the definition of @minus@.
+acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
+acceptanceRatio old new =
+  let
+    pi_old    = weight old
+    pi_new    = weight new
+    q_old_new = weight (new `minus` old)
+    q_new_old = weight (old `minus` new)
+  in
+    if pi_old * q_old_new == 0 then
+      1
+    else
+      min 1 ((pi_new * q_new_old) / (pi_old * q_old_new))
+
 -- | Updates a trace by resampling a randomly selected site.
 update :: RandomDB -> Sampler RandomDB
 update None = return None
@@ -87,7 +158,6 @@ splitDB _ = (None, None)
 -- and generates a new value together with the stochastic choices leading up to it.
 newtype Trace a = Trace (RandomDB -> Sampler (TraceM a))
 runTrace (Trace d) = d
--- is there any stylistic reason for this instead of `newtype Trace a = Trace { runTrace :: ... }`?
 
 instance Functor Trace where
     -- modify final result, leaving stochastic choices intact
@@ -122,12 +192,10 @@ instance MonadDist Trace where
 
 -- | Reuse previous sample of primitive RV only if type and parameters match exactly.
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
-reusePrimitive d@(Normal m s) old (Normal m' s') new | m == m' && s == s' = TraceM (Node d old) old
-reusePrimitive d@(Gamma  a b) old (Gamma  a' b') new | a == a' && b == b' = TraceM (Node d old) old
-reusePrimitive d@(Beta   a b) old (Beta   a' b') new | a == a' && b == b' = TraceM (Node d old) old
-reusePrimitive _ _ _ new = new
--- Consider re-weighing instead, if weight of previous sample is high enough according to new distribution.
--- Problem: How can we let the user configure the weight threshold for reuse?
+reusePrimitive d old d' new = maybe new (\cast -> TraceM (Node d old) (cast old)) (samePrimitive d d')
+-- Consider re-weighing, if d and d' has same type and different distribution/parameters.
+-- Care must be taken if old value has density 0 in new distribution,
+-- for it could destroy irreducibility.
 
 -- | @mhStep t@ corresponds to the transition kernel of Metropolis-Hastings algorithm
 mhStep :: Trace a -> TraceM a -> Sampler (TraceM a)
@@ -141,10 +209,7 @@ mhStep (Trace p) (TraceM r x) = do
   -- everything should be reused in the examples of the `joint` branch.
   --
   TraceM r' x' <- p r1
-
-  -- Compute some provisional acceptance ratio
-  let ratio = weight r' * fromIntegral (size r') / (weight r * fromIntegral (size r))
-
+  let ratio = acceptanceRatio r r'
   accept <- bernoulli ratio
   return $ if accept then TraceM r' x' else TraceM r x
 
@@ -168,15 +233,37 @@ mhDebug (Trace p) seed steps = loop Nothing (mkStdGen seed) steps
     -- iterate
     loop (Just tr@(TraceM r x)) gen steps = do
       let (gen1, gen2) = split gen
-      let (newTrace@(TraceM r' x'), accept) = flip sample gen1 $ do {
+      let (newTrace@(TraceM r' x'), accept, pi_old, pi_new, q_old_new, q_new_old, rNew) = flip sample gen1 $ do {
           r1 <- update r
         ; TraceM r' x' <- p r1
-        ; let ratio = 0.5 -- acceptance ratio is wrong anyway
+
+        ; let old       = r
+        ; let new       = r'
+        ; let pi_old    = weight old
+        ; let pi_new    = weight new
+        ; let q_old_new = weight (new `minus` old)
+        ; let q_new_old = weight (old `minus` new)
+        ; let ratio     = acceptanceRatio old new
+
         ; accept <- bernoulli ratio
-        ; return (if accept then TraceM r' x' else TraceM r x, accept)
+        ; return (if accept then TraceM r' x' else tr, accept, pi_old, pi_new, q_old_new, q_new_old, r')
         }
+
+      -- debug acceptance ratio
+      putStrLn ""
+      putStrLn $ "old DB = " ++ show r
+      putStrLn $ "new DB = " ++ show rNew
+      putStr $ printf "pi_new = %.3f * " (fromLogFloat pi_new)
+      putStr $ printf "q_new_old = %.3f / " (fromLogFloat q_new_old)
+      putStr $ printf "pi_old = %.3f * " (fromLogFloat pi_old)
+      putStr $ printf "q_old_new = %.3f" (fromLogFloat q_old_new)
+      putStrLn ""
+      putStrLn $ printf "acceptance ratio = %.3f" (fromLogFloat $ acceptanceRatio r rNew)
+      putStrLn $ printf "new `minus` old = %s" (show $ rNew `minus` r)
+      putStrLn $ printf "old `minus` new = %s" (show $ r `minus` rNew)
+
       let acc = if accept then "acc" else "rej"
-      putStrLn $ printf "%s %.3f %s" acc x' (show r')
+      putStrLn $ printf "%s %.3f %s %.3f %.3f" acc x' (show r') (fromLogFloat $ weight r) (fromLogFloat $ weight r')
       xs <- loop (Just newTrace) gen2 (steps - 1)
       return $ x' : xs
 
@@ -224,7 +311,9 @@ deps = do
 
 -- TODO
 --
--- 1. Refactor to compute acceptance ratio.
+-- 0. Cleanup debug code using `Debug.Trace.trace`, correct trial comment
+--
+-- 1. Try an example where sampling affects the number of primitive values
 --
 -- 2. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
 --
