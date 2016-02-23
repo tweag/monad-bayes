@@ -11,6 +11,8 @@ import Data.Number.LogFloat
 import System.Random
 import Text.Printf
 
+import Debug.Trace
+
 import Primitive
 import Base
 import Sampler
@@ -84,7 +86,14 @@ minus :: RandomDB -> RandomDB -> RandomDB
 Node d' x' `minus` Node d x | sameSample d x d' x' = None
 Bind t1' t2' `minus` Bind t1 t2 = Bind (t1' `minus` t1) (t2' `minus` t2)
 new `minus` old = new
--- Caution: Without conditioning, acceptance ratio is always 1.
+
+-- | From two @RandomDB@, compute the acceptance ratio.
+-- Precondition: Program is @MonadDist@ but not @MonadBayes@
+--               (i.e., it doesn't call @condition@ or @factor@),
+--               so that the target density of an execution is completely
+--               determined by the stochastic choices made.
+--
+-- Caveat: Always returns 1 in the absence of conditioning.
 --
 -- Proof. Without conditioning,
 --
@@ -92,7 +101,7 @@ new `minus` old = new
 --
 -- Recall that
 --
---   q(x,y) = weight (y `minus` x).
+--   q(x,y) ~ weight (y `minus` x).  // up to a factor
 --
 -- Since for all RandomDB x, y
 --
@@ -112,14 +121,6 @@ new `minus` old = new
 --
 -- If pi(old) * pi(old, new) == 0, then the acceptance ratio is 1
 -- by definition. QED
-
--- | From two @RandomDB@, compute the acceptance ratio.
--- Precondition: Program is @MonadDist@ but not @MonadBayes@
---               (i.e., it doesn't call @condition@ or @factor@),
---               so that the target density of an execution is completely
---               determined by the stochastic choices made.
---
--- Caveat: Always returns 1. See comment after the definition of @minus@.
 acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
 acceptanceRatio old new =
   let
@@ -171,7 +172,7 @@ instance Applicative Trace where
 instance Monad Trace where
     return = Trace . const . return . return
 
-    -- | >>= handles reuse of @Bind@ nodes
+    -- | @>>=@ handles reuse of @Bind@ nodes
     t >>= f = Trace $ \db ->
         do
           let (db1, db2) = splitDB db
@@ -198,8 +199,8 @@ reusePrimitive d old d' new = maybe new (\cast -> TraceM (Node d old) (cast old)
 -- for it could destroy irreducibility.
 
 -- | @mhStep t@ corresponds to the transition kernel of Metropolis-Hastings algorithm
-mhStep :: Trace a -> TraceM a -> Sampler (TraceM a)
-mhStep (Trace p) (TraceM r x) = do
+mhStep :: Trace a -> RandomDB -> Sampler (TraceM a)
+mhStep p r = do
   -- Single-site mutation of previous stochastic choices.
   r1 <- update r
 
@@ -208,78 +209,41 @@ mhStep (Trace p) (TraceM r x) = do
   -- then everything will be reused. After some improvement of @reusePrimitive@,
   -- everything should be reused in the examples of the `joint` branch.
   --
-  TraceM r' x' <- p r1
-  let ratio = acceptanceRatio r r'
-  accept <- bernoulli ratio
-  return $ if accept then TraceM r' x' else TraceM r x
+  -- There is no need to compute the acceptance ratio, because it is constant 1
+  -- in the absence of conditioning.
+  runTrace p r1
 
 ------------------
 -- DEBUG TRIALS --
 ------------------
 
-mhDebug :: Trace Double -> Int -> Int -> IO [Double]
-mhDebug (Trace p) seed steps = loop Nothing (mkStdGen seed) steps
+mhDebug :: Trace Double -> Int -> Int -> [Double]
+mhDebug p seed steps = sample (loop None steps) (mkStdGen seed)
   where
-    loop :: Maybe (TraceM Double) -> StdGen -> Int -> IO [Double]
+    loop :: RandomDB -> Int -> Sampler [Double]
     -- done
-    loop r gen steps | steps <= 0 = return []
-    -- initialize
-    loop Nothing gen steps = do
-      let (gen1, gen2) = split gen
-      let TraceM r' x' = flip sample gen1 $ p None
-      putStrLn $ printf "    %.3f %s" x' (show r')
-      xs <- loop (Just $ TraceM r' x') gen2 (steps - 1)
-      return $ x' : xs
+    loop r steps | steps <= 0 = return []
     -- iterate
-    loop (Just tr@(TraceM r x)) gen steps = do
-      let (gen1, gen2) = split gen
-      let (newTrace@(TraceM r' x'), accept, pi_old, pi_new, q_old_new, q_new_old, rNew) = flip sample gen1 $ do {
-          r1 <- update r
-        ; TraceM r' x' <- p r1
-
-        ; let old       = r
-        ; let new       = r'
-        ; let pi_old    = weight old
-        ; let pi_new    = weight new
-        ; let q_old_new = weight (new `minus` old)
-        ; let q_new_old = weight (old `minus` new)
-        ; let ratio     = acceptanceRatio old new
-
-        ; accept <- bernoulli ratio
-        ; return (if accept then TraceM r' x' else tr, accept, pi_old, pi_new, q_old_new, q_new_old, r')
-        }
-
-      -- debug acceptance ratio
-      putStrLn ""
-      putStrLn $ "old DB = " ++ show r
-      putStrLn $ "new DB = " ++ show rNew
-      putStr $ printf "pi_new = %.3f * " (fromLogFloat pi_new)
-      putStr $ printf "q_new_old = %.3f / " (fromLogFloat q_new_old)
-      putStr $ printf "pi_old = %.3f * " (fromLogFloat pi_old)
-      putStr $ printf "q_old_new = %.3f" (fromLogFloat q_old_new)
-      putStrLn ""
-      putStrLn $ printf "acceptance ratio = %.3f" (fromLogFloat $ acceptanceRatio r rNew)
-      putStrLn $ printf "new `minus` old = %s" (show $ rNew `minus` r)
-      putStrLn $ printf "old `minus` new = %s" (show $ r `minus` rNew)
-
-      let acc = if accept then "acc" else "rej"
-      putStrLn $ printf "%s %.3f %s %.3f %.3f" acc x' (show r') (fromLogFloat $ weight r) (fromLogFloat $ weight r')
-      xs <- loop (Just newTrace) gen2 (steps - 1)
-      return $ x' : xs
+    loop r steps = do
+      TraceM r' x' <- mhStep p r
+      z <- primitive (Normal 0 1)
+      xs <- loop r' (steps - 1)
+      return $  x' : trace ("  " ++ show r') xs
 
 -- Successive lines in do-notation generates right-skewed trace.
 --
 -- *Base Trace> mhDebug gaussians 0 10
---     4.445 (B (1.445<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
--- rej 4.445 (B (1.445<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
--- acc 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
--- rej 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
--- rej 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
--- acc 5.400 (B (2.298<-N2.000|0.500) (B (3.103<-N3.000|0.500) None))
--- acc 4.853 (B (2.298<-N2.000|0.500) (B (2.555<-N3.000|0.500) None))
--- rej 4.853 (B (2.298<-N2.000|0.500) (B (2.555<-N3.000|0.500) None))
--- acc 5.093 (B (2.298<-N2.000|0.500) (B (2.795<-N3.000|0.500) None))
--- rej 5.093 (B (2.298<-N2.000|0.500) (B (2.795<-N3.000|0.500) None))
+-- [5.28926406901856  (B (1.753<-N2.000|0.500) (B (3.537<-N3.000|0.500) None))
+-- ,5.0841941728211815  (B (1.753<-N2.000|0.500) (B (3.331<-N3.000|0.500) None))
+-- ,5.794211633612307  (B (1.753<-N2.000|0.500) (B (4.041<-N3.000|0.500) None))
+-- ,6.272594302280648  (B (2.231<-N2.000|0.500) (B (4.041<-N3.000|0.500) None))
+-- ,4.434024003979054  (B (2.231<-N2.000|0.500) (B (2.203<-N3.000|0.500) None))
+-- ,4.7673406497484905  (B (2.231<-N2.000|0.500) (B (2.536<-N3.000|0.500) None))
+-- ,5.975480214428634  (B (2.231<-N2.000|0.500) (B (3.744<-N3.000|0.500) None))
+-- ,5.668402928336317  (B (1.924<-N2.000|0.500) (B (3.744<-N3.000|0.500) None))
+-- ,4.590407621118976  (B (1.924<-N2.000|0.500) (B (2.666<-N3.000|0.500) None))
+-- ,5.235450152376731  (B (2.569<-N2.000|0.500) (B (2.666<-N3.000|0.500) None))
+-- ]
 gaussians :: MonadDist m => m Double
 gaussians = do
   x <- normal 2 0.5
@@ -291,16 +255,17 @@ gaussians = do
 -- resampling all subsequent values in current version of Trace.primitive.
 --
 -- *Base Trace> mhDebug deps 0 10
---     0.991 (B (B (4.540<-N5.000|0.600) (3.784<-G4.540|0.500)) (B (0.991<-B3.784|0.400) None))
--- rej 0.991 (B (B (4.540<-N5.000|0.600) (3.784<-G4.540|0.500)) (B (0.991<-B3.784|0.400) None))
--- acc 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
--- rej 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
--- rej 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
--- acc 0.841 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.841<-B2.177|0.400) None))
--- acc 0.823 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.823<-B2.177|0.400) None))
--- rej 0.823 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.823<-B2.177|0.400) None))
--- acc 0.989 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.989<-B2.177|0.400) None))
--- rej 0.989 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.989<-B2.177|0.400) None))
+-- [0.988922039178331  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.989<-B3.904|0.400) None))
+-- ,0.8889999749405018  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.889<-B3.904|0.400) None))
+-- ,0.9821310462936671  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.982<-B3.904|0.400) None))
+-- ,0.8997361173964787  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.900<-B2.563|0.400) None))
+-- ,0.8544760888723296  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.854<-B2.563|0.400) None))
+-- ,0.5041173297233119  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.504<-B2.563|0.400) None))
+-- ,0.9911494761744635  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.991<-B2.563|0.400) None))
+-- ,0.8981134404494058  (B (B (4.849<-N5.000|0.600) (1.738<-G4.849|0.500)) (B (0.898<-B1.738|0.400) None))
+-- ,0.9062046452550016  (B (B (4.849<-N5.000|0.600) (1.738<-G4.849|0.500)) (B (0.906<-B1.738|0.400) None))
+-- ,0.9978287490830436  (B (B (4.144<-N5.000|0.600) (3.480<-G4.144|0.500)) (B (0.998<-B3.480|0.400) None))
+-- ]
 deps :: MonadDist m => m Double
 deps = do
   x <- do
@@ -311,7 +276,7 @@ deps = do
 
 -- TODO
 --
--- 0. Cleanup debug code using `Debug.Trace.trace`, correct trial comment
+-- 0. Try MH on fig 2 of Hur, Nori, Rajamani, Samuel.
 --
 -- 1. Try an example where sampling affects the number of primitive values
 --
