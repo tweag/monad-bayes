@@ -25,9 +25,9 @@ data RandomDB where
 -- print the stochastic choices for debugging
 instance Show RandomDB where
   show None = "None"
-  show (Node (Normal m s) x) = printf "(%.3f <- Normal %.3f %.3f)" x m s
-  show (Node (Gamma  a b) x) = printf "(%.3f <- Gamma %.3f %.3f -> %.3f)" x a b
-  show (Node (Beta   a b) x) = printf "(%.3f <- Beta %.3f %.3f -> %.3f)" x a b
+  show (Node (Normal m s) x) = printf "(%.3f<-N%.3f|%.3f)" x m s
+  show (Node (Gamma  a b) x) = printf "(%.3f<-G%.3f|%.3f)" x a b
+  show (Node (Beta   a b) x) = printf "(%.3f<-B%.3f|%.3f)" x a b
   show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
 
 data TraceM a = TraceM RandomDB a
@@ -180,44 +180,46 @@ mhDebug (Trace p) seed steps = loop Nothing (mkStdGen seed) steps
       xs <- loop (Just newTrace) gen2 (steps - 1)
       return $ x' : xs
 
--- Successive lines in do-notation generates right-skewed trace
+-- Successive lines in do-notation generates right-skewed trace.
 --
--- *Base Trace> mhDebug gaussian2 0 10
---     4.445 (B (1.445 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
--- rej 4.445 (B (1.445 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
--- acc 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
--- rej 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
--- rej 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
--- acc 5.400 (B (2.298 <- Normal 2.000 0.500) (B (3.103 <- Normal 3.000 0.500) None))
--- acc 4.853 (B (2.298 <- Normal 2.000 0.500) (B (2.555 <- Normal 3.000 0.500) None))
--- rej 4.853 (B (2.298 <- Normal 2.000 0.500) (B (2.555 <- Normal 3.000 0.500) None))
--- acc 5.093 (B (2.298 <- Normal 2.000 0.500) (B (2.795 <- Normal 3.000 0.500) None))
--- rej 5.093 (B (2.298 <- Normal 2.000 0.500) (B (2.795 <- Normal 3.000 0.500) None))
-gaussian2 :: MonadDist m => m Double
-gaussian2 = do
+-- *Base Trace> mhDebug gaussians 0 10
+--     4.445 (B (1.445<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
+-- rej 4.445 (B (1.445<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
+-- acc 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
+-- rej 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
+-- rej 5.298 (B (2.298<-N2.000|0.500) (B (3.000<-N3.000|0.500) None))
+-- acc 5.400 (B (2.298<-N2.000|0.500) (B (3.103<-N3.000|0.500) None))
+-- acc 4.853 (B (2.298<-N2.000|0.500) (B (2.555<-N3.000|0.500) None))
+-- rej 4.853 (B (2.298<-N2.000|0.500) (B (2.555<-N3.000|0.500) None))
+-- acc 5.093 (B (2.298<-N2.000|0.500) (B (2.795<-N3.000|0.500) None))
+-- rej 5.093 (B (2.298<-N2.000|0.500) (B (2.795<-N3.000|0.500) None))
+gaussians :: MonadDist m => m Double
+gaussians = do
   x <- normal 2 0.5
   y <- normal 3 0.5
   return $ x + y
 
 -- Nested do-notation generates left-subtrees.
+-- Due to parameter-sample dependency, resampling one Gaussian results in
+-- resampling all subsequent Gaussians in current version of Trace.primitive.
 --
--- *Base Trace> mhDebug depGaussians 0 10
---     5.205 (B (B (4.540 <- Normal 5.000 0.600) (5.206 <- Normal 4.540 0.500)) (B (5.205 <- Normal 5.206 0.400) None))
--- rej 5.205 (B (B (4.540 <- Normal 5.000 0.600) (5.206 <- Normal 4.540 0.500)) (B (5.205 <- Normal 5.206 0.400) None))
--- acc 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
--- rej 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
--- rej 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
--- acc 4.542 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.542 <- Normal 4.460 0.400) None))
--- acc 4.104 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.104 <- Normal 4.460 0.400) None))
--- rej 4.104 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.104 <- Normal 4.460 0.400) None))
--- acc 4.296 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.296 <- Normal 4.460 0.400) None))
--- rej 4.296 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.296 <- Normal 4.460 0.400) None))
-depGaussians :: MonadDist m => m Double
-depGaussians = do
+-- *Base Trace> mhDebug deps 0 10
+--     0.991 (B (B (4.540<-N5.000|0.600) (3.784<-G4.540|0.500)) (B (0.991<-B3.784|0.400) None))
+-- rej 0.991 (B (B (4.540<-N5.000|0.600) (3.784<-G4.540|0.500)) (B (0.991<-B3.784|0.400) None))
+-- acc 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
+-- rej 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
+-- rej 0.975 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.975<-B2.177|0.400) None))
+-- acc 0.841 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.841<-B2.177|0.400) None))
+-- acc 0.823 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.823<-B2.177|0.400) None))
+-- rej 0.823 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.823<-B2.177|0.400) None))
+-- acc 0.989 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.989<-B2.177|0.400) None))
+-- rej 0.989 (B (B (4.387<-N5.000|0.600) (2.177<-G4.387|0.500)) (B (0.989<-B2.177|0.400) None))
+deps :: MonadDist m => m Double
+deps = do
   x <- do
     z <- normal 5 0.6
-    normal z 0.5
-  y <- normal x 0.4
+    gamma z 0.5
+  y <- beta x 0.4
   return y
 
 -- TODO
