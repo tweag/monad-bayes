@@ -101,13 +101,20 @@ new `minus` old = new
 --
 -- Recall that
 --
---   q(x,y) ~ weight (y `minus` x).  // up to a factor
+--   q(x,y) = C(x,y) * weight (y `minus` x),
 --
--- Since for all RandomDB x, y
+-- where C(x,y) is the probability of choosing the left-most difference
+-- between x and y when updating x. Since the location of update does not
+-- depend on the original trace, we have
+--
+--   q(x,y)/q(y,x) = (C(x,y) * weight (y `minus` x)) / (C(y,x) * weight (x `minus` y))
+--                 = weight (y `minus` x) / weight (x `minus` y).
+--
+-- Observe that for all RandomDB x, y
 --
 --   y = x  `union` (y `minus` x) `minus` (x `minus` y),
 --
--- we have
+-- therefore
 --
 --   pi(new) = pi(old `union` (new `minus` old) `minus` (old `minus` new))
 --           = pi(old) * pi(new `minus` old) / pi(old `minus` new)
@@ -135,13 +142,14 @@ acceptanceRatio old new =
       min 1 ((pi_new * q_new_old) / (pi_old * q_old_new))
 
 -- | Updates a trace by resampling a randomly selected site.
+-- Caveat: has nonzero probability to leave @RandomDB@ unchanged.
 update :: RandomDB -> Sampler RandomDB
 update None = return None
 update (Node d x) = fmap (Node d) (primitive d)
 update (Bind t1 t2) = do
   let p = 0.5
   b <- bernoulli p
-  if b || size t2 == 0 then
+  if b then
       do
         t1' <- update t1
         return $ Bind t1' t2
