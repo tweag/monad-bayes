@@ -8,6 +8,7 @@ module Trace where
 
 import Control.Monad (liftM,liftM2)
 import Data.Number.LogFloat
+import System.Random
 import Text.Printf
 
 import Primitive
@@ -24,13 +25,11 @@ data RandomDB where
 -- print the stochastic choices for debugging
 instance Show RandomDB where
   show None = "None"
-  show (Node (Normal m s) x) = printf "(Node (Normal %f %f) %f)" m s x
-  show (Node (Gamma  a b) x) = printf "(Node (Gamma %f %f) %f)" a b x
-  show (Node (Beta   a b) x) = printf "(Node (Beta %f %f) %f)" a b x
-  show (Bind t1 t2) = printf "(Bind %s %s)" (show t1) (show t2)
+  show (Node (Normal m s) x) = printf "(%.3f <- Normal %.3f %.3f)" x m s
+  show (Node (Gamma  a b) x) = printf "(%.3f <- Gamma %.3f %.3f -> %.3f)" x a b
+  show (Node (Beta   a b) x) = printf "(%.3f <- Beta %.3f %.3f -> %.3f)" x a b
+  show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
 
--- consider saving the score for MonadBayes:
---   TraceM a = TraceM RandomDB a LogFloat
 data TraceM a = TraceM RandomDB a
     deriving (Functor)
 
@@ -70,7 +69,7 @@ update (Node d x) = fmap (Node d) (primitive d)
 update (Bind t1 t2) = do
   let p = 0.5
   b <- bernoulli p
-  if b then 
+  if b || size t2 == 0 then
       do
         t1' <- update t1
         return $ Bind t1' t2
@@ -149,11 +148,82 @@ mhStep (Trace p) (TraceM r x) = do
   accept <- bernoulli ratio
   return $ if accept then TraceM r' x' else TraceM r x
 
+------------------
+-- DEBUG TRIALS --
+------------------
+
+mhDebug :: Trace Double -> Int -> Int -> IO [Double]
+mhDebug (Trace p) seed steps = loop Nothing (mkStdGen seed) steps
+  where
+    loop :: Maybe (TraceM Double) -> StdGen -> Int -> IO [Double]
+    -- done
+    loop r gen steps | steps <= 0 = return []
+    -- initialize
+    loop Nothing gen steps = do
+      let (gen1, gen2) = split gen
+      let TraceM r' x' = flip sample gen1 $ p None
+      putStrLn $ printf "    %.3f %s" x' (show r')
+      xs <- loop (Just $ TraceM r' x') gen2 (steps - 1)
+      return $ x' : xs
+    -- iterate
+    loop (Just tr@(TraceM r x)) gen steps = do
+      let (gen1, gen2) = split gen
+      let (newTrace@(TraceM r' x'), accept) = flip sample gen1 $ do {
+          r1 <- update r
+        ; TraceM r' x' <- p r1
+        ; let ratio = 0.5 -- acceptance ratio is wrong anyway
+        ; accept <- bernoulli ratio
+        ; return (if accept then TraceM r' x' else TraceM r x, accept)
+        }
+      let acc = if accept then "acc" else "rej"
+      putStrLn $ printf "%s %.3f %s" acc x' (show r')
+      xs <- loop (Just newTrace) gen2 (steps - 1)
+      return $ x' : xs
+
+-- Successive lines in do-notation generates right-skewed trace
+--
+-- *Base Trace> mhDebug gaussian2 0 10
+--     4.445 (B (1.445 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
+-- rej 4.445 (B (1.445 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
+-- acc 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
+-- rej 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
+-- rej 5.298 (B (2.298 <- Normal 2.000 0.500) (B (3.000 <- Normal 3.000 0.500) None))
+-- acc 5.400 (B (2.298 <- Normal 2.000 0.500) (B (3.103 <- Normal 3.000 0.500) None))
+-- acc 4.853 (B (2.298 <- Normal 2.000 0.500) (B (2.555 <- Normal 3.000 0.500) None))
+-- rej 4.853 (B (2.298 <- Normal 2.000 0.500) (B (2.555 <- Normal 3.000 0.500) None))
+-- acc 5.093 (B (2.298 <- Normal 2.000 0.500) (B (2.795 <- Normal 3.000 0.500) None))
+-- rej 5.093 (B (2.298 <- Normal 2.000 0.500) (B (2.795 <- Normal 3.000 0.500) None))
+gaussian2 :: MonadDist m => m Double
+gaussian2 = do
+  x <- normal 2 0.5
+  y <- normal 3 0.5
+  return $ x + y
+
+-- Nested do-notation generates left-subtrees.
+--
+-- *Base Trace> mhDebug depGaussians 0 10
+--     5.205 (B (B (4.540 <- Normal 5.000 0.600) (5.206 <- Normal 4.540 0.500)) (B (5.205 <- Normal 5.206 0.400) None))
+-- rej 5.205 (B (B (4.540 <- Normal 5.000 0.600) (5.206 <- Normal 4.540 0.500)) (B (5.205 <- Normal 5.206 0.400) None))
+-- acc 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
+-- rej 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
+-- rej 4.120 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.120 <- Normal 4.460 0.400) None))
+-- acc 4.542 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.542 <- Normal 4.460 0.400) None))
+-- acc 4.104 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.104 <- Normal 4.460 0.400) None))
+-- rej 4.104 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.104 <- Normal 4.460 0.400) None))
+-- acc 4.296 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.296 <- Normal 4.460 0.400) None))
+-- rej 4.296 (B (B (4.387 <- Normal 5.000 0.600) (4.460 <- Normal 4.387 0.500)) (B (4.296 <- Normal 4.460 0.400) None))
+depGaussians :: MonadDist m => m Double
+depGaussians = do
+  x <- do
+    z <- normal 5 0.6
+    normal z 0.5
+  y <- normal x 0.4
+  return y
+
 -- TODO
 --
--- 1. Try it out on an example to gain some confidence.
+-- 1. Refactor to compute acceptance ratio.
 --
--- 2. Support `instance MonadBayes Trace`, since examples of Metropolis-Hastings involve
---    heavy uses of conditioning.
+-- 2. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
 --
 -- 3. Make `reusePrimitive` reuse more.
