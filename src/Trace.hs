@@ -200,8 +200,8 @@ gaussians = do
   return $ x + y
 
 -- Nested do-notation generates left-subtrees.
--- Due to parameter-sample dependency, resampling one Gaussian results in
--- resampling all subsequent Gaussians in current version of Trace.primitive.
+-- Due to parameter-sample dependency, resampling one value results in
+-- resampling all subsequent values in current version of Trace.primitive.
 --
 -- *Base Trace> mhDebug deps 0 10
 --     0.991 (B (B (4.540<-N5.000|0.600) (3.784<-G4.540|0.500)) (B (0.991<-B3.784|0.400) None))
