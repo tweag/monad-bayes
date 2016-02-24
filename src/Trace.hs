@@ -65,12 +65,23 @@ weight None = 1
 weight (Node d x) = pdf d x
 weight (Bind t1 t2) = weight t1 * weight t2
 
--- | If old primitive distribution is equal to the new one, cast the old sample for reuse.
-samePrimitive :: Primitive a -> Primitive b -> Maybe (a -> b)
-samePrimitive (Normal m s) (Normal m' s') | m == m' && s == s' = Just id
-samePrimitive (Gamma  a b) (Gamma  a' b') | a == a' && b == b' = Just id
-samePrimitive (Beta   a b) (Beta   a' b') | a == a' && b == b' = Just id
-samePrimitive _ _ = Nothing
+-- | Test whether a primitive distribution has type @Double@,
+-- output conversions to and from if it does.
+isPrimitiveDouble :: Primitive a -> Maybe (Double -> a, a -> Double)
+isPrimitiveDouble (Normal _ _) = Just (id, id)
+isPrimitiveDouble (Gamma  _ _) = Just (id, id)
+isPrimitiveDouble (Beta   _ _) = Just (id, id)
+isPrimitiveDouble _            = Nothing
+
+-- | If both distributions have type Double and old sample has positive density
+-- according to new distribution, then the old sample is reusable.
+reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe b
+reusablePrimitive d x d' =
+  case (isPrimitiveDouble d, isPrimitiveDouble d') of
+    (Just (from, to), Just (from', to')) | pdf d x > 0 && pdf d' (from' $ to x) > 0 ->
+      Just $ from' $ to x
+    otherwise ->
+      Nothing
 
 -- | Test whether two sample-distribution pairs are completely identical
 sameSample :: Primitive a -> a -> Primitive b -> b -> Bool
@@ -201,11 +212,9 @@ instance MonadDist Trace where
     categorical = error "Can not use Trace on categorical without equality"
 
 -- | Reuse previous sample of primitive RV only if type and parameters match exactly.
+-- Whether to reuse a sample is decided in @reusablePrimitive@.
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
-reusePrimitive d old d' new = maybe new (\cast -> TraceM (Node d old) (cast old)) (samePrimitive d d')
--- Consider re-weighing, if d and d' has same type and different distribution/parameters.
--- Care must be taken if old value has density 0 in new distribution,
--- for it could destroy irreducibility.
+reusePrimitive d old d' new = maybe new (\old' -> TraceM (Node d old) old') (reusablePrimitive d old d')
 
 -- | @mhStep t@ corresponds to the transition kernel of Metropolis-Hastings algorithm
 mhStep :: Trace a -> RandomDB -> Sampler (TraceM a)
@@ -568,8 +577,6 @@ fig8b = do
 0.000 @ 19.125
 -}
 -- TODO
---
--- 1. Try an example where sampling affects the number of primitive values
 --
 -- 2. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
 --
