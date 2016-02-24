@@ -87,138 +87,43 @@ isReusablePrimitive d x d' = isJust $ reusablePrimitive d x d'
 
 -- | Return whether a sample @x@ drawn from @d@ is reused
 -- as a sample $x'$ drawn from $d'$.
-isReusedPrimitive :: Primitive a -> a -> Primitive b -> b -> Bool
-isReusedPrimitive d x d' x' | isReusablePrimitive d x d' =
+reusedSample :: Primitive a -> a -> Primitive b -> b -> Bool
+reusedSample d x d' x' | isReusablePrimitive d x d' =
   let
     xVal  = (snd $ fromJust $ isPrimitiveDouble d ) x
     xVal' = (snd $ fromJust $ isPrimitiveDouble d') x'
   in
     xVal == xVal'
-isReusedPrimitive _ _ _ _ = False
+reusedSample _ _ _ _ = False
 
--- | Test whether two primitive distributions are completely identical.
-samePrimitive :: Primitive a -> Primitive b -> Bool
-samePrimitive (Normal m s) (Normal m' s') = m == m' && s == s'
-samePrimitive (Gamma  a b) (Gamma  a' b') = a == a' && b == b'
-samePrimitive (Beta   a b) (Beta   a' b') = a == a' && b == b'
-samePrimitive _ _ = False
-
--- | Test whether two sample-distribution pairs are completely identical
-sameSample :: Primitive a -> a -> Primitive b -> b -> Bool
-sameSample (Normal m s) x (Normal m' s') x' = m == m' && s == s' && x == x'
-sameSample (Gamma  a b) x (Gamma  a' b') x' = a == a' && b == b' && x == x'
-sameSample (Beta   a b) x (Beta   a' b') x' = a == a' && b == b' && x == x'
-sameSample _ _ _ _ = False
-
--- | Compute the parts of the new trace not in the old trace.
+-- | Compute the parts of the new trace not reused from the old trace.
 minus :: RandomDB -> RandomDB -> RandomDB
-Node d' x' `minus` Node d x | sameSample d x d' x' = None
+Node d' x' `minus` Node d x | reusedSample d x d' x' = None
 Bind t1' t2' `minus` Bind t1 t2 = Bind (t1' `minus` t1) (t2' `minus` t2)
 new `minus` old = new
-
--- | @x <^ y@ is the part of @x@ reused in @y@ with a different distribution
-(<^) :: RandomDB -> RandomDB -> RandomDB
-(Node d' x') <^ (Node d x) | isReusedPrimitive d x d' x' && not (samePrimitive d d') = Node d' x'
-(Bind t1' t2') <^ (Bind t1 t2) = Bind (t1' <^ t1) (t2' <^ t2)
-_ <^ _ = None
 
 -- | From two @RandomDB@, compute the acceptance ratio.
 -- Precondition: Program is @MonadDist@ but not @MonadBayes@
 --               (i.e., it doesn't call @condition@ or @factor@),
 --               so that the target density of an execution is completely
 --               determined by the stochastic choices made.
---
--- Lemma. Write
---
---   C(x,y) = Pr[to update x, letmost node of y - x is chosen].
---
--- Then in the absence of conditioning,
---
---                      C(new,old) * pi(new <^ old)
---   acceptance-ratio = ---------------------------
---                      C(old,new) * pi(old <^ new)
---
---
--- Remark. The acceptance ratio depends on how the site of single site
--- update is chosen. In the previous version,
---
---   Pr[site X is updated] = 1 / 2^{depth of X},
---
--- and we have acceptance-ratio == 1 due to the symmetry
---
---   C(x,y) = Pr[to update x, letmost node of y - x is chosen]
---          = 1 / 2^{depth of leftmost node of y - x}
---          = 1 / 2^{depth of leftmost node of x - y}
---          = C(y,x).
---
--- If we choose another single-site update strategy, e. g., pick
--- a uniformly random primitive sample in the trace to update,
--- then C(x,y) != C(y,x) and the acceptance ratio is not 1 any more.
---
---
--- Proof of lemma.
--- Without conditioning,
---
---   weight x = pi(x).
---
--- Observe that
---
---   q(x,y) = weight (y - x) * C(x,y) = pi(y - x) * C(x,y),
---
--- which means
---
---   pi(y - x) = q(x,y) / C(x,y).
---
--- Recall further that
---
---   y = x + (y - x) - (x - y) + (y <^ x) - (x <^ y).
---
--- Therefore
---
---   pi(new) = pi(old + (new - old) - (old - new) + (new <^ old) - (old <^ new))
---           = pi(old) * pi(new - old) / pi(old - new) * pi(new <^ old) / pi(old <^ new)
---           = pi(old) * (q(old,new) / C(old,new)) / (q(new,old) * C(new,old)) * pi(new <^ old) / pi(old <^ new)
---           = (pi(old) * q(old,new) / q(new, old)) * (C(new,old) / C(old,new))  * pi(new <^ old) / pi(old <^ new).
---
--- Now
---
---   pi(old) * q(old, new) = p(old) * pi(y - x) * C(x,y) > 0
---
--- since all 3 factors are positive. The acceptance ratio is
---
---     (pi(new) * q(new, old)) / (pi(old) * q(old, new))
---
---   = (((pi(old) * q(old, new) / q(new, old)) * q(new, old)) / (pi(old) * q(old, new))) *
---       (C(new,old) / C(old,new)) * (pi(new <^ old) / pi(old <^ new))
---
---   = (C(new,old) * pi(new <^ old)) / (C(old,new) * pi(old <^ new)).
---
--- QED
---
--- The current update strategy chooses a primitive value uniformly at random.
--- If the old execution trace is not deterministic, then
---
---   C(new,old) = 1 / size new,
---   C(old,new) = 1 / size old,
---   C(new,old) / C(old,new) = size old / size new.
---
--- If the old execution trace is deterministic, then the program makes
--- no random choice whatsoever. The trace space is a singleton, and
--- pi(old) = pi(new) = q(old,new) = q(new,old) = 1.
---
 acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
 acceptanceRatio old new =
   let
-    size_old = size old
-    size_new = size new
-    c_factor = fromIntegral size_old / fromIntegral size_new
-    p_reuse_new = weight (new <^ old)
-    p_reuse_old = weight (old <^ new)
+    size_old  = size old
+    size_new  = size new
+    pi_old    = weight old
+    pi_new    = weight new
+    q_old_new = weight (new `minus` old) / fromIntegral size_old
+    q_new_old = weight (old `minus` new) / fromIntegral size_new
+
+    numerator   = pi_new * q_new_old
+    denominator = pi_old * q_old_new
   in
-    if size_old * size_new == 0 || p_reuse_old == 0 then
+    if size_old * size_new == 0 || denominator == 0 then
       1
     else
-      min 1 (c_factor * p_reuse_new / p_reuse_old)
+      min 1 (numerator / denominator)
 
 -- | Resample the i-th random choice
 updateAt :: Int -> RandomDB -> Sampler RandomDB
@@ -405,8 +310,8 @@ deps = do
 -- Example:
 --
 --   mhDebug varChoices 1 10
---   histogram (Histo (-2.5) 1 27.5 0.25 60) $ mhRun varChoices 0 20000
---   histogram (Histo (-2.5) 1 27.5 0.25 60) $ sampleMany varChoices 0 20000
+--   histogram (Histo (-2.5) 1 27.5 0.35 60) $ mhRun varChoices 0 20000
+--   histogram (Histo (-2.5) 1 27.5 0.35 60) $ sampleMany varChoices 0 20000
 --
 varChoices :: MonadDist m => m Double
 varChoices = do
