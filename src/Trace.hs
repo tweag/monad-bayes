@@ -1,6 +1,7 @@
 {-# LANGUAGE
   GADTs,
-  DeriveFunctor
+  DeriveFunctor,
+  ScopedTypeVariables
  #-}
 
 
@@ -231,13 +232,15 @@ mhStep p r = do
   -- in the absence of conditioning.
   runTrace p r1
 
-mhRun :: Trace Double -> Int -> Int -> [Double]
+mhRun :: Trace a -> Int -> Int -> [a]
 mhRun = mhRunWithDebugger (const id)
 
-mhRunWithDebugger :: (RandomDB -> [Double] -> [Double]) -> Trace Double -> Int -> Int -> [Double]
-mhRunWithDebugger debugger p seed steps = sample (loop None steps) (mkStdGen seed)
+mhRunWithDebugger :: forall a. (RandomDB -> [a] -> [a]) -> Trace a -> Int -> Int -> [a]
+mhRunWithDebugger debugger p seed steps =
+  undefined
+  -- sample (loop None steps) (mkStdGen seed)
   where
-    loop :: RandomDB -> Int -> Sampler [Double]
+    loop :: RandomDB -> Int -> Sampler [a]
     -- done
     loop r steps | steps <= 0 = return []
     -- iterate
