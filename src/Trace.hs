@@ -177,7 +177,7 @@ new `minus` old = new
 -- If the old execution trace is deterministic, then the program makes
 -- no random choice whatsoever. The trace space is a singleton, and
 -- pi(old) = pi(new) = q(old,new) = q(new,old) = 1.
--- 
+--
 acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
 acceptanceRatio old new =
   let
