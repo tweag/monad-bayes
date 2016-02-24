@@ -374,8 +374,8 @@ deps = do
 -- Example:
 --
 --   mhDebug varChoices 1 10
---   histogram (Histo (-6.125) 0.25 6.125 1.0 60) $ mhRun varChoices 0 10000
---   histogram (Histo (-6.125) 0.25 6.125 1.0 60) $ sampleMany varChoices 0 10000
+--   histogram (Histo (-2.5) 1 33.5 0.25 60) $ mhRun varChoices 0 20000
+--   histogram (Histo (-2.5) 1 33.5 0.25 60) $ sampleMany varChoices 0 20000
 --
 varChoices :: MonadDist m => m Double
 varChoices = do
@@ -385,7 +385,7 @@ varChoices = do
   x <- normal 0 5
   let n = floor (abs x)
 
-  xs <- sequence $ replicate n $ normal 0 1
+  xs <- sequence $ replicate n $ normal (abs x) 1
   return $ sum xs
 
 -- Figure 8b of
