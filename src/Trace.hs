@@ -8,6 +8,7 @@
 module Trace where
 
 import Control.Monad (liftM,liftM2)
+import Data.Maybe (isJust, fromJust)
 import Data.List (unfoldr)
 import Data.Number.LogFloat hiding (sum)
 import System.Random
@@ -80,6 +81,28 @@ reusablePrimitive d x d' =
     otherwise ->
       Nothing
 
+-- | Return whether a previous primitive sample is reusable.
+isReusablePrimitive :: Primitive a -> a -> Primitive b -> Bool
+isReusablePrimitive d x d' = isJust $ reusablePrimitive d x d'
+
+-- | Return whether a sample @x@ drawn from @d@ is reused
+-- as a sample $x'$ drawn from $d'$.
+isReusedPrimitive :: Primitive a -> a -> Primitive b -> b -> Bool
+isReusedPrimitive d x d' x' | isReusablePrimitive d x d' =
+  let
+    xVal  = (snd $ fromJust $ isPrimitiveDouble d ) x
+    xVal' = (snd $ fromJust $ isPrimitiveDouble d') x'
+  in
+    xVal == xVal'
+isReusedPrimitive _ _ _ _ = False
+
+-- | Test whether two primitive distributions are completely identical.
+samePrimitive :: Primitive a -> Primitive b -> Bool
+samePrimitive (Normal m s) (Normal m' s') = m == m' && s == s'
+samePrimitive (Gamma  a b) (Gamma  a' b') = a == a' && b == b'
+samePrimitive (Beta   a b) (Beta   a' b') = a == a' && b == b'
+samePrimitive _ _ = False
+
 -- | Test whether two sample-distribution pairs are completely identical
 sameSample :: Primitive a -> a -> Primitive b -> b -> Bool
 sameSample (Normal m s) x (Normal m' s') x' = m == m' && s == s' && x == x'
@@ -87,14 +110,17 @@ sameSample (Gamma  a b) x (Gamma  a' b') x' = a == a' && b == b' && x == x'
 sameSample (Beta   a b) x (Beta   a' b') x' = a == a' && b == b' && x == x'
 sameSample _ _ _ _ = False
 
--- | Computes the parts of the new trace not in the old trace.
--- Used to compute proposal densities:
--- q(old, new) = weight (new `minus` old)
--- q(new, old) = weight (old `minus` new)
+-- | Compute the parts of the new trace not in the old trace.
 minus :: RandomDB -> RandomDB -> RandomDB
 Node d' x' `minus` Node d x | sameSample d x d' x' = None
 Bind t1' t2' `minus` Bind t1 t2 = Bind (t1' `minus` t1) (t2' `minus` t2)
 new `minus` old = new
+
+-- | @x <^ y@ is the part of @x@ reused in @y@ with a different distribution
+(<^) :: RandomDB -> RandomDB -> RandomDB
+(Node d' x') <^ (Node d x) | isReusedPrimitive d x d' x' && not (samePrimitive d d') = Node d' x'
+(Bind t1' t2') <^ (Bind t1 t2) = Bind (t1' <^ t1) (t2' <^ t2)
+_ <^ _ = None
 
 -- | From two @RandomDB@, compute the acceptance ratio.
 -- Precondition: Program is @MonadDist@ but not @MonadBayes@
@@ -104,11 +130,13 @@ new `minus` old = new
 --
 -- Lemma. Write
 --
---   C(x,y) = Pr[to update x, letmost node of y `minus` x is chosen].
+--   C(x,y) = Pr[to update x, letmost node of y - x is chosen].
 --
 -- Then in the absence of conditioning,
 --
---   acceptance-ratio = C(y,x) / C(x,y).
+--                      C(new,old) * pi(new <^ old)
+--   acceptance-ratio = ---------------------------
+--                      C(old,new) * pi(old <^ new)
 --
 --
 -- Remark. The acceptance ratio depends on how the site of single site
@@ -118,9 +146,9 @@ new `minus` old = new
 --
 -- and we have acceptance-ratio == 1 due to the symmetry
 --
---   C(x,y) = Pr[to update x, letmost node of y `minus` x is chosen]
---          = 1 / 2^{depth of leftmost node of y `minus` x}
---          = 1 / 2^{depth of leftmost node of x `minus` y}
+--   C(x,y) = Pr[to update x, letmost node of y - x is chosen]
+--          = 1 / 2^{depth of leftmost node of y - x}
+--          = 1 / 2^{depth of leftmost node of x - y}
 --          = C(y,x).
 --
 -- If we choose another single-site update strategy, e. g., pick
@@ -135,35 +163,35 @@ new `minus` old = new
 --
 -- Observe that
 --
---   q(x,y) = weight (y `minus` x) * C(x,y) = pi(y `minus` x) * C(x,y),
+--   q(x,y) = weight (y - x) * C(x,y) = pi(y - x) * C(x,y),
 --
 -- which means
 --
---   pi(y `minus` x) = q(x,y) / C(x,y).
+--   pi(y - x) = q(x,y) / C(x,y).
 --
 -- Recall further that
 --
---   y = x `union` (y `minus` x) `minus` (x `minus` y).
+--   y = x + (y - x) - (x - y) + (y <^ x) - (x <^ y).
 --
 -- Therefore
 --
---   pi(new) = pi(old `union` (new `minus` old) `minus` (old `minus` new))
---           = pi(old) * pi(new `minus` old) / pi(old `minus` new)
---           = pi(old) * (q(old,new) / C(old,new)) / (q(new,old) * C(new,old))
---           = (pi(old) * q(old,new) / q(new, old)) * (C(new,old) / C(old,new)).
+--   pi(new) = pi(old + (new - old) - (old - new) + (new <^ old) - (old <^ new))
+--           = pi(old) * pi(new - old) / pi(old - new) * pi(new <^ old) / pi(old <^ new)
+--           = pi(old) * (q(old,new) / C(old,new)) / (q(new,old) * C(new,old)) * pi(new <^ old) / pi(old <^ new)
+--           = (pi(old) * q(old,new) / q(new, old)) * (C(new,old) / C(old,new))  * pi(new <^ old) / pi(old <^ new).
 --
 -- Now
 --
---   pi(old) * q(old, new) = p(old) * pi(y `minus` x) * C(x,y) > 0
+--   pi(old) * q(old, new) = p(old) * pi(y - x) * C(x,y) > 0
 --
 -- since all 3 factors are positive. The acceptance ratio is
 --
 --     (pi(new) * q(new, old)) / (pi(old) * q(old, new))
 --
 --   = (((pi(old) * q(old, new) / q(new, old)) * q(new, old)) / (pi(old) * q(old, new))) *
---       (C(new,old) / C(old,new))
+--       (C(new,old) / C(old,new)) * (pi(new <^ old) / pi(old <^ new))
 --
---   = C(new,old) / C(old,new).
+--   = (C(new,old) * pi(new <^ old)) / (C(old,new) * pi(old <^ new)).
 --
 -- QED
 --
@@ -172,7 +200,7 @@ new `minus` old = new
 --
 --   C(new,old) = 1 / size new,
 --   C(old,new) = 1 / size old,
---   acceptance-ratio = C(new,old) / C(old,new) = size old / size new.
+--   C(new,old) / C(old,new) = size old / size new.
 --
 -- If the old execution trace is deterministic, then the program makes
 -- no random choice whatsoever. The trace space is a singleton, and
@@ -183,11 +211,14 @@ acceptanceRatio old new =
   let
     size_old = size old
     size_new = size new
+    c_factor = fromIntegral size_old / fromIntegral size_new
+    p_reuse_new = weight (new <^ old)
+    p_reuse_old = weight (old <^ new)
   in
-    if size_old * size_new == 0 then
+    if size_old * size_new == 0 || p_reuse_old == 0 then
       1
     else
-      min 1 (fromIntegral size_old / fromIntegral size_new)
+      min 1 (c_factor * p_reuse_new / p_reuse_old)
 
 -- | Resample the i-th random choice
 updateAt :: Int -> RandomDB -> Sampler RandomDB
@@ -374,8 +405,8 @@ deps = do
 -- Example:
 --
 --   mhDebug varChoices 1 10
---   histogram (Histo (-2.5) 1 33.5 0.25 60) $ mhRun varChoices 0 20000
---   histogram (Histo (-2.5) 1 33.5 0.25 60) $ sampleMany varChoices 0 20000
+--   histogram (Histo (-2.5) 1 27.5 0.25 60) $ mhRun varChoices 0 20000
+--   histogram (Histo (-2.5) 1 27.5 0.25 60) $ sampleMany varChoices 0 20000
 --
 varChoices :: MonadDist m => m Double
 varChoices = do
@@ -383,7 +414,7 @@ varChoices = do
   -- is implemented in terms of categorical, and we don't
   -- support categorical yet.
   x <- normal 0 5
-  let n = floor (abs x)
+  let n = floor (abs x / 2)
 
   xs <- sequence $ replicate n $ normal (abs x) 1
   return $ sum xs
@@ -414,8 +445,11 @@ fig8b = do
 
 -- TODO
 --
+-- 0. Think about acceptance ratio more, since varChoices doesn't
+--    show goodness of fit.
+--
 -- 1. Reformulate Trace as monad transformer
 --
 -- 2. Validate acceptance ratios by goodness-of-fit tests
 --
--- 3. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
+-- 3. Support conditioning
