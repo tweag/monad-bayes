@@ -34,7 +34,7 @@ instance Show RandomDB where
   show (Node (Beta   a b) x) = printf "(%.3f<-B%.3f|%.3f)" x a b
   show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
 
-data TraceM a = TraceM RandomDB a
+data TraceM a = TraceM { randomDB :: RandomDB, value :: a }
     deriving (Functor)
 
 -- the monad instance below is used in `instance Applicative Trace` by `liftM2`
@@ -49,10 +49,6 @@ instance Monad TraceM where
           TraceM yTrace y = f x
         in
           TraceM (Bind xTrace yTrace) y
-
--- | The final value produced by the program.
-value :: TraceM a -> a
-value (TraceM db x) = x
 
 -- | The number of random choices in the RandomDB.
 size :: RandomDB -> Int
@@ -106,70 +102,126 @@ new `minus` old = new
 --               so that the target density of an execution is completely
 --               determined by the stochastic choices made.
 --
--- Caveat: Always returns 1 in the absence of conditioning.
+-- Lemma. Write
 --
--- Proof. Without conditioning,
+--   C(x,y) = Pr[to update x, letmost node of y `minus` x is chosen].
 --
---   pi(x)  = weight x.
+-- Then in the absence of conditioning,
 --
--- Recall that
+--   acceptance-ratio = C(y,x) / C(x,y).
 --
---   q(x,y) = C(x,y) * weight (y `minus` x),
 --
--- where C(x,y) is the probability of choosing the left-most difference
--- between x and y when updating x. Since the location of update does not
--- depend on the original trace, we have
+-- Remark. The acceptance ratio depends on how the site of single site
+-- update is chosen. In the previous version,
 --
---   q(x,y)/q(y,x) = (C(x,y) * weight (y `minus` x)) / (C(y,x) * weight (x `minus` y))
---                 = weight (y `minus` x) / weight (x `minus` y).
+--   Pr[site X is updated] = 1 / 2^{depth of X},
 --
--- Observe that for all RandomDB x, y
+-- and we have acceptance-ratio == 1 due to the symmetry
 --
---   y = x  `union` (y `minus` x) `minus` (x `minus` y),
+--   C(x,y) = Pr[to update x, letmost node of y `minus` x is chosen]
+--          = 1 / 2^{depth of leftmost node of y `minus` x}
+--          = 1 / 2^{depth of leftmost node of x `minus` y}
+--          = C(y,x).
 --
--- therefore
+-- If we choose another single-site update strategy, e. g., pick
+-- a uniformly random primitive sample in the trace to update,
+-- then C(x,y) != C(y,x) and the acceptance ratio is not 1 any more.
+--
+--
+-- Proof of lemma.
+-- Without conditioning,
+--
+--   weight x = pi(x).
+--
+-- Observe that
+--
+--   q(x,y) = weight (y `minus` x) * C(x,y) = pi(y `minus` x) * C(x,y),
+--
+-- which means
+--
+--   pi(y `minus` x) = q(x,y) / C(x,y).
+--
+-- Recall further that
+--
+--   y = x `union` (y `minus` x) `minus` (x `minus` y).
+--
+-- Therefore
 --
 --   pi(new) = pi(old `union` (new `minus` old) `minus` (old `minus` new))
 --           = pi(old) * pi(new `minus` old) / pi(old `minus` new)
---           = pi(old) * q(old, new) / q(new, old).
+--           = pi(old) * (q(old,new) / C(old,new)) / (q(new,old) * C(new,old))
+--           = (pi(old) * q(old,new) / q(new, old)) * (C(new,old) / C(old,new)).
 --
--- If pi(old) * pi(old, new) != 0, then
+-- Now
+--
+--   pi(old) * q(old, new) = p(old) * pi(y `minus` x) * C(x,y) > 0
+--
+-- since all 3 factors are positive. The acceptance ratio is
 --
 --     (pi(new) * q(new, old)) / (pi(old) * q(old, new))
---   = ((pi(old) * q(old, new) / q(new, old)) * q(new, old)) / (pi(old) * q(old, new))
---   = 1.
 --
--- If pi(old) * pi(old, new) == 0, then the acceptance ratio is 1
--- by definition. QED
+--   = (((pi(old) * q(old, new) / q(new, old)) * q(new, old)) / (pi(old) * q(old, new))) *
+--       (C(new,old) / C(old,new))
+--
+--   = C(new,old) / C(old,new).
+--
+-- QED
+--
+-- The current update strategy chooses a primitive value uniformly at random.
+-- If the old execution trace is not deterministic, then
+--
+--   C(new,old) = 1 / size new,
+--   C(old,new) = 1 / size old,
+--   acceptance-ratio = C(new,old) / C(old,new) = size old / size new.
+--
+-- If the old execution trace is deterministic, then the program makes
+-- no random choice whatsoever. The trace space is a singleton, and
+-- pi(old) = pi(new) = q(old,new) = q(new,old) = 1.
+-- 
 acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
 acceptanceRatio old new =
   let
-    pi_old    = weight old
-    pi_new    = weight new
-    q_old_new = weight (new `minus` old)
-    q_new_old = weight (old `minus` new)
+    size_old = size old
+    size_new = size new
   in
-    if pi_old * q_old_new == 0 then
+    if size_old * size_new == 0 then
       1
     else
-      min 1 ((pi_new * q_new_old) / (pi_old * q_old_new))
+      min 1 (fromIntegral size_old / fromIntegral size_new)
+
+-- | Resample the i-th random choice
+updateAt :: Int -> RandomDB -> Sampler RandomDB
+updateAt n db =
+  fmap (either id $ error $ printf "updateAt: index %d out of bound in $s" n (show db)) (loop n db)
+  where
+    -- Return either an updated @RandomDB@
+    --            or the result of subtracting the number of traversed
+    --               random choices from the index
+    loop :: Int -> RandomDB -> Sampler (Either RandomDB Int)
+    loop n db | n < 0 = error $ "loop: illegal index " ++ show n
+    loop n None = return $ Right n
+    loop n (Node d x) | n == 0 = fmap (Left . Node d) (primitive d)
+    loop n (Node d x) | n > 0 = return $ Right (n - 1)
+    loop n (Bind t1 t2) = do
+      t1' <- loop n t1
+      let keep_t2 = Left . flip Bind t2
+      let keep_t1 = Left . Bind t1
+      -- if t1 is updated, join the updated t1 together with t2.
+      -- if t2 is updated, join t1 together with the updated t2.
+      -- if neither is updated, return new index.
+      either (return . keep_t2) (fmap (either keep_t1 Right) . flip loop t2) t1'
 
 -- | Updates a trace by resampling a randomly selected site.
--- Caveat: has nonzero probability to leave @RandomDB@ unchanged.
 update :: RandomDB -> Sampler RandomDB
-update None = return None
-update (Node d x) = fmap (Node d) (primitive d)
-update (Bind t1 t2) = do
-  let p = 0.5
-  b <- bernoulli p
-  if b then
-      do
-        t1' <- update t1
-        return $ Bind t1' t2
-  else 
-      do
-        t2' <- update t2
-        return $ Bind t1 t2'
+update r = do
+  let n = size r
+  if n == 0 then
+    return r -- no random element in previous RandomDB
+  else
+    do
+      let p = 1 / fromIntegral n
+      i <- categorical $ map (flip (,) p) [0 .. (n - 1)]
+      updateAt i r
 
 -- | Split a @RandomDB@ into two if there is sufficient information
 splitDB :: RandomDB -> (RandomDB, RandomDB)
@@ -217,38 +269,32 @@ instance MonadDist Trace where
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
 reusePrimitive d old d' new = maybe new (\old' -> TraceM (Node d old) old') (reusablePrimitive d old d')
 
--- | @mhStep t@ corresponds to the transition kernel of Metropolis-Hastings algorithm
-mhStep :: Trace a -> RandomDB -> Sampler (TraceM a)
-mhStep p r = do
-  -- Single-site mutation of previous stochastic choices.
-  r1 <- update r
-
-  -- Re-execute program with new stochastic choices, reusing as much as possible.
-  -- If program's 'latent space' is fixed and independent from sampling,
-  -- then everything will be reused. After some improvement of @reusePrimitive@,
-  -- everything should be reused in the examples of the `joint` branch.
-  --
-  -- There is no need to compute the acceptance ratio, because it is constant 1
-  -- in the absence of conditioning.
-  runTrace p r1
-
 mhRun :: Trace a -> Int -> Int -> [a]
 mhRun = mhRunWithDebugger (const id)
 
 mhRunWithDebugger :: forall a. (RandomDB -> [a] -> [a]) -> Trace a -> Int -> Int -> [a]
 mhRunWithDebugger debugger p seed steps =
-  undefined
-  -- sample (loop None steps) (mkStdGen seed)
+  if steps <= 0 then
+    []
+  else
+    flip sample (mkStdGen seed) $ do
+      initialTrace <- runTrace p None
+      otherSamples <- loop initialTrace (steps - 1)
+      return (value initialTrace : debugger (randomDB initialTrace) otherSamples)
   where
-    loop :: RandomDB -> Int -> Sampler [a]
+    loop :: TraceM a -> Int -> Sampler [a]
     -- done
-    loop r steps | steps <= 0 = return []
+    loop _ steps | steps <= 0 = return []
     -- iterate
-    loop r steps = do
-      TraceM r' x' <- mhStep p r
-      z <- primitive (Normal 0 1)
-      xs <- loop r' (steps - 1)
-      return $  x' : debugger r' xs
+    loop old steps = do
+      r1 <- update (randomDB old)
+      new <- runTrace p r1
+
+      accept <- bernoulli $ acceptanceRatio (randomDB old) (randomDB new)
+      let result = if accept then new else old
+
+      otherSamples <- loop result (steps - 1)
+      return $  (value result) : debugger (randomDB result) otherSamples
 
 ------------------
 -- DEBUG TRIALS --
@@ -299,19 +345,10 @@ histogram (Histo xmin step xmax ymax cols) xs0 =
     putStrLn $ unlines annotatedBars
 
 -- Successive lines in do-notation generates right-skewed trace.
+-- Example:
 --
--- *Base Trace> mhDebug gaussians 0 10
--- [5.28926406901856  (B (1.753<-N2.000|0.500) (B (3.537<-N3.000|0.500) None))
--- ,5.0841941728211815  (B (1.753<-N2.000|0.500) (B (3.331<-N3.000|0.500) None))
--- ,5.794211633612307  (B (1.753<-N2.000|0.500) (B (4.041<-N3.000|0.500) None))
--- ,6.272594302280648  (B (2.231<-N2.000|0.500) (B (4.041<-N3.000|0.500) None))
--- ,4.434024003979054  (B (2.231<-N2.000|0.500) (B (2.203<-N3.000|0.500) None))
--- ,4.7673406497484905  (B (2.231<-N2.000|0.500) (B (2.536<-N3.000|0.500) None))
--- ,5.975480214428634  (B (2.231<-N2.000|0.500) (B (3.744<-N3.000|0.500) None))
--- ,5.668402928336317  (B (1.924<-N2.000|0.500) (B (3.744<-N3.000|0.500) None))
--- ,4.590407621118976  (B (1.924<-N2.000|0.500) (B (2.666<-N3.000|0.500) None))
--- ,5.235450152376731  (B (2.569<-N2.000|0.500) (B (2.666<-N3.000|0.500) None))
--- ]
+--   mhDebug gaussians 0 10
+--
 gaussians :: MonadDist m => m Double
 gaussians = do
   x <- normal 2 0.5
@@ -321,19 +358,10 @@ gaussians = do
 -- Nested do-notation generates left-subtrees.
 -- Due to parameter-sample dependency, resampling one value results in
 -- resampling all subsequent values in current version of Trace.primitive.
+-- Example:
 --
--- *Base Trace> mhDebug deps 0 10
--- [0.988922039178331  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.989<-B3.904|0.400) None))
--- ,0.8889999749405018  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.889<-B3.904|0.400) None))
--- ,0.9821310462936671  (B (B (5.000<-N5.000|0.600) (3.904<-G5.000|0.500)) (B (0.982<-B3.904|0.400) None))
--- ,0.8997361173964787  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.900<-B2.563|0.400) None))
--- ,0.8544760888723296  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.854<-B2.563|0.400) None))
--- ,0.5041173297233119  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.504<-B2.563|0.400) None))
--- ,0.9911494761744635  (B (B (5.476<-N5.000|0.600) (2.563<-G5.476|0.500)) (B (0.991<-B2.563|0.400) None))
--- ,0.8981134404494058  (B (B (4.849<-N5.000|0.600) (1.738<-G4.849|0.500)) (B (0.898<-B1.738|0.400) None))
--- ,0.9062046452550016  (B (B (4.849<-N5.000|0.600) (1.738<-G4.849|0.500)) (B (0.906<-B1.738|0.400) None))
--- ,0.9978287490830436  (B (B (4.144<-N5.000|0.600) (3.480<-G4.144|0.500)) (B (0.998<-B3.480|0.400) None))
--- ]
+--   mhDebug deps 0 10
+--
 deps :: MonadDist m => m Double
 deps = do
   x <- do
@@ -343,19 +371,12 @@ deps = do
   return y
 
 -- Program with a variable number of random choices.
+-- Example:
 --
--- *Base Trace> mhDebug varChoices 0 10
--- [-2.1030154120466285  (B (-2.472<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-1.311<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.544155192168128  (B (-2.472<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.752<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.686939786012009  (B (-2.472<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.895<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.686939786012009  (B (2.311<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.895<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.686939786012009  (B (2.311<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.895<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.686939786012009  (B (2.311<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.895<-N0.000|1.000) (B None None)) None)) None))
--- ,-1.686939786012009  (B (2.311<-N0.000|5.000) (B (B (-0.792<-N0.000|1.000) (B (B (-0.895<-N0.000|1.000) (B None None)) None)) None))
--- ,0.0  (B (-0.759<-N0.000|5.000) (B None None))
--- ,0.0  (B (-0.759<-N0.000|5.000) (B None None))
--- ,-1.9283058484204942  (B (5.691<-N0.000|5.000) (B (B (0.820<-N0.000|1.000) (B (B (-2.944<-N0.000|1.000) (B (B (0.522<-N0.000|1.000) (B (B (-0.425<-N0.000|1.000) (B (B (0.099<-N0.000|1.000) (B None None)) None)) None)) None)) None)) None))
--- ]
+--   mhDebug varChoices 1 10
+--   histogram (Histo (-6.125) 0.25 6.125 1.0 60) $ mhRun varChoices 0 10000
+--   histogram (Histo (-6.125) 0.25 6.125 1.0 60) $ sampleMany varChoices 0 10000
+--
 varChoices :: MonadDist m => m Double
 varChoices = do
   -- Use Gaussian to mimic geometric, since geometric
@@ -377,6 +398,12 @@ varChoices = do
 -- in Hur et al. The maximum density of Normal 10 2 is 0.19947,
 -- so the maximum density of fig8b on positive reals should be
 -- half of that, i. e., around 0.1.
+--
+-- Examples:
+--
+--   histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ mhRun fig8b 0 30000
+--   histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ sampleMany fig8b 0 30000
+--
 fig8b :: MonadDist m => m Double
 fig8b = do
   x <- normal 0 1
@@ -384,203 +411,11 @@ fig8b = do
     normal 10 2
   else
     return x
-{-
--- Histogram produced by MH
-*Base Trace> histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ mhRun fig8b 0 30000
-0.000 @ -4.125
-0.000 @ -3.875
-0.003 @ -3.625
-0.002 @ -3.375
-0.004 @ -3.125
-0.005 @ -2.875 #
-0.014 @ -2.625 ##
-0.026 @ -2.375 ###
-0.042 @ -2.125 #####
-0.062 @ -1.875 #######
-0.117 @ -1.625 ##############
-0.150 @ -1.375 ##################
-0.214 @ -1.125 ##########################
-0.269 @ -0.875 ################################
-0.332 @ -0.625 ########################################
-0.384 @ -0.375 ##############################################
-0.396 @ -0.125 ################################################
-0.000 @  0.125
-0.000 @  0.375
-0.000 @  0.625
-0.000 @  0.875
-0.000 @  1.125
-0.000 @  1.375
-0.000 @  1.625
-0.000 @  1.875
-0.000 @  2.125
-0.000 @  2.375
-0.000 @  2.625
-0.000 @  2.875
-0.000 @  3.125
-0.000 @  3.375
-0.001 @  3.625
-0.001 @  3.875
-0.002 @  4.125
-0.002 @  4.375
-0.003 @  4.625
-0.003 @  4.875
-0.006 @  5.125 #
-0.006 @  5.375 #
-0.008 @  5.625 #
-0.010 @  5.875 #
-0.014 @  6.125 ##
-0.018 @  6.375 ##
-0.026 @  6.625 ###
-0.025 @  6.875 ###
-0.039 @  7.125 #####
-0.036 @  7.375 ####
-0.052 @  7.625 ######
-0.052 @  7.875 ######
-0.065 @  8.125 ########
-0.076 @  8.375 #########
-0.076 @  8.625 #########
-0.082 @  8.875 ##########
-0.093 @  9.125 ###########
-0.089 @  9.375 ###########
-0.092 @  9.625 ###########
-0.099 @  9.875 ############
-0.091 @ 10.125 ###########
-0.105 @ 10.375 #############
-0.096 @ 10.625 ############
-0.096 @ 10.875 ############
-0.091 @ 11.125 ###########
-0.073 @ 11.375 #########
-0.071 @ 11.625 ########
-0.063 @ 11.875 ########
-0.057 @ 12.125 #######
-0.048 @ 12.375 ######
-0.043 @ 12.625 #####
-0.037 @ 12.875 ####
-0.031 @ 13.125 ####
-0.024 @ 13.375 ###
-0.020 @ 13.625 ##
-0.014 @ 13.875 ##
-0.013 @ 14.125 ##
-0.008 @ 14.375 #
-0.006 @ 14.625 #
-0.003 @ 14.875
-0.005 @ 15.125 #
-0.002 @ 15.375
-0.002 @ 15.625
-0.002 @ 15.875
-0.001 @ 16.125
-0.000 @ 16.375
-0.001 @ 16.625
-0.001 @ 16.875
-0.000 @ 17.125
-0.000 @ 17.375
-0.000 @ 17.625
-0.000 @ 17.875
-0.000 @ 18.125
-0.000 @ 18.375
-0.000 @ 18.625
-0.000 @ 18.875
-0.000 @ 19.125
 
--- Histogram produced by repeated sampling
-*Base Trace> histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ sampleMany fig8b 0 30000
-0.000 @ -4.125
-0.000 @ -3.875
-0.000 @ -3.625
-0.001 @ -3.375
-0.003 @ -3.125
-0.008 @ -2.875 #
-0.014 @ -2.625 ##
-0.023 @ -2.375 ###
-0.044 @ -2.125 #####
-0.066 @ -1.875 ########
-0.106 @ -1.625 #############
-0.153 @ -1.375 ##################
-0.206 @ -1.125 #########################
-0.274 @ -0.875 #################################
-0.327 @ -0.625 #######################################
-0.368 @ -0.375 ############################################
-0.410 @ -0.125 #################################################
-0.000 @  0.125
-0.000 @  0.375
-0.000 @  0.625
-0.000 @  0.875
-0.000 @  1.125
-0.000 @  1.375
-0.000 @  1.625
-0.000 @  1.875
-0.000 @  2.125
-0.000 @  2.375
-0.000 @  2.625
-0.000 @  2.875
-0.000 @  3.125
-0.001 @  3.375
-0.001 @  3.625
-0.001 @  3.875
-0.001 @  4.125
-0.002 @  4.375
-0.002 @  4.625
-0.003 @  4.875
-0.006 @  5.125 #
-0.007 @  5.375 #
-0.008 @  5.625 #
-0.011 @  5.875 #
-0.012 @  6.125 #
-0.021 @  6.375 ##
-0.020 @  6.625 ##
-0.028 @  6.875 ###
-0.035 @  7.125 ####
-0.043 @  7.375 #####
-0.047 @  7.625 ######
-0.058 @  7.875 #######
-0.064 @  8.125 ########
-0.071 @  8.375 #########
-0.080 @  8.625 ##########
-0.082 @  8.875 ##########
-0.092 @  9.125 ###########
-0.099 @  9.375 ############
-0.098 @  9.625 ############
-0.097 @  9.875 ############
-0.101 @ 10.125 ############
-0.098 @ 10.375 ############
-0.096 @ 10.625 ############
-0.088 @ 10.875 ###########
-0.084 @ 11.125 ##########
-0.078 @ 11.375 #########
-0.067 @ 11.625 ########
-0.067 @ 11.875 ########
-0.056 @ 12.125 #######
-0.056 @ 12.375 #######
-0.040 @ 12.625 #####
-0.038 @ 12.875 #####
-0.030 @ 13.125 ####
-0.023 @ 13.375 ###
-0.019 @ 13.625 ##
-0.016 @ 13.875 ##
-0.013 @ 14.125 ##
-0.010 @ 14.375 #
-0.008 @ 14.625 #
-0.006 @ 14.875 #
-0.004 @ 15.125
-0.003 @ 15.375
-0.002 @ 15.625
-0.001 @ 15.875
-0.001 @ 16.125
-0.000 @ 16.375
-0.000 @ 16.625
-0.000 @ 16.875
-0.000 @ 17.125
-0.000 @ 17.375
-0.000 @ 17.625
-0.000 @ 17.875
-0.000 @ 18.125
-0.000 @ 18.375
-0.000 @ 18.625
-0.000 @ 18.875
-0.000 @ 19.125
--}
 -- TODO
 --
--- 2. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
+-- 1. Reformulate Trace as monad transformer
 --
--- 3. Make `reusePrimitive` reuse more.
+-- 2. Validate acceptance ratios by goodness-of-fit tests
+--
+-- 3. Support `instance MonadBayes (Compose Trace MaybeTupleLogfloat)`
