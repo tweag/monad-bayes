@@ -30,9 +30,9 @@ data RandomDB where
 -- print the stochastic choices for debugging
 instance Show RandomDB where
   show None = "None"
-  show (Node (Normal m s) x) = printf "(%.3f<-N%.3f|%.3f)" x m s
-  show (Node (Gamma  a b) x) = printf "(%.3f<-G%.3f|%.3f)" x a b
-  show (Node (Beta   a b) x) = printf "(%.3f<-B%.3f|%.3f)" x a b
+  show (Node (Normal m s) x) = printf "[%.3f<-N%.3f|%.3f]" x m s
+  show (Node (Gamma  a b) x) = printf "[%.3f<-G%.3f|%.3f]" x a b
+  show (Node (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
   show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
 
 data TraceM a = TraceM { randomDB :: RandomDB, value :: a }
@@ -139,16 +139,15 @@ acceptanceRatio old new =
 -- | Resample the i-th random choice
 updateAt :: Int -> RandomDB -> Sampler RandomDB
 updateAt n db =
-  fmap (either id $ error $ printf "updateAt: index %d out of bound in $s" n (show db)) (loop n db)
+  fmap (either id $ error $ printf "updateAt: index %d out of bound in %s\n" n (show db)) (loop n db)
   where
     -- Return either an updated @RandomDB@
     --            or the result of subtracting the number of traversed
     --               random choices from the index
     loop :: Int -> RandomDB -> Sampler (Either RandomDB Int)
-    loop n db | n < 0 = error $ "loop: illegal index " ++ show n
     loop n None = return $ Right n
     loop n (Node d x) | n == 0 = fmap (Left . Node d) (primitive d)
-    loop n (Node d x) | n > 0 = return $ Right (n - 1)
+    loop n (Node d x) = return $ Right (n - 1)
     loop n (Bind t1 t2) = do
       t1' <- loop n t1
       let keep_t2 = Left . flip Bind t2
