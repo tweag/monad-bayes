@@ -271,6 +271,33 @@ mhDebug p seed size = fst $ mhRunWithDebugger (trace . ("  " ++) . show) p seed 
 sampleMany :: Sampler a -> Int -> Int -> [a]
 sampleMany sampler seed size = sample (sequence $ replicate size $ sampler) (mkStdGen seed)
 
+mhDebugHistogram :: Histo -> Trace Double -> Int -> Int -> IO ()
+mhDebugHistogram histo p seed steps = do
+  let (samples, stats) = mhRunWithDebugger (const id) p seed steps
+
+  let accStats = filter accepted stats
+
+  histogram histo samples
+
+  -- histogram configuration for plotting percentages
+  let rateHisto = Histo 0 0.05 1.0 0 (cols histo)
+
+  let totalAccepted = length (filter accepted stats)
+  let totalSampled = length stats
+  let acceptanceRate = fromIntegral totalAccepted / fromIntegral totalSampled :: Double
+  putStrLn $ printf "Acceptance rate = %04.2f %%" (100 * acceptanceRate)
+  histogram rateHisto (map (fromLogFloat . ratio) stats)
+
+  -- Compute average reuse of old trace in all proposals,
+  -- including rejected ones.
+  let totalNewSize = sum $ map newSize stats
+  let totalResampled = sum $ map resampled stats
+  let totalReused = totalNewSize - totalResampled
+  let reuseRate = fromIntegral totalReused / fromIntegral totalNewSize :: Double
+  putStrLn $ printf "Reuse rate = %04.2f %%" (100 * reuseRate)
+  histogram rateHisto (map (\s -> 1 - fromIntegral (resampled s) / fromIntegral (newSize s)) stats)
+
+
 data Histo = Histo { xmin :: Double -- lower bound of samples
                    , step :: Double -- size of bins
                    , xmax :: Double -- upper bound of samples
@@ -302,8 +329,15 @@ histogram (Histo xmin step xmax ymax cols) xs0 =
     --   == factor * step * size
     factor = 1 / (step * fromIntegral size)
     densities = map (\ys -> factor * fromIntegral (length ys)) bins
-    bars = map (\d -> concat $ replicate (min cols $ round (d / ymax * fromIntegral cols)) "#") densities
-    annotatedBars = zipWith3 (printf "%5.3f @ %6.3f %s") densities mids bars
+    maxDensity = maximum densities
+    ymax' = if ymax == 0 && maxDensity == 0 then
+              1
+            else if ymax == 0 then
+              maxDensity
+            else
+              ymax
+    bars = map (\d -> concat $ replicate (min cols $ round (d / ymax' * fromIntegral cols)) "#") densities
+    annotatedBars = zipWith3 (printf "%6.3f @ %6.3f %s") densities mids bars
   in
     putStrLn $ unlines annotatedBars
 
@@ -337,9 +371,11 @@ deps = do
 -- Example:
 --
 --   mhDebug varChoices 1 10
---   histogram (Histo (-2.5) 1 27.5 0.35 60) $ mhRun varChoices 0 20000
+--   mhDebugHistogram (Histo (-2.5) 1 27.5 0.35 60) varChoices 0 20000
 --   histogram (Histo (-2.5) 1 27.5 0.35 60) $ sampleMany varChoices 0 20000
 --
+-- Rate of reuse is low because the program makes 1 to 3 random choices
+-- most of the time, so x is resampled with significant probability.
 varChoices :: MonadDist m => m Double
 varChoices = do
   -- Use Gaussian to mimic geometric, since geometric
@@ -364,7 +400,7 @@ varChoices = do
 --
 -- Examples:
 --
---   histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ mhRun fig8b 0 30000
+--   mhDebugHistogram (Histo (-4.25) 0.25 19.25 0.5 60) fig8b 0 30000
 --   histogram (Histo (-4.25) 0.25 19.25 0.5 60) $ sampleMany fig8b 0 30000
 --
 fig8b :: MonadDist m => m Double
@@ -376,9 +412,6 @@ fig8b = do
     return x
 
 -- TODO
---
--- 0. Think about acceptance ratio more, since varChoices doesn't
---    show goodness of fit.
 --
 -- 1. Reformulate Trace as monad transformer
 --
