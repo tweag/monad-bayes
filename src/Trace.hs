@@ -98,6 +98,11 @@ isReusablePrimitive d x d' = isJust $ reusablePrimitive d x d'
 
 -- | Return whether a sample @x@ drawn from @d@ is reused
 -- as a sample $x'$ drawn from $d'$.
+--
+-- Caveat: Assumes new sample to be reused whenever it is
+-- equal to old sample. It is very inaccurate on categorical
+-- distributions, where the chance of drawing the same sample
+-- is high.
 reusedSample :: Primitive a -> a -> Primitive b -> b -> Bool
 reusedSample d x d' x' | isReusablePrimitive d x d' =
   let
