@@ -72,9 +72,9 @@ isPrimitiveDouble (Beta   _ _) = Just (id, id)
 isPrimitiveDouble _            = Nothing
 
 -- | An old primitive sample is reusable if both distributions have type
--- Double and one of the following is true:
--- 1. The distributions are identical.
--- 2. Reusing the old sample decreases acceptance by less than half.
+-- Double if old sample decreases acceptance ratio by less than half.
+-- In particular, a sample is always reused if its distribution did not
+-- change, since it does not decrease acceptance ratio at all.
 reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe b
 reusablePrimitive d x d' =
   case (isPrimitiveDouble d, isPrimitiveDouble d') of
