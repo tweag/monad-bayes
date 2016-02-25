@@ -353,8 +353,6 @@ gaussians = do
   return $ x + y
 
 -- Nested do-notation generates left-subtrees.
--- Due to parameter-sample dependency, resampling one value results in
--- resampling all subsequent values in current version of Trace.primitive.
 -- Example:
 --
 --   mhDebug deps 0 10
