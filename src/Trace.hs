@@ -215,39 +215,56 @@ instance MonadDist Trace where
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
 reusePrimitive d old d' new = maybe new (\old' -> TraceM (Node d old) old') (reusablePrimitive d old d')
 
-mhRun :: Trace a -> Int -> Int -> [a]
-mhRun = mhRunWithDebugger (const id)
+data Stat = Stat
+  { accepted  :: Bool
+  , ratio     :: LogFloat
+  , oldSize   :: Int
+  , newSize   :: Int
+  , resampled :: Int
+  }
 
-mhRunWithDebugger :: forall a. (RandomDB -> [a] -> [a]) -> Trace a -> Int -> Int -> [a]
+mhRun :: Trace a -> Int -> Int -> [a]
+mhRun p seed steps = fst $ mhRunWithDebugger (const id) p seed steps
+
+mhRunWithDebugger :: forall a. (RandomDB -> [a] -> [a]) -> Trace a -> Int -> Int -> ([a], [Stat])
 mhRunWithDebugger debugger p seed steps =
   if steps <= 0 then
-    []
+    ([], [])
   else
     flip sample (mkStdGen seed) $ do
       initialTrace <- runTrace p None
-      otherSamples <- loop initialTrace (steps - 1)
-      return (value initialTrace : debugger (randomDB initialTrace) otherSamples)
+      -- discards first result
+      loop initialTrace (steps - 1)
   where
-    loop :: TraceM a -> Int -> Sampler [a]
+    loop :: TraceM a -> Int -> Sampler ([a], [Stat])
     -- done
-    loop _ steps | steps <= 0 = return []
+    loop _ steps | steps <= 0 = return ([], [])
     -- iterate
     loop old steps = do
       r1 <- update (randomDB old)
       new <- runTrace p r1
 
-      accept <- bernoulli $ acceptanceRatio (randomDB old) (randomDB new)
+      let ratio = acceptanceRatio (randomDB old) (randomDB new)
+      accept <- bernoulli ratio
       let result = if accept then new else old
 
-      otherSamples <- loop result (steps - 1)
-      return $  (value result) : debugger (randomDB result) otherSamples
+      (otherSamples, otherStats) <- loop result (steps - 1)
+
+      let samples = (value result) : debugger (randomDB result) otherSamples
+
+      let oldSize   = size (randomDB old)
+      let newSize   = size (randomDB new)
+      let resampled = size (randomDB new `minus` randomDB old)
+      let stat      = Stat accept ratio oldSize newSize resampled
+
+      return (samples, stat : otherStats)
 
 ------------------
 -- DEBUG TRIALS --
 ------------------
 
 mhDebug :: Trace Double -> Int -> Int -> [Double]
-mhDebug = mhRunWithDebugger (trace . ("  " ++) . show)
+mhDebug p seed size = fst $ mhRunWithDebugger (trace . ("  " ++) . show) p seed size
 
 -- Run a sampler many times to produce many samples.
 -- A reference to check MH against.
