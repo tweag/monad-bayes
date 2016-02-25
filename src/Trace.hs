@@ -71,13 +71,24 @@ isPrimitiveDouble (Gamma  _ _) = Just (id, id)
 isPrimitiveDouble (Beta   _ _) = Just (id, id)
 isPrimitiveDouble _            = Nothing
 
--- | If both distributions have type Double and old sample has positive density
--- according to new distribution, then the old sample is reusable.
+-- | An old primitive sample is reusable if both distributions have type
+-- Double and one of the following is true:
+-- 1. The distributions are identical.
+-- 2. Reusing the old sample decreases acceptance by less than half.
 reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe b
 reusablePrimitive d x d' =
   case (isPrimitiveDouble d, isPrimitiveDouble d') of
-    (Just (from, to), Just (from', to')) | pdf d x > 0 && pdf d' (from' $ to x) > 0 ->
-      Just $ from' $ to x
+    (Just (from, to), Just (from', to')) ->
+      let
+        x' = from' $ to x
+        pOld = pdf d x
+        pNew = pdf d' x'
+        threshold = 0.5
+      in
+        if pOld > 0 && pNew / pOld > threshold then
+          Just x'
+        else
+          Nothing
     otherwise ->
       Nothing
 
