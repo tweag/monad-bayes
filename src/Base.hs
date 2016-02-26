@@ -85,6 +85,11 @@ class MonadDist m => MonadBayes m where
     -- Factor should be positive, otherwise `condition` should be used.
     factor :: LogFloat -> m ()
 
+    -- | Soft conditioning on a noisy value.
+    -- By default implemented as a `factor` with corresponding PDF.
+    observe :: Primitive a -> a -> m ()
+    observe d x = factor (pdf d x)
+
 
 ----------------------------------------------------------------------------
 -- Instances
