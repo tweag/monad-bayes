@@ -61,6 +61,10 @@ class Monad m => MonadDist m where
                              mass k = c * (p `pow` (fromIntegral k)) / (factorial k)
                              factorial k = logToLogFloat (logFactorial k)
                              c = logToLogFloat (- fromLogFloat p) -- exp (-p)
+    -- | Discrete distribution over first n natural numbers.
+    discrete :: [LogFloat] -> m Int
+    discrete = categorical . zip [0..]
+
 
     -- | Exponential distribution parameterized by rate.
     exponential :: Double -> m Double
