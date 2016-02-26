@@ -29,15 +29,12 @@ importance' n d = fmap (enumerate . categorical) $ toCat $ population n >> d
 
 -- | Sequential Monte Carlo from the prior.
 smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
-smc n d =
-    let
-        ParticleT start = lift (population n) >> d
-        step particles = resample $ particles >>= advance
-        run particles = do
-          finished <- lift $ Empirical.all isLeft particles
-          if finished then particles else run (step particles)
-    in
-      fmap (\(Left x) -> x) $ run start
+smc n d = fmap (\(Left x) -> x) $ run start where
+    ParticleT start = lift (population n) >> d
+    step particles = resample $ particles >>= advance
+    run particles = do
+      finished <- lift $ Empirical.all isLeft particles
+      if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
 smc' :: Ord a => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]

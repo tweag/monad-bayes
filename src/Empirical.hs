@@ -60,7 +60,9 @@ toCat (EmpiricalT d) = runListT $ runStateT d 1
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
   cat <- lift $ toCat d
-  let evidence = LogFloat.sum $ map snd cat
+  let (ps,weights) = unzip cat
+  let evidence = LogFloat.sum weights
   modify (* evidence) --to keep track of model evidence
   population (length cat)
-  lift $ categorical $ cat
+  ancestor <- discrete weights
+  return (ps !! ancestor)
