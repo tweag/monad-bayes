@@ -4,6 +4,7 @@ module Gamma where
 -- | A sequence of i.i.d. normal variables with Gamma prior on precision.
 
 import Base
+import Primitive
 
 points = [0.8, 0.2, -0.6, 0.45, -0.3]
 
