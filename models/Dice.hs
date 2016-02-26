@@ -3,16 +3,31 @@
 module Dice where
 
 -- A toy model for dice rolling from http://dl.acm.org/citation.cfm?id=2804317
+-- Exact results can be obtained using Dist monad
 
 import Control.Monad (liftM2)
 
 import Base
-import Dist
 
-die :: (Monad d, UniformD n d, Integral n) => n -> d n
--- | A distribution over the sums of results of n independent rolls of a fair die
-die 0 = return 0
-die 1 = uniformd [1,2,3,4,5,6]
-die n = liftM2 (+) (die 1) (die (n-1))
+-- | A toss of a six-sided die.
+die :: MonadDist d => d Int
+die = categorical $ zip [1..6] (repeat (1/6))
 
-conditionalDie n = condition (\n -> 1 / fromIntegral n) (die n)
+-- | A sum of outcomes of n independent tosses of six-sided dice.
+dice :: MonadDist d => Int -> d Int
+dice 1 = die
+dice n = liftM2 (+) die (dice (n-1))
+
+-- | Toss of two dice where the output is greater than 4.
+dice_hard :: MonadBayes d => d Int
+dice_hard = do
+  result <- dice 2
+  condition (result > 4)
+  return result
+
+-- | Toss of two dice with an artificial soft constraint.
+dice_soft :: MonadBayes d => d Int
+dice_soft = do
+  result <- dice 2
+  factor (1 / fromIntegral result)
+  return result
