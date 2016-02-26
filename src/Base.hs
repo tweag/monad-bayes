@@ -66,6 +66,13 @@ class Monad m => MonadDist m where
     exponential :: Double -> m Double
     exponential rate = gamma 1 (1 / rate)
 
+    -- | Continuous uniform distribution.
+    uniform :: Double -> Double -> m Double
+    uniform 0 1 = beta 1 1
+    uniform a b = do
+      r <- uniform 0 1
+      return (a + (b-a)*r)
+
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.
 class MonadDist m => MonadBayes m where
