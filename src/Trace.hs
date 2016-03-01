@@ -218,7 +218,8 @@ instance MonadDist Trace where
 -- | Reuse previous sample of primitive RV only if type and parameters match exactly.
 -- Whether to reuse a sample is decided in @reusablePrimitive@.
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
-reusePrimitive d old d' new = maybe new (\old' -> TraceM (Node d old) old') (reusablePrimitive d old d')
+reusePrimitive d old d' new =
+  maybe new (\old' -> TraceM (Node d' old') old') (fmap fst $ reusablePrimitive d old d')
 
 data Stat = Stat
   { accepted  :: Bool
