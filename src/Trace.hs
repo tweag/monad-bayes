@@ -7,9 +7,11 @@
 
 module Trace where
 
-import Control.Monad (liftM,liftM2)
+import Control.Monad (liftM, liftM2, mplus)
+import Control.Monad.State.Lazy
 import Data.Maybe (isJust, fromJust)
 import Data.List (unfoldr)
+import Data.Typeable
 import Data.Number.LogFloat hiding (sum)
 import System.Random
 import Text.Printf
@@ -18,6 +20,7 @@ import Debug.Trace
 
 import Primitive
 import Base
+import Dist (normalize)
 import Sampler
 
 -- | A random database of stochastic choices made in the program.
@@ -51,17 +54,91 @@ instance Monad TraceM where
         in
           TraceM (Bind xTrace yTrace) y
 
--- | The number of random choices in the RandomDB.
-size :: RandomDB -> Int
-size None = 0
-size (Node _ _) = 1
-size (Bind t1 t2) = size t1 + size t2
+-- | The number of random choices we can choose to mutate
+-- in one step of Metropolis-Hastings.
+--
+-- Due to the necessity of reverse-jump MCMC correction,
+-- the likelihood of a proposal must be computable from
+-- the trace alone. Therefore we mutate a stochastic choice
+-- only if it is not Dirac distributed, and always propose
+-- a value distinct from the previous sample.
+proposalDimension :: RandomDB -> Int
+proposalDimension (Node d x) | proposablePrimitive d x = 1
+proposalDimension (Bind t1 t2) = proposalDimension t1 + proposalDimension t2
+proposalDimension _ = 0
+
+-- | Return whether a primitive stochastic choice contributes
+-- to the proposal space.
+proposablePrimitive :: forall a. Primitive a -> a -> Bool
+proposablePrimitive d x = isJust $ proposalPrimitive d x
+
+-- | If a primitive distribution is not Dirac, compute the
+-- proposal distribution obtained by setting the density
+-- of the old sample to 0.
+--
+-- It is a bit inaccurate on continuous random variables
+-- because the old value can be resampled with a very small
+-- probability.
+proposalPrimitive :: forall a. Primitive a -> a -> Maybe (Primitive a)
+proposalPrimitive (Categorical d) x =
+  if length (filter (\pair -> snd pair > 0) d) <= 1 then
+    -- The categorical distribution is Dirac;
+    -- this primitive is not in the proposal space.
+    Nothing
+  else
+    -- This primitive is in the proposal space.
+    -- The proposal distribution does not produce the old sample.
+    Just $ Categorical $ normalize (filter (\pair -> fst pair /= x) d)
+proposalPrimitive d x = fmap (const d) $ isPrimitiveDouble d
 
 -- | The product of all densities in the trace.
 weight :: RandomDB -> LogFloat
 weight None = 1
 weight (Node d x) = pdf d x
 weight (Bind t1 t2) = weight t1 * weight t2
+
+-- | An old primitive sample is reusable if both distributions have the
+-- same type and if old sample does not decrease acceptance ratio by
+-- more than a threshold.
+reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusablePrimitive d x d' =
+  let
+    threshold = 0.5
+  in
+    reusablePrimitiveDouble threshold d x d' `mplus` reusableCategorical threshold d x d'
+
+-- | Try to reuse a sample from a categorical distribution
+-- if it does not decrease acceptance ration by more than a threshold.
+reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusableCategorical threshold d@(Categorical _) x d'@(Categorical _) = do
+  x' <- cast x
+  let pOld = pdf d x
+  let pNew = pdf d' x'
+  if pOld > 0 && pNew / pOld > threshold then
+    Just (x', (== x') . fromJust . cast)
+  else
+    Nothing
+reusableCategorical threshold _ _ _ = Nothing
+
+-- | An old primitive sample of type Double is reused if old sample does
+-- not decrease acceptance ratio by more than a threshold.
+-- In particular, a sample is always reused if its distribution did not
+-- change, since it does not decrease acceptance ratio at all.
+reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusablePrimitiveDouble threshold d x d' =
+  case (isPrimitiveDouble d, isPrimitiveDouble d') of
+    (Just (from, to), Just (from', to')) ->
+      let
+        x' = from' $ to x
+        pOld = pdf d x
+        pNew = pdf d' x'
+      in
+        if pOld > 0 && pNew / pOld > threshold then
+          Just (x', (== to' x') . to)
+        else
+          Nothing
+    otherwise ->
+      Nothing
 
 -- | Test whether a primitive distribution has type @Double@,
 -- output conversions to and from if it does.
@@ -71,52 +148,89 @@ isPrimitiveDouble (Gamma  _ _) = Just (id, id)
 isPrimitiveDouble (Beta   _ _) = Just (id, id)
 isPrimitiveDouble _            = Nothing
 
--- | An old primitive sample is reusable if both distributions have type
--- Double if old sample decreases acceptance ratio by less than half.
--- In particular, a sample is always reused if its distribution did not
--- change, since it does not decrease acceptance ratio at all.
-reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe b
-reusablePrimitive d x d' =
-  case (isPrimitiveDouble d, isPrimitiveDouble d') of
-    (Just (from, to), Just (from', to')) ->
-      let
-        x' = from' $ to x
-        pOld = pdf d x
-        pNew = pdf d' x'
-        threshold = 0.5
-      in
-        if pOld > 0 && pNew / pOld > threshold then
-          Just x'
-        else
-          Nothing
-    otherwise ->
-      Nothing
-
--- | Return whether a previous primitive sample is reusable.
-isReusablePrimitive :: Primitive a -> a -> Primitive b -> Bool
-isReusablePrimitive d x d' = isJust $ reusablePrimitive d x d'
-
 -- | Return whether a sample @x@ drawn from @d@ is reused
 -- as a sample $x'$ drawn from $d'$.
---
--- Caveat: Assumes new sample to be reused whenever it is
--- equal to old sample. It is very inaccurate on categorical
--- distributions, where the chance of drawing the same sample
--- is high.
 reusedSample :: Primitive a -> a -> Primitive b -> b -> Bool
-reusedSample d x d' x' | isReusablePrimitive d x d' =
-  let
-    xVal  = (snd $ fromJust $ isPrimitiveDouble d ) x
-    xVal' = (snd $ fromJust $ isPrimitiveDouble d') x'
-  in
-    xVal == xVal'
-reusedSample _ _ _ _ = False
+reusedSample d x d' x' =
+  case reusablePrimitive d x d' of
+    Just (_, isReused) -> isReused x
+    Nothing      -> False
 
--- | Compute the parts of the new trace not reused from the old trace.
+-- | Compute the element in the proposal space that mutated the first
+-- RandomDB into the second RandomDB.
+--
+-- In order to make reversible-jump MCMC correction possible,
+-- we have to assume that all sources of nondeterministic execution
+-- are recorded in RandomDB. The assumption translates to a generalized
+-- prefix-free property: If two traces differ, then their left-most
+-- difference is between two `Node` with the same distribution and
+-- different samples.
 minus :: RandomDB -> RandomDB -> RandomDB
-Node d' x' `minus` Node d x | reusedSample d x d' x' = None
-Bind t1' t2' `minus` Bind t1 t2 = Bind (t1' `minus` t1) (t2' `minus` t2)
-new `minus` old = new
+minus new0 old0 = evalState (loop new0 old0) True
+  where
+    loop :: RandomDB -> RandomDB -> State Bool RandomDB
+
+    loop (Bind lNew rNew) (Bind lOld rOld) = do
+      l <- loop lNew lOld
+      r <- loop rNew rOld
+      return $ Bind l r
+
+    loop (Node d' x') (Node d x) = do
+      leftMost <- get
+      if leftMost then
+        do
+          case (compareNodes d' x' d x, proposalPrimitive d x) of
+
+            -- Node is reused. The left-most modified node is
+            -- further to the right.
+            (Just (True, _), _) -> return None
+
+            -- Node is the left-most modified one.
+            -- Compute the proposal distribution and modify state.
+            (Just (False, cast), Just q) ->
+              do
+                put False
+                return $ Node q (cast x')
+
+            -- Node is the left-most modified one,
+            -- but the prefix-free property is not satisfied.
+            otherwise -> prefixFreePropertyViolated
+
+      else
+        -- Leftmost modification is already done
+        if reusedSample d x d' x' then
+          return None
+        else
+          return $ Node d' x'
+
+    loop new old = do
+      leftMost <- get
+      if leftMost then
+        prefixFreePropertyViolated
+      else
+        return new
+
+    -- Compute whether two nodes have the same distribution.
+    -- If they do, return whether the two samples are identical
+    -- and the safe cast between their types.
+    --
+    -- Categorical distributions are compared by ==, which is a bit
+    -- too conservative in general. It's good enough for the trace
+    -- mutation strategy in this file, because the distribution of
+    -- the selected update site is copied directly into the new trace.
+    compareNodes :: Primitive a -> a -> Primitive b -> b -> Maybe (Bool, a -> b)
+    compareNodes (Normal m s) x (Normal m' s') x' | m == m' && s == s' = Just (x == x', id)
+    compareNodes (Gamma  a b) x (Gamma  a' b') x' | a == a' && b == b' = Just (x == x', id)
+    compareNodes (Beta   a b) x (Beta   a' b') x' | a == a' && b == b' = Just (x == x', id)
+    compareNodes (Categorical d) x (Categorical d') x' | cast d == Just d' =
+      Just (cast x == Just x', fromJust . cast)
+    compareNodes _ _ _ _ = Nothing
+
+    -- Throw an error in case prefix-free property is violated
+    prefixFreePropertyViolated =
+      error $ "Prefix-free property violated by the following traces:\n\n" ++
+          "Old RandomDB =\n" ++ show old0 ++ "\n\n" ++
+          "New RandomDB =\n" ++ show new0 ++ "\n"
 
 -- | From two @RandomDB@, compute the acceptance ratio.
 -- Precondition: Program is @MonadDist@ but not @MonadBayes@
@@ -126,8 +240,8 @@ new `minus` old = new
 acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
 acceptanceRatio old new =
   let
-    size_old  = size old
-    size_new  = size new
+    size_old  = proposalDimension old
+    size_new  = proposalDimension new
     pi_old    = weight old
     pi_new    = weight new
     q_old_new = weight (new `minus` old) / fromIntegral size_old
@@ -141,7 +255,8 @@ acceptanceRatio old new =
     else
       min 1 (numerator / denominator)
 
--- | Resample the i-th random choice
+-- | Resample the i-th random choice in the proposal space
+-- from the proposal distribution.
 updateAt :: Int -> RandomDB -> Sampler RandomDB
 updateAt n db =
   fmap (either id $ error $ printf "updateAt: index %d out of bound in %s\n" n (show db)) (loop n db)
@@ -151,7 +266,10 @@ updateAt n db =
     --               random choices from the index
     loop :: Int -> RandomDB -> Sampler (Either RandomDB Int)
     loop n None = return $ Right n
-    loop n (Node d x) | n == 0 = fmap (Left . Node d) (primitive d)
+    loop n (Node d x) | n == 0 =
+      case proposalPrimitive d x of
+        Just q  -> fmap (Left . Node d) (primitive q) -- note that d /= q
+        Nothing -> return $ Right n
     loop n (Node d x) = return $ Right (n - 1)
     loop n (Bind t1 t2) = do
       t1' <- loop n t1
@@ -165,7 +283,7 @@ updateAt n db =
 -- | Updates a trace by resampling a randomly selected site.
 update :: RandomDB -> Sampler RandomDB
 update r = do
-  let n = size r
+  let n = proposalDimension r
   if n == 0 then
     return r -- no random element in previous RandomDB
   else
@@ -258,9 +376,9 @@ mhRunWithDebugger debugger p seed steps =
 
       let samples = (value result) : debugger (randomDB result) otherSamples
 
-      let oldSize   = size (randomDB old)
-      let newSize   = size (randomDB new)
-      let resampled = size (randomDB new `minus` randomDB old)
+      let oldSize   = proposalDimension (randomDB old)
+      let newSize   = proposalDimension (randomDB new)
+      let resampled = proposalDimension (randomDB new `minus` randomDB old)
       let stat      = Stat accept ratio oldSize newSize resampled
 
       return (samples, stat : otherStats)
