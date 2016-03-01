@@ -56,7 +56,7 @@ compact :: Ord a => [(a,Double)] -> [(a,Double)]
 compact = Map.toAscList . Map.fromListWith (+)
 
 -- | Normalize the weights to sum to 1.
-normalize :: [(a,Double)] -> [(a,Double)]
+normalize :: (Fractional p) => [(a,p)] -> [(a,p)]
 normalize xs = map (second (/ norm)) xs where
     norm = sum (map snd xs)
 
