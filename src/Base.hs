@@ -8,6 +8,7 @@
 module Base where
 
 import Data.Number.LogFloat
+import Data.Typeable
 import Numeric.SpecFunctions
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
@@ -20,7 +21,7 @@ import Primitive
 class Monad m => MonadDist m where
     {-# MINIMAL (categorical, primitive) | (categorical, normal, gamma, beta) #-}
     -- | Categorical distribution, weights need not be normalized.
-    categorical :: [(a,LogFloat)] -> m a
+    categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
     normal :: Double -> Double -> m Double
     -- | Gamma distribution parameterized by shape and rate.
