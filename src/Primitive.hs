@@ -6,11 +6,12 @@ module Primitive where
 
 import Numeric.SpecFunctions
 import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)
+import Data.Typeable
 
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive a where
-    Categorical :: Eq a => [(a,LogFloat)] -> Primitive a
+    Categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> Primitive a
     Normal :: Double -> Double -> Primitive Double
     Gamma :: Double -> Double -> Primitive Double
     Beta :: Double -> Double -> Primitive Double

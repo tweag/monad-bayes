@@ -3,6 +3,7 @@ module Inference where
 
 import Data.Either
 import Data.Number.LogFloat
+import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 
@@ -24,7 +25,7 @@ importance :: StateT LogFloat Sampler a -> Sampler (a,LogFloat)
 importance d = runStateT d 1
 
 -- | Multiple importance samples with post-processing.
-importance' :: Ord a => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
+importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
 importance' n d = fmap (enumerate . categorical) $ toCat $ population n >> d
 
 -- | Sequential Monte Carlo from the prior.
@@ -37,5 +38,5 @@ smc n d = fmap (\(Left x) -> x) $ run start where
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
-smc' :: Ord a => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
+smc' :: (Ord a, Typeable a) => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
 smc' n d = fmap (enumerate . categorical) $ toCat $ smc n d
