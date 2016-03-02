@@ -103,7 +103,7 @@ weight (Bind t1 t2) = weight t1 * weight t2
 reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
 reusablePrimitive d x d' =
   let
-    threshold = 0.5
+    threshold = 0.0
   in
     reusablePrimitiveDouble threshold d x d' `mplus` reusableCategorical threshold d x d'
 
