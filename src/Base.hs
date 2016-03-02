@@ -65,7 +65,10 @@ class Monad m => MonadDist m where
     -- | Discrete distribution over first n natural numbers.
     discrete :: [LogFloat] -> m Int
     discrete = categorical . zip [0..]
-
+    -- | Uniform discrete distribution.
+    uniformD :: (Eq a, Typeable a) => [a] -> m a
+    uniformD xs = categorical $ map (,weight) xs where
+                             weight = 1 / fromIntegral (length xs)
 
     -- | Exponential distribution parameterized by rate.
     exponential :: Double -> m Double
