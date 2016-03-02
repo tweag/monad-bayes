@@ -54,7 +54,7 @@ benchmark monad-bayes-bench
   -- List all models we want to watch for changes.
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
-  other-modules:       BetaBin, Dice, Gamma
+  other-modules:       BetaBin, Dice, Gamma, HMM
 
 source-repository head
   type:     git
