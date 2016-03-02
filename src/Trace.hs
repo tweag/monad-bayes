@@ -10,7 +10,7 @@ module Trace where
 import Control.Monad (liftM, liftM2, mplus)
 import Control.Monad.State.Lazy
 import Data.Maybe (isJust, fromJust)
-import Data.List (unfoldr)
+import Data.List (unfoldr, intercalate)
 import Data.Typeable
 import Data.Number.LogFloat hiding (sum)
 import System.Random
@@ -37,6 +37,13 @@ instance Show RandomDB where
   show (Node (Gamma  a b) x) = printf "[%.3f<-G%.3f|%.3f]" x a b
   show (Node (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
   show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
+  -- print Booleans for debugging
+  show (Node (Categorical ps) x) =
+    case cast (x, ps) :: Maybe (Bool, [(Bool, LogFloat)]) of
+      Nothing      -> "[cat(" ++ (tail $ init $ show $ map snd ps) ++ ")]"
+      Just (x, ps) -> "[" ++ show x ++ "<-(" ++
+                         (intercalate "," $ map (\(b,p) -> head (show b) : printf "%.3f" (fromLogFloat p)) ps)
+                         ++ ")]"
 
 data TraceM a = TraceM { randomDB :: RandomDB, density :: LogFloat, value :: a }
     deriving (Functor)
