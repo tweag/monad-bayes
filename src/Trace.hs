@@ -38,21 +38,20 @@ instance Show RandomDB where
   show (Node (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
   show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
 
-data TraceM a = TraceM { randomDB :: RandomDB, value :: a }
+data TraceM a = TraceM { randomDB :: RandomDB, density :: LogFloat, value :: a }
     deriving (Functor)
 
--- the monad instance below is used in `instance Applicative Trace` by `liftM2`
+-- the monad instance below is used in `instance Monad Trace`
 instance Applicative TraceM where
-    pure = TraceM None
-    (TraceM fTrace f) <*> (TraceM xTrace x) =
-       TraceM (Bind fTrace xTrace) (f x)
+    pure = TraceM None 1
+    (<*>) = liftM2 ($)
 
 instance Monad TraceM where
-    (TraceM xTrace x) >>= f =
+    (TraceM rx px x) >>= f =
         let
-          TraceM yTrace y = f x
+          TraceM ry py y = f x
         in
-          TraceM (Bind xTrace yTrace) y
+          TraceM (Bind rx ry) (px * py) y
 
 -- | The number of random choices we can choose to mutate
 -- in one step of Metropolis-Hastings.
@@ -100,7 +99,7 @@ weight (Bind t1 t2) = weight t1 * weight t2
 -- | An old primitive sample is reusable if both distributions have the
 -- same type and if old sample does not decrease acceptance ratio by
 -- more than a threshold.
-reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
 reusablePrimitive d x d' =
   let
     threshold = 0.0
@@ -109,13 +108,13 @@ reusablePrimitive d x d' =
 
 -- | Try to reuse a sample from a categorical distribution
 -- if it does not decrease acceptance ration by more than a threshold.
-reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
 reusableCategorical threshold d@(Categorical _) x d'@(Categorical _) = do
   x' <- cast x
   let pOld = pdf d x
   let pNew = pdf d' x'
   if pOld > 0 && pNew / pOld > threshold then
-    Just (x', (== x') . fromJust . cast)
+    Just ((x', pNew), (== x') . fromJust . cast)
   else
     Nothing
 reusableCategorical threshold _ _ _ = Nothing
@@ -124,7 +123,7 @@ reusableCategorical threshold _ _ _ = Nothing
 -- not decrease acceptance ratio by more than a threshold.
 -- In particular, a sample is always reused if its distribution did not
 -- change, since it does not decrease acceptance ratio at all.
-reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe (b, a -> Bool)
+reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
 reusablePrimitiveDouble threshold d x d' =
   case (isPrimitiveDouble d, isPrimitiveDouble d') of
     (Just (from, to), Just (from', to')) ->
@@ -134,7 +133,7 @@ reusablePrimitiveDouble threshold d x d' =
         pNew = pdf d' x'
       in
         if pOld > 0 && pNew / pOld > threshold then
-          Just (x', (== to' x') . to)
+          Just ((x', pNew), (== to' x') . to)
         else
           Nothing
     otherwise ->
@@ -237,15 +236,17 @@ minus new0 old0 = evalState (loop new0 old0) True
 --               (i.e., it doesn't call @condition@ or @factor@),
 --               so that the target density of an execution is completely
 --               determined by the stochastic choices made.
-acceptanceRatio :: RandomDB -> RandomDB -> LogFloat
+acceptanceRatio :: TraceM a -> TraceM a -> LogFloat
 acceptanceRatio old new =
   let
-    size_old  = proposalDimension old
-    size_new  = proposalDimension new
-    pi_old    = weight old
-    pi_new    = weight new
-    q_old_new = weight (new `minus` old) / fromIntegral size_old
-    q_new_old = weight (old `minus` new) / fromIntegral size_new
+    rOld      = randomDB old
+    rNew      = randomDB new
+    size_old  = proposalDimension rOld
+    size_new  = proposalDimension rNew
+    pi_old    = density old
+    pi_new    = density new
+    q_old_new = weight (rNew `minus` rOld) / fromIntegral size_old
+    q_new_old = weight (rOld `minus` rNew) / fromIntegral size_new
 
     numerator   = pi_new * q_new_old
     denominator = pi_old * q_old_new
@@ -327,17 +328,22 @@ instance MonadDist Trace where
     primitive d = Trace $ \db ->
         do
           x <- primitive d
-          let newSample = TraceM (Node d x) x
+          let newSample = TraceM (Node d x) (pdf d x) x
           case db of Node d' x -> return $ reusePrimitive d' x d newSample
                      otherwise -> return newSample
 
     categorical = primitive . Categorical
 
--- | Reuse previous sample of primitive RV only if type and parameters match exactly.
+instance MonadBayes Trace where
+  condition True  = return ()
+  condition False = factor 0 -- Assume rejected trace don't crash.
+  factor p = Trace $ const . return $ TraceM None p ()
+
+-- | Try to reuse previous sample of primitive random variable.
 -- Whether to reuse a sample is decided in @reusablePrimitive@.
 reusePrimitive :: Primitive old -> old -> Primitive new -> TraceM new -> TraceM new
 reusePrimitive d old d' new =
-  maybe new (\old' -> TraceM (Node d' old') old') (fmap fst $ reusablePrimitive d old d')
+  maybe new (\(old', p') -> TraceM (Node d' old') p' old') (fmap fst $ reusablePrimitive d old d')
 
 data Stat = Stat
   { accepted  :: Bool
@@ -368,7 +374,7 @@ mhRunWithDebugger debugger p seed steps =
       r1 <- update (randomDB old)
       new <- runTrace p r1
 
-      let ratio = acceptanceRatio (randomDB old) (randomDB new)
+      let ratio = acceptanceRatio old new
       accept <- bernoulli ratio
       let result = if accept then new else old
 
@@ -538,5 +544,3 @@ fig8b = do
 -- 1. Reformulate Trace as monad transformer
 --
 -- 2. Validate acceptance ratios by goodness-of-fit tests
---
--- 3. Support conditioning
