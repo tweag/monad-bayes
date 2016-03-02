@@ -60,6 +60,12 @@ instance Monad TraceM where
         in
           TraceM (Bind rx ry) (px * py) y
 
+-- | The number of random choices in the RandomDB.
+size :: RandomDB -> Int
+size None = 0
+size (Node _ _) = 1
+size (Bind t1 t2) = size t1 + size t2
+
 -- | The number of random choices we can choose to mutate
 -- in one step of Metropolis-Hastings.
 --
@@ -175,6 +181,8 @@ minus :: RandomDB -> RandomDB -> RandomDB
 minus new0 old0 = evalState (loop new0 old0) True
   where
     loop :: RandomDB -> RandomDB -> State Bool RandomDB
+
+    loop None None = return None
 
     loop (Bind lNew rNew) (Bind lOld rOld) = do
       l <- loop lNew lOld
@@ -389,9 +397,9 @@ mhRunWithDebugger debugger p seed steps =
 
       let samples = (value result) : debugger (randomDB result) otherSamples
 
-      let oldSize   = proposalDimension (randomDB old)
-      let newSize   = proposalDimension (randomDB new)
-      let resampled = proposalDimension (randomDB new `minus` randomDB old)
+      let oldSize   = size (randomDB old)
+      let newSize   = size (randomDB new)
+      let resampled = size (randomDB new `minus` randomDB old)
       let stat      = Stat accept ratio oldSize newSize resampled
 
       return (samples, stat : otherStats)
