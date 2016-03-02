@@ -554,8 +554,35 @@ fig8b = do
   else
     return x
 
+-- Grass model: returning 0 or 1 for histogram.
+-- Can only get 1 significant digit in 20k samples;
+-- try seeds 0, 300, 1997, 314159.
+--
+-- Should compare with sampling from posterior.
+--
+-- Examples:
+--
+--   mhDebug grassModel 0 10
+--   mhDebugHistogram (Histo (-0.5) 1.0 1.5 1.0 60) grassModel 0 20000
+--   enumerate grassModel -- after import Dist
+--
+grassModel :: MonadBayes m => m Double
+grassModel = do
+  let flip p  = categorical [(True, p), (False, 1 - p)]
+  let m <&& b = liftM2 (&&) m (return b)
+  let (<||>)  = liftM2 (||)
+  rain       <- flip 0.3
+  sprinkler  <- flip 0.5
+  grassIsWet <- (flip 0.9 <&& rain)
+           <||> (flip 0.8 <&& sprinkler)
+           <||> flip 0.1
+  condition grassIsWet
+  return $ if rain then 1.0 else 0.0
+
 -- TODO
 --
--- 1. Reformulate Trace as monad transformer
+-- 0. Decompose Trace into monad combinators?
+--
+-- 1. Reformulate Trace as monad transformer.
 --
 -- 2. Validate acceptance ratios by goodness-of-fit tests
