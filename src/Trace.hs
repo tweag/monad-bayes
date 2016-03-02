@@ -331,7 +331,7 @@ instance MonadDist Trace where
           case db of Node d' x -> return $ reusePrimitive d' x d newSample
                      otherwise -> return newSample
 
-    categorical = error "Can not use Trace on categorical without equality"
+    categorical = primitive . Categorical
 
 -- | Reuse previous sample of primitive RV only if type and parameters match exactly.
 -- Whether to reuse a sample is decided in @reusablePrimitive@.
