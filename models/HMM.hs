@@ -3,21 +3,18 @@
  #-}
 
 module HMM (
-            exampleHMM,
+            hmm,
             exactMarginals
            ) where
 
 --Hidden Markov Models
 
-import Control.Monad (liftM)
 import Numeric.LinearAlgebra.HMatrix
+import Data.Number.LogFloat
 
-import qualified Data.Random.Distribution.Normal as Ext
-import Data.Random.Distribution (pdf)
-
-import Base hiding (score)
-import Dist
-import qualified Explicit
+import Base
+import Primitive
+import qualified Dist
 
 -- | States of the HMM
 states :: [Int]
@@ -28,47 +25,48 @@ values :: [Double]
 values = [0.9,0.8,0.7,0,-0.025,5,2,0.1,0,
           0.13,0.45,6,0.2,0.3,-1,-1]
 
--- | The likelihood function for a particular point.
-score :: Double -> Int -> Prob
-score y x  = prob $ pdf (Ext.Normal (fromIntegral x) 1) y
-
 -- | The transition model.
-trans :: Categorical Int d => Int -> d Int
+trans :: MonadDist d => Int -> d Int
 trans (-1) = categorical $ zip states [0.1, 0.4, 0.5]
 trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
 trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
+-- | The emission model.
+emission :: Int -> Primitive Double 
+emission x = Normal (fromIntegral x) 1
+
 -- | Initial state distribution
-start :: UniformD [Int] d => d [Int]
-start      = uniformd $ map (:[]) states
+start :: MonadDist d => d [Int]
+start = uniformD $ map (:[]) states
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
-exampleHMM :: (Conditional d, Monad d, UniformD [Int] d, Categorical Int d) => d [Int]
-exampleHMM = liftM reverse states where
+hmm :: MonadBayes d => d [Int]
+hmm = fmap reverse states where
   states = foldl expand start values
-  expand :: (Conditional d, Monad d, Categorical Int d) => d [Int] -> Double -> d [Int]
-  expand d y = condition (score y . head) $ do
+  expand :: MonadBayes d => d [Int] -> Double -> d [Int]
+  expand d y = do
     rest <- d
     x    <- trans $ head rest
+    observe (emission x) y
     return (x:rest)
 
 
 ------------------------------------------------------------
 -- Exact marginal posterior with forward-backward
 
-exactMarginals :: Categorical Int d => [d Int]
+exactMarginals :: MonadDist d => [d Int]
 exactMarginals = map marginal [1 .. length values] where
-    marginal i = categorical $ zip states $ map (prob . lookup i) [1 .. length states]
+    marginal i = categorical $ zip states $ map (logFloat . lookup i) [1 .. length states]
     lookup = hmmExactMarginal initial tmatrix scores
 
 initial :: Vector Double
-initial = fromList $ map (toDouble . snd) $ Explicit.toList $ start
+initial = fromList $ map snd $ Dist.explicit $ start
 
 tmatrix :: Matrix Double
-tmatrix = fromColumns $ map (fromList . map (toDouble . snd) . Explicit.toList . trans) states
+tmatrix = fromColumns $ map (fromList . map snd . Dist.explicit . trans) states
 
 scores :: [Vector Double]
-scores = map (\y -> fromList $ map (toDouble . score y) states) values
+scores = map (\y -> fromList $ map (fromLogFloat . (\x -> pdf (emission x) y)) states) values
 
 -- | Runs forward-backward, then looks up the probability of ith latent
 -- variable being in state s.

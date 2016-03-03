@@ -19,7 +19,7 @@ import Primitive
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
 class Monad m => MonadDist m where
-    {-# MINIMAL (categorical, primitive) | (categorical, normal, gamma, beta) #-}
+    {-# MINIMAL primitive | (categorical, normal, gamma, beta) #-}
     -- | Categorical distribution, weights need not be normalized.
     categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
@@ -38,7 +38,7 @@ class Monad m => MonadDist m where
     primitive (Beta   a b) = beta   a b
 
     -- defaults based on primitive
-    --categorical d = primitive $ Categorical d -- woudl work if it weren't for Eq constraint
+    categorical d = primitive $ Categorical d
     normal m s    = primitive $ Normal m s
     gamma  a b    = primitive $ Gamma  a b
     beta   a b    = primitive $ Beta   a b
@@ -65,7 +65,10 @@ class Monad m => MonadDist m where
     -- | Discrete distribution over first n natural numbers.
     discrete :: [LogFloat] -> m Int
     discrete = categorical . zip [0..]
-
+    -- | Uniform discrete distribution.
+    uniformD :: (Eq a, Typeable a) => [a] -> m a
+    uniformD xs = categorical $ map (,weight) xs where
+                             weight = 1 / fromIntegral (length xs)
 
     -- | Exponential distribution parameterized by rate.
     exponential :: Double -> m Double
