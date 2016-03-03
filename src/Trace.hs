@@ -71,37 +71,19 @@ size (Bind t1 t2) = size t1 + size t2
 --
 -- Due to the necessity of reverse-jump MCMC correction,
 -- the likelihood of a proposal must be computable from
--- the trace alone. Therefore we mutate a stochastic choice
--- only if it is not Dirac distributed, and always propose
--- a value distinct from the previous sample.
+-- the trace alone.
 proposalDimension :: RandomDB -> Int
-proposalDimension (Node d x) | proposablePrimitive d x = 1
-proposalDimension (Bind t1 t2) = proposalDimension t1 + proposalDimension t2
-proposalDimension _ = 0
+proposalDimension = size
 
 -- | Return whether a primitive stochastic choice contributes
--- to the proposal space.
+-- to the proposal space (they all do).
 proposablePrimitive :: forall a. Primitive a -> a -> Bool
 proposablePrimitive d x = isJust $ proposalPrimitive d x
 
--- | If a primitive distribution is not Dirac, compute the
--- proposal distribution obtained by setting the density
--- of the old sample to 0.
---
--- It is a bit inaccurate on continuous random variables
--- because the old value can be resampled with a very small
--- probability.
+-- | If a primitive stochastic choice contributes to the
+-- proposal space (they all do), return it.
 proposalPrimitive :: forall a. Primitive a -> a -> Maybe (Primitive a)
-proposalPrimitive (Categorical d) x =
-  if length (filter (\pair -> snd pair > 0) d) <= 1 then
-    -- The categorical distribution is Dirac;
-    -- this primitive is not in the proposal space.
-    Nothing
-  else
-    -- This primitive is in the proposal space.
-    -- The proposal distribution does not produce the old sample.
-    Just $ Categorical $ normalize (filter (\pair -> fst pair /= x) d)
-proposalPrimitive d x = fmap (const d) $ isPrimitiveDouble d
+proposalPrimitive d x = Just d
 
 -- | The product of all densities in the trace.
 weight :: RandomDB -> LogFloat
