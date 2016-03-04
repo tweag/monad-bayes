@@ -1,3 +1,6 @@
+{-# LANGUAGE
+  FlexibleContexts
+ #-}
 
 module Inference where
 
@@ -40,3 +43,24 @@ smc n d = fmap (\(Left x) -> x) $ run start where
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a) => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
 smc' n d = fmap (enumerate . categorical) $ toCat $ smc n d
+
+
+
+-- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
+newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
+
+-- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
+-- part of ratio that results from MonadDist effects and transition function,
+-- while state carries the factor associated with MonadBayes effects.
+mh :: (MonadState LogFloat m, MonadDist m) => m a -> MHKernel m a -> m [a]
+mh init trans = put 1 >> init >>= chain where
+  chain x = do
+    p <- get
+    put 1
+    (y,w) <- runMHKernel trans x
+    q <- get
+    accept <- bernoulli $ min 1 (q * w / p)
+    let next = if accept then y else x
+    unless accept (put p)
+    rest <- chain next
+    return (x:rest)
