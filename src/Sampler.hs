@@ -55,7 +55,7 @@ instance MonadDist Sampler where
     categorical xs = wrapper $ fromWeightedList $
                      map (first fromLogFloat) $ map swap $ Fold.toList xs
     normal m s = wrapper $ Normal m s
-    gamma a b  = wrapper $ Gamma a b --need to check parameterization
+    gamma a b  = wrapper $ Gamma a (1 / b) --need to check parameterization
     beta a b   = wrapper $ Beta a b  --need to check parameterization
 
 -- | Wrapper for random-fu distributions.
