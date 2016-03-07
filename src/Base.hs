@@ -10,8 +10,11 @@ module Base where
 import Data.Number.LogFloat
 import Data.Typeable
 import Numeric.SpecFunctions
+import Data.Monoid
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
+import Control.Monad.Writer.Lazy
+
 
 import Primitive
 
@@ -118,6 +121,14 @@ instance MonadDist m => MonadBayes (MaybeT m) where
     condition b = unless b (fail "")
 
 
+-- WriterT leaves the forward computation to the transformed monad.
+-- Can be used for soft conditioning if outputs 'Product LogFloat'.
+instance (Monoid w, MonadDist m) => MonadDist (WriterT w m) where
+    primitive = lift . primitive
+
+instance MonadDist m => MonadBayes (WriterT (Product LogFloat) m) where
+    factor = tell . Product
+
 
 -- StateT leaves the forward computation to the transformed monad.
 -- If the state is a weight, it is used to handle soft conditioning.
@@ -127,5 +138,5 @@ instance MonadDist m => MonadDist (StateT s m) where
     gamma a b   = lift (gamma a b)
     beta a b    = lift (beta a b)
 
-instance MonadDist m => MonadBayes (StateT LogFloat m) where
-    factor w = modify (* w)
+instance MonadBayes m => MonadBayes (StateT s m) where
+    factor = lift . factor

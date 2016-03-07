@@ -4,11 +4,13 @@
 
 module Inference where
 
+import Control.Arrow (first,second)
 import Data.Either
 import Data.Number.LogFloat
 import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
+import Control.Monad.Writer.Lazy
 
 import Base
 import Sampler
@@ -24,8 +26,8 @@ rejection d = do
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: StateT LogFloat Sampler a -> Sampler (a,LogFloat)
-importance d = runStateT d 1
+importance :: WriterT (Product LogFloat) Sampler a -> Sampler (a,LogFloat)
+importance d = fmap (second getProduct) (runWriterT d)
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
@@ -52,15 +54,21 @@ newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
-mh :: (MonadState LogFloat m, MonadDist m) => m a -> MHKernel m a -> m [a]
-mh init trans = put 1 >> init >>= chain where
-  chain x = do
+mh :: (MonadWriter (Product LogFloat) m, MonadDist m) => Int ->  m a -> MHKernel m a -> m [a]
+mh n init trans = censor (const 1) (evalStateT (start >>= chain n) 1) where
+  --start :: StateT LogFloat m a
+  start = do
+    (x, Product p) <- lift $ listen init
+    put p
+    return x
+
+  --chain :: Int -> StateT LogFloat m a -> StateT LogFloat m [a]
+  chain 0 _ = return []
+  chain n x = do
     p <- get
-    put 1
-    (y,w) <- runMHKernel trans x
-    q <- get
+    ((y,w), Product q) <- lift $ listen $ runMHKernel trans x
     accept <- bernoulli $ min 1 (q * w / p)
     let next = if accept then y else x
-    unless accept (put p)
-    rest <- chain next
+    when accept (put q)
+    rest <- chain (n-1) next
     return (x:rest)
