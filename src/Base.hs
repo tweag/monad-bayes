@@ -1,6 +1,5 @@
 {-# LANGUAGE
   TupleSections,
-  FlexibleInstances,
   GADTs
  #-}
 

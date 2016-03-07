@@ -2,7 +2,13 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Importance where
+module Importance (
+    Weight,
+    weight,
+    unWeight,
+    ImportanceT(ImportanceT),  --constructor is needed in Dist
+    runImportanceT
+                  ) where
 
 import Control.Arrow (first,second)
 import Data.Number.LogFloat

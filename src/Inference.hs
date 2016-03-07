@@ -38,7 +38,7 @@ importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n 
 -- | Sequential Monte Carlo from the prior.
 smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
 smc n d = fmap (\(Left x) -> x) $ run start where
-    ParticleT start = lift (population n) >> d
+    start = runParticleT $ lift (population n) >> d
     step particles = resample $ particles >>= advance
     run particles = do
       finished <- lift $ Empirical.all isLeft particles

@@ -5,7 +5,14 @@
   FlexibleContexts
  #-}
 
-module Dist where
+module Dist (
+    Dist,
+    toList,
+    explicit,
+    compact,
+    normalize,
+    enumerate
+            ) where
 
 import System.Random
 import Control.Applicative (Applicative, pure, (<*>))

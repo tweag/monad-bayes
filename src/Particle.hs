@@ -5,7 +5,13 @@
   FlexibleContexts
  #-}
 
-module Particle where
+module Particle (
+    ParticleT,
+    runParticleT,
+    synchronize,
+    flatten,
+    advance
+                ) where
 
 import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
@@ -17,8 +23,7 @@ import Base
 -- for implementation of SMC-related methods.
 -- All the probabilistic effects are delegated to the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
-newtype ParticleT m a = ParticleT (m (Either a (ParticleT m a)))
-runParticleT (ParticleT m) = m
+newtype ParticleT m a = ParticleT {runParticleT :: m (Either a (ParticleT m a))}
 
 -- | A synchronization barrier where computation is paused.
 synchronize :: Monad m => ParticleT m ()

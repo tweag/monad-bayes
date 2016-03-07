@@ -5,7 +5,15 @@
   FlexibleContexts
  #-}
 
-module Empirical where
+module Empirical (
+    EmpiricalT,
+    runEmpiricalT,
+    population,
+    all,
+    resample
+                 ) where
+
+import Prelude hiding (all)
 
 import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy

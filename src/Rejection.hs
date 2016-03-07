@@ -2,7 +2,9 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Rejection where
+module Rejection (
+                  RejectionT,
+                  runRejectionT) where
 
 import Control.Monad
 import Control.Monad.Trans.Class

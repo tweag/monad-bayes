@@ -5,7 +5,10 @@
   FlexibleContexts
  #-}
 
-module Sampler where
+module Sampler (
+    Sampler,
+    sample
+               ) where
 
 import System.Random
 import Control.Monad (liftM2)
@@ -14,7 +17,7 @@ import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
 import Data.Random.Distribution.Categorical
 import Data.Random.Distribution
-import Data.Random
+import Data.Random hiding (sample)
 import Control.Arrow (first,second)
 import Data.Number.LogFloat
 import qualified Data.Foldable as Fold
