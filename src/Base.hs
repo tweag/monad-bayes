@@ -11,9 +11,17 @@ import Data.Number.LogFloat
 import Data.Typeable
 import Numeric.SpecFunctions
 import Data.Monoid
+import Control.Monad
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
-import Control.Monad.State.Lazy
-import Control.Monad.Writer.Lazy
+import Control.Monad.Trans.State
+import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.RWS hiding (tell)
+import Control.Monad.Trans.List
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Cont
 
 
 import Primitive
@@ -106,37 +114,74 @@ class MonadDist m => MonadBayes m where
 ----------------------------------------------------------------------------
 -- Instances
 
+-- Instances with special behaviour
 
 -- MaybeT leaves the forward computation to the transformed monad,
 -- while handling hard conditioning by Nothing.
 -- Soft conditioning is not defined.
 instance MonadDist m => MonadDist (MaybeT m) where
-    categorical = lift . categorical
-    normal m s  = lift (normal m s)
-    gamma a b   = lift (gamma a b)
-    beta a b    = lift (beta a b)
+    primitive = lift . primitive
 
 instance MonadDist m => MonadBayes (MaybeT m) where
     factor = error "MaybeT does not support conditioning with arbitrary factors"
     condition b = unless b (fail "")
 
+instance {-# OVERLAPPING #-} MonadDist m => MonadBayes (WriterT (Product LogFloat) m) where
+    factor = tell . Product
 
--- WriterT leaves the forward computation to the transformed monad.
--- Can be used for soft conditioning if outputs 'Product LogFloat'.
+-- Instances that only lift probabilistic effects
+
+instance MonadDist m => MonadDist (IdentityT m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (IdentityT m) where
+    factor = lift . factor
+
+
+instance MonadDist m => MonadDist (ReaderT r m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (ReaderT r m) where
+    factor = lift . factor
+
+
 instance (Monoid w, MonadDist m) => MonadDist (WriterT w m) where
     primitive = lift . primitive
 
-instance MonadDist m => MonadBayes (WriterT (Product LogFloat) m) where
-    factor = tell . Product
+instance (Monoid w, MonadBayes m) => MonadBayes (WriterT w m) where
+    factor = lift . factor
 
 
--- StateT leaves the forward computation to the transformed monad.
--- If the state is a weight, it is used to handle soft conditioning.
 instance MonadDist m => MonadDist (StateT s m) where
-    categorical = lift . categorical
-    normal m s  = lift (normal m s)
-    gamma a b   = lift (gamma a b)
-    beta a b    = lift (beta a b)
+    primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (StateT s m) where
+    factor = lift . factor
+
+
+instance (Monoid w, MonadDist m) => MonadDist (RWST r w s m) where
+    primitive = lift . primitive
+
+instance (Monoid w, MonadBayes m) => MonadBayes (RWST r w s m) where
+    factor = lift . factor
+
+
+instance MonadDist m => MonadDist (ListT m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (ListT m) where
+    factor = lift . factor
+
+
+instance MonadDist m => MonadDist (ExceptT e m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (ExceptT e m) where
+    factor = lift . factor
+
+
+instance MonadDist m => MonadDist (ContT r m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (ContT r m) where
     factor = lift . factor
