@@ -14,14 +14,15 @@ import Control.Monad.Writer.Lazy
 
 import Base
 import Sampler
+import Rejection
 import Particle
 import Empirical
 import Dist
 
 -- | Rejection sampling.
-rejection :: MaybeT Sampler a -> Sampler a
+rejection :: RejectionT Sampler a -> Sampler a
 rejection d = do
-  m <- runMaybeT d
+  m <- runRejectionT d
   case m of Just x  -> return x
             Nothing -> rejection d
 

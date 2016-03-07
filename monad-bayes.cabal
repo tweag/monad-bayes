@@ -15,8 +15,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Primitive, Base, Dist, Empirical, Sampler,
-                       Particle, Inference
+  exposed-modules:     Primitive, Base, Dist, Sampler,
+                       Rejection, Empirical, Particle,
+                       Inference
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random

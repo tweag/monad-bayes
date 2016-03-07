@@ -119,12 +119,7 @@ class MonadDist m => MonadBayes m where
 -- MaybeT leaves the forward computation to the transformed monad,
 -- while handling hard conditioning by Nothing.
 -- Soft conditioning is not defined.
-instance MonadDist m => MonadDist (MaybeT m) where
-    primitive = lift . primitive
 
-instance MonadDist m => MonadBayes (MaybeT m) where
-    factor = error "MaybeT does not support conditioning with arbitrary factors"
-    condition b = unless b (fail "")
 
 instance {-# OVERLAPPING #-} MonadDist m => MonadBayes (WriterT (Product LogFloat) m) where
     factor = tell . Product
@@ -135,6 +130,13 @@ instance MonadDist m => MonadDist (IdentityT m) where
     primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (IdentityT m) where
+    factor = lift . factor
+
+
+instance MonadDist m => MonadDist (MaybeT m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (MaybeT m) where
     factor = lift . factor
 
 
