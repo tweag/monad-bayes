@@ -84,14 +84,15 @@ class Monad m => MonadDist m where
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.
 class MonadDist m => MonadBayes m where
-    -- | Hard conditioning on an arbitrary predicate.
-    -- By default implemented in terms of `fail`.
-    condition :: Bool -> m ()
-    condition b = if b then return () else fail "rejected"
 
-    -- | Soft conditioning with an arbitrary factor, as found in factor graphs.
-    -- Factor should be positive, otherwise `condition` should be used.
+    -- | Conditioning with an arbitrary factor, as found in factor graphs.
+    -- If possible it is preferred to write models using `condition` and `observe`.
     factor :: LogFloat -> m ()
+
+    -- | Hard conditioning on an arbitrary predicate.
+    -- By default implemented in terms of `factor`.
+    condition :: Bool -> m ()
+    condition b = if b then factor 1 else factor 0
 
     -- | Soft conditioning on a noisy value.
     -- By default implemented as a `factor` with corresponding PDF.
@@ -113,7 +114,8 @@ instance MonadDist m => MonadDist (MaybeT m) where
     beta a b    = lift (beta a b)
 
 instance MonadDist m => MonadBayes (MaybeT m) where
-    factor = error "MaybeT does not support soft conditioning"
+    factor = error "MaybeT does not support conditioning with arbitrary factors"
+    condition b = unless b (fail "")
 
 
 
