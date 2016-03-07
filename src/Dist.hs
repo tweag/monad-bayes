@@ -28,26 +28,26 @@ import Control.Monad.List
 import Control.Monad.Writer
 
 import Base
-import Importance
+import Weighted
 
 -- | Representation of discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.
 -- There is no automatic normalization or aggregation of (value,weight) pairs.
-newtype Dist a = Dist {unDist :: ImportanceT [] a}
+newtype Dist a = Dist {unDist :: WeightedT [] a}
     deriving (Functor, Applicative, Monad)
 
 instance MonadDist Dist where
-    categorical d = Dist $ ImportanceT $ WriterT $ fmap (second weight) $ Fold.toList d
+    categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $ Fold.toList d
     normal = error "Dist does not support continuous distributions"
     gamma  = error "Dist does not support continuous distributions"
     beta   = error "Dist does not support continuous distributions"
 
 instance MonadBayes Dist where
-    factor = Dist . ImportanceT . tell . weight
+    factor = Dist . WeightedT . tell . weight
 
 -- | Returns an explicit representation of a `Dist`.
 toList :: Dist a -> [(a,LogFloat)]
-toList = runImportanceT . unDist
+toList = runWeightedT . unDist
 
 -- | Same as `toList`, only weights are converted to `Double`.
 explicit :: Dist a -> [(a,Double)]

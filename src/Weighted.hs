@@ -2,12 +2,12 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Importance (
+module Weighted (
     Weight,
     weight,
     unWeight,
-    ImportanceT(ImportanceT),  --constructor is needed in Dist
-    runImportanceT
+    WeightedT(WeightedT),  --constructor is needed in Dist
+    runWeightedT
                   ) where
 
 import Control.Arrow (first,second)
@@ -32,11 +32,11 @@ unWeight (Weight (Product p)) = p
 
 -- | A wrapper for 'WriterT' 'Weight' that executes the program
 -- emitting the likelihood score.
-newtype ImportanceT m a = ImportanceT {toWriterT :: WriterT Weight m a}
+newtype WeightedT m a = WeightedT {toWriterT :: WriterT Weight m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
 
-runImportanceT :: Functor m => ImportanceT m a -> m (a, LogFloat)
-runImportanceT = fmap (second unWeight) . runWriterT . toWriterT
+runWeightedT :: Functor m => WeightedT m a -> m (a, LogFloat)
+runWeightedT = fmap (second unWeight) . runWriterT . toWriterT
 
-instance MonadDist m => MonadBayes (ImportanceT m) where
-    factor = ImportanceT . tell . weight
+instance MonadDist m => MonadBayes (WeightedT m) where
+    factor = WeightedT . tell . weight

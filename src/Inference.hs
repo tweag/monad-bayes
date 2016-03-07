@@ -15,7 +15,7 @@ import Control.Monad.Writer.Lazy
 import Base
 import Sampler
 import Rejection
-import Importance
+import Weighted
 import Particle
 import Empirical
 import Dist
@@ -28,8 +28,8 @@ rejection d = do
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: ImportanceT Sampler a -> Sampler (a,LogFloat)
-importance = runImportanceT
+importance :: WeightedT Sampler a -> Sampler (a,LogFloat)
+importance = runWeightedT
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
@@ -56,11 +56,11 @@ newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
-mh :: MonadDist m => Int ->  ImportanceT m a -> MHKernel (ImportanceT m) a -> m [a]
+mh :: MonadDist m => Int ->  WeightedT m a -> MHKernel (WeightedT m) a -> m [a]
 mh n init trans = evalStateT (start >>= chain n) 1 where
   --start :: StateT LogFloat m a
   start = do
-    (x, p) <- lift $ runImportanceT init
+    (x, p) <- lift $ runWeightedT init
     put p
     return x
 
@@ -68,7 +68,7 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
   chain 0 _ = return []
   chain n x = do
     p <- get
-    ((y,w), q) <- lift $ runImportanceT $ runMHKernel trans x
+    ((y,w), q) <- lift $ runWeightedT $ runMHKernel trans x
     accept <- bernoulli $ min 1 (q * w / p)
     let next = if accept then y else x
     when accept (put q)

@@ -21,17 +21,17 @@ import Control.Monad.Trans.List
 import Data.Number.LogFloat as LogFloat
 
 import Base
-import Importance
+import Weighted
 
 -- | Empirical distribution represented as a set of weighted samples.
 -- Forward probabilistic computation is handled by the transformed monad,
 -- while conditioning is done by updating empirical weights.
 -- There is no automatic normalization or aggregation of weights.
-newtype EmpiricalT m a = EmpiricalT {unEmpirical :: ImportanceT (ListT m) a}
+newtype EmpiricalT m a = EmpiricalT {unEmpirical :: WeightedT (ListT m) a}
     deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
 
 runEmpiricalT :: Functor m => EmpiricalT m a -> m [(a, LogFloat)]
-runEmpiricalT = runListT . runImportanceT . unEmpirical
+runEmpiricalT = runListT . runWeightedT . unEmpirical
 
 instance MonadTrans EmpiricalT where
     lift = EmpiricalT . lift . lift
