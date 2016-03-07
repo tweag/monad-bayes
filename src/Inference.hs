@@ -15,6 +15,7 @@ import Control.Monad.Writer.Lazy
 import Base
 import Sampler
 import Rejection
+import Importance
 import Particle
 import Empirical
 import Dist
@@ -27,8 +28,8 @@ rejection d = do
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: WriterT (Product LogFloat) Sampler a -> Sampler (a,LogFloat)
-importance d = fmap (second getProduct) (runWriterT d)
+importance :: ImportanceT Sampler a -> Sampler (a,LogFloat)
+importance = runImportanceT
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]

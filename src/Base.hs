@@ -112,19 +112,7 @@ class MonadDist m => MonadBayes m where
 
 
 ----------------------------------------------------------------------------
--- Instances
-
--- Instances with special behaviour
-
--- MaybeT leaves the forward computation to the transformed monad,
--- while handling hard conditioning by Nothing.
--- Soft conditioning is not defined.
-
-
-instance {-# OVERLAPPING #-} MonadDist m => MonadBayes (WriterT (Product LogFloat) m) where
-    factor = tell . Product
-
--- Instances that only lift probabilistic effects
+-- Instances that lift probabilistic effects to standard tranformers.
 
 instance MonadDist m => MonadDist (IdentityT m) where
     primitive = lift . primitive
