@@ -56,11 +56,11 @@ newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
-mh :: (MonadWriter (Product LogFloat) m, MonadDist m) => Int ->  m a -> MHKernel m a -> m [a]
-mh n init trans = censor (const 1) (evalStateT (start >>= chain n) 1) where
+mh :: MonadDist m => Int ->  ImportanceT m a -> MHKernel (ImportanceT m) a -> m [a]
+mh n init trans = evalStateT (start >>= chain n) 1 where
   --start :: StateT LogFloat m a
   start = do
-    (x, Product p) <- lift $ listen init
+    (x, p) <- lift $ runImportanceT init
     put p
     return x
 
@@ -68,7 +68,7 @@ mh n init trans = censor (const 1) (evalStateT (start >>= chain n) 1) where
   chain 0 _ = return []
   chain n x = do
     p <- get
-    ((y,w), Product q) <- lift $ listen $ runMHKernel trans x
+    ((y,w), q) <- lift $ runImportanceT $ runMHKernel trans x
     accept <- bernoulli $ min 1 (q * w / p)
     let next = if accept then y else x
     when accept (put q)
