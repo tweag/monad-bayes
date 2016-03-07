@@ -33,7 +33,7 @@ importance = runImportanceT
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ toCat $ population n >> d
+importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n >> d
 
 -- | Sequential Monte Carlo from the prior.
 smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
@@ -46,7 +46,7 @@ smc n d = fmap (\(Left x) -> x) $ run start where
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a) => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
-smc' n d = fmap (enumerate . categorical) $ toCat $ smc n d
+smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
 
 
 
