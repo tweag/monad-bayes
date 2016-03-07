@@ -21,22 +21,23 @@ import Empirical
 import Dist
 
 -- | Rejection sampling.
-rejection :: RejectionT Sampler a -> Sampler a
+rejection :: MonadDist m => RejectionT m a -> m a
 rejection d = do
   m <- runRejectionT d
   case m of Just x  -> return x
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: WeightedT Sampler a -> Sampler (a,LogFloat)
+importance :: MonadDist m => WeightedT m a -> m (a,LogFloat)
 importance = runWeightedT
 
 -- | Multiple importance samples with post-processing.
-importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
+importance' :: (Ord a, Typeable a, MonadDist m) =>
+               Int -> EmpiricalT m a -> m [(a,Double)]
 importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n >> d
 
 -- | Sequential Monte Carlo from the prior.
-smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
+smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
 smc n d = fmap (\(Left x) -> x) $ run start where
     start = runParticleT $ lift (population n) >> d
     step particles = resample $ particles >>= advance
@@ -45,7 +46,8 @@ smc n d = fmap (\(Left x) -> x) $ run start where
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
-smc' :: (Ord a, Typeable a) => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
+smc' :: (Ord a, Typeable a, MonadDist m) => Int ->
+        ParticleT (EmpiricalT m) a -> m [(a,Double)]
 smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
 
 
