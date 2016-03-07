@@ -560,11 +560,3 @@ grassModel = do
            <||> flip 0.1
   condition grassIsWet
   return $ if rain then 1.0 else 0.0
-
--- TODO
---
--- 0. Decompose Trace into monad combinators?
---
--- 1. Reformulate Trace as monad transformer.
---
--- 2. Validate acceptance ratios by goodness-of-fit tests
