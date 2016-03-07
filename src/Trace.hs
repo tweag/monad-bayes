@@ -94,7 +94,7 @@ weight (Bind t1 t2) = weight t1 * weight t2
 -- | An old primitive sample is reusable if both distributions have the
 -- same type and if old sample does not decrease acceptance ratio by
 -- more than a threshold.
-reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
+reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
 reusablePrimitive d x d' =
   let
     threshold = 0.0
@@ -103,13 +103,13 @@ reusablePrimitive d x d' =
 
 -- | Try to reuse a sample from a categorical distribution
 -- if it does not decrease acceptance ration by more than a threshold.
-reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
+reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
 reusableCategorical threshold d@(Categorical _) x d'@(Categorical _) = do
   x' <- cast x
   let pOld = pdf d x
   let pNew = pdf d' x'
   if pOld > 0 && pNew / pOld > threshold then
-    Just ((x', pNew), (== x') . fromJust . cast)
+    Just ((x', pNew), (== x'))
   else
     Nothing
 reusableCategorical threshold _ _ _ = Nothing
@@ -118,7 +118,7 @@ reusableCategorical threshold _ _ _ = Nothing
 -- not decrease acceptance ratio by more than a threshold.
 -- In particular, a sample is always reused if its distribution did not
 -- change, since it does not decrease acceptance ratio at all.
-reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), a -> Bool)
+reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
 reusablePrimitiveDouble threshold d x d' =
   case (isPrimitiveDouble d, isPrimitiveDouble d') of
     (Just (from, to), Just (from', to')) ->
@@ -128,7 +128,7 @@ reusablePrimitiveDouble threshold d x d' =
         pNew = pdf d' x'
       in
         if pOld > 0 && pNew / pOld > threshold then
-          Just ((x', pNew), (== to' x') . to)
+          Just ((x', pNew), (== to' x') . to')
         else
           Nothing
     otherwise ->
@@ -147,7 +147,7 @@ isPrimitiveDouble _            = Nothing
 reusedSample :: Primitive a -> a -> Primitive b -> b -> Bool
 reusedSample d x d' x' =
   case reusablePrimitive d x d' of
-    Just (_, isReused) -> isReused x
+    Just (_, isReused) -> isReused x'
     Nothing      -> False
 
 -- | Compute the element in the proposal space that mutated the first
