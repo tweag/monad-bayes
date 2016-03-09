@@ -5,7 +5,14 @@
   FlexibleContexts
  #-}
 
-module Dist where
+module Dist (
+    Dist,
+    toList,
+    explicit,
+    compact,
+    normalize,
+    enumerate
+            ) where
 
 import System.Random
 import Control.Applicative (Applicative, pure, (<*>))
@@ -17,35 +24,30 @@ import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Data.Either
 
-import Control.Monad.State.Lazy
 import Control.Monad.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Identity
+import Control.Monad.Writer
 
 import Base
+import Weighted
 
 -- | Representation of discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.
 -- There is no automatic normalization or aggregation of (value,weight) pairs.
-newtype Dist a = Dist (StateT LogFloat [] a)
-    deriving (Functor, Applicative, Monad, MonadState LogFloat)
+newtype Dist a = Dist {unDist :: WeightedT [] a}
+    deriving (Functor, Applicative, Monad)
 
 instance MonadDist Dist where
-    categorical d = 
-        Dist $ StateT $ \s ->
-            do
-              (x,p) <- Fold.toList d
-              return (x, p * s)
+    categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $ Fold.toList d
     normal = error "Dist does not support continuous distributions"
     gamma  = error "Dist does not support continuous distributions"
     beta   = error "Dist does not support continuous distributions"
 
 instance MonadBayes Dist where
-    factor w = modify (* w)
+    factor = Dist . WeightedT . tell . weight
 
 -- | Returns an explicit representation of a `Dist`.
 toList :: Dist a -> [(a,LogFloat)]
-toList (Dist d) = runStateT d 1
+toList = runWeightedT . unDist
 
 -- | Same as `toList`, only weights are converted to `Double`.
 explicit :: Dist a -> [(a,Double)]

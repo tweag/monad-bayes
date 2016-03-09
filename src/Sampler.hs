@@ -5,7 +5,10 @@
   FlexibleContexts
  #-}
 
-module Sampler where
+module Sampler (
+    Sampler,
+    sample
+               ) where
 
 import System.Random
 import Control.Monad (liftM2)
@@ -14,7 +17,7 @@ import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
 import Data.Random.Distribution.Categorical
 import Data.Random.Distribution
-import Data.Random
+import Data.Random hiding (sample)
 import Control.Arrow (first,second)
 import Data.Number.LogFloat
 import qualified Data.Foldable as Fold
@@ -55,10 +58,21 @@ instance MonadDist Sampler where
     categorical xs = wrapper $ fromWeightedList $
                      map (first fromLogFloat) $ map swap $ Fold.toList xs
     normal m s = wrapper $ Normal m s
-    gamma a b  = wrapper $ Gamma a (1 / b) --need to check parameterization
+    gamma a b  = wrapper $ Gamma a (1 / b)
     beta a b   = wrapper $ Beta a b  --need to check parameterization
 
 -- | Wrapper for random-fu distributions.
 wrapper :: Distribution d a => d a -> Sampler a
 wrapper = Sampler . (fst .) . sampleState
 
+
+---------------------------------------------------
+-- MonadDist instance for the RVar monad
+
+instance MonadDist (RVarT m) where
+  --should probably normalize before converting from log-domain
+  categorical xs = rvarT $ fromWeightedList $ map (first fromLogFloat . swap) $
+                   Fold.toList xs
+  normal m s = rvarT $ Normal m s
+  gamma  a b = rvarT $ Gamma a (1 / b)
+  beta   a b = rvarT $ Beta a b

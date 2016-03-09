@@ -4,45 +4,51 @@
 
 module Inference where
 
+import Control.Arrow (first,second)
 import Data.Either
 import Data.Number.LogFloat
 import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
+import Control.Monad.Writer.Lazy
 
 import Base
 import Sampler
+import Rejection
+import Weighted
 import Particle
 import Empirical
 import Dist
 
 -- | Rejection sampling.
-rejection :: MaybeT Sampler a -> Sampler a
+rejection :: MonadDist m => RejectionT m a -> m a
 rejection d = do
-  m <- runMaybeT d
+  m <- runRejectionT d
   case m of Just x  -> return x
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: StateT LogFloat Sampler a -> Sampler (a,LogFloat)
-importance d = runStateT d 1
+importance :: MonadDist m => WeightedT m a -> m (a,LogFloat)
+importance = runWeightedT
 
 -- | Multiple importance samples with post-processing.
-importance' :: (Ord a, Typeable a) => Int -> EmpiricalT Sampler a -> Sampler [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ toCat $ population n >> d
+importance' :: (Ord a, Typeable a, MonadDist m) =>
+               Int -> EmpiricalT m a -> m [(a,Double)]
+importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n >> d
 
 -- | Sequential Monte Carlo from the prior.
-smc :: Int -> ParticleT (EmpiricalT Sampler) a -> EmpiricalT Sampler a
+smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
 smc n d = fmap (\(Left x) -> x) $ run start where
-    ParticleT start = lift (population n) >> d
+    start = runParticleT $ lift (population n) >> d
     step particles = resample $ particles >>= advance
     run particles = do
       finished <- lift $ Empirical.all isLeft particles
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
-smc' :: (Ord a, Typeable a) => Int -> ParticleT (EmpiricalT Sampler) a -> Sampler [(a,Double)]
-smc' n d = fmap (enumerate . categorical) $ toCat $ smc n d
+smc' :: (Ord a, Typeable a, MonadDist m) => Int ->
+        ParticleT (EmpiricalT m) a -> m [(a,Double)]
+smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
 
 
 
@@ -52,15 +58,21 @@ newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
-mh :: (MonadDist m) => m a -> MHKernel m a -> m [a]
-mh init trans = put 1 >> init >>= chain where
-  chain x = do
+mh :: MonadDist m => Int ->  WeightedT m a -> MHKernel (WeightedT m) a -> m [a]
+mh n init trans = evalStateT (start >>= chain n) 1 where
+  -- start :: StateT LogFloat m a
+  start = do
+    (x, p) <- lift $ runWeightedT init
+    put p
+    return x
+
+  --chain :: Int -> StateT LogFloat m a -> StateT LogFloat m [a]
+  chain 0 _ = return []
+  chain n x = do
     p <- get
-    put 1
-    (y,w) <- runMHKernel trans x
-    q <- get
-    accept <- if p == 0 then 1 else bernoulli $ min 1 (q * w / p)
+    ((y,w), q) <- lift $ runWeightedT $ runMHKernel trans x
+    accept <- bernoulli $ if p == 0 then 1 else min 1 (q * w / p)
     let next = if accept then y else x
-    unless accept (put p)
-    rest <- chain next
+    when accept (put q)
+    rest <- chain (n-1) next
     return (x:rest)
