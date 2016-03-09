@@ -11,9 +11,11 @@ import qualified Gamma
 import qualified HMM
 
 -- Algorithms to benchmark
-import Trace
-import Trace.Debug
 import Inference
+import Trace
+import Trace.Debug hiding (mhRun)
+import qualified Trace.List as List
+import qualified Trace.Indexed as Indexed
 
 -- Standard library
 import Data.List (sort)
@@ -25,15 +27,8 @@ import Base
 import Dist
 import Metrics
 
--- some naive benchmarks
---
--- TODO
--- 1. Use Sampler more.
--- 2. Make rejection sampler for soft constraints with known upper bound
---    to generate control samples for programs with conditioning.
--- 3. Use a benchmarking framework to test execution?
--- 4. Track variance?
--- 5. Track distance between independent chains?
+mhRun = mhRunWith Indexed.empty
+
 main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering

@@ -55,7 +55,7 @@ instance Show Cache where
                          ++ ")]"
 
 class Monoid r => RandomDB r where
-  {-# MINIMAL (singleton | record), consume, mutate, size, weight, resampled #-}
+  {-# MINIMAL (singleton | record), consult, mutate, size, weight, resampled #-}
   -- constructors
   record    :: Primitive a -> a -> r
   record d x = singleton (Cache d x)
@@ -63,7 +63,7 @@ class Monoid r => RandomDB r where
   singleton (Cache d x) = record d x
 
   -- mutators
-  consume   :: r -> Maybe (Cache, r)
+  consult   :: Primitive a -> r -> Maybe (Cache, r)
   mutate    :: (MonadDist m) => r -> m r
 
   size :: r -> Int
@@ -156,30 +156,6 @@ reusedSample d x d' x' =
     Just (_, isReused) -> isReused x'
     Nothing      -> False
 
------------------------------
--- CACHE LISTS AS RANDOMDB --
------------------------------
-
-empty :: [Cache]
-empty = []
-
-instance RandomDB [Cache] where
-  singleton = (: [])
-  consume []       = Nothing
-  consume (x : xs) = Just (x, xs)
-  mutate [] = return []
-  mutate xs = do
-    i <- uniformD [0 .. length xs - 1]
-    let (prefix, cache : postfix) = splitAt i xs
-    cache' <- refresh cache
-    return $ prefix ++ cache' : postfix
-  size = length
-  weight = foldr (\(Cache d x) p -> pdf d x * p) 1
-  resampled old [] = []
-  resampled [] new = new
-  resampled (Cache d x : old) (Cache d' x' : new) | reusedSample d x d' x' = resampled old new
-  resampled (cache : old) (cache' : new) = cache' : resampled old new
-
 ------------------------------
 -- TRACET MONAD TRANSFORMER --
 ------------------------------
@@ -221,7 +197,7 @@ instance (RandomDB r, MonadDist m) => MonadDist (ReuseT r m) where
   primitive d' = do
     r <- get
     let resample = lift $ primitive d'
-    case consume r of
+    case consult d' r of
       Nothing ->
         resample
       Just (Cache d x, r') -> do

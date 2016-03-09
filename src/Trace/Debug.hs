@@ -19,8 +19,14 @@ import Inference
 import Sampler
 import Trace
 
+import qualified Trace.List as List
+import qualified Trace.Indexed as Indexed
+
 mhRun :: (forall m. (MonadBayes m) => m a) -> Int -> Int -> [a]
-mhRun p seed steps = sample (mh' empty steps p) (mkStdGen seed)
+mhRun = mhRunWith List.empty
+
+mhRunWith :: (RandomDB r) => r -> (forall m. (MonadBayes m) => m a) -> Int -> Int -> [a]
+mhRunWith r p seed steps = sample (mh' r steps p) (mkStdGen seed)
 
 -- Run a sampler many times to produce many samples.
 -- A reference to check MH against.
