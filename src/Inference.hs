@@ -34,12 +34,12 @@ importance = runWeightedT
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a, MonadDist m) =>
                Int -> EmpiricalT m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n >> d
+importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
 smc n d = flatten $ run start where
-    start = lift (population n) >> d
+    start = lift (spawn n) >> d
     step :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
     step particles = mapMonad resample $ advance particles
     run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a

@@ -10,7 +10,7 @@
 module Empirical (
     EmpiricalT,
     runEmpiricalT,
-    population,
+    spawn,
     all,
     resample
                  ) where
@@ -40,16 +40,17 @@ runEmpiricalT = runListT . runWeightedT . unEmpirical
 instance MonadTrans EmpiricalT where
     lift = EmpiricalT . lift . lift
 
-size :: Monad m => EmpiricalT m a -> m Int
-size e = do
+-- | The number of samples used for approximation.
+population :: Monad m => EmpiricalT m a -> m Int
+population e = do
   zs <- runEmpiricalT e
   return (length zs)
 
--- | Set the population size for the empirical distribution.
--- Bear in mind that invoking `population` twice in the same computation
+-- | Set the number of samples for the empirical distribution.
+-- Bear in mind that invoking `spawn` twice in the same computation
 -- leads to multiplying the number of samples.
-population :: MonadDist m => Int -> EmpiricalT m ()
-population n = (EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()) >>
+spawn :: MonadDist m => Int -> EmpiricalT m ()
+spawn n = (EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()) >>
                factor (1 / fromIntegral n)
 
 -- | A special version of fold that returns the result in the transformed monad.
@@ -64,8 +65,8 @@ all cond = fmap getAll . fold . fmap (All . cond)
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
-  n <- lift $ size d
-  population n
+  n <- lift $ population d
+  spawn n
   transform lift d
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
