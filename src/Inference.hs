@@ -1,5 +1,6 @@
 {-# LANGUAGE
-  FlexibleContexts
+  FlexibleContexts,
+  TupleSections
  #-}
 
 module Inference where
@@ -78,3 +79,14 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     when accept (put q)
     rest <- chain (n-1) next
     return (x:rest)
+
+-- | Metropolis-Hastings version that uses the prior as proposal distribution.
+mhPrior :: MonadDist m => Int -> WeightedT m a -> m [a]
+mhPrior n d = mh n d kernel where
+    kernel = MHKernel $ const $ fmap (,1) d
+
+-- | Particle Independent Metropolis Hastings. The first argument is the number
+-- of particles in each SMC run, the second is the number of samples, equal to
+-- the number of SMC runs.
+pimh :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> m [a]
+pimh np ns d = mhPrior np $ transform $ smc np d

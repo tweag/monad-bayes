@@ -2,9 +2,7 @@
   TupleSections,
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
-  FlexibleContexts,
-  ExistentialQuantification,
-  RankNTypes
+  FlexibleContexts
  #-}
 
 module Empirical (
@@ -12,7 +10,11 @@ module Empirical (
     runEmpiricalT,
     spawn,
     all,
-    resample
+    resample,
+    evidence,
+    collapse,
+    proper,
+    transform
                  ) where
 
 import Prelude hiding (all)
@@ -67,7 +69,7 @@ resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
   n <- lift $ population d
   spawn n
-  transform lift d
+  transform d
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: Monad m => EmpiricalT m a -> m LogFloat
@@ -91,8 +93,8 @@ proper e = liftM2 (,) (collapse e) (evidence e)
 
 -- | Transforms a model into one with identical marginal, but with
 -- SMC run as auxiliary latent variables.
-transform :: (MonadDist m, MonadBayes n) => (forall a. m a -> n a) -> EmpiricalT m a -> n a
-transform conv e = do
-  (x,p) <- conv $ proper e
+transform :: (MonadDist m, MonadTrans t, MonadBayes (t m)) => EmpiricalT m a -> t m a
+transform e = do
+  (x,p) <- lift $ proper e
   factor p
   return x
