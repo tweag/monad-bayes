@@ -40,6 +40,11 @@ runEmpiricalT = runListT . runWeightedT . unEmpirical
 instance MonadTrans EmpiricalT where
     lift = EmpiricalT . lift . lift
 
+size :: Monad m => EmpiricalT m a -> m Int
+size e = do
+  zs <- runEmpiricalT e
+  return (length zs)
+
 -- | Set the population size for the empirical distribution.
 -- Bear in mind that invoking `population` twice in the same computation
 -- leads to multiplying the number of samples.
@@ -59,13 +64,9 @@ all cond = fmap getAll . fold . fmap (All . cond)
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
-  cat <- lift $ runEmpiricalT d
-  let (ps,weights) = unzip cat
-  let evidence = LogFloat.sum weights
-  factor evidence --to keep track of model evidence
-  population (length cat)
-  ancestor <- discrete weights
-  return (ps !! ancestor)
+  n <- lift $ size d
+  population n
+  transform lift d
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: Monad m => EmpiricalT m a -> m LogFloat
