@@ -7,7 +7,6 @@
 
 module Particle (
     ParticleT,
-    runParticleT,
     synchronize,
     flatten,
     advance,
@@ -29,7 +28,6 @@ import Base
 -- All the probabilistic effects are delegated to the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
 type ParticleT m a = Coroutine (Await ()) m a
-runParticleT = resume
 extract (Await f) = f ()
 
 -- | A synchronization barrier where computation is paused.
