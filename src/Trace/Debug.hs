@@ -148,8 +148,8 @@ fig8b = do
 --
 -- Examples:
 --
---   mhDebugHistogram (Histo (-0.5) 1.0 1.5 1.0 60) grassModel 0 20000
---   enumerate grassModel -- after import Dist
+--   mhDebugHistogram (Histo (-0.5) 1.0 1.5 1.0 60) grassModel 0 40000
+--   enumerate grassModel -- after import Dist; expect P[0]=0.53, P[1]=0.47
 --
 grassModel :: MonadBayes m => m Double
 grassModel = do

@@ -228,5 +228,9 @@ instance (RandomDB r, MonadDist m) => MonadDist (ReuseT r m) where
         put r'
         maybe resample return (fmap (fst . fst) $ reusablePrimitive d x d')
 
+instance (RandomDB r, MonadBayes m) => MonadBayes (ReuseT r m) where
+  factor = lift . factor
+  condition = lift . condition
+
 type UpdaterT r m a = TraceT r (ReuseT r m) a
 runUpdaterT = runReuseT . runTraceT

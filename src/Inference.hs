@@ -91,4 +91,4 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     return (x:rest)
 
 mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
-mh' r0 n program = fmap (map fst) $ mh n (runTraceT $ prior program) $ mhKernel' r0 (prior program)
+mh' r0 n program = fmap (map fst) $ mh n (runTraceT program) $ mhKernel' r0 program
