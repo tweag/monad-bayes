@@ -42,25 +42,29 @@ refresh (Cache d x) = do
   x' <- primitive d
   return $ Cache d x'
 
-class RandomDB r where
-  {-# MINIMAL nil, union, (singleton | record), consume, mutate, size, weight, resampled #-}
-  -- constructors
-  nil       :: r
-  union     :: r -> r -> r
+-- Print Cache for debugging
+instance Show Cache where
+  show (Cache (Normal m s) x) = printf "[%.3f<-N%.3f|%.3f]" x m s
+  show (Cache (Gamma  a b) x) = printf "[%.3f<-G%.3f|%.3f]" x a b
+  show (Cache (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
+  -- print Booleans for debugging
+  show (Cache (Categorical ps) x) =
+    case cast (x, ps) :: Maybe (Bool, [(Bool, LogFloat)]) of
+      Nothing      -> "[cat(" ++ (tail $ init $ show $ map snd ps) ++ ")]"
+      Just (x, ps) -> "[" ++ show x ++ "<-(" ++
+                         (intercalate "," $ map (\(b,p) -> head (show b) : printf "%.3f" (fromLogFloat p)) ps)
+                         ++ ")]"
 
+class Monoid r => RandomDB r where
+  {-# MINIMAL (singleton | record), consume, mutate, size, weight, resampled #-}
+  -- constructors
   record    :: Primitive a -> a -> r
   record d x = singleton (Cache d x)
   singleton :: Cache -> r
   singleton (Cache d x) = record d x
 
-  -- mutators with default definitions for monoids
-  split     :: r -> (r, r)
-  split r = (r, nil)
-  prepend   :: r -> r -> r
-  prepend = union
-
-  -- mutators without default definitions
-  consume   :: (MonadState r m) => m (Maybe Cache)
+  -- mutators
+  consume   :: r -> Maybe (Cache, r)
   mutate    :: (MonadDist m) => r -> m r
 
   size :: r -> Int
@@ -70,83 +74,29 @@ class RandomDB r where
   -- proposalFactor old new = q(old, new) / (weight $ resampled old new)
   --
   -- By default, assume that the proposal resamples a stochastic choice
-  -- in the old trace at random. In this case, the proposal factor is
+  -- in the old trace uniformly at random. In this case, the proposal factor is
   -- the reciprocal of the number of stochastic choices in the old trace.
   proposalFactor :: r -> r -> Maybe LogFloat
   proposalFactor old new = let denom = size old in if denom /= 0 then Just (1 / fromIntegral denom) else Nothing
 
--- | Compute MH acceptance ratio with the prior distribution as target
-priorAcceptanceRatio :: (RandomDB r) => r -> r -> Maybe LogFloat
-priorAcceptanceRatio old new = do
-  pf_new_old <- proposalFactor new old
-  pf_old_new <- proposalFactor old new
-  let numerator   = weight new * weight (resampled new old) * pf_new_old
-  let denominator = weight old * weight (resampled old new) * pf_old_new
-  if denominator == 0 then
-    Nothing
-  else
-    Just $ numerator / denominator
-    -- should not take mininimum with 1 here
-
----------------------------
--- BINDTREES AS RANDOMDB --
----------------------------
-
--- | A random database of stochastic choices made in the program.
-data BindTree where
-    None :: BindTree
-    Node :: Primitive a -> a -> BindTree
-    -- The arguments to Bind are: trace to this point, trace from this point.
-    Bind :: BindTree -> BindTree -> BindTree
-
-instance RandomDB BindTree where
-  nil = None
-  union = Bind
-  record = Node
-  split = bindTreeSplit
-  consume = do
-    r <- get
-    case r of
-      Node d x  -> return $ Just $ Cache d x
-      otherwise -> return Nothing
-  prepend leftOver rest = rest
-  mutate = update
-  size = bindTreeSize
-  weight = bindTreeWeight
-  resampled = flip minus
-
--- This is a lie.
--- BindTree breaks monoid laws.
-instance Monoid BindTree where
-  mempty = nil
-  mappend = union
-
--- print the stochastic choices for debugging
-instance Show BindTree where
-  show None = "None"
-  show (Node (Normal m s) x) = printf "[%.3f<-N%.3f|%.3f]" x m s
-  show (Node (Gamma  a b) x) = printf "[%.3f<-G%.3f|%.3f]" x a b
-  show (Node (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
-  show (Bind t1 t2) = printf "(B %s %s)" (show t1) (show t2)
-  -- print Booleans for debugging
-  show (Node (Categorical ps) x) =
-    case cast (x, ps) :: Maybe (Bool, [(Bool, LogFloat)]) of
-      Nothing      -> "[cat(" ++ (tail $ init $ show $ map snd ps) ++ ")]"
-      Just (x, ps) -> "[" ++ show x ++ "<-(" ++
-                         (intercalate "," $ map (\(b,p) -> head (show b) : printf "%.3f" (fromLogFloat p)) ps)
-                         ++ ")]"
-
--- | The number of random choices in the BindTree.
-bindTreeSize :: BindTree -> Int
-bindTreeSize None = 0
-bindTreeSize (Node _ _) = 1
-bindTreeSize (Bind t1 t2) = bindTreeSize t1 + bindTreeSize t2
-
--- | The product of all densities in the trace.
-bindTreeWeight :: BindTree -> LogFloat
-bindTreeWeight None = 1
-bindTreeWeight (Node d x) = pdf d x
-bindTreeWeight (Bind t1 t2) = bindTreeWeight t1 * bindTreeWeight t2
+-- Correct usage:
+-- `old` and `new` traces should both be feasible and
+-- the probability of proposing from each other should be
+-- positive.
+--
+-- If `fromJust` throws "Non-exhaustive pattern" error,
+-- then the caller did not conform to correct usage.
+mhCorrectionFactor :: (RandomDB r) => r -> r -> LogFloat
+mhCorrectionFactor old new = fromJust $ do
+    pf_new_old <- proposalFactor new old
+    pf_old_new <- proposalFactor old new
+    let numerator   = weight new * weight (resampled new old) * pf_new_old
+    let denominator = weight old * weight (resampled old new) * pf_old_new
+    if denominator == 0 then
+      Nothing
+    else
+      Just $ numerator / denominator
+      -- should not take mininimum with 1 here
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same type and if old sample does not decrease acceptance ratio by
@@ -207,65 +157,14 @@ reusedSample d x d' x' =
     Just (_, isReused) -> isReused x'
     Nothing      -> False
 
--- | Compute the stochastic choices made in the first BindTree
--- not present in the second BindTree
-minus :: BindTree -> BindTree -> BindTree
-Bind l1 r1 `minus` Bind l2 r2 = Bind (l1 `minus` l2) (r1 `minus` r2)
-Node d' x' `minus` Node d x | reusedSample d x d' x' = None
-new `minus` old = new
-
--- | Resample the i-th random choice in the proposal space
--- from the proposal distribution.
-updateAt :: forall m. (MonadDist m) => Int -> BindTree -> m BindTree
-updateAt n db =
-  fmap (either id $ error $ printf "updateAt: index %d out of bound in %s\n" n (show db)) (loop n db)
-  where
-    -- Return either an updated @BindTree@
-    --            or the result of subtracting the number of traversed
-    --               random choices from the index
-    loop :: Int -> BindTree -> m (Either BindTree Int)
-    loop n None = return $ Right n
-    loop n (Node d x) | n == 0 = fmap (Left . Node d) (primitive d)
-    loop n (Node d x) = return $ Right (n - 1)
-    loop n (Bind t1 t2) = do
-      t1' <- loop n t1
-      let keep_t2 = Left . flip Bind t2
-      let keep_t1 = Left . Bind t1
-      -- if t1 is updated, join the updated t1 together with t2.
-      -- if t2 is updated, join t1 together with the updated t2.
-      -- if neither is updated, return new index.
-      either (return . keep_t2) (fmap (either keep_t1 Right) . flip loop t2) t1'
-
--- | Updates a trace by resampling a randomly selected site.
-update :: (MonadDist m) => BindTree -> m BindTree
-update r = do
-  let n = size r
-  if n == 0 then
-    return r -- no random element in previous BindTree
-  else
-    do
-      let p = 1 / fromIntegral n
-      i <- categorical $ map (flip (,) p) [0 .. (n - 1)]
-      updateAt i r
-
--- | Split a @BindTree@ into two if there is sufficient information
-bindTreeSplit :: BindTree -> (BindTree, BindTree)
-bindTreeSplit (Bind t1 t2) = (t1, t2)
-bindTreeSplit _ = (None, None)
-
 -----------------------------
 -- CACHE LISTS AS RANDOMDB --
 -----------------------------
 
 instance RandomDB [Cache] where
-  nil = []
-  union = (++)
   singleton = (: [])
-  consume = do
-    r <- get
-    case r of
-      (x : xs) -> do { put xs ; return $ Just x }
-      []       -> return Nothing
+  consume []       = Nothing
+  consume (x : xs) = Just (x, xs)
   mutate [] = return []
   mutate xs = do
     i <- uniformD [0 .. length xs - 1]
@@ -279,43 +178,27 @@ instance RandomDB [Cache] where
   resampled (Cache d x : old) (Cache d' x' : new) | reusedSample d x d' x' = resampled old new
   resampled (cache : old) (cache' : new) = cache' : resampled old new
 
-
 ------------------------------
 -- TRACET MONAD TRANSFORMER --
 ------------------------------
 
-newtype TraceT r m a = TraceT { runTraceT :: WriterT r m a }
+newtype TraceT r m a = TraceT (WriterT r m a)
   deriving (Functor, Applicative, Monad, MonadTrans)
-
-
--- | Execute program once, generate a value and a RandomDB.
--- The first parameter is unused. It is there to help typeclass resolution.
-getTrace :: (Monoid r, Monad m) => r -> TraceT r m a -> m (a, r)
-getTrace = const getTrace'
-
-getTrace' :: (Monoid r, Monad m) => TraceT r m a -> m (a, r)
-getTrace' = runWriterT . runTraceT
-
 
 deriving instance (Monoid r, Monad m) => MonadWriter r (TraceT r m)
 
+runTraceT :: TraceT r m a -> m (a, r)
+runTraceT (TraceT writer) = runWriterT writer
+
 -- WriterT preserves MonadDist
-instance (Monoid r, MonadBayes m) => MonadDist (WriterT r m) where
-  primitive = lift . primitive
-
--- WriterT preserves MonadBayes
-instance (Monoid r, MonadBayes m) => MonadBayes (WriterT r m) where
-  factor = lift . factor
-  condition = lift . condition
-
-
-instance (RandomDB r, Monoid r, MonadDist m) => MonadDist (TraceT r m) where
+instance (RandomDB r, MonadDist m) => MonadDist (TraceT r m) where
   primitive d = do
-    x <- lift (primitive d)
-    tell (record d x)
+    x <- lift $ primitive d
+    tell $ record d x
     return x
 
-instance (RandomDB r, Monoid r, MonadBayes m) => MonadBayes (TraceT r m) where
+-- WriterT preserves MonadBayes
+instance (RandomDB r, MonadBayes m) => MonadBayes (TraceT r m) where
   factor = lift . factor
   condition = lift . condition
 
@@ -323,77 +206,36 @@ instance (RandomDB r, Monoid r, MonadBayes m) => MonadBayes (TraceT r m) where
 -- REUSET MONAD TRANDFORMER --
 ------------------------------
 
-newtype ReuseT r m a = ReuseT { runReuseT :: StateT r (WriterT r m) a }
-  deriving (Functor)
+newtype ReuseT r m a = ReuseT (StateT r m a)
+  deriving (Functor, Applicative, Monad, MonadTrans)
 
-reuseTrace :: (Monad m) => ReuseT r m a -> r -> m (a, r)
-reuseTrace program r = do
-  ((x, leftoverInput), output) <- runWriterT $ runStateT (runReuseT program) r
-  return (x, output)
+deriving instance (Monad m) => MonadState r (ReuseT r m)
 
-deriving instance (RandomDB r, Monoid r, Monad m) => MonadState  r (ReuseT r m)
-deriving instance (RandomDB r, Monoid r, Monad m) => MonadWriter r (ReuseT r m)
-
-instance (Monoid r) => MonadTrans (ReuseT r) where
-  lift = ReuseT . lift . lift
-
-instance (RandomDB r, Monoid r, Monad m) => Applicative (ReuseT r m) where
-  pure = return
-  (<*>) = liftM2 ($)
-
--- Do potentially law-breaking things in Monad instance of ReuseT.
---
--- Observe bind-tree of the program for potential performance gain.
--- If `r` is not a monoid or if `split` and `prepend` are overwritten,
--- then the associativity law is broken.
-instance (RandomDB r, Monoid r, Monad m) => Monad (ReuseT r m) where
-  return = ReuseT . return
-  m >>= f = ReuseT $ do
-    r <- get
-    let (r1, r2) = split r
-    put r1
-    x <- runReuseT m
-    r1' <- get
-    put $ prepend r1' r2
-    runReuseT (f x)
+runReuseT :: ReuseT r m a -> r -> m (a, r)
+runReuseT (ReuseT state) = runStateT state
 
 -- Reuse samples of primitive distributions in the RandomDB
-instance (RandomDB r, Monoid r, MonadDist m) => MonadDist (ReuseT r m) where
+instance (RandomDB r, MonadDist m) => MonadDist (ReuseT r m) where
   primitive d' = do
-    x' <- lift $ primitive d'
-    consume >>= maybe (do
-                        tell $ record d' x'
-                        return x')
-                      (\(Cache d x) ->
-                        do
-                          let (y, r) = reusePrimitive d x d' x'
-                          tell r
-                          return y)
+    r <- get
+    let resample = lift $ primitive d'
+    case consume r of
+      Nothing ->
+        resample
+      Just (Cache d x, r') -> do
+        put r'
+        maybe resample return (fmap (fst . fst) $ reusablePrimitive d x d')
 
--- Do not handle conditioning at ReuseT level.
--- Delegate conditioning to the underlying nmonad.
-instance (RandomDB r, Monoid r, MonadBayes m) => MonadBayes (ReuseT r m) where
-  factor = lift . factor
-  condition = lift . condition
+type UpdaterT r m a = TraceT r (ReuseT r m) a
+runUpdaterT = runReuseT . runTraceT
 
--- | Try to reuse previous sample of primitive random variable.
--- Whether to reuse a sample is decided in @reusablePrimitive@.
-reusePrimitive :: (RandomDB r) => Primitive old -> old -> Primitive new -> new -> (new, r)
-reusePrimitive d old d' new =
-  maybe (new, record d' new) (\old' -> (old', record d' old')) (fmap (fst . fst) $ reusablePrimitive d old d')
+mhKernel'  :: (RandomDB r, MonadDist m) => r -> UpdaterT r m a -> MHKernel m (a, r)
+mhKernel' = const mhKernel
 
-
--- Want: MHKernel { runMHKernle :: a -> m (a, Maybe LogFloat) }
-{-
-mhKernel  :: (RandomDB r, MonadState LogFloat m, MonadDist m) => r -> ReuseT r m a -> MHKernel m (a, r)
-mhKernel = const mhKernel'
-
-mhKernel' :: (RandomDB r, MonadState LogFloat m, MonadDist m) => ReuseT r m a -> MHKernel m (a, r)
-mhKernel' program =
-  MHKernel $ \(x, r) -> do
-    (x', r') <- reuseTrace program r
-    return ((x', r'), priorAcceptanceRatio r r')
--}
+mhKernel :: (RandomDB r, MonadDist m) => UpdaterT r m a -> MHKernel m (a, r)
+mhKernel program = MHKernel $ \(x, r) -> do
+  ((x', r'), leftover) <- runUpdaterT program r
+  return ((x', r'), mhCorrectionFactor r r')
 
 -----------------------
 -- DEBUG EXPERIMENTS --
@@ -406,7 +248,7 @@ data Stat = Stat
   , newSize :: Int
   , resampledSize :: Int
   }
-
+{-
 mhRun :: (forall m. (MonadBayes m) => m a) -> Int -> Int -> [a]
 mhRun p seed steps = fst $ mhRunWithDebugger (idDebugger None) p seed steps
 
@@ -463,7 +305,7 @@ mhRunWithDebugger debugger program seed steps =
                     1.0
                   else
                     fromMaybe 1 $ do
-                      correction <- priorAcceptanceRatio r r1
+                      correction <- mhCorrectionFactor r r1
                       return $ min 1 (k1 / k * correction)
 
       accept <- bernoulli ratio
@@ -510,7 +352,7 @@ mhDebugHistogram histo p seed steps = do
   let reuseRate = fromIntegral totalReused / fromIntegral totalNewSize :: Double
   putStrLn $ printf "Reuse rate = %04.2f %%" (100 * reuseRate)
   histogram rateHisto (map (\s -> 1 - fromIntegral (resampledSize s) / fromIntegral (newSize s)) stats)
-
+-}
 data Histo = Histo { xmin :: Double -- lower bound of samples
                    , step :: Double -- size of bins
                    , xmax :: Double -- upper bound of samples
