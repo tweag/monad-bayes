@@ -12,6 +12,8 @@ import qualified HMM
 
 -- Algorithms to benchmark
 import Trace
+import Trace.Debug
+import Inference
 
 -- Standard library
 import Data.List (sort)
@@ -68,7 +70,7 @@ main = do
   hline
 
   putStrLn "MH on varChoices: KS-test against repeated sampling"
-  ksBench "varChoices" (mhRun varChoices 0) (sampleMany varChoices 0) (powers 14)
+  ksBench "varChoices" (mhRun varChoices 3821) (sampleMany varChoices 0) (powers 14)
   hline
   putStrLn "MH on varChoices: KS-test against another chain"
   ksBench "varChoices" (mhRun varChoices 0) (mhRun varChoices 3821) (powers 14)
