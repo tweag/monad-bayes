@@ -44,7 +44,8 @@ smc n d = flatten $ run start where
     step particles = mapMonad resample $ advance particles
     run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
     run particles = do
-      finished <- lift $ lift $ Empirical.all isRight $ runParticleT particles
+      --finished <- mapMonad (lift . fmap Right . Empirical.all isRight) particles
+      finished <- lift $ lift $ Empirical.all id $ finished particles
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.

@@ -7,11 +7,11 @@
 
 module Particle (
     ParticleT,
-    particleT,
     runParticleT,
     synchronize,
     flatten,
     advance,
+    finished,
     mapMonad
                 ) where
 
@@ -19,6 +19,7 @@ import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
+import Data.Either
 
 import Base
 
@@ -28,7 +29,6 @@ import Base
 -- All the probabilistic effects are delegated to the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
 type ParticleT m a = Coroutine (Await ()) m a
-particleT = Coroutine
 runParticleT = resume
 extract (Await f) = f ()
 
@@ -44,6 +44,10 @@ flatten = pogoStick extract
 -- If the computation is finished do nothing.
 advance :: Monad m => ParticleT m a -> ParticleT m a
 advance = bounce extract
+
+-- | Checks if the particle is finished.
+finished :: Monad m => ParticleT m a -> m Bool
+finished = fmap isRight . resume
 
 instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
     primitive = lift . primitive
