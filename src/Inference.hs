@@ -38,11 +38,13 @@ importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n 
 
 -- | Sequential Monte Carlo from the prior.
 smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
-smc n d = fmap (\(Left x) -> x) $ run start where
-    start = runParticleT $ lift (population n) >> d
-    step particles = resample $ particles >>= advance
+smc n d = flatten $ run start where
+    start = lift (population n) >> d
+    step :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
+    step particles = mapMonad resample $ advance particles
+    run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
     run particles = do
-      finished <- lift $ Empirical.all isLeft particles
+      finished <- lift $ lift $ Empirical.all isRight $ runParticleT particles
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
