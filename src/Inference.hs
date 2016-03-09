@@ -1,5 +1,7 @@
 {-# LANGUAGE
-  FlexibleContexts
+  FlexibleContexts,
+  ScopedTypeVariables,
+  Rank2Types
  #-}
 
 module Inference where
@@ -19,6 +21,8 @@ import Weighted
 import Particle
 import Empirical
 import Dist
+import Prior
+import Trace
 
 -- | Rejection sampling.
 rejection :: MonadDist m => RejectionT m a -> m a
@@ -55,6 +59,15 @@ smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 
+mhKernel'  :: (RandomDB r, MonadDist m) => r -> UpdaterT r m a -> MHKernel m (a, r)
+mhKernel' = const mhKernel
+
+mhKernel :: (RandomDB r, MonadDist m) => UpdaterT r m a -> MHKernel m (a, r)
+mhKernel program = MHKernel $ \(x, r) -> do
+  r1 <- mutate r
+  ((x', r'), leftover) <- runUpdaterT program r1
+  return ((x', r'), mhCorrectionFactor r r')
+
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
@@ -76,3 +89,6 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     when accept (put q)
     rest <- chain (n-1) next
     return (x:rest)
+
+mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
+mh' r0 n program = fmap (map fst) $ mh n (runTraceT $ prior program) $ mhKernel' r0 (prior program)
