@@ -91,8 +91,7 @@ collapse e = do
 proper :: MonadDist m => EmpiricalT m a -> m (a,LogFloat)
 proper e = liftM2 (,) (collapse e) (evidence e)
 
--- | Transforms a model into one with identical marginal, but with
--- SMC run as auxiliary latent variables.
+-- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
 transform :: (MonadDist m, MonadTrans t, MonadBayes (t m)) => EmpiricalT m a -> t m a
 transform e = do
   (x,p) <- lift $ proper e
