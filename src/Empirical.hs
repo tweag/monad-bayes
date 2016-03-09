@@ -19,6 +19,8 @@ import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
 import Data.Number.LogFloat as LogFloat
+import Data.Monoid
+import qualified Data.Foldable as Fold
 
 import Base
 import Weighted
@@ -43,12 +45,12 @@ population :: Monad m => Int -> EmpiricalT m ()
 population n = EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()
 
 -- | A special version of fold that returns the result in the transformed monad.
-fold :: Monad m => (b -> a -> b) -> b -> EmpiricalT m a -> m b
-fold f z = fmap (foldl f z . map fst) . runEmpiricalT
+fold :: (Monoid a, Monad m) => EmpiricalT m a -> m a
+fold = fmap (Fold.fold . map fst) . runEmpiricalT
 
 -- | Checks if all samples of the empirical distribution satisfy a condition, using `fold`.
 all :: Monad m => (a -> Bool) -> EmpiricalT m a -> m Bool
-all cond d = fold (\b x -> b && cond x) True d
+all cond = fmap getAll . fold . fmap (All . cond)
 
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
