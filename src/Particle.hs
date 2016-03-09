@@ -15,10 +15,10 @@ module Particle (
     mapMonad
                 ) where
 
-import Control.Monad.Identity
 import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
 import Control.Monad.Coroutine
+import Control.Monad.Coroutine.SuspensionFunctors
 
 import Base
 
@@ -27,25 +27,27 @@ import Base
 -- for implementation of SMC-related methods.
 -- All the probabilistic effects are delegated to the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
-type ParticleT m a = Coroutine Identity m a
+type ParticleT m a = Coroutine (Await ()) m a
 particleT = Coroutine
 runParticleT = resume
+extract (Await f) = f ()
 
 -- | A synchronization barrier where computation is paused.
 synchronize :: Monad m => ParticleT m ()
-synchronize = suspend $ Identity $ return ()
+synchronize = await
 
 -- | Removes the synchronization barriers.
 flatten :: Monad m => ParticleT m a -> m a
-flatten = pogoStick runIdentity
-
-instance MonadDist m => MonadDist (Coroutine Identity m) where
-    primitive = lift . primitive
-
-instance MonadBayes m => MonadBayes (Coroutine Identity m) where
-    factor w = lift (factor w) >> synchronize
+flatten = pogoStick extract
 
 -- | Run a particle to the next barrier.
 -- If the computation is finished do nothing.
-advance :: Monad m => ParticleT m a -> ParticleT m a --m (CoroutineStepResult Identity m a)
-advance = bounce runIdentity
+advance :: Monad m => ParticleT m a -> ParticleT m a
+advance = bounce extract
+
+instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
+    primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (Coroutine (Await ()) m) where
+    factor w = lift (factor w) >> synchronize
+
