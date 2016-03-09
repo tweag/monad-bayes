@@ -2,7 +2,9 @@
   TupleSections,
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
-  FlexibleContexts
+  FlexibleContexts,
+  ExistentialQuantification,
+  RankNTypes
  #-}
 
 module Empirical (
@@ -41,8 +43,9 @@ instance MonadTrans EmpiricalT where
 -- | Set the population size for the empirical distribution.
 -- Bear in mind that invoking `population` twice in the same computation
 -- leads to multiplying the number of samples.
-population :: Monad m => Int -> EmpiricalT m ()
-population n = EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()
+population :: MonadDist m => Int -> EmpiricalT m ()
+population n = (EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()) >>
+               factor (1 / fromIntegral n)
 
 -- | A special version of fold that returns the result in the transformed monad.
 fold :: (Monoid a, Monad m) => EmpiricalT m a -> m a
@@ -63,3 +66,31 @@ resample d = do
   population (length cat)
   ancestor <- discrete weights
   return (ps !! ancestor)
+
+-- | Model evidence estimator, also known as pseudo-marginal likelihood.
+evidence :: Monad m => EmpiricalT m a -> m LogFloat
+evidence e = do
+  zs <- runEmpiricalT e
+  return $ LogFloat.sum $ map snd zs
+
+-- | Pick a sample at random from the empirical distribution,
+-- according to the weights.
+collapse :: MonadDist m => EmpiricalT m a -> m a
+collapse e = do
+  zs <- runEmpiricalT e
+  let (xs,ws) = unzip zs
+  ancestor <- discrete ws
+  return (xs !! ancestor)
+
+-- | Properly weighted version of 'collapse', that is returned with
+-- model evidence estimator from the same run.
+proper :: MonadDist m => EmpiricalT m a -> m (a,LogFloat)
+proper e = liftM2 (,) (collapse e) (evidence e)
+
+-- | Transforms a model into one with identical marginal, but with
+-- SMC run as auxiliary latent variables.
+transform :: (MonadDist m, MonadBayes n) => (forall a. m a -> n a) -> EmpiricalT m a -> n a
+transform conv e = do
+  (x,p) <- conv $ proper e
+  factor p
+  return x
