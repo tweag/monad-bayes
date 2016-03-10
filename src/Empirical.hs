@@ -11,7 +11,7 @@ module Empirical (
     population,
     spawn,
     all,
-    resample,
+    resampleN,
     evidence,
     collapse,
     proper,
@@ -67,7 +67,9 @@ all cond = fmap getAll . fold . fmap (All . cond)
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
-resample d = lift (population d) >>= flip resampleN d
+resample d = do
+  n <- lift (population d)
+  resampleN n d
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => EmpiricalT m a -> m LogFloat

@@ -46,7 +46,7 @@ smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
 smc n d = flatten $ run start where
     start = lift (spawn n) >> d
     step :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
-    step particles = mapMonad resample $ advance particles
+    step particles = mapMonad (resampleN n) $ advance particles
     run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
     run particles = do
       finished <- lift $ lift $ Empirical.all id $ finished particles
