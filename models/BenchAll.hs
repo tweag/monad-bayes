@@ -14,8 +14,8 @@ import qualified HMM
 import Inference
 import Trace
 import Trace.Debug hiding (mhRun)
-import qualified Trace.List as List
-import qualified Trace.Indexed as Indexed
+import qualified Trace.ByTime as ByTime
+import qualified Trace.ByDistribution as ByDist
 
 -- Standard library
 import Data.List (sort)
@@ -27,7 +27,7 @@ import Base
 import Dist
 import Metrics
 
-mhRun = mhRunWith Indexed.empty
+mhRun = mhRunWith ByDist.empty
 
 main = do
   -- make sure `putStrLn` prints to console immediately

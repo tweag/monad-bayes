@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Trace.List where
+module Trace.ByTime where
 
------------------------------
--- CACHE LISTS AS RANDOMDB --
------------------------------
+------------------------------------
+-- RANDOM CHOICES INDEXED BY TIME --
+------------------------------------
 
 import Base
 import Primitive

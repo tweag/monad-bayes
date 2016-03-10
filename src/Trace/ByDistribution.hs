@@ -3,11 +3,11 @@
   FlexibleInstances
  #-}
 
-module Trace.Indexed where
+module Trace.ByDistribution where
 
-----------------------------------------------
--- MULTIMAP (PRIMITIVE _) CACHE AS RANDOMDB --
-----------------------------------------------
+--------------------------------------------
+-- RANDOM CHOICES INDEXED BY DISTRIBUTION --
+--------------------------------------------
 
 -- Caution:
 -- Implementation is wrong at the moment.
@@ -20,7 +20,7 @@ import Base
 import Primitive
 import Trace
 
-import Trace.List hiding (empty)
+import Trace.ByTime hiding (empty)
 
 newtype Indexed = Indexed { runIndexed :: [(Prim, [Cache])] }
 
