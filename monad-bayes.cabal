@@ -17,7 +17,12 @@ library
   hs-source-dirs:      src
   exposed-modules:     Primitive, Base, Dist, Sampler, Prior,
                        Rejection, Weighted, Empirical, Particle,
-                       Inference
+                       Inference, Metrics,
+                       --
+                       Trace, Trace.Debug,
+                       Trace.WithMultimap,
+                       Trace.ByTime, Trace.ByDist, Trace.ByType
+                       --
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random

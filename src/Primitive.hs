@@ -16,6 +16,13 @@ data Primitive a where
     Gamma :: Double -> Double -> Primitive Double
     Beta :: Double -> Double -> Primitive Double
 
+instance Eq (Primitive a) where
+  Categorical xs == Categorical ys = xs == ys
+  Normal m s     == Normal m' s'   = m == m' && s == s'
+  Gamma  a b     == Gamma  a' b'   = a == a' && b == b'
+  Beta   a b     == Beta   a' b'   = a == a' && b == b'
+  _              == _              = False
+
 -- | The probability density function.
 pdf :: Primitive a -> a -> LogFloat
 pdf (Categorical d) = \x -> case lookup x d of

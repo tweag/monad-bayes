@@ -1,5 +1,7 @@
 {-# LANGUAGE
   FlexibleContexts,
+  ScopedTypeVariables,
+  Rank2Types,
   TupleSections
  #-}
 
@@ -20,6 +22,8 @@ import Weighted
 import Particle
 import Empirical
 import Dist
+import Prior
+import Trace
 
 -- | Rejection sampling.
 rejection :: MonadDist m => RejectionT m a -> m a
@@ -58,12 +62,21 @@ smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 
+mhKernel'  :: (RandomDB r, MonadDist m) => r -> UpdaterT r m a -> MHKernel m (a, r)
+mhKernel' = const mhKernel
+
+mhKernel :: (RandomDB r, MonadDist m) => UpdaterT r m a -> MHKernel m (a, r)
+mhKernel program = MHKernel $ \(x, r) -> do
+  r1 <- mutate r
+  ((x', r'), leftover) <- runUpdaterT program r1
+  return ((x', r'), mhCorrectionFactor r r')
+
 -- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
 -- part of ratio that results from MonadDist effects and transition function,
 -- while state carries the factor associated with MonadBayes effects.
 mh :: MonadDist m => Int ->  WeightedT m a -> MHKernel (WeightedT m) a -> m [a]
 mh n init trans = evalStateT (start >>= chain n) 1 where
-  --start :: StateT LogFloat m a
+  -- start :: StateT LogFloat m a
   start = do
     (x, p) <- lift $ runWeightedT init
     put p
@@ -74,11 +87,14 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
   chain n x = do
     p <- get
     ((y,w), q) <- lift $ runWeightedT $ runMHKernel trans x
-    accept <- bernoulli $ min 1 (q * w / p)
+    accept <- bernoulli $ if p == 0 then 1 else min 1 (q * w / p)
     let next = if accept then y else x
     when accept (put q)
     rest <- chain (n-1) next
     return (x:rest)
+
+mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
+mh' r0 n program = fmap (map fst) $ mh n (runTraceT program) $ mhKernel' r0 program
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 mhPrior :: MonadDist m => Int -> WeightedT m a -> m [a]
