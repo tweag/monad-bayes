@@ -18,7 +18,7 @@ library
   exposed-modules:     Primitive, Base, Dist, Sampler, Prior,
                        Rejection, Weighted, Empirical, Particle,
                        Inference, Metrics,
-                       Trace, Trace.Debug, Trace.ByTime, Trace.ByDistribution
+                       Trace, Trace.Debug, Trace.ByTime, Trace.ByDist
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random

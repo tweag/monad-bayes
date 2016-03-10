@@ -15,7 +15,7 @@ import Inference
 import Trace
 import Trace.Debug hiding (mhRun)
 import qualified Trace.ByTime as ByTime
-import qualified Trace.ByDistribution as ByDist
+import qualified Trace.ByDist as ByDist
 
 -- Standard library
 import Data.List (sort)

@@ -20,7 +20,7 @@ import Sampler
 import Trace
 
 import qualified Trace.ByTime as ByTime
-import qualified Trace.ByDistribution as ByDist
+import qualified Trace.ByDist as ByDist
 
 mhRun :: (forall m. (MonadBayes m) => m a) -> Int -> Int -> [a]
 mhRun = mhRunWith ByTime.empty
