@@ -16,6 +16,7 @@ import Trace
 import Trace.Debug hiding (mhRun)
 import qualified Trace.ByTime as ByTime
 import qualified Trace.ByDist as ByDist
+import qualified Trace.ByType as ByType
 
 -- Standard library
 import Data.List (sort)
@@ -27,7 +28,7 @@ import Base
 import Dist
 import Metrics
 
-mhRun = mhRunWith ByDist.empty
+mhRun = mhRunWith ByType.empty
 
 main = do
   -- make sure `putStrLn` prints to console immediately
