@@ -11,12 +11,15 @@ module Sampler (
                ) where
 
 import System.Random
+import System.Random.MWC
+import System.Random.Mersenne.Pure64
 import Control.Monad (liftM2)
 import Data.Tuple
 import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
 import Data.Random.Distribution.Categorical
 import Data.Random.Distribution
+import qualified Data.Random.Sample
 import Data.Random hiding (sample)
 import Control.Arrow (first,second)
 import Data.Number.LogFloat
@@ -67,7 +70,7 @@ wrapper = Sampler . (fst .) . sampleState
 
 
 ---------------------------------------------------
--- MonadDist instance for the RVar monad
+-- MonadDist instance for the RVar monad and concrete samplers
 
 instance MonadDist (RVarT m) where
   --should probably normalize before converting from log-domain
@@ -76,3 +79,18 @@ instance MonadDist (RVarT m) where
   normal m s = rvarT $ Normal m s
   gamma  a b = rvarT $ Gamma a (1 / b)
   beta   a b = rvarT $ Beta a b
+
+instance MonadDist IO where
+    primitive d = convert $ primitive d where
+        convert :: RVar a -> IO a
+        convert = Data.Random.Sample.sample
+
+instance Monad m => MonadDist (StateT StdGen m) where
+    primitive d = convert $ primitive d where
+        convert :: Monad m => RVar a -> StateT StdGen m a
+        convert = Data.Random.Sample.sample
+
+instance Monad m => MonadDist (StateT PureMT m) where
+    primitive d = convert $ primitive d where
+        convert :: Monad m => RVar a -> StateT PureMT m a
+        convert = Data.Random.Sample.sample
