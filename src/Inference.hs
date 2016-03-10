@@ -1,7 +1,8 @@
 {-# LANGUAGE
   FlexibleContexts,
   ScopedTypeVariables,
-  Rank2Types
+  Rank2Types,
+  TupleSections
  #-}
 
 module Inference where
@@ -38,15 +39,17 @@ importance = runWeightedT
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a, MonadDist m) =>
                Int -> EmpiricalT m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ population n >> d
+importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
-smc n d = fmap (\(Left x) -> x) $ run start where
-    start = runParticleT $ lift (population n) >> d
-    step particles = resample $ particles >>= advance
+smc n d = flatten $ run start where
+    start = lift (spawn n) >> d
+    step :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
+    step particles = mapMonad resample $ advance particles
+    run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
     run particles = do
-      finished <- lift $ Empirical.all isLeft particles
+      finished <- lift $ lift $ Empirical.all id $ finished particles
       if finished then particles else run (step particles)
 
 -- | `smc` with post-processing.
@@ -92,3 +95,14 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 
 mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
 mh' r0 n program = fmap (map fst) $ mh n (runTraceT program) $ mhKernel' r0 program
+
+-- | Metropolis-Hastings version that uses the prior as proposal distribution.
+mhPrior :: MonadDist m => Int -> WeightedT m a -> m [a]
+mhPrior n d = mh n d kernel where
+    kernel = MHKernel $ const $ fmap (,1) d
+
+-- | Particle Independent Metropolis Hastings. The first argument is the number
+-- of particles in each SMC run, the second is the number of samples, equal to
+-- the number of SMC runs.
+pimh :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> m [a]
+pimh np ns d = mhPrior np $ transform $ smc np d

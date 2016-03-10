@@ -8,9 +8,13 @@
 module Empirical (
     EmpiricalT,
     runEmpiricalT,
-    population,
+    spawn,
     all,
-    resample
+    resample,
+    evidence,
+    collapse,
+    proper,
+    transform
                  ) where
 
 import Prelude hiding (all)
@@ -19,6 +23,8 @@ import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
 import Data.Number.LogFloat as LogFloat
+import Data.Monoid
+import qualified Data.Foldable as Fold
 
 import Base
 import Weighted
@@ -36,28 +42,58 @@ runEmpiricalT = runListT . runWeightedT . unEmpirical
 instance MonadTrans EmpiricalT where
     lift = EmpiricalT . lift . lift
 
--- | Set the population size for the empirical distribution.
--- Bear in mind that invoking `population` twice in the same computation
+-- | The number of samples used for approximation.
+population :: Monad m => EmpiricalT m a -> m Int
+population e = do
+  zs <- runEmpiricalT e
+  return (length zs)
+
+-- | Set the number of samples for the empirical distribution.
+-- Bear in mind that invoking `spawn` twice in the same computation
 -- leads to multiplying the number of samples.
-population :: Monad m => Int -> EmpiricalT m ()
-population n = EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()
+spawn :: MonadDist m => Int -> EmpiricalT m ()
+spawn n = (EmpiricalT $ lift $ ListT $ sequence $ replicate n $ return ()) >>
+               factor (1 / fromIntegral n)
 
 -- | A special version of fold that returns the result in the transformed monad.
-fold :: Monad m => (b -> a -> b) -> b -> EmpiricalT m a -> m b
-fold f z = fmap (foldl f z . map fst) . runEmpiricalT
+fold :: (Monoid a, Monad m) => EmpiricalT m a -> m a
+fold = fmap (Fold.fold . map fst) . runEmpiricalT
 
 -- | Checks if all samples of the empirical distribution satisfy a condition, using `fold`.
 all :: Monad m => (a -> Bool) -> EmpiricalT m a -> m Bool
-all cond d = fold (\b x -> b && cond x) True d
+all cond = fmap getAll . fold . fmap (All . cond)
 
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
 resample d = do
-  cat <- lift $ runEmpiricalT d
-  let (ps,weights) = unzip cat
-  let evidence = LogFloat.sum weights
-  factor evidence --to keep track of model evidence
-  population (length cat)
-  ancestor <- discrete weights
-  return (ps !! ancestor)
+  n <- lift $ population d
+  spawn n
+  transform d
+
+-- | Model evidence estimator, also known as pseudo-marginal likelihood.
+evidence :: Monad m => EmpiricalT m a -> m LogFloat
+evidence e = do
+  zs <- runEmpiricalT e
+  return $ LogFloat.sum $ map snd zs
+
+-- | Pick a sample at random from the empirical distribution,
+-- according to the weights.
+collapse :: MonadDist m => EmpiricalT m a -> m a
+collapse e = do
+  zs <- runEmpiricalT e
+  let (xs,ws) = unzip zs
+  ancestor <- discrete ws
+  return (xs !! ancestor)
+
+-- | Properly weighted version of 'collapse', that is returned with
+-- model evidence estimator from the same run.
+proper :: MonadDist m => EmpiricalT m a -> m (a,LogFloat)
+proper e = liftM2 (,) (collapse e) (evidence e)
+
+-- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
+transform :: (MonadDist m, MonadTrans t, MonadBayes (t m)) => EmpiricalT m a -> t m a
+transform e = do
+  (x,p) <- lift $ proper e
+  factor p
+  return x
