@@ -7,7 +7,11 @@
 
 module Sampler (
     Sampler,
-    sample
+    sample,
+    StdSampler,
+    stdSample,
+    MTSampler,
+    mtSample
                ) where
 
 import System.Random
@@ -85,12 +89,20 @@ instance MonadDist IO where
         convert :: RVar a -> IO a
         convert = Data.Random.Sample.sample
 
-instance Monad m => MonadDist (StateT StdGen m) where
-    primitive d = convert $ primitive d where
-        convert :: Monad m => RVar a -> StateT StdGen m a
-        convert = Data.Random.Sample.sample
+newtype StdSampler a = StdSampler (State StdGen a)
+    deriving (Functor, Applicative, Monad)
+instance MonadDist StdSampler where
+  primitive d = convert $ primitive d where
+    convert :: RVar a -> StdSampler a
+    convert = StdSampler . Data.Random.Sample.sample
+stdSample :: StdSampler a -> StdGen -> a
+stdSample (StdSampler s) = evalState s
 
-instance Monad m => MonadDist (StateT PureMT m) where
+newtype MTSampler a = MTSampler (State PureMT a)
+    deriving (Functor, Applicative, Monad)
+instance MonadDist (MTSampler) where
     primitive d = convert $ primitive d where
-        convert :: Monad m => RVar a -> StateT PureMT m a
-        convert = Data.Random.Sample.sample
+        convert :: RVar a -> MTSampler a
+        convert = MTSampler . Data.Random.Sample.sample
+mtSample :: MTSampler a -> PureMT -> a
+mtSample (MTSampler s) = evalState s
