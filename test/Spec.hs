@@ -1,2 +1,9 @@
+import Test.Hspec
+
+import qualified TestWeighted
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = hspec $ do
+  describe "Weighted" $ do
+    it "accumulates likelihood correctly" $ do
+      TestWeighted.passed `shouldBe` True
