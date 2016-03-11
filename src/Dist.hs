@@ -10,6 +10,7 @@ module Dist (
     toList,
     explicit,
     evidence,
+    mass,
     compact,
     normalize,
     enumerate
@@ -58,6 +59,11 @@ explicit = map (second fromLogFloat) . toList
 -- | Returns the model evidence, that is sum of all weights.
 evidence :: Dist a -> LogFloat
 evidence = LogFloat.sum . map snd . toList
+
+-- | Probability mass of a specific value.
+mass :: Ord a => Dist a -> a -> Double
+mass d a = case lookup a (enumerate d) of Just p -> p
+                                          Nothing -> 0
 
 -- | Aggregate weights of equal values.
 -- | The resulting list is sorted ascendingly according to values.
