@@ -12,6 +12,7 @@ hard = do
                                               (True,False) -> 0.8
                                               (False,True) -> 0.9
                                               (False,False) -> 0.0
+  condition (wet == False)
   return rain
 
 soft :: MonadBayes m => m Bool
