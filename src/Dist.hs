@@ -9,6 +9,7 @@ module Dist (
     Dist,
     toList,
     explicit,
+    evidence,
     compact,
     normalize,
     enumerate
@@ -53,7 +54,12 @@ toList = runWeightedT . unDist
 explicit :: Dist a -> [(a,Double)]
 explicit = map (second fromLogFloat) . toList
 
+-- | Returns the model evidence, that is sum of all weights.
+evidence :: Dist a -> LogFloat
+evidence = LogFloat.sum . map snd . toList
+
 -- | Aggregate weights of equal values.
+-- | The resulting list is sorted ascendingly according to values.
 compact :: Ord a => [(a,Double)] -> [(a,Double)]
 compact = Map.toAscList . Map.fromListWith (+)
 
@@ -63,8 +69,7 @@ normalize xs = map (second (/ norm)) xs where
     norm = sum (map snd xs)
 
 -- | Aggregation and normalization of weights.
+-- | The resulting list is sorted ascendingly according to values.
 enumerate :: Ord a => Dist a -> [(a,Double)]
 enumerate d = simplify $ explicit d where
-    simplify = normalize . compact    
-    
-
+    simplify = normalize . compact
