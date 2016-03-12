@@ -42,20 +42,19 @@ importance' :: (Ord a, Typeable a, MonadDist m) =>
 importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
-smc :: MonadDist m => Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
-smc n d = flatten $ run start where
-    start = lift (spawn n) >> d
-    step :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
-    step particles = mapMonad (resampleN n) $ advance particles
-    run :: MonadDist m => ParticleT (EmpiricalT m) a -> ParticleT (EmpiricalT m) a
-    run particles = do
-      finished <- lift $ lift $ Empirical.all id $ finished particles
-      if finished then particles else run (step particles)
+-- The first argument is the number of resampling points, the second is
+-- the number of particles used.
+-- If the first argument is smaller than the number of observations in the model,
+-- the algorithm is still correct, but doesn't perform resampling after kth time.
+smc :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
+smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
+  start = lift (spawn n) >> d
+  step = mapMonad (resampleN n) . advance
 
 -- | `smc` with post-processing.
-smc' :: (Ord a, Typeable a, MonadDist m) => Int ->
+smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
         ParticleT (EmpiricalT m) a -> m [(a,Double)]
-smc' n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc n d
+smc' k n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc k n d
 
 
 
@@ -101,8 +100,8 @@ mhPrior :: MonadDist m => Int -> WeightedT m a -> m [a]
 mhPrior n d = mh n d kernel where
     kernel = MHKernel $ const $ fmap (,1) d
 
--- | Particle Independent Metropolis Hastings. The first argument is the number
--- of particles in each SMC run, the second is the number of samples, equal to
+-- | Particle Independent Metropolis Hastings. The first two arguments are
+-- passed to SMC, the third is the number of samples, equal to
 -- the number of SMC runs.
-pimh :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> m [a]
-pimh np ns d = mhPrior np $ transform $ smc np d
+pimh :: MonadDist m => Int -> Int -> Int -> ParticleT (EmpiricalT m) a -> m [a]
+pimh k np ns d = mhPrior np $ transform $ smc k np d

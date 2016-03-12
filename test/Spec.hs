@@ -4,6 +4,7 @@ import qualified TestWeighted
 import qualified TestDist
 import qualified TestEmpirical
 import qualified TestParticle
+import qualified TestInference
 
 main :: IO ()
 main = hspec $ do
@@ -44,3 +45,8 @@ main = hspec $ do
       TestParticle.check_sync 0 `shouldBe` True
       TestParticle.check_sync 1 `shouldBe` True
       TestParticle.check_sync 2 `shouldBe` True
+  describe "SMC" $ do
+    it "terminates" $ do
+      seq TestInference.check_terminate_smc () `shouldBe` ()
+    it "preserves the distribution on the sprinkler model" $ do
+      TestInference.check_preserve_smc `shouldBe` True
