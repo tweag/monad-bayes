@@ -7,7 +7,9 @@ module Weighted (
     weight,
     unWeight,
     WeightedT(WeightedT),  --constructor is needed in Dist
-    runWeightedT
+    runWeightedT,
+    WeightRecorderT,
+    duplicateWeight
                   ) where
 
 import Control.Arrow (first,second)
@@ -40,3 +42,17 @@ runWeightedT = fmap (second unWeight) . runWriterT . toWriterT
 
 instance MonadDist m => MonadBayes (WeightedT m) where
     factor = WeightedT . tell . weight
+
+-- | Similar to 'WeightedT', only the weight is both recorded and passed
+-- to the underlying monad. Useful for getting the exact posterior and
+-- the associated likelihood.
+newtype WeightRecorderT m a =
+  WeightRecorderT {runWeightRecorderT :: WeightedT m a}
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
+
+-- | Both record weight and pass it to the underlying monad.
+duplicateWeight :: MonadBayes m => WeightRecorderT m a -> WeightedT m a
+duplicateWeight = runWeightRecorderT
+
+instance MonadBayes m => MonadBayes (WeightRecorderT m) where
+  factor w = WeightRecorderT (factor w >> lift (factor w))
