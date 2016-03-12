@@ -49,7 +49,7 @@ importance' n d = fmap (enumerate . categorical) $ runEmpiricalT $ spawn n >> d
 smc :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
 smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
   start = lift (spawn n) >> d
-  step = mapMonad (resampleN n) . advance
+  step = Particle.mapMonad (resampleN n) . advance
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
@@ -104,4 +104,4 @@ mhPrior n d = mh n d kernel where
 -- passed to SMC, the third is the number of samples, equal to
 -- the number of SMC runs.
 pimh :: MonadDist m => Int -> Int -> Int -> ParticleT (EmpiricalT m) a -> m [a]
-pimh k np ns d = mhPrior np $ transform $ smc k np d
+pimh k np ns d = mhPrior ns $ transform $ smc k np d
