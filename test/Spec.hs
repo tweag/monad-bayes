@@ -59,8 +59,9 @@ main = hspec $ do
       TestInference.check_preserve_smc `shouldBe` True
   describe "MH" $ do
     it "MH from prior leaves posterior invariant" $ do
-      pending
+      TestInference.check_prior_trans `shouldBe` True
     it "Trace MH leaves posterior invariant" $ do
-      pending
-    it "PIMH leaves posterior invariant" $ do
-      pending
+      TestInference.check_trace_trans `shouldBe` True
+    -- too large to execute
+    -- it "PIMH leaves posterior invariant" $ do
+    --   TestInference.check_pimh_trans `shouldBe` True
