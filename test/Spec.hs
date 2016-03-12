@@ -3,6 +3,7 @@ import Test.Hspec
 import qualified TestWeighted
 import qualified TestDist
 import qualified TestEmpirical
+import qualified TestParticle
 
 main :: IO ()
 main = hspec $ do
@@ -32,3 +33,14 @@ main = hspec $ do
       it "resample preserves the distribution" $ do
         TestEmpirical.resample_check 1 `shouldBe` True
         TestEmpirical.resample_check 2 `shouldBe` True
+  describe "Particle" $ do
+    it "stops at every factor" $ do
+      TestParticle.check_two_sync 0 `shouldBe` True
+      TestParticle.check_two_sync 1 `shouldBe` True
+      TestParticle.check_two_sync 2 `shouldBe` True
+    it "preserves the distribution" $ do
+      TestParticle.check_preserve `shouldBe` True
+    it "produces correct intermediate weights" $ do
+      TestParticle.check_sync 0 `shouldBe` True
+      TestParticle.check_sync 1 `shouldBe` True
+      TestParticle.check_sync 2 `shouldBe` True
