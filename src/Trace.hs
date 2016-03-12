@@ -168,6 +168,9 @@ deriving instance (Monoid r, Monad m) => MonadWriter r (TraceT r m)
 runTraceT :: TraceT r m a -> m (a, r)
 runTraceT (TraceT writer) = runWriterT writer
 
+mapMonad :: (m (a,r) -> n (a,r)) -> TraceT r m a -> TraceT r n a
+mapMonad t (TraceT d) = TraceT $ mapWriterT t d
+
 -- WriterT preserves MonadDist
 instance (RandomDB r, MonadDist m) => MonadDist (TraceT r m) where
   primitive d = do
