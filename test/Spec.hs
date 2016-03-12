@@ -4,6 +4,7 @@ import qualified TestWeighted
 import qualified TestDist
 import qualified TestEmpirical
 import qualified TestParticle
+import qualified TestTrace
 import qualified TestInference
 
 main :: IO ()
@@ -45,8 +46,21 @@ main = hspec $ do
       TestParticle.check_sync 0 `shouldBe` True
       TestParticle.check_sync 1 `shouldBe` True
       TestParticle.check_sync 2 `shouldBe` True
+  describe "Trace" $ do
+    context "RandomDB = [Cache]" $ do
+      it "correctly records values" $ do
+        TestTrace.check_writing `shouldBe` True
+      it "correctly reuses values" $ do
+        TestTrace.check_reading `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
     it "preserves the distribution on the sprinkler model" $ do
       TestInference.check_preserve_smc `shouldBe` True
+  describe "MH" $ do
+    it "MH from prior leaves posterior invariant" $ do
+      pending
+    it "Trace MH leaves posterior invariant" $ do
+      pending
+    it "PIMH leaves posterior invariant" $ do
+      pending
