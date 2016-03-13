@@ -21,6 +21,7 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Memo.StateCache
 
 
 import Primitive
@@ -174,3 +175,10 @@ instance MonadDist m => MonadDist (ContT r m) where
 
 instance MonadBayes m => MonadBayes (ContT r m) where
     factor = lift . factor
+
+
+instance MonadDist m => MonadDist (StateCache c m) where
+  primitive = lift . primitive
+
+instance MonadBayes m => MonadBayes (StateCache c m) where
+  factor = lift . factor
