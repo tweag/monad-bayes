@@ -18,10 +18,11 @@ import Data.List
 import Data.Maybe
 import Data.Ix (range)
 import Numeric.SpecFunctions (logGamma, factorial)
+import Control.Monad.Memo (memo, startEvalMemoT)
 
 import Base
 import Primitive
-import Dist
+--import Dist
 
 type NormalInvGamma = (Double,Double,Double,Double)
 
@@ -46,6 +47,8 @@ dp concentration base = do
   breaks <- sequence $ repeat $ fmap logFloat $ beta 1 concentration
   atoms  <- sequence $ repeat base
   return $ stick breaks atoms
+
+
 
 -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
 dpMixture :: MonadBayes d => d [Int]
@@ -89,7 +92,32 @@ normalizePartition xs = mapMaybe (`lookup` trans) xs where
   trans = zip unique [1..]
   unique = nub xs
 
+-------------------------------------------------------
+-- Strict version using memoization
 
+cluster_param :: MonadDist m => Int -> m (LogFloat, Double, Double)
+cluster_param _ = do
+  b <- beta 1 1
+  var <- do
+    t <- gamma a b
+    return (1 / (k*t))
+  mean <- normal m var
+  return (logFloat b, mean, var)
+
+dpMem :: MonadBayes m => m [Int]
+dpMem = startEvalMemoT $ mapM process_point obs where
+  process_point x = do
+    (c, mean, var) <- get_cluster
+    observe (Normal mean (sqrt var)) x
+    return c
+  get_cluster = stick 0 where
+    stick c = do
+      (b, mean, var) <- memo cluster_param c
+      stop <- bernoulli b
+      if stop then return (c, mean, var) else stick (c+1)
+
+dpMemClusters :: MonadBayes d => d Int
+dpMemClusters = fmap (maximum . normalizePartition) dpMixture
 
 ----------------------------------------------------------
 -- Exact posterior
