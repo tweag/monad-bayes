@@ -2,7 +2,8 @@
   TupleSections,
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
-  FlexibleContexts
+  FlexibleContexts,
+  RankNTypes
  #-}
 
 module Particle (
@@ -11,7 +12,7 @@ module Particle (
     flatten,
     advance,
     finished,
-    mapMonad
+    Particle.mapMonad
                 ) where
 
 import Control.Monad.Trans.Class
@@ -47,9 +48,12 @@ advance = bounce extract
 finished :: Monad m => ParticleT m a -> m Bool
 finished = fmap isRight . resume
 
+mapMonad :: Monad m =>
+            (forall a. m a -> m a) -> ParticleT m a -> ParticleT m a
+mapMonad f cort = Coroutine {resume= f $ resume cort}
+
 instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
     primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (Coroutine (Await ()) m) where
     factor w = lift (factor w) >> synchronize
-
