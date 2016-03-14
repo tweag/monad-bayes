@@ -11,6 +11,7 @@ module Empirical (
     population,
     spawn,
     all,
+    resample,
     resampleN,
     evidence,
     collapse,
@@ -40,6 +41,9 @@ newtype EmpiricalT m a = EmpiricalT {unEmpirical :: WeightedT (ListT m) a}
 runEmpiricalT :: Functor m => EmpiricalT m a -> m [(a, LogFloat)]
 runEmpiricalT = runListT . runWeightedT . unEmpirical
 
+fromList :: Monad m => m [(a, LogFloat)] -> EmpiricalT m a
+fromList = EmpiricalT . withWeight . ListT
+
 instance MonadTrans EmpiricalT where
     lift = EmpiricalT . lift . lift
 
@@ -64,13 +68,6 @@ fold = fmap (Fold.fold . map fst) . runEmpiricalT
 all :: Monad m => (a -> Bool) -> EmpiricalT m a -> m Bool
 all cond = fmap getAll . fold . fmap (All . cond)
 
--- | Resample the particles using the underlying monad.
--- Model evidence estimate is preserved in total weight.
-resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
-resample d = do
-  n <- lift (population d)
-  resampleN n d
-
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => EmpiricalT m a -> m LogFloat
 evidence = fmap snd . proper
@@ -79,6 +76,18 @@ evidence = fmap snd . proper
 -- according to the weights.
 collapse :: MonadDist m => EmpiricalT m a -> m a
 collapse = fmap fst . proper
+
+-- | Resample the particles using the underlying monad.
+-- Model evidence estimate is preserved in total weight.
+resample :: MonadDist m => EmpiricalT m a -> EmpiricalT m a
+resample d = fromList $ do
+  ys <- runEmpiricalT d
+  let (xs,ws) = unzip ys
+  let z = LogFloat.sum ws
+  let n = length ys
+  offsprings <- multinomial ys n
+  let new_samples = concat [replicate k x | (x,k) <- offsprings]
+  return $ map (,z / fromIntegral n) new_samples
 
 -- | As 'resample', but with set new population size.
 resampleN :: MonadDist m => Int -> EmpiricalT m a -> EmpiricalT m a
@@ -104,6 +113,3 @@ transform e = do
   (x,p) <- lift $ proper e
   factor p
   return x
-
-
-

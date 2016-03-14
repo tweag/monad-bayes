@@ -18,10 +18,12 @@ import System.Random
 import System.Random.MWC
 import System.Random.Mersenne.Pure64
 import Control.Monad (liftM2)
+import qualified Data.Number.LogFloat as LogFloat
 import Data.Tuple
 import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
 import Data.Random.Distribution.Categorical
+import Data.Random.Distribution.Multinomial (Multinomial(Multinomial))
 import Data.Random.Distribution
 import qualified Data.Random.Sample
 import Data.Random hiding (sample)
@@ -83,11 +85,19 @@ instance MonadDist (RVarT m) where
   normal m s = rvarT $ Normal m s
   gamma  a b = rvarT $ Gamma a (1 / b)
   beta   a b = rvarT $ Beta a b
+  multinomial ps n = do
+    let (xs,ws) = unzip ps
+    let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws
+    counts <- rvarT $ Multinomial qs n
+    return $ zip xs counts
 
 instance MonadDist IO where
     primitive d = convert $ primitive d where
         convert :: RVar a -> IO a
         convert = Data.Random.Sample.sample
+    multinomial ps n = convert $ multinomial ps n where
+      convert :: RVar a -> IO a
+      convert = Data.Random.Sample.sample
 
 newtype StdSampler a = StdSampler (State StdGen a)
     deriving (Functor, Applicative, Monad)
@@ -95,6 +105,10 @@ instance MonadDist StdSampler where
   primitive d = convert $ primitive d where
     convert :: RVar a -> StdSampler a
     convert = StdSampler . Data.Random.Sample.sample
+  multinomial ps n = convert $ multinomial ps n where
+    convert :: RVar a -> StdSampler a
+    convert = StdSampler . Data.Random.Sample.sample
+
 stdSample :: StdSampler a -> StdGen -> a
 stdSample (StdSampler s) = evalState s
 
@@ -104,5 +118,8 @@ instance MonadDist (MTSampler) where
     primitive d = convert $ primitive d where
         convert :: RVar a -> MTSampler a
         convert = MTSampler . Data.Random.Sample.sample
+    multinomial ps n = convert $ multinomial ps n where
+      convert :: RVar a -> MTSampler a
+      convert = MTSampler . Data.Random.Sample.sample
 mtSample :: MTSampler a -> PureMT -> a
 mtSample (MTSampler s) = evalState s

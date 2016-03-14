@@ -7,6 +7,7 @@ module Weighted (
     weight,
     unWeight,
     WeightedT(WeightedT),  --constructor is needed in Dist
+    withWeight,
     runWeightedT,
     WeightRecorderT,
     duplicateWeight
@@ -39,6 +40,9 @@ newtype WeightedT m a = WeightedT {toWriterT :: WriterT Weight m a}
 
 runWeightedT :: Functor m => WeightedT m a -> m (a, LogFloat)
 runWeightedT = fmap (second unWeight) . runWriterT . toWriterT
+
+withWeight :: Monad m => m (a, LogFloat) -> WeightedT m a
+withWeight = WeightedT . WriterT . fmap (second weight)
 
 instance MonadDist m => MonadBayes (WeightedT m) where
     factor = WeightedT . tell . weight

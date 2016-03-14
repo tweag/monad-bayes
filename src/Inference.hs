@@ -56,7 +56,12 @@ smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
         ParticleT (EmpiricalT m) a -> m [(a,Double)]
 smc' k n d = fmap (enumerate . categorical) $ runEmpiricalT $ smc k n d
 
-
+-- | Asymptotically faster version of 'smc' that resamples using multinomial
+-- instead of a sequence of categoricals.
+smcFast :: MonadDist m => Int -> Int -> ParticleT (EmpiricalT m) a -> EmpiricalT m a
+smcFast k n d = flatten $ foldr (.) id (replicate k step) $ start where
+  start = lift (spawn n) >> d
+  step = Particle.mapMonad resample . advance
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}

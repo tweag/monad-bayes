@@ -6,10 +6,12 @@
 
 module Base where
 
+import qualified Data.Map as Map
 import Data.Number.LogFloat
 import Data.Typeable
 import Numeric.SpecFunctions
 import Data.Monoid
+import Control.Arrow (first,second)
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
@@ -63,6 +65,12 @@ class Monad m => MonadDist m where
                      mass k = logFloat (n `choose` k) * (p `pow` k') * ((1-p) `pow` (n'-k')) where
                                                   n' = fromIntegral n
                                                   k' = fromIntegral k
+    multinomial :: [(a,LogFloat)] -> Int -> m [(a,Int)]
+    multinomial ps n = do
+      let (xs,ws) = unzip ps
+      indexes <- sequence $ replicate n $ discrete ws
+      let counts = Map.toList $ Map.fromListWith (+) (zip indexes (repeat 1))
+      return $ map (first (xs !!)) counts
     -- | Geometric distribution starting at 0.
     geometric :: LogFloat -> m Int
     geometric p = categorical $ map (\k -> (k, p * q `pow` (fromIntegral k))) [0..] where
