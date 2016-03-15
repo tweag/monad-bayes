@@ -11,10 +11,14 @@ import Data.Typeable
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive a where
-    Categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> Primitive a
-    Normal :: Double -> Double -> Primitive Double
-    Gamma :: Double -> Double -> Primitive Double
-    Beta :: Double -> Double -> Primitive Double
+    Categorical :: (Eq a, Typeable a) =>
+      [(a,LogFloat)] -> Primitive a
+    Normal :: Double -> Double ->
+              Primitive Double
+    Gamma  :: Double -> Double ->
+              Primitive Double
+    Beta   :: Double -> Double ->
+              Primitive Double
 
 instance Eq (Primitive a) where
   Categorical xs == Categorical ys = xs == ys
@@ -54,4 +58,3 @@ betaPdf a b x
    | x <= 0 = logFloat 0
    | x >= 1 = logFloat 0
    | otherwise = logToLogFloat $ (a-1)*log x + (b-1)*log (1-x) - logBeta a b
-

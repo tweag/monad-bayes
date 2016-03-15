@@ -35,16 +35,19 @@ unWeight (Weight (Product p)) = p
 
 -- | A wrapper for 'WriterT' 'Weight' that executes the program
 -- emitting the likelihood score.
-newtype WeightedT m a = WeightedT {toWriterT :: WriterT Weight m a}
+newtype WeightedT m a = WeightedT
+  {toWriterT :: WriterT Weight m a}
+--    deriving(Monad, MonadTrans, MonadDist)
     deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
-
-runWeightedT :: Functor m => WeightedT m a -> m (a, LogFloat)
+runWeightedT :: Monad m =>
+            WeightedT m a -> m (a, LogFloat)
 runWeightedT = fmap (second unWeight) . runWriterT . toWriterT
 
 withWeight :: Monad m => m (a, LogFloat) -> WeightedT m a
 withWeight = WeightedT . WriterT . fmap (second weight)
 
-instance MonadDist m => MonadBayes (WeightedT m) where
+instance MonadDist m
+  => MonadBayes (WeightedT m) where
     factor = WeightedT . tell . weight
 
 -- | Similar to 'WeightedT', only the weight is both recorded and passed

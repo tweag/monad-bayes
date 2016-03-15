@@ -16,7 +16,9 @@ import Base
 -- Only hard conditioning is allowed, that is
 -- 'condition' works correctly, while 'factor' and'observe'
 -- result in an error.
-newtype RejectionT m a = RejectionT {toMaybeT :: (MaybeT m a)}
+newtype RejectionT m a = RejectionT
+  {toMaybeT :: (MaybeT m a)}
+--    deriving (Monad, MonadTrans, MonadDist)
     deriving (Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 -- | Equivalent to 'runMaybeT'
@@ -24,5 +26,6 @@ runRejectionT :: RejectionT m a -> m (Maybe a)
 runRejectionT = runMaybeT . toMaybeT
 
 instance MonadDist m => MonadBayes (RejectionT m) where
-    factor _ = error "RejectionT does not support soft conditioning"
-    condition b = unless b (fail "")
+  condition b = unless b (fail "")
+  factor = undefined
+--  factor _ = error "RejectionT does not support soft conditioning"

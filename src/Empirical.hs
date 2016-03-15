@@ -35,10 +35,12 @@ import Weighted
 -- Forward probabilistic computation is handled by the transformed monad,
 -- while conditioning is done by updating empirical weights.
 -- There is no automatic normalization or aggregation of weights.
-newtype EmpiricalT m a = EmpiricalT {unEmpirical :: WeightedT (ListT m) a}
+newtype EmpiricalT m a = EmpiricalT
+  {unEmpirical :: WeightedT (ListT m) a}
+--    deriving (Monad, MonadDist, MonadBayes)
     deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
 
-runEmpiricalT :: Functor m => EmpiricalT m a -> m [(a, LogFloat)]
+runEmpiricalT :: Monad m => EmpiricalT m a -> m [(a, LogFloat)]
 runEmpiricalT = runListT . runWeightedT . unEmpirical
 
 fromList :: Monad m => m [(a, LogFloat)] -> EmpiricalT m a
@@ -103,12 +105,13 @@ resampleN n d = do
 
 -- | Properly weighted version of 'collapse', that is returned with
 -- model evidence estimator from the same run.
-proper :: MonadDist m => EmpiricalT m a -> m (a,LogFloat)
-proper = fmap head . runEmpiricalT . resampleN 1
-
+proper :: MonadDist m =>
+          EmpiricalT m a -> m (a,LogFloat)
+proper =
+  fmap head . runEmpiricalT . resampleN 1
 
 -- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
-transform :: (MonadDist m, MonadTrans t, MonadBayes (t m)) => EmpiricalT m a -> t m a
+transform :: (MonadDist m, MonadTrans t, MonadBayes (t m))=> EmpiricalT m a -> t m a
 transform e = do
   (x,p) <- lift $ proper e
   factor p

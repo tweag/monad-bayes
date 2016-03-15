@@ -32,91 +32,95 @@ import Primitive
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
 class Monad m => MonadDist m where
-    {-# MINIMAL primitive | (categorical, normal, gamma, beta) #-}
-    -- | Categorical distribution, weights need not be normalized.
-    categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
-    -- | Normal distribution parameterized by mean and standard deviation.
-    normal :: Double -> Double -> m Double
-    -- | Gamma distribution parameterized by shape and rate.
-    gamma :: Double -> Double -> m Double
-    -- | Beta distribution.
-    beta :: Double -> Double -> m Double
+  primitive :: Primitive a -> m a
+
+  normal :: Double -> Double -> m Double
+  normal m s = primitive (Normal m s)
+
+  bernoulli :: LogFloat -> m Bool
+  bernoulli p =
+    categorical [(True,p), (False,1-p)]
+
+  discrete :: [LogFloat] -> m Int
+  discrete ws = categorical (zip [0..] ws)
+
+  {-# MINIMAL primitive | (categorical, normal, gamma, beta) #-}
+  -- | Categorical distribution, weights need not be normalized.
+  categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
+  -- | Normal distribution parameterized by mean and standard deviation.
+  --normal :: Double -> Double -> m Double
+  -- | Gamma distribution parameterized by shape and rate.
+  gamma :: Double -> Double -> m Double
+  -- | Beta distribution.
+  beta :: Double -> Double -> m Double
 
 
-    -- | One of `Primitive` distributions.
-    primitive :: Primitive a -> m a
-    primitive (Categorical d) = categorical d
-    primitive (Normal m s) = normal m s
-    primitive (Gamma  a b) = gamma  a b
-    primitive (Beta   a b) = beta   a b
+  -- | One of `Primitive` distributions.
+  --primitive :: Primitive a -> m a
+  primitive (Categorical d) = categorical d
+  primitive (Normal m s) = normal m s
+  primitive (Gamma  a b) = gamma  a b
+  primitive (Beta   a b) = beta   a b
 
-    -- defaults based on primitive
-    categorical d = primitive $ Categorical d
-    normal m s    = primitive $ Normal m s
-    gamma  a b    = primitive $ Gamma  a b
-    beta   a b    = primitive $ Beta   a b
+  -- defaults based on primitive
+  categorical d = primitive $ Categorical d
+  --normal m s    = primitive $ Normal m s
+  gamma  a b    = primitive $ Gamma  a b
+  beta   a b    = primitive $ Beta   a b
 
-    -- | Bernoulli distribution.
-    bernoulli :: LogFloat -> m Bool
-    bernoulli p = categorical [(True,p), (False,1-p)]
-    -- | Binomial distribution. Returns the number of successes.
-    binomial :: Int -> LogFloat -> m Int
-    binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
-                     mass k = logFloat (n `choose` k) * (p `pow` k') * ((1-p) `pow` (n'-k')) where
-                                                  n' = fromIntegral n
-                                                  k' = fromIntegral k
-    multinomial :: [(a,LogFloat)] -> Int -> m [(a,Int)]
-    multinomial ps n = do
-      let (xs,ws) = unzip ps
-      indexes <- sequence $ replicate n $ discrete ws
-      let counts = Map.toList $ Map.fromListWith (+) (zip indexes (repeat 1))
-      return $ map (first (xs !!)) counts
-    -- | Geometric distribution starting at 0.
-    geometric :: LogFloat -> m Int
-    geometric p = categorical $ map (\k -> (k, p * q `pow` (fromIntegral k))) [0..] where
-                             q = 1 - p
-    -- | Poisson distribution.
-    poisson :: LogFloat -> m Int
-    poisson p = categorical $ map (\k -> (k, mass k)) [0..] where
-                             mass k = c * (p `pow` (fromIntegral k)) / (factorial k)
-                             factorial k = logToLogFloat (logFactorial k)
-                             c = logToLogFloat (- fromLogFloat p) -- exp (-p)
-    -- | Discrete distribution over first n natural numbers.
-    discrete :: [LogFloat] -> m Int
-    discrete = categorical . zip [0..]
-    -- | Uniform discrete distribution.
-    uniformD :: (Eq a, Typeable a) => [a] -> m a
-    uniformD xs = categorical $ map (,weight) xs where
-                             weight = 1 / fromIntegral (length xs)
+  -- | Bernoulli distribution.
+  --bernoulli :: LogFloat -> m Bool
+  --bernoulli p = categorical [(True,p), (False,1-p)]
+  -- | Binomial distribution. Returns the number of successes.
+  binomial :: Int -> LogFloat -> m Int
+  binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
+                   mass k = logFloat (n `choose` k) * (p `pow` k') * ((1-p) `pow` (n'-k')) where
+                                                n' = fromIntegral n
+                                                k' = fromIntegral k
+  multinomial :: [(a,LogFloat)] -> Int -> m [(a,Int)]
+  multinomial ps n = do
+    let (xs,ws) = unzip ps
+    indexes <- sequence $ replicate n $ discrete ws
+    let counts = Map.toList $ Map.fromListWith (+) (zip indexes (repeat 1))
+    return $ map (first (xs !!)) counts
+  -- | Geometric distribution starting at 0.
+  geometric :: LogFloat -> m Int
+  geometric p = categorical $ map (\k -> (k, p * q `pow` (fromIntegral k))) [0..] where
+                           q = 1 - p
+  -- | Poisson distribution.
+  poisson :: LogFloat -> m Int
+  poisson p = categorical $ map (\k -> (k, mass k)) [0..] where
+                           mass k = c * (p `pow` (fromIntegral k)) / (factorial k)
+                           factorial k = logToLogFloat (logFactorial k)
+                           c = logToLogFloat (- fromLogFloat p) -- exp (-p)
+  -- | Discrete distribution over first n natural numbers.
+  --discrete :: [LogFloat] -> m Int
+  --discrete = categorical . zip [0..]
+  -- | Uniform discrete distribution.
+  uniformD :: (Eq a, Typeable a) => [a] -> m a
+  uniformD xs = categorical $ map (,weight) xs where
+                           weight = 1 / fromIntegral (length xs)
 
-    -- | Exponential distribution parameterized by rate.
-    exponential :: Double -> m Double
-    exponential rate = gamma 1 (1 / rate)
+  -- | Exponential distribution parameterized by rate.
+  exponential :: Double -> m Double
+  exponential rate = gamma 1 (1 / rate)
 
-    -- | Continuous uniform distribution.
-    uniform :: Double -> Double -> m Double
-    uniform 0 1 = beta 1 1
-    uniform a b = do
-      r <- uniform 0 1
-      return (a + (b-a)*r)
+  -- | Continuous uniform distribution.
+  uniform :: Double -> Double -> m Double
+  uniform 0 1 = beta 1 1
+  uniform a b = do
+    r <- uniform 0 1
+    return (a + (b-a)*r)
 
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.
 class MonadDist m => MonadBayes m where
+  factor :: LogFloat -> m ()
 
-    -- | Conditioning with an arbitrary factor, as found in factor graphs.
-    -- If possible it is preferred to write models using `condition` and `observe`.
-    factor :: LogFloat -> m ()
-
-    -- | Hard conditioning on an arbitrary predicate.
-    -- By default implemented in terms of `factor`.
-    condition :: Bool -> m ()
-    condition b = if b then factor 1 else factor 0
-
-    -- | Soft conditioning on a noisy value.
-    -- By default implemented as a `factor` with corresponding PDF.
-    observe :: Primitive a -> a -> m ()
-    observe d x = factor (pdf d x)
+  condition :: Bool -> m ()
+  condition b = factor (if b then 1 else 0)
+  observe :: Primitive a -> a -> m ()
+  observe d x = factor (pdf d x)
 
 
 ----------------------------------------------------------------------------

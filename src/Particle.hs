@@ -31,6 +31,18 @@ import Base
 type ParticleT m a = Coroutine (Await ()) m a
 extract (Await f) = f ()
 
+-- introduce a checkpoint
+synchronize :: Monad m => ParticleT m ()
+-- remove all remaining checkpoints
+finish :: Monad m => ParticleT m a -> m a
+-- move to the next checkpoint
+advance :: Monad m =>
+  ParticleT m a -> ParticleT m a
+-- apply a function to the transformed monad
+mapMonad :: Monad m =>
+  (forall a. m a -> m a) ->
+  ParticleT m a -> ParticleT m a
+
 -- | A synchronization barrier where computation is paused.
 synchronize :: Monad m => ParticleT m ()
 synchronize = await
@@ -52,8 +64,12 @@ mapMonad :: Monad m =>
             (forall a. m a -> m a) -> ParticleT m a -> ParticleT m a
 mapMonad f cort = Coroutine {resume= f $ resume cort}
 
-instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
+--instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
+instance MonadDist m =>
+  MonadDist (ParticleT m) where
     primitive = lift . primitive
 
-instance MonadBayes m => MonadBayes (Coroutine (Await ()) m) where
+--instance MonadBayes m => MonadBayes (Coroutine (Await ()) m) where
+instance MonadBayes m =>
+  MonadBayes (ParticleT m) where
     factor w = lift (factor w) >> synchronize
