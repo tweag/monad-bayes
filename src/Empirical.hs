@@ -37,8 +37,8 @@ import Weighted
 -- There is no automatic normalization or aggregation of weights.
 newtype EmpiricalT m a = EmpiricalT
   {unEmpirical :: WeightedT (ListT m) a}
---    deriving (Monad, MonadDist, MonadBayes)
-    deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
+    deriving (Monad, MonadDist, MonadBayes)
+--    deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
 
 runEmpiricalT :: Monad m => EmpiricalT m a -> m [(a, LogFloat)]
 runEmpiricalT = runListT . runWeightedT . unEmpirical

@@ -36,21 +36,21 @@ import Weighted
 -- Probabilistic computation and conditioning is performed by exact enumeration.
 -- There is no automatic normalization or aggregation of (value,weight) pairs.
 newtype Dist a = Dist {unDist:: WeightedT [] a}
---    deriving (Monad)
-    deriving (Functor, Applicative, Monad)
+   deriving (Monad)
+--    deriving (Functor, Applicative, Monad)
 
 instance MonadDist Dist where
---  categorical = Dist . WeightedT . WriterT
+  categorical = Dist . WeightedT . WriterT
   normal = undefined
-  categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $
+--  categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $
                   normalize d
 --    normal = error "Dist does not support continuous distributions"
   gamma  = error "Dist does not support continuous distributions"
   beta   = error "Dist does not support continuous distributions"
 
 instance MonadBayes Dist where
---  factor = Dist . WeightedT . tell
-  factor = Dist . WeightedT . tell . weight
+  factor = Dist . WeightedT . tell
+--  factor = Dist . WeightedT . tell . weight
 
 -- | Returns an explicit representation of a `Dist`.
 toList :: Dist a -> [(a,LogFloat)]

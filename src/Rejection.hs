@@ -18,8 +18,8 @@ import Base
 -- result in an error.
 newtype RejectionT m a = RejectionT
   {toMaybeT :: (MaybeT m a)}
---    deriving (Monad, MonadTrans, MonadDist)
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist)
+    deriving (Monad, MonadTrans, MonadDist)
+--    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 -- | Equivalent to 'runMaybeT'
 runRejectionT :: RejectionT m a -> m (Maybe a)
