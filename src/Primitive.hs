@@ -43,9 +43,9 @@ normalPdf mu sigma x =
 
 -- | PDF of gamma distribution parameterized by shape and rate.
 gammaPdf :: Double -> Double -> Double -> LogFloat
-gammaPdf a b x =
-    logToLogFloat $ a * log b - logGamma a + (a-1) * log x - b * x
-
+gammaPdf a b x
+  | x > 0     = logToLogFloat $ a * log b - logGamma a + (a-1) * log x - b * x
+  | otherwise = logFloat 0
 
 -- | PDF of beta distribution.
 betaPdf :: Double -> Double -> Double -> LogFloat
