@@ -83,8 +83,10 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
   -- start :: StateT LogFloat m a
   start = do
     (x, p) <- lift $ runWeightedT init
-    put p
-    return x
+    if p == 0 then
+      start
+    else
+      put p >> return x
 
   --chain :: Int -> a -> StateT LogFloat m [a]
   chain 0 _ = return []
