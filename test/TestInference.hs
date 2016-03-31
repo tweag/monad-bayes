@@ -17,6 +17,7 @@ import Trace
 import Trace.ByTime
 import Inference
 import Sprinkler
+import qualified Gamma
 
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
@@ -51,3 +52,8 @@ mhTraceTrans d = fmap ((!! 1) . map fst) $ mh 2 (runTraceT d) kernel where
 
 check_trace_trans = enumerate (mhTraceTrans sprinkler_posterior') ~==
                     enumerate sprinkler
+
+-- | Count the number of particles produced by SMC
+check_particles :: Int -> Int -> Int
+check_particles observations particles =
+  stdSample (fmap length (runEmpiricalT $ smc observations particles Gamma.model)) g
