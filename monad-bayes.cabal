@@ -19,7 +19,7 @@ library
                        Rejection, Weighted, Empirical, Particle,
                        Inference, Metrics,
                        --
-                       Trace, Trace.Debug,
+                       Trace,
                        Trace.WithMultimap,
                        Trace.ByTime, Trace.ByDist, Trace.ByType
                        --
