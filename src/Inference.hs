@@ -86,7 +86,7 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     put p
     return x
 
-  --chain :: Int -> StateT LogFloat m a -> StateT LogFloat m [a]
+  --chain :: Int -> a -> StateT LogFloat m [a]
   chain 0 _ = return []
   chain n x = do
     p <- get
