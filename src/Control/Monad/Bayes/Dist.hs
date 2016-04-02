@@ -5,7 +5,7 @@
   FlexibleContexts
  #-}
 
-module Dist (
+module Control.Monad.Bayes.Dist (
     Dist,
     toList,
     explicit,
@@ -29,8 +29,8 @@ import Data.Either
 import Control.Monad.List
 import Control.Monad.Writer
 
-import Base
-import Weighted
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Weighted
 
 -- | Representation of discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.

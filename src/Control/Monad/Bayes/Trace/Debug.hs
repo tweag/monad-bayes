@@ -2,7 +2,7 @@
   Rank2Types
  #-}
 
-module Trace.Debug where
+module Control.Monad.Bayes.Trace.Debug where
 
 -----------------------
 -- DEBUG EXPERIMENTS --
@@ -14,13 +14,13 @@ import Data.Number.LogFloat hiding (sum)
 import System.Random
 import Text.Printf
 
-import Base
-import Inference
-import Sampler
-import Trace
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Trace
 
-import qualified Trace.ByTime as ByTime
-import qualified Trace.ByDist as ByDist
+import qualified Control.Monad.Bayes.Trace.ByTime as ByTime
+import qualified Control.Monad.Bayes.Trace.ByDist as ByDist
 
 mhRun :: (forall m. (MonadBayes m) => m a) -> Int -> Int -> [a]
 mhRun = mhRunWith ByTime.empty

@@ -7,9 +7,9 @@ import Control.Monad.State
 import Data.Number.LogFloat
 import Data.List
 
-import Base
-import Sampler
-import Inference
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Inference
 
 model :: MonadBayes m => m (Int,Double)
 model = do

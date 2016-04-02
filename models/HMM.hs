@@ -12,9 +12,9 @@ module HMM (
 import Numeric.LinearAlgebra.HMatrix
 import Data.Number.LogFloat
 
-import Base
-import Primitive
-import qualified Dist
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
+import qualified Control.Monad.Bayes.Dist as Dist
 
 -- | States of the HMM
 states :: [Int]
@@ -32,7 +32,7 @@ trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
 trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
 -- | The emission model.
-emission :: Int -> Primitive Double 
+emission :: Int -> Primitive Double
 emission x = Normal (fromIntegral x) 1
 
 -- | Initial state distribution
@@ -118,4 +118,3 @@ backward init trans obs cs = fromColumns bs where
     t = tr trans
     bs = reverse $ run (cmap (const 1) init) (reverse obs) (reverse (toList cs))
     n = length obs
-

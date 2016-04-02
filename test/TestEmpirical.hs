@@ -4,10 +4,10 @@ import System.Random
 import Data.AEq
 import Control.Monad.Trans.Identity
 
-import Base
-import Dist
-import Sampler
-import Empirical
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Empirical as Empirical
 import Sprinkler
 
 g = mkStdGen 0

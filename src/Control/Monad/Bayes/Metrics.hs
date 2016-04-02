@@ -1,13 +1,13 @@
-module Metrics where
+module Control.Monad.Bayes.Metrics where
 
 import Control.Arrow (second)
 import Data.List (sort)
 import Data.Maybe
 import Data.Typeable
 
-import Base
-import Dist
-import Primitive
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Primitive
 
 -- | Kullback-Leibler divergence for discrete distributions.
 --
@@ -52,4 +52,3 @@ kolmogorovSmirnovTest xs ys =
         (x, fromIntegral cx / nxs, fromIntegral cy / nys) : ksMerge (cx + 1) xs cy (y : ys)
       else
         (y, fromIntegral cx / nxs, fromIntegral cy / nys) : ksMerge cx (x : xs) (cy + 1) ys
-

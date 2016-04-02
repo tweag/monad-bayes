@@ -2,9 +2,9 @@ module TestParticle where
 
 import Data.AEq
 
-import Base
-import Dist
-import Particle
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Particle
 import Sprinkler
 
 two_sync :: MonadBayes m => m Int

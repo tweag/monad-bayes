@@ -2,7 +2,7 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Prior (
+module Control.Monad.Bayes.Prior (
     PriorT,
     prior
               ) where
@@ -10,7 +10,7 @@ module Prior (
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | A simple wrapper around 'MonadDist' types that discards conditoning.
 newtype PriorT m a = PriorT {runPriorT :: IdentityT m a}

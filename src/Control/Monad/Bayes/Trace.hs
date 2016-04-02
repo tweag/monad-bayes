@@ -11,7 +11,7 @@
  #-}
 
 
-module Trace where
+module Control.Monad.Bayes.Trace where
 
 import Control.Arrow
 import Control.Monad (liftM, liftM2, mplus)
@@ -26,10 +26,10 @@ import Text.Printf
 
 import Debug.Trace
 
-import Primitive
-import Base
-import Dist (normalize)
-import Sampler
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist (normalize)
+import Control.Monad.Bayes.Sampler
 
 
 

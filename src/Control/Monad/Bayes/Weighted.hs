@@ -2,7 +2,7 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Weighted (
+module Control.Monad.Bayes.Weighted (
     Weight,
     weight,
     unWeight,
@@ -19,7 +19,7 @@ import Data.Monoid
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Writer
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | Representation of a weight in importance sampling algorithms.
 -- Internally represented in log-domain, but semantically a non-negative real number.

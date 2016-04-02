@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Trace.ByTime where
+module Control.Monad.Bayes.Trace.ByTime where
 
 ------------------------------------
 -- RANDOM CHOICES INDEXED BY TIME --
 ------------------------------------
 
-import Base
-import Primitive
-import Trace
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Trace
 
 empty :: [Cache]
 empty = []

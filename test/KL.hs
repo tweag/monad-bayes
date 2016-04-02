@@ -1,8 +1,8 @@
 
 module KL where
 
-import Base
-import Explicit
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Explicit
 
 
 kl :: (Eq a, Density d) => Explicit a -> d a -> Prob
@@ -24,4 +24,3 @@ fastKL p q =
     f (x,w) = case density q x of
       0 -> error "Undefined KL divergence - q is 0 when p is not"
       a -> w * log (w / a)
-

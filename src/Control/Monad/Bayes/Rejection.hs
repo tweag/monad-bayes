@@ -2,7 +2,7 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Rejection (
+module Control.Monad.Bayes.Rejection (
                   RejectionT,
                   runRejectionT) where
 
@@ -10,7 +10,7 @@ import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | A wrapper for 'MaybeT' that uses it for conditioning.
 -- Only hard conditioning is allowed, that is

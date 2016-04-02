@@ -2,7 +2,7 @@
   GADTs
  #-}
 
-module Primitive where
+module Control.Monad.Bayes.Primitive where
 
 import Numeric.SpecFunctions
 import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)

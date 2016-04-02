@@ -5,7 +5,7 @@
   TupleSections
  #-}
 
-module Inference where
+module Control.Monad.Bayes.Inference where
 
 import Control.Arrow (first,second)
 import Data.Either
@@ -15,15 +15,15 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
-import Base
-import Sampler
-import Rejection
-import Weighted
-import Particle
-import Empirical
-import Dist
-import Prior
-import Trace
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Rejection
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Particle as Particle
+import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Trace
 
 -- | Rejection sampling.
 rejection :: MonadDist m => RejectionT m a -> m a

@@ -3,15 +3,15 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Trace.ByType where
+module Control.Monad.Bayes.Trace.ByType where
 
 import Control.Arrow
 import Data.Typeable
 
-import Primitive
-import Trace
-import Trace.WithMultimap
-import Trace.ByTime hiding (empty)
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace.WithMultimap
+import Control.Monad.Bayes.Trace.ByTime hiding (empty)
 
 newtype ByType = ByType { runByType :: [(TypeRep, Cache)] }
   deriving (Monoid)
@@ -33,4 +33,3 @@ instance MultimapKey TypeRep where
   mkKey (Gamma  a _)     = typeOf a
   mkKey (Beta   a _)     = typeOf a
   mkKey (Categorical xs) = typeOf xs
-

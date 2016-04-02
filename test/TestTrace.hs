@@ -8,11 +8,11 @@ import Data.AEq
 import Data.Maybe
 import Data.Typeable
 
-import Primitive
-import Base
-import Sampler
-import Trace
-import Trace.ByTime
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace.ByTime
 
 g = mkStdGen 0
 

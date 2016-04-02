@@ -5,7 +5,7 @@
   FlexibleContexts
  #-}
 
-module Empirical (
+module Control.Monad.Bayes.Empirical (
     EmpiricalT,
     runEmpiricalT,
     population,
@@ -28,8 +28,8 @@ import Data.Number.LogFloat as LogFloat
 import Data.Monoid
 import qualified Data.Foldable as Fold
 
-import Base
-import Weighted
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Weighted
 
 -- | Empirical distribution represented as a set of weighted samples.
 -- Forward probabilistic computation is handled by the transformed monad,

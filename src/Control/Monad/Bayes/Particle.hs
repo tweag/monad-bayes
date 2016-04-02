@@ -6,22 +6,22 @@
   RankNTypes
  #-}
 
-module Particle (
+module Control.Monad.Bayes.Particle (
     ParticleT,
     synchronize,
     flatten,
     advance,
     finished,
-    Particle.mapMonad
+    mapMonad
                 ) where
 
 import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
-import Control.Monad.Coroutine
+import Control.Monad.Coroutine hiding (mapMonad)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Either
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | Particle represents a computation that can be paused at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly useful

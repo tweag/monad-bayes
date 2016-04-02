@@ -3,8 +3,8 @@ module Gamma where
 
 -- | A sequence of i.i.d. normal variables with Gamma prior on precision.
 
-import Base
-import Primitive
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
 
 points = [0.8, 0.2, -0.6, 0.45, -0.3]
 

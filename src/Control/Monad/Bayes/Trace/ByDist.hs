@@ -4,7 +4,7 @@
   GADTs
  #-}
 
-module Trace.ByDist where
+module Control.Monad.Bayes.Trace.ByDist where
 
 --------------------------------------------
 -- RANDOM CHOICES INDEXED BY DISTRIBUTION --
@@ -14,11 +14,11 @@ import Control.Arrow
 import Data.List
 import Data.Typeable
 
-import Base
-import Primitive
-import Trace
-import Trace.WithMultimap
-import Trace.ByTime hiding (empty)
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace.WithMultimap
+import Control.Monad.Bayes.Trace.ByTime hiding (empty)
 
 newtype ByDist = ByDist { runByDist :: [(Prim, Cache)] }
   deriving (Monoid)

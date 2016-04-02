@@ -8,14 +8,14 @@ import Data.AEq
 import Control.Monad.Trans.Identity
 import System.Random
 
-import Base
-import Dist
-import Sampler
-import Weighted
-import Empirical
-import Trace
-import Trace.ByTime
-import Inference
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace.ByTime
+import Control.Monad.Bayes.Inference
 import Sprinkler
 
 sprinkler :: MonadBayes m => m Bool

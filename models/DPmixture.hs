@@ -20,9 +20,8 @@ import Data.Ix (range)
 import Numeric.SpecFunctions (logGamma, factorial)
 import Control.Monad.Memo (memo, startEvalMemoT)
 
-import Base
-import Primitive
---import Dist
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
 
 type NormalInvGamma = (Double,Double,Double,Double)
 

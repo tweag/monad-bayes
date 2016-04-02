@@ -7,7 +7,7 @@ module BetaBin where
 import Control.Monad.State.Lazy (get,put,evalStateT)
 import Data.Number.LogFloat
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | Beta-binomial model as an i.i.d. sequence conditionally on weight.
 latent :: MonadDist d => Int -> d [Bool]
@@ -44,7 +44,4 @@ cond d = do
 
 -- | The final conditional model, abstracting the representation.
 model :: MonadBayes d => (Int -> d [Bool]) -> Int -> d Int
-model repr n = fmap count $ cond $ repr (n+3) 
-
-
-
+model repr n = fmap count $ cond $ repr (n+3)

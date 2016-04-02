@@ -5,7 +5,7 @@
   GADTs
  #-}
 
-module Trace.WithMultimap where
+module Control.Monad.Bayes.Trace.WithMultimap where
 
 --------------------------------------------
 -- RANDOM CHOICES INDEXED BY DISTRIBUTION --
@@ -15,11 +15,11 @@ import Control.Arrow
 import Data.List
 import Data.Typeable
 
-import Base
-import Primitive
-import Trace
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Trace
 
-import Trace.ByTime hiding (empty)
+import Control.Monad.Bayes.Trace.ByTime hiding (empty)
 
 class (Eq k) => MultimapKey k where
   mkKey :: Primitive a -> k

@@ -3,8 +3,8 @@ module TestDist where
 import Data.AEq
 import Data.Number.LogFloat
 
-import Base
-import Dist
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
 import Sprinkler
 
 unnorm :: MonadDist m => m Int

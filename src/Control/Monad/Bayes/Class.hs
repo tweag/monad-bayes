@@ -4,7 +4,7 @@
  #-}
 
 
-module Base where
+module Control.Monad.Bayes.Class where
 
 import qualified Data.Map as Map
 import Data.Number.LogFloat
@@ -26,7 +26,7 @@ import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Memo.StateCache
 
 
-import Primitive
+import Control.Monad.Bayes.Primitive
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.

@@ -5,7 +5,7 @@
   FlexibleContexts
  #-}
 
-module Sampler (
+module Control.Monad.Bayes.Sampler (
     Sampler,
     sample,
     StdSampler,
@@ -32,7 +32,7 @@ import Data.Number.LogFloat
 import qualified Data.Foldable as Fold
 import Control.Monad.State.Lazy
 
-import Base
+import Control.Monad.Bayes.Class
 
 -- | A random sampler using `StdGen` as a source of randomness.
 -- It uses `split` instead of passing the modified generator,

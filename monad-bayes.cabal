@@ -15,14 +15,23 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Primitive, Base, Dist, Sampler, Prior,
-                       Rejection, Weighted, Empirical, Particle,
-                       Inference, Metrics,
-                       --
-                       Trace, Trace.Debug,
-                       Trace.WithMultimap,
-                       Trace.ByTime, Trace.ByDist, Trace.ByType
-                       --
+  exposed-modules:     Control.Monad.Bayes.Primitive,
+                       Control.Monad.Bayes.Class,
+                       Control.Monad.Bayes.Dist,
+                       Control.Monad.Bayes.Sampler,
+                       Control.Monad.Bayes.Prior,
+                       Control.Monad.Bayes.Rejection,
+                       Control.Monad.Bayes.Weighted,
+                       Control.Monad.Bayes.Empirical,
+                       Control.Monad.Bayes.Particle,
+                       Control.Monad.Bayes.Inference,
+                       Control.Monad.Bayes.Metrics,
+                       Control.Monad.Bayes.Trace,
+                       Control.Monad.Bayes.Trace.Debug,
+                       Control.Monad.Bayes.Trace.WithMultimap,
+                       Control.Monad.Bayes.Trace.ByTime,
+                       Control.Monad.Bayes.Trace.ByDist,
+                       Control.Monad.Bayes.Trace.ByType
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random

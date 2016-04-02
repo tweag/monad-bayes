@@ -11,12 +11,12 @@ import qualified Gamma
 import qualified HMM
 
 -- Algorithms to benchmark
-import Inference
-import Trace
-import Trace.Debug hiding (mhRun)
-import qualified Trace.ByTime as ByTime
-import qualified Trace.ByDist as ByDist
-import qualified Trace.ByType as ByType
+import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace.Debug hiding (mhRun)
+import qualified Control.Monad.Bayes.Trace.ByTime as ByTime
+import qualified Control.Monad.Bayes.Trace.ByDist as ByDist
+import qualified Control.Monad.Bayes.Trace.ByType as ByType
 
 -- Standard library
 import Data.List (sort)
@@ -24,9 +24,9 @@ import Data.Typeable
 import System.IO
 import Text.Printf
 -- monad-bayes
-import Base
-import Dist
-import Metrics
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Metrics
 
 mhRun = mhRunWith ByType.empty
 
