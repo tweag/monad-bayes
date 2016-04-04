@@ -18,7 +18,6 @@ import Control.Monad (liftM, liftM2, mplus)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 import Data.Maybe (isJust, fromJust, fromMaybe)
-import Data.List (unfoldr, intercalate)
 import Data.Typeable
 import Data.Number.LogFloat hiding (sum)
 import System.Random (mkStdGen)
@@ -40,19 +39,6 @@ refresh :: (MonadDist m) => Cache -> m Cache
 refresh (Cache d x) = do
   x' <- primitive d
   return $ Cache d x'
-
--- Print Cache for debugging
-instance Show Cache where
-  show (Cache (Normal m s) x) = printf "[%.3f<-N%.3f|%.3f]" x m s
-  show (Cache (Gamma  a b) x) = printf "[%.3f<-G%.3f|%.3f]" x a b
-  show (Cache (Beta   a b) x) = printf "[%.3f<-B%.3f|%.3f]" x a b
-  -- print Booleans for debugging
-  show (Cache (Categorical ps) x) =
-    case cast (x, ps) :: Maybe (Bool, [(Bool, LogFloat)]) of
-      Nothing      -> "[cat(" ++ (tail $ init $ show $ map snd ps) ++ ")]"
-      Just (x, ps) -> "[" ++ show x ++ "<-(" ++
-                         (intercalate "," $ map (\(b,p) -> head (show b) : printf "%.3f" (fromLogFloat p)) ps)
-                         ++ ")]"
 
 class Monoid r => RandomDB r where
   {-# MINIMAL (singleton | record), consult, mutate, size, weight, resampled #-}
