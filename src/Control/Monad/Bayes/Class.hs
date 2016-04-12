@@ -32,7 +32,7 @@ import Control.Monad.Bayes.Primitive
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
 class Monad m => MonadDist m where
-    {-# MINIMAL primitive | (categorical, normal, gamma, beta) #-}
+    {-# MINIMAL primitive | (categorical, normal, gamma, beta, uniform) #-}
     -- | Categorical distribution, weights need not be normalized.
     categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
@@ -41,6 +41,8 @@ class Monad m => MonadDist m where
     gamma :: Double -> Double -> m Double
     -- | Beta distribution.
     beta :: Double -> Double -> m Double
+    -- | Continuous uniform distribution on an interval
+    uniform :: Double -> Double -> m Double
 
 
     -- | One of `Primitive` distributions.
@@ -49,12 +51,14 @@ class Monad m => MonadDist m where
     primitive (Normal m s) = normal m s
     primitive (Gamma  a b) = gamma  a b
     primitive (Beta   a b) = beta   a b
+    primitive (Uniform a b) = uniform a b
 
     -- defaults based on primitive
     categorical d = primitive $ Categorical d
     normal m s    = primitive $ Normal m s
     gamma  a b    = primitive $ Gamma  a b
     beta   a b    = primitive $ Beta   a b
+    uniform a b   = primitive $ Uniform a b
 
     -- | Bernoulli distribution.
     bernoulli :: LogFloat -> m Bool
@@ -94,11 +98,11 @@ class Monad m => MonadDist m where
     exponential rate = gamma 1 (1 / rate)
 
     -- | Continuous uniform distribution.
-    uniform :: Double -> Double -> m Double
-    uniform 0 1 = beta 1 1
-    uniform a b = do
-      r <- uniform 0 1
-      return (a + (b-a)*r)
+    --uniform :: Double -> Double -> m Double
+    --uniform 0 1 = beta 1 1
+    --uniform a b = do
+    --  r <- uniform 0 1
+    --  return (a + (b-a)*r)
 
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.

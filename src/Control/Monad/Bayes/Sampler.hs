@@ -66,9 +66,10 @@ instance Monad Sampler where
 instance MonadDist Sampler where
     categorical xs = wrapper $ fromWeightedList $
                      map (first fromLogFloat) $ map swap $ Fold.toList xs
-    normal m s = wrapper $ Normal m s
-    gamma a b  = wrapper $ Gamma a (1 / b)
-    beta a b   = wrapper $ Beta a b  --need to check parameterization
+    normal m s  = wrapper $ Normal m s
+    gamma a b   = wrapper $ Gamma a (1 / b)
+    beta a b    = wrapper $ Beta a b  --need to check parameterization
+    uniform a b = wrapper $ Uniform a b
 
 -- | Wrapper for random-fu distributions.
 wrapper :: Distribution d a => d a -> Sampler a
@@ -85,6 +86,7 @@ instance MonadDist (RVarT m) where
   normal m s = rvarT $ Normal m s
   gamma  a b = rvarT $ Gamma a (1 / b)
   beta   a b = rvarT $ Beta a b
+  uniform a b = rvarT $ Uniform a b
   multinomial ps n = do
     let (xs,ws) = unzip ps
     let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws

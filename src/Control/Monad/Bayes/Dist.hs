@@ -41,9 +41,10 @@ newtype Dist a = Dist {unDist :: WeightedT [] a}
 instance MonadDist Dist where
     categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $
                     normalize $ Fold.toList d
-    normal = error "Dist does not support continuous distributions"
-    gamma  = error "Dist does not support continuous distributions"
-    beta   = error "Dist does not support continuous distributions"
+    normal  = error "Dist does not support continuous distributions"
+    gamma   = error "Dist does not support continuous distributions"
+    beta    = error "Dist does not support continuous distributions"
+    uniform = error "Dist does not support continuous distributions"
 
 instance MonadBayes Dist where
     factor = Dist . WeightedT . tell . weight

@@ -15,12 +15,14 @@ data Primitive a where
     Normal :: Double -> Double -> Primitive Double
     Gamma :: Double -> Double -> Primitive Double
     Beta :: Double -> Double -> Primitive Double
+    Uniform :: Double -> Double -> Primitive Double
 
 instance Eq (Primitive a) where
   Categorical xs == Categorical ys = xs == ys
   Normal m s     == Normal m' s'   = m == m' && s == s'
   Gamma  a b     == Gamma  a' b'   = a == a' && b == b'
   Beta   a b     == Beta   a' b'   = a == a' && b == b'
+  Uniform a b    == Uniform a' b'  = a == a' && b == b'
   _              == _              = False
 
 -- | The probability density function.
@@ -31,7 +33,15 @@ pdf (Categorical d) = \x -> case lookup x d of
 pdf (Normal m s) = normalPdf m s
 pdf (Gamma  a b) = gammaPdf a b
 pdf (Beta   a b) = betaPdf a b
+pdf (Uniform a b) = uniformPdf a b
 
+-- | PDF of a continuous uniform distribution on an interval
+uniformPdf :: Double -> Double -> Double -> LogFloat
+uniformPdf a b x =
+  if a <= x && x <= b then
+    logFloat $ 1 / (b - a)
+  else
+    0
 
 -- | PDF of normal distribution parameterized by mean and stddev.
 normalPdf :: (Real a) => a -> a -> a -> LogFloat
@@ -54,4 +64,3 @@ betaPdf a b x
    | x <= 0 = logFloat 0
    | x >= 1 = logFloat 0
    | otherwise = logToLogFloat $ (a-1)*log x + (b-1)*log (1-x) - logBeta a b
-
