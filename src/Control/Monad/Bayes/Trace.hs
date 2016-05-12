@@ -17,7 +17,7 @@ import Control.Arrow
 import Control.Monad (liftM, liftM2, mplus)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
-import Data.Maybe (isJust, fromJust, fromMaybe)
+import Data.Maybe (isJust, fromJust, fromMaybe, maybe)
 import Data.Typeable
 import Data.Number.LogFloat hiding (sum)
 import System.Random (mkStdGen)
@@ -84,47 +84,35 @@ mhCorrectionFactor old new = fromJust $ do
       -- should not take mininimum with 1 here
 
 -- | An old primitive sample is reusable if both distributions have the
--- same type and if old sample does not decrease acceptance ratio by
--- more than a threshold.
+-- same support.
 reusablePrimitive :: Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
 reusablePrimitive d x d' =
-  let
-    threshold = 0.0
-  in
-    reusablePrimitiveDouble threshold d x d' `mplus` reusableCategorical threshold d x d'
+  do
+    (cast, eq) <- compareSupport (getSupport d) (getSupport d')
+    let x' = cast x
+    return ((x', pdf d' x'), eq x')
 
--- | Try to reuse a sample from a categorical distribution
--- if it does not decrease acceptance ration by more than a threshold.
-reusableCategorical :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
-reusableCategorical threshold d@(Categorical _) x d'@(Categorical _) = do
-  x' <- cast x
-  let pOld = pdf d x
-  let pNew = pdf d' x'
-  if pOld > 0 && pNew / pOld > threshold then
-    Just ((x', pNew), (== x'))
-  else
-    Nothing
-reusableCategorical threshold _ _ _ = Nothing
+data Support a where
+  Real           :: Support Double
+  PositiveReal   :: Support Double
+  OpenInterval   :: Double -> Double -> Support Double
+  ClosedInterval :: Double -> Double -> Support Double
+  Discrete       :: (Eq a, Typeable a) => [a] -> Support a
 
--- | An old primitive sample of type Double is reused if old sample does
--- not decrease acceptance ratio by more than a threshold.
--- In particular, a sample is always reused if its distribution did not
--- change, since it does not decrease acceptance ratio at all.
-reusablePrimitiveDouble :: LogFloat -> Primitive a -> a -> Primitive b -> Maybe ((b, LogFloat), b -> Bool)
-reusablePrimitiveDouble threshold d x d' =
-  case (isPrimitiveDouble d, isPrimitiveDouble d') of
-    (Just (from, to), Just (from', to')) ->
-      let
-        x' = from' $ to x
-        pOld = pdf d x
-        pNew = pdf d' x'
-      in
-        if pOld > 0 && pNew / pOld > threshold then
-          Just ((x', pNew), (== to' x') . to')
-        else
-          Nothing
-    otherwise ->
-      Nothing
+getSupport :: Primitive a -> Support a
+getSupport (Categorical xs) = Discrete (map fst xs)
+getSupport (Normal  _ _)    = Real
+getSupport (Gamma   _ _)    = PositiveReal
+getSupport (Beta    _ _)    = OpenInterval 0 1
+getSupport (Uniform a b)    = ClosedInterval a b
+
+compareSupport :: Support a -> Support b -> Maybe ((a -> b), (b -> b -> Bool))
+compareSupport  Real                 Real                 = Just (id, (==))
+compareSupport  PositiveReal         PositiveReal         = Just (id, (==))
+compareSupport  (OpenInterval   a b) (OpenInterval   c d) = if [a, b] == [c, d] then Just (id, (==)) else Nothing
+compareSupport  (ClosedInterval a b) (ClosedInterval c d) = if [a, b] == [c, d] then Just (id, (==)) else Nothing
+compareSupport  (Discrete       xs)  (Discrete       ys)  = if maybe False (== ys) (cast xs) then Just (fromJust . cast, (==)) else Nothing
+compareSupport  _                   _                     = Nothing
 
 -- | Test whether a primitive distribution has type @Double@,
 -- output conversions to and from if it does.
