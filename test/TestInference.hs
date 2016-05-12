@@ -1,5 +1,6 @@
 {-# LANGUAGE
-  TupleSections
+  TupleSections,
+  Rank2Types
  #-}
 
 module TestInference where
@@ -17,6 +18,7 @@ import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Trace.ByTime
 import Control.Monad.Bayes.Inference
 import Sprinkler
+import qualified StrictlySmallerSupport
 import qualified Gamma
 
 sprinkler :: MonadBayes m => m Bool
@@ -50,8 +52,16 @@ mhTraceTrans :: TraceT [Cache] (WeightedT Dist) Bool -> Dist Bool
 mhTraceTrans d = fmap ((!! 1) . map fst) $ mh 2 (runTraceT d) kernel where
   kernel = mhKernel' empty sprinkler
 
+-- | Like mhTraceTrans, but builds the kernel from its argument
+-- instead of from the sprinkler model.
+mhTraceTrans' :: (forall m'. (MonadBayes m') => m' a) -> Dist a
+mhTraceTrans' d = fmap (!! 1) (mh' empty 2 d)
+
 check_trace_trans = enumerate (mhTraceTrans sprinkler_posterior') ~==
                     enumerate sprinkler
+
+check_trace_support = enumerate (mhTraceTrans' StrictlySmallerSupport.model) ~==
+                      enumerate StrictlySmallerSupport.model
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> Int

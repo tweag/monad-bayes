@@ -75,6 +75,8 @@ main = hspec $ do
       TestInference.check_prior_trans `shouldBe` True
     it "Trace MH leaves posterior invariant" $ do
       TestInference.check_trace_trans `shouldBe` True
+    it "Trace MH leaves posterior invariant when the model has shifting support" $ do
+      TestInference.check_trace_support `shouldBe` True
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
