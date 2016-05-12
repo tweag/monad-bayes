@@ -23,8 +23,6 @@ import Data.Number.LogFloat hiding (sum)
 import System.Random (mkStdGen)
 import Text.Printf
 
-import Debug.Trace
-
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist (normalize)
