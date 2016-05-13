@@ -91,22 +91,18 @@ reusablePrimitive d x d' =
     return ((x', pdf d' x'), eq x')
 
 data Support a where
-  Real           :: Support Double
-  PositiveReal   :: Support Double
   OpenInterval   :: Double -> Double -> Support Double
   ClosedInterval :: Double -> Double -> Support Double
   Discrete       :: (Eq a, Typeable a) => [a] -> Support a
 
 getSupport :: Primitive a -> Support a
 getSupport (Categorical xs) = Discrete (map fst xs)
-getSupport (Normal  _ _)    = Real
-getSupport (Gamma   _ _)    = PositiveReal
+getSupport (Normal  _ _)    = OpenInterval (-1/0) (1/0)
+getSupport (Gamma   _ _)    = OpenInterval 0 (1/0)
 getSupport (Beta    _ _)    = OpenInterval 0 1
 getSupport (Uniform a b)    = ClosedInterval a b
 
 compareSupport :: Support a -> Support b -> Maybe ((a -> b), (b -> b -> Bool))
-compareSupport  Real                 Real                 = Just (id, (==))
-compareSupport  PositiveReal         PositiveReal         = Just (id, (==))
 compareSupport  (OpenInterval   a b) (OpenInterval   c d) = if [a, b] == [c, d] then Just (id, (==)) else Nothing
 compareSupport  (ClosedInterval a b) (ClosedInterval c d) = if [a, b] == [c, d] then Just (id, (==)) else Nothing
 compareSupport  (Discrete       xs)  (Discrete       ys)  = if maybe False (== ys) (cast xs) then Just (fromJust . cast, (==)) else Nothing
