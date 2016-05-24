@@ -1,9 +1,10 @@
 # monad-bayes
-A library for probabilistic programming in Haskell. The code is associated with the following paper:
 
-Practical probabilistic programming with monads
+The code associated with the following [paper](http://mlg.eng.cam.ac.uk/pub/pdf/SciGhaGor15.pdf):
+
+Practical probabilistic programming with monads.
 Adam Scibior, Zoubin Ghahramani, Andrew D. Gordon
 Haskell 2015
 
-This is very much a proof-of-concept system adn I am not planning to release it as a package. Instead, I am preparing an alternative implementation based on monad transformers, featuring mtl-style typeclasses for probability monads. See the transformers branch for details.
+The code serves as an illustration of the ideas described in the paper and we do not plan to develop it any further. See the `master` branch for an actively supported library that builds on ideas described in this paper, but chooses a different implementation strategy.
 
