@@ -66,7 +66,8 @@ test-suite monad-bayes-test
   main-is:             Spec.hs
   other-modules:       Sprinkler, TestDist, TestEmpirical, TestInference,
                        TestParticle, TestWeighted, TestSMCObservations,
-                       TestTrace, StrictlySmallerSupport
+                       TestTrace, StrictlySmallerSupport, BetaBin, DPmixture,
+                       Dice, Gamma, HMM
 
 benchmark monad-bayes-bench
   type:                exitcode-stdio-1.0
