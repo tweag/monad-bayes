@@ -30,7 +30,7 @@ m = do
   y <- normal 0 1
   return (x,y)
 
-results = stdSample (runTraceT m) g
+results = stdSample (runTrace m) g
 ((x,y),r) = results
 
 compare :: ((Bool,Double), [Cache]) -> Bool
@@ -44,4 +44,4 @@ compare ((x,y), cs) = fromMaybe False b where
 check_writing = TestTrace.compare $ results
 
 check_reading = x == x' && y == y' where
-  (x',y') = fst $ stdSample (runReuseT m r) g
+  (x',y') = fst $ stdSample (runReuse m r) g

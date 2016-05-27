@@ -128,26 +128,26 @@ reusedSample d x d' x' =
 -- TRACET MONAD TRANSFORMER --
 ------------------------------
 
-newtype TraceT r m a = TraceT (WriterT r m a)
+newtype Trace r m a = Trace (WriterT r m a)
   deriving (Functor, Applicative, Monad, MonadTrans)
 
-deriving instance (Monoid r, Monad m) => MonadWriter r (TraceT r m)
+deriving instance (Monoid r, Monad m) => MonadWriter r (Trace r m)
 
-runTraceT :: TraceT r m a -> m (a, r)
-runTraceT (TraceT writer) = runWriterT writer
+runTrace :: Trace r m a -> m (a, r)
+runTrace (Trace writer) = runWriterT writer
 
-mapMonad :: (m (a,r) -> n (a,r)) -> TraceT r m a -> TraceT r n a
-mapMonad t (TraceT d) = TraceT $ mapWriterT t d
+mapMonad :: (m (a,r) -> n (a,r)) -> Trace r m a -> Trace r n a
+mapMonad t (Trace d) = Trace $ mapWriterT t d
 
 -- WriterT preserves MonadDist
-instance (RandomDB r, MonadDist m) => MonadDist (TraceT r m) where
+instance (RandomDB r, MonadDist m) => MonadDist (Trace r m) where
   primitive d = do
     x <- lift $ primitive d
     tell $ record d x
     return x
 
 -- WriterT preserves MonadBayes
-instance (RandomDB r, MonadBayes m) => MonadBayes (TraceT r m) where
+instance (RandomDB r, MonadBayes m) => MonadBayes (Trace r m) where
   factor = lift . factor
   condition = lift . condition
 
@@ -155,16 +155,16 @@ instance (RandomDB r, MonadBayes m) => MonadBayes (TraceT r m) where
 -- REUSET MONAD TRANDFORMER --
 ------------------------------
 
-newtype ReuseT r m a = ReuseT (StateT r m a)
+newtype Reuse r m a = Reuse (StateT r m a)
   deriving (Functor, Applicative, Monad, MonadTrans)
 
-deriving instance (Monad m) => MonadState r (ReuseT r m)
+deriving instance (Monad m) => MonadState r (Reuse r m)
 
-runReuseT :: ReuseT r m a -> r -> m (a, r)
-runReuseT (ReuseT state) = runStateT state
+runReuse :: Reuse r m a -> r -> m (a, r)
+runReuse (Reuse state) = runStateT state
 
 -- Reuse samples of primitive distributions in the RandomDB
-instance (RandomDB r, MonadDist m) => MonadDist (ReuseT r m) where
+instance (RandomDB r, MonadDist m) => MonadDist (Reuse r m) where
   primitive d' = do
     r <- get
     let resample = lift $ primitive d'
@@ -175,9 +175,9 @@ instance (RandomDB r, MonadDist m) => MonadDist (ReuseT r m) where
         put r'
         maybe resample return (fmap (fst . fst) $ reusablePrimitive d x d')
 
-instance (RandomDB r, MonadBayes m) => MonadBayes (ReuseT r m) where
+instance (RandomDB r, MonadBayes m) => MonadBayes (Reuse r m) where
   factor = lift . factor
   condition = lift . condition
 
-type UpdaterT r m a = TraceT r (ReuseT r m) a
-runUpdaterT = runReuseT . runTraceT
+type Updater r m a = Trace r (Reuse r m) a
+runUpdater = runReuse . runTrace

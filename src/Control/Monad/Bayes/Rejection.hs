@@ -3,8 +3,8 @@
  #-}
 
 module Control.Monad.Bayes.Rejection (
-                  RejectionT,
-                  runRejectionT) where
+                  Rejection,
+                  runRejection) where
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -16,13 +16,13 @@ import Control.Monad.Bayes.Class
 -- Only hard conditioning is allowed, that is
 -- 'condition' works correctly, while 'factor' and'observe'
 -- result in an error.
-newtype RejectionT m a = RejectionT {toMaybeT :: (MaybeT m a)}
+newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
     deriving (Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 -- | Equivalent to 'runMaybeT'
-runRejectionT :: RejectionT m a -> m (Maybe a)
-runRejectionT = runMaybeT . toMaybeT
+runRejection :: Rejection m a -> m (Maybe a)
+runRejection = runMaybeT . toMaybeT
 
-instance MonadDist m => MonadBayes (RejectionT m) where
-    factor _ = error "RejectionT does not support soft conditioning"
+instance MonadDist m => MonadBayes (Rejection m) where
+    factor _ = error "Rejection does not support soft conditioning"
     condition b = unless b (fail "")

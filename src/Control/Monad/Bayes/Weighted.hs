@@ -6,9 +6,9 @@ module Control.Monad.Bayes.Weighted (
     Weight,
     weight,
     unWeight,
-    WeightedT(WeightedT),  --constructor is needed in Dist
+    Weighted(Weighted),  --constructor is needed in Dist
     withWeight,
-    runWeightedT,
+    runWeighted,
     WeightRecorderT,
     duplicateWeight
                   ) where
@@ -35,27 +35,27 @@ unWeight (Weight (Product p)) = p
 
 -- | A wrapper for 'WriterT' 'Weight' that executes the program
 -- emitting the likelihood score.
-newtype WeightedT m a = WeightedT {toWriterT :: WriterT Weight m a}
+newtype Weighted m a = Weighted {toWriterT :: WriterT Weight m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
 
-runWeightedT :: Functor m => WeightedT m a -> m (a, LogFloat)
-runWeightedT = fmap (second unWeight) . runWriterT . toWriterT
+runWeighted :: Functor m => Weighted m a -> m (a, LogFloat)
+runWeighted = fmap (second unWeight) . runWriterT . toWriterT
 
-withWeight :: Monad m => m (a, LogFloat) -> WeightedT m a
-withWeight = WeightedT . WriterT . fmap (second weight)
+withWeight :: Monad m => m (a, LogFloat) -> Weighted m a
+withWeight = Weighted . WriterT . fmap (second weight)
 
-instance MonadDist m => MonadBayes (WeightedT m) where
-    factor = WeightedT . tell . weight
+instance MonadDist m => MonadBayes (Weighted m) where
+    factor = Weighted . tell . weight
 
--- | Similar to 'WeightedT', only the weight is both recorded and passed
+-- | Similar to 'Weighted', only the weight is both recorded and passed
 -- to the underlying monad. Useful for getting the exact posterior and
 -- the associated likelihood.
 newtype WeightRecorderT m a =
-  WeightRecorderT {runWeightRecorderT :: WeightedT m a}
+  WeightRecorderT {runWeightRecorderT :: Weighted m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 -- | Both record weight and pass it to the underlying monad.
-duplicateWeight :: MonadBayes m => WeightRecorderT m a -> WeightedT m a
+duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
 duplicateWeight = runWeightRecorderT
 
 instance MonadBayes m => MonadBayes (WeightRecorderT m) where
