@@ -175,11 +175,13 @@ instance MonadBayes m => MonadBayes (ListT m) where
     factor = lift . factor
 
 
-instance MonadDist m => MonadDist (ExceptT e m) where
-    primitive = lift . primitive
-
-instance MonadBayes m => MonadBayes (ExceptT e m) where
-    factor = lift . factor
+-- ExceptT is commented out for compatibility with transformers <0.4
+-- We could include it through transformers-compat if necessary
+-- instance MonadDist m => MonadDist (ExceptT e m) where
+--     primitive = lift . primitive
+--
+-- instance MonadBayes m => MonadBayes (ExceptT e m) where
+--     factor = lift . factor
 
 
 instance MonadDist m => MonadDist (ContT r m) where
