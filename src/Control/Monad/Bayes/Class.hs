@@ -21,7 +21,7 @@ import Control.Monad.Trans.Writer
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
-import Control.Monad.Trans.Except
+--import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Memo.StateCache
 
