@@ -65,7 +65,8 @@ test-suite monad-bayes-test
   default-language:    Haskell2010
   main-is:             Spec.hs
   other-modules:       Sprinkler, TestDist, TestEmpirical, TestInference,
-                       TestParticle, TestWeighted
+                       TestParticle, TestWeighted, TestSMCObservations,
+                       TestTrace, StrictlySmallerSupport
 
 benchmark monad-bayes-bench
   type:                exitcode-stdio-1.0
