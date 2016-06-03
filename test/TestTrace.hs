@@ -7,12 +7,17 @@ import System.Random
 import Data.AEq
 import Data.Maybe
 import Data.Typeable
+import Data.Number.LogFloat
 
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Trace.ByTime
+
+import qualified Control.Monad.Bayes.CtnTrace as CtnTrace
+import qualified Sprinkler
 
 g = mkStdGen 0
 
@@ -23,6 +28,9 @@ extractNormal _ = Nothing
 extractBool :: Cache -> Maybe Bool
 extractBool (Cache (Categorical _) x) = cast x
 extractBool _ = Nothing
+
+sprinkler :: MonadDist m => m Bool
+sprinkler = prior Sprinkler.soft
 
 m :: MonadDist m => m (Bool,Double)
 m = do
@@ -45,3 +53,5 @@ check_writing = TestTrace.compare $ results
 
 check_reading = x == x' && y == y' where
   (x',y') = fst $ stdSample (runReuseT m r) g
+
+check_reuse_ratio m = fromLogFloat (stdSample (fmap fst (CtnTrace.mhReuse [] m)) g) ~== 1

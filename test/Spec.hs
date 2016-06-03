@@ -61,6 +61,9 @@ main = hspec $ do
         TestTrace.check_writing `shouldBe` True
       it "correctly reuses values" $ do
         TestTrace.check_reading `shouldBe` True
+    it "has reuse ratio 1 on an empty database" $ do
+      TestTrace.check_reuse_ratio TestTrace.m         `shouldBe` True
+      TestTrace.check_reuse_ratio TestTrace.sprinkler `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
@@ -75,6 +78,7 @@ main = hspec $ do
       TestInference.check_prior_trans `shouldBe` True
     it "Trace MH leaves posterior invariant" $ do
       TestInference.check_trace_trans `shouldBe` True
+      TestInference.check_mh_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do
       TestInference.check_trace_support `shouldBe` True
     -- too large to execute

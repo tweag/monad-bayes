@@ -17,6 +17,7 @@ import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Trace.ByTime
 import Control.Monad.Bayes.Inference
+import qualified Control.Monad.Bayes.CtnTrace as CtnTrace -- todo: replace Trace
 import Sprinkler
 import qualified StrictlySmallerSupport
 import qualified Gamma
@@ -62,6 +63,9 @@ check_trace_trans = enumerate (mhTraceTrans sprinkler_posterior') ~==
 
 check_trace_support = enumerate (mhTraceTrans' StrictlySmallerSupport.model) ~==
                       enumerate StrictlySmallerSupport.model
+
+check_mh_trans = enumerate (CtnTrace.forgetMHState $ CtnTrace.mhTransition $ CtnTrace.mhWeightedState $ sprinkler) ~==
+                 enumerate sprinkler
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> Int
