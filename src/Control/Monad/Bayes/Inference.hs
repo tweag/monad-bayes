@@ -95,7 +95,7 @@ traceMH :: (MonadDist m) => Weighted (Coprimitive m) a -> m [a]
 traceMH m = mhState m >>= init >>= loop
   where
     init state | mhPosteriorWeight state >  0 = return state
-    init state | mhPosteriorWeight state == 0 = mhKernel state >>= init
+    init state | mhPosteriorWeight state == 0 = mhState m >>= init
     loop state = do
       nextState <- mhKernel state
       otherAnswers <- loop nextState
