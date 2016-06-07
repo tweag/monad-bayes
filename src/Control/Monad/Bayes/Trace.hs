@@ -84,17 +84,17 @@ instance (MonadDist m) => MonadDist (Coprimitive m) where
 -- is not commutative. Consider converting the list of snapshots
 -- to ListT-done-right.
 data MHState m a = MHState
-  { mhSnapshots :: [Snapshot (WeightedT (Coprimitive m) a)]
+  { mhSnapshots :: [Snapshot (Weighted (Coprimitive m) a)]
   , mhPosteriorWeight :: LogFloat -- weight of mhAnswer in posterior
   , mhAnswer :: a
   }
 
 -- | Make one MH transition, retain weight from the source distribution
 mhTransition :: (MonadDist m) =>
-                WeightedT m (MHState m a) -> WeightedT m (MHState m a)
+                Weighted m (MHState m a) -> Weighted m (MHState m a)
 
 mhTransition m = withWeight $ do
-  (oldState, oldWeight) <- runWeightedT m
+  (oldState, oldWeight) <- runWeighted m
   newState <- mhKernel oldState
   return (newState, oldWeight)
 
@@ -123,30 +123,30 @@ mhKernel oldState = do
 
 -- | Convert a model into a distribution of MH-states, each consisting
 -- of a list of continuations from each primitive distribution.
-mhState :: (MonadDist m) => WeightedT (Coprimitive m) a -> m (MHState m a)
+mhState :: (MonadDist m) => Weighted (Coprimitive m) a -> m (MHState m a)
 mhState m = fmap snd (mhReuse [] m)
 
 -- | Transition a subprobability distribution, preserving its weights
-mhWeightedState :: (MonadDist m) => WeightedT (Coprimitive m) a -> WeightedT m (MHState m a)
+mhWeightedState :: (MonadDist m) => Weighted (Coprimitive m) a -> Weighted m (MHState m a)
 mhWeightedState m = withWeight $ do
   state <- mhState m
   return (state, mhPosteriorWeight state)
 
 -- | Forget the state (i. e., a list of continuations), return a weighted final result.
-forgetMHState :: (MonadBayes m) => WeightedT m (MHState m a) -> m a
+forgetMHState :: (MonadBayes m) => Weighted m (MHState m a) -> m a
 forgetMHState m = do
-  (state, weight) <- runWeightedT m
+  (state, weight) <- runWeighted m
   factor weight
   return (mhAnswer state)
 
 -- | Reuse previous samples as much as possible, collect reuse ratio
 mhReuse :: forall m a. (MonadDist m) =>
                  [Cache] ->
-                 WeightedT (Coprimitive m) a ->
+                 Weighted (Coprimitive m) a ->
                  m (LogFloat, MHState m a)
 
 mhReuse caches m = do
-  result <- resume (runCoprimitive (runWeightedT m))
+  result <- resume (runCoprimitive (runWeighted m))
   case result of
 
     Right (answer, weight) ->

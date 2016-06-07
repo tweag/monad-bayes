@@ -35,11 +35,11 @@ import Control.Monad.Bayes.Weighted
 -- | Representation of discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.
 -- There is no automatic normalization or aggregation of (value,weight) pairs.
-newtype Dist a = Dist {unDist :: WeightedT [] a}
+newtype Dist a = Dist {unDist :: Weighted [] a}
     deriving (Functor, Applicative, Monad)
 
 instance MonadDist Dist where
-    categorical d = Dist $ WeightedT $ WriterT $ fmap (second weight) $
+    categorical d = Dist $ Weighted $ WriterT $ fmap (second weight) $
                     normalize $ Fold.toList d
     normal  = error "Dist does not support continuous distributions"
     gamma   = error "Dist does not support continuous distributions"
@@ -47,11 +47,11 @@ instance MonadDist Dist where
     uniform = error "Dist does not support continuous distributions"
 
 instance MonadBayes Dist where
-    factor = Dist . WeightedT . tell . weight
+    factor = Dist . Weighted . tell . weight
 
 -- | Returns an explicit representation of a `Dist`.
 toList :: Dist a -> [(a,LogFloat)]
-toList = runWeightedT . unDist
+toList = runWeighted . unDist
 
 -- | Same as `toList`, only weights are converted to `Double`.
 explicit :: Dist a -> [(a,Double)]
