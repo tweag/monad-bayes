@@ -15,8 +15,6 @@ import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Trace
 
-import qualified Sprinkler
-
 g = mkStdGen 0
 
 extractNormal :: Cache -> Maybe Double
@@ -26,9 +24,6 @@ extractNormal _ = Nothing
 extractBool :: Cache -> Maybe Bool
 extractBool (Cache (Categorical _) x) = cast x
 extractBool _ = Nothing
-
-sprinkler :: MonadDist m => m Bool
-sprinkler = prior Sprinkler.soft
 
 m :: MonadDist m => m (Bool,Double)
 m = do
