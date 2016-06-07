@@ -15,9 +15,7 @@ import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Trace
-import Control.Monad.Bayes.Trace.ByTime
 import Control.Monad.Bayes.Inference
-import qualified Control.Monad.Bayes.CtnTrace as CtnTrace -- todo: replace Trace
 import Sprinkler
 import qualified StrictlySmallerSupport
 import qualified Gamma
@@ -32,8 +30,6 @@ check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 check_preserve_smc = (enumerate . runIdentityT . transform . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-sprinkler_posterior' :: TraceT [Cache] (WeightedT Dist) Bool
-sprinkler_posterior' = mapMonad duplicateWeight sprinkler
 sprinkler_posterior = duplicateWeight sprinkler
 
 mhPriorTrans :: MonadDist m => WeightedT m Bool -> m Bool
@@ -49,23 +45,12 @@ pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
                     enumerate sprinkler
 
-mhTraceTrans :: TraceT [Cache] (WeightedT Dist) Bool -> Dist Bool
-mhTraceTrans d = fmap ((!! 1) . map fst) $ mh 2 (runTraceT d) kernel where
-  kernel = mhKernel' empty sprinkler
+check_trace_mh m m' = enumerate (forgetMHState $ mhTransition $ mhWeightedState $ m) ~==
+                      enumerate m'
 
--- | Like mhTraceTrans, but builds the kernel from its argument
--- instead of from the sprinkler model.
-mhTraceTrans' :: (forall m'. (MonadBayes m') => m' a) -> Dist a
-mhTraceTrans' d = fmap (!! 1) (mh' empty 2 d)
+check_trace_trans = check_trace_mh sprinkler sprinkler
 
-check_trace_trans = enumerate (mhTraceTrans sprinkler_posterior') ~==
-                    enumerate sprinkler
-
-check_trace_support = enumerate (mhTraceTrans' StrictlySmallerSupport.model) ~==
-                      enumerate StrictlySmallerSupport.model
-
-check_mh_trans = enumerate (CtnTrace.forgetMHState $ CtnTrace.mhTransition $ CtnTrace.mhWeightedState $ sprinkler) ~==
-                 enumerate sprinkler
+check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> Int

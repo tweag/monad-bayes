@@ -14,9 +14,7 @@ import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Trace
-import Control.Monad.Bayes.Trace.ByTime
 
-import qualified Control.Monad.Bayes.CtnTrace as CtnTrace
 import qualified Sprinkler
 
 g = mkStdGen 0
@@ -38,9 +36,6 @@ m = do
   y <- normal 0 1
   return (x,y)
 
-results = stdSample (runTraceT m) g
-((x,y),r) = results
-
 compare :: ((Bool,Double), [Cache]) -> Bool
 compare ((x,y), cs) = fromMaybe False b where
   b = case cs of [c1,c2] -> do
@@ -49,9 +44,15 @@ compare ((x,y), cs) = fromMaybe False b where
                               return (x == x' && y == y')
                  _ -> Nothing
 
-check_writing = TestTrace.compare $ results
+withCache modifiedModel = do
+  MHState snapshots weight answer <- modifiedModel
+  return (answer, map snapshotToCache snapshots)
 
-check_reading = x == x' && y == y' where
-  (x',y') = fst $ stdSample (runReuseT m r) g
+check_writing = TestTrace.compare (stdSample (withCache (mhState m)) g)
 
-check_reuse_ratio m = fromLogFloat (stdSample (fmap fst (CtnTrace.mhReuse [] m)) g) ~== 1
+check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g == caches where
+  caches = [ Cache (Categorical [(True, 0.5), (False, 0.5)]) True
+           , Cache (Normal 0 1) 9000
+           ]
+
+check_reuse_ratio m = fromLogFloat (stdSample (fmap fst (mhReuse [] m)) g) ~== 1

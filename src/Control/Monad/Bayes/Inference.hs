@@ -66,18 +66,7 @@ smcFast k n d = flatten $ foldr (.) id (replicate k step) $ start where
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 
-mhKernel'  :: (RandomDB r, MonadDist m) => r -> UpdaterT r m a -> MHKernel m (a, r)
-mhKernel' = const mhKernel
-
-mhKernel :: (RandomDB r, MonadDist m) => UpdaterT r m a -> MHKernel m (a, r)
-mhKernel program = MHKernel $ \(x, r) -> do
-  r1 <- mutate r
-  ((x', r'), leftover) <- runUpdaterT program r1
-  return ((x', r'), mhCorrectionFactor r r')
-
--- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
--- part of ratio that results from MonadDist effects and transition function,
--- while state carries the factor associated with MonadBayes effects.
+-- | Metropolis-Hastings algorithm.
 mh :: MonadDist m => Int ->  WeightedT m a -> MHKernel (WeightedT m) a -> m [a]
 mh n init trans = evalStateT (start >>= chain n) 1 where
   -- start :: StateT LogFloat m a
@@ -99,8 +88,18 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     rest <- chain (n-1) next
     return (x:rest)
 
-mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
-mh' r0 n program = fmap (map fst) $ mh n (runTraceT program) $ mhKernel' r0 program
+-- | Trace MH. Each state of the Markov chain consists of a list
+-- of continuations from the sampling of each primitive distribution
+-- during an execution.
+traceMH :: (MonadDist m) => WeightedT (Coprimitive m) a -> m [a]
+traceMH m = mhState m >>= init >>= loop
+  where
+    init state | mhPosteriorWeight state >  0 = return state
+    init state | mhPosteriorWeight state == 0 = mhKernel state >>= init
+    loop state = do
+      nextState <- mhKernel state
+      otherAnswers <- loop nextState
+      return (mhAnswer state : otherAnswers)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 mhPrior :: MonadDist m => Int -> WeightedT m a -> m [a]
