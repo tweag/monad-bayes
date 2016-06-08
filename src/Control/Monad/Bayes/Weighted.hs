@@ -9,7 +9,8 @@ module Control.Monad.Bayes.Weighted (
     Weighted(Weighted),  --constructor is needed in Dist
     withWeight,
     runWeighted,
-    WeightRecorderT,
+    WeightRecorderT(WeightRecorderT),
+    runWeightRecorderT,
     duplicateWeight
                   ) where
 

@@ -2,17 +2,20 @@
   TupleSections,
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
-  FlexibleContexts
+  FlexibleContexts,
+  Rank2Types
  #-}
 
 module Control.Monad.Bayes.Empirical (
-    Empirical,
+    Empirical (Empirical),
+    fromList,
     runEmpirical,
     population,
     spawn,
     all,
     resample,
     resampleN,
+    resampleList,
     evidence,
     collapse,
     proper,
@@ -77,17 +80,20 @@ evidence = fmap snd . proper
 collapse :: MonadDist m => Empirical m a -> m a
 collapse = fmap fst . proper
 
--- | Resample the particles using the underlying monad.
--- Model evidence estimate is preserved in total weight.
-resample :: MonadDist m => Empirical m a -> Empirical m a
-resample d = fromList $ do
-  ys <- runEmpirical d
+-- | Resample the particles inside the underlying monad.
+resampleList :: MonadDist m => [(a, LogFloat)] -> m [(a, LogFloat)]
+resampleList ys = do
   let (xs,ws) = unzip ys
   let z = LogFloat.sum ws
   let n = length ys
   offsprings <- multinomial ys n
   let new_samples = concat [replicate k x | (x,k) <- offsprings]
   return $ map (,z / fromIntegral n) new_samples
+
+-- | Resample the particles using the underlying monad.
+-- Model evidence estimate is preserved in total weight.
+resample :: MonadDist m => Empirical m a -> Empirical m a
+resample d = fromList (runEmpirical d >>= resampleList)
 
 -- | As 'resample', but with set new population size.
 resampleN :: MonadDist m => Int -> Empirical m a -> Empirical m a

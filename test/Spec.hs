@@ -62,13 +62,14 @@ main = hspec $ do
       it "correctly reuses values" $ do
         TestTrace.check_reading `shouldBe` True
     it "has reuse ratio 1 on an empty database" $ do
-      TestTrace.check_reuse_ratio TestTrace.m         `shouldBe` True
-      TestTrace.check_reuse_ratio TestTrace.sprinkler `shouldBe` True
+      TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
+      TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
     it "preserves the distribution on the sprinkler model" $ do
       TestInference.check_preserve_smc `shouldBe` True
+      TestInference.check_smc_skeleton `shouldBe` True
     prop "number of particles is equal to its second parameter" $
       \observations particles ->
         observations >= 0 && particles >= 1 ==>
@@ -83,6 +84,9 @@ main = hspec $ do
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
+  describe "Resample-move SMC" $ do
+    it "preserves the distribution on the sprinkler model" $ do
+      TestInference.check_resample_move `shouldBe` True
   describe "Number of SMC observations sufficient for each models" $ do
     check_smc_observations 5 "Gamma.model" Gamma.model
     check_smc_observations 0 "Gamma.exact" Gamma.exact

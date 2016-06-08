@@ -69,16 +69,19 @@ deriving instance Functor Snapshot
 snapshotToCache :: Snapshot y -> Cache
 snapshotToCache (Snapshot d x _) = Cache d x
 
--- Pause probabilistic program whenever a primitive distribution is
+-- | Pause probabilistic program whenever a primitive distribution is
 -- encountered, yield the encountered primitive distribution, and
 -- await a sample of that primitive distribution.
 newtype Coprimitive m a = Coprimitive
   { runCoprimitive :: Coroutine AwaitSampler m a
   }
-  deriving (Functor, Applicative, Monad)
+  deriving (Functor, Applicative, Monad, MonadTrans)
 
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
+
+instance (MonadBayes m) => MonadBayes (Coprimitive m) where
+  factor = lift . factor
 
 -- MHState is probably not a monad transformer, since coroutine
 -- is not commutative. Consider converting the list of snapshots
@@ -88,6 +91,7 @@ data MHState m a = MHState
   , mhPosteriorWeight :: LogFloat -- weight of mhAnswer in posterior
   , mhAnswer :: a
   }
+  deriving Functor
 
 -- | Make one MH transition, retain weight from the source distribution
 mhTransition :: (MonadDist m) =>
@@ -103,23 +107,26 @@ mhTransition m = withWeight $ do
 mhKernel :: (MonadDist m) => MHState m a -> m (MHState m a)
 mhKernel oldState = do
   let m = length (mhSnapshots oldState)
-  i <- uniformD [0 .. m - 1]
-  let (prev, snapshot : next) = splitAt i (mhSnapshots oldState)
-  let caches = map snapshotToCache next
-  case snapshot of
-    Snapshot d x continuation -> do
-      x' <- primitive d
-      (reuseRatio, partialState) <- mhReuse caches (continuation x')
+  if m == 0 then
+    return oldState
+  else do
+    i <- uniformD [0 .. m - 1]
+    let (prev, snapshot : next) = splitAt i (mhSnapshots oldState)
+    let caches = map snapshotToCache next
+    case snapshot of
+      Snapshot d x continuation -> do
+        x' <- primitive d
+        (reuseRatio, partialState) <- mhReuse caches (continuation x')
 
-      let newSnapshots = prev ++ Snapshot d x' continuation : mhSnapshots partialState
-      let newState     = partialState { mhSnapshots = newSnapshots }
-      let n            = length newSnapshots
-      let numerator    = fromIntegral m * mhPosteriorWeight newState * reuseRatio
-      let denominator  = fromIntegral n * mhPosteriorWeight oldState
-      let acceptRatio  = if denominator == 0 then 1 else min 1 (numerator / denominator)
+        let newSnapshots = prev ++ Snapshot d x' continuation : mhSnapshots partialState
+        let newState     = partialState { mhSnapshots = newSnapshots }
+        let n            = length newSnapshots
+        let numerator    = fromIntegral m * mhPosteriorWeight newState * reuseRatio
+        let denominator  = fromIntegral n * mhPosteriorWeight oldState
+        let acceptRatio  = if denominator == 0 then 1 else min 1 (numerator / denominator)
 
-      accept <- bernoulli acceptRatio
-      return (if accept then newState else oldState)
+        accept <- bernoulli acceptRatio
+        return (if accept then newState else oldState)
 
 -- | Convert a model into a distribution of MH-states, each consisting
 -- of a list of continuations from each primitive distribution.

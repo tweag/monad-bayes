@@ -30,6 +30,9 @@ check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 check_preserve_smc = (enumerate . runIdentityT . transform . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
+check_smc_skeleton = (enumerate . runIdentityT . transform . smcFast' 2) sprinkler ~==
+                     enumerate sprinkler
+
 sprinkler_posterior = duplicateWeight sprinkler
 
 mhPriorTrans :: MonadDist m => Weighted m Bool -> m Bool
@@ -43,7 +46,10 @@ pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
   kernel = MHKernel $ const $ fmap (,1) $ transform $ smc 2 2 sprinkler
 
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
-                    enumerate sprinkler
+                   enumerate sprinkler
+
+check_resample_move = (enumerate . runIdentityT . transform . resampleMoveSMC 1) sprinkler ~==
+                      enumerate sprinkler
 
 check_trace_mh m m' = enumerate (forgetMHState $ mhTransition $ mhWeightedState $ m) ~==
                       enumerate m'

@@ -2,7 +2,8 @@
   FlexibleContexts,
   ScopedTypeVariables,
   Rank2Types,
-  TupleSections
+  TupleSections,
+  GeneralizedNewtypeDeriving
  #-}
 
 module Control.Monad.Bayes.Inference where
@@ -15,6 +16,11 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
+import Control.Monad.Identity (Identity (Identity), runIdentity)
+import Control.Monad.Trans.Identity (IdentityT (IdentityT), runIdentityT)
+import Control.Monad.Coroutine (Coroutine (Coroutine), resume)
+import Control.Monad.Coroutine.SuspensionFunctors (Await)
+
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
@@ -24,6 +30,8 @@ import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Trace
+
+import Data.List (partition)
 
 -- | Rejection sampling.
 rejection :: MonadDist m => Rejection m a -> m a
@@ -55,6 +63,99 @@ smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
         Particle (Empirical m) a -> m [(a,Double)]
 smc' k n d = fmap (enumerate . categorical) $ runEmpirical $ smc k n d
+
+-- | Common code of 'smcFast'' and 'resampleMoveSMC'
+smcSkeleton :: forall t m a s.
+               (MonadTrans t, MonadBayes (t (Empirical m)), MonadDist m, Functor s) =>
+               Int                                                -> -- number of particles
+               (forall x. t (Empirical m) x -> Empirical m (s x)) -> -- lower
+               (forall y. s y -> Empirical m (s y))               -> -- kernel
+               (forall z. s z -> z)                               -> -- answer
+               Particle (t (Empirical m)) a -> Empirical m a
+smcSkeleton n lower kernel answer d =
+  fmap answer (fromList (start >>= loop)) where
+  -- add 1 suspension point at the end so that no particle can terminate
+  -- without running into any suspension point
+  finalFactor x = factor 1 >> return x
+
+  -- spawn n particles at the start, add suspension point at the end
+  start = runLowerResume (lift (lift $ spawn n) >> d >>= finalFactor)
+
+  runLowerResume = runEmpirical . lower . resume
+
+  loop :: [(s (Either (Await () (Particle (t (Empirical m)) a)) a), LogFloat)] -> m [(s a, LogFloat)]
+  loop weightedStates =
+    if null weightedStates then
+      return []
+    else do
+      -- resample step
+      resampled <- resampleList weightedStates
+
+      -- partition particles based on whether they terminated or not
+      let (notDoneEW, doneEW) = partition (isLeft . answer . fst) resampled
+      let notDone = map (first (fmap fromLeft )) notDoneEW :: [(s(Particle(t(Empirical m))a), LogFloat)]
+      let done    = map (first (fmap fromRight)) doneEW    :: [(s a, LogFloat)]
+      if null notDone then
+        return done
+      else do
+        -- move step
+        let (notDoneStates, notDoneWeights) = unzip notDone
+        movedStatesWithWeight <- fmap concat $ sequence $ map (runEmpirical . kernel) notDoneStates
+        let (movedStates, ignoredWeights) = unzip movedStatesWithWeight
+
+        -- run particles to the next suspension point
+        let nextParticles = map answer movedStates :: [Particle (t (Empirical m)) a]
+        nextWeightedStates <- fmap concat $ sequence $ map runLowerResume nextParticles
+
+        -- adjust weight before, then descend with all particles
+        let nextAdjustedStates = zipWith (second . (*)) notDoneWeights nextWeightedStates
+        let doneStates = map (first (fmap Right)) done
+        loop (doneStates ++ nextAdjustedStates)
+
+  fromRight (Right x) = x
+  fromRight (Left  x) = error "Should not happen (coroutine did not terminate)"
+
+  fromLeft  (Right x) = return  x
+  fromLeft  (Left  x) = extract x
+
+-- | 'smcFast' implemented via 'smcSkeleton'
+smcFast' :: forall m a. MonadDist m => Int -> Particle (Empirical m) a -> Empirical m a
+smcFast' n d =
+  smcSkeleton n (fmap Identity . runIdentityT) -- lower
+                return                         -- Dirac kernel
+                runIdentity                    -- answer
+                (insertIdentityT d)
+  where
+    -- working around Haskell type parameters not being able to instantiate into
+    -- arbitrary type functions (in this case, the identity type function)
+    insertIdentityT :: forall x. Particle (Empirical m) x -> Particle (IdentityT (Empirical m)) x
+    insertIdentityT = Coroutine . IdentityT . fmap (either (Left . fmap insertIdentityT) Right) . resume
+
+-- Private type of 'resampleMoveSMC'
+-- To work around Haskell type parameters not being able to instantiate into
+-- arbitrary type functions (in this case, @WeightRecorderT . Coprimitive@)
+newtype RM m a = RM { runRM :: (WeightRecorderT (Coprimitive m) a) }
+  deriving (Applicative, Functor, Monad, MonadDist, MonadBayes)
+
+instance MonadTrans RM where
+  lift = RM . lift . lift
+
+-- | SMC where particles undergo 1 step of Markov transition after resampling
+resampleMoveSMC :: forall m a. MonadDist m => Int ->
+                   Particle (WeightRecorderT (Coprimitive (Empirical m))) a ->
+                   Empirical m a
+resampleMoveSMC n =
+  smcSkeleton n lower kernel mhAnswer . insertRM
+  where
+    insertRM :: Particle (WeightRecorderT (Coprimitive (Empirical m))) a ->
+                Particle (RM (Empirical m)) a
+    insertRM = Coroutine . RM . fmap (either (Left . fmap insertRM) Right) . resume
+
+    lower :: forall x. RM (Empirical m) x -> Empirical m (MHState (Empirical m) x)
+    lower = mhState . duplicateWeight . runRM
+
+    kernel :: forall y. MHState (Empirical m) y -> Empirical m (MHState (Empirical m) y)
+    kernel = mhKernel
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
