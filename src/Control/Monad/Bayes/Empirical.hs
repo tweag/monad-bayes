@@ -7,7 +7,7 @@
  #-}
 
 module Control.Monad.Bayes.Empirical (
-    Empirical (Empirical),
+    Empirical,
     fromList,
     runEmpirical,
     population,
