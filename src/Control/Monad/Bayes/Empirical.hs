@@ -21,6 +21,7 @@ module Control.Monad.Bayes.Empirical (
 
 import Prelude hiding (all)
 
+import Control.Monad.Morph
 import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
@@ -46,6 +47,10 @@ fromList = Empirical . withWeight . ListT
 
 instance MonadTrans Empirical where
     lift = Empirical . lift . lift
+
+-- | Lift a monad morphism through Empirical
+instance MFunctor Empirical where
+  hoist nat = Empirical . (hoist (hoist nat)) . unEmpirical
 
 -- | The number of samples used for approximation.
 population :: Monad m => Empirical m a -> m Int
