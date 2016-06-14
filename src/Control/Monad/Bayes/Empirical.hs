@@ -79,34 +79,36 @@ evidence = fmap snd . proper
 --collapse :: MonadDist m => Empirical m a -> m a
 --collapse = fmap fst . proper
 
+-- | A version of 'resampleN' that operates explicitly on lists.
+resampleNList :: MonadDist m => Int -> [(a,LogFloat)] -> m [(a,LogFloat)]
+resampleNList n ys = do
+  let (xs,ws) = unzip ys
+  let z = LogFloat.sum ws
+  offsprings <- multinomial ys n
+  let new_samples = concat [replicate k x | (x,k) <- offsprings]
+  return $ map (,z / fromIntegral n) new_samples
+
+-- | A version of 'resample' that operates explicitly on lists.
+resampleList :: MonadDist m => [(a,LogFloat)] -> m [(a,LogFloat)]
+resampleList ys = resampleNList (length ys) ys
+
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => Empirical m a -> Empirical m a
 resample d = fromList $ do
   ys <- runEmpirical d
-  let (xs,ws) = unzip ys
-  let z = LogFloat.sum ws
-  let n = length ys
-  offsprings <- multinomial ys n
-  let new_samples = concat [replicate k x | (x,k) <- offsprings]
-  return $ map (,z / fromIntegral n) new_samples
+  resampleList ys
 
 -- | As 'resample', but with set new population size.
 resampleN :: MonadDist m => Int -> Empirical m a -> Empirical m a
-resampleN n d = do
-  ys <- lift $ runEmpirical d
-  let (xs,ws) = unzip ys
-  let z = LogFloat.sum ws
-  factor z
-  spawn n
-  ancestor <- discrete ws
-  let x = xs !! ancestor
-  return x
+resampleN n d = fromList $ do
+  ys <- runEmpirical d
+  resampleNList n ys
 
 -- | Properly weighted version of 'collapse', that is returned with
 -- model evidence estimator from the same run.
 proper :: MonadDist m => Empirical m a -> m (a,LogFloat)
-proper = fmap head . runEmpirical . resampleN 1
+proper = fmap head . (>>= resampleNList 1) . runEmpirical
 
 
 -- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
