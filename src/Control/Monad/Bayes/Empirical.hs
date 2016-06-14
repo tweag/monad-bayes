@@ -72,13 +72,17 @@ all cond = fmap getAll . fold . fmap (All . cond)
 
 
 
-type Population m = Empirical m
+newtype Population m a = Population {unPopulation :: Empirical m a}
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
 
 runPopulation :: Functor m => Population m a -> m [(a,LogFloat)]
-runPopulation = runEmpirical
+runPopulation = runEmpirical . unPopulation
+
+fromWeightedList :: Monad m => m [(a,LogFloat)] -> Population m a
+fromWeightedList = Population . fromList
 
 spawn :: MonadDist m => Int -> Population m ()
-spawn = draw
+spawn = Population . draw
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => Population m a -> m LogFloat
@@ -105,13 +109,13 @@ resampleList ys = resampleNList (length ys) ys
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => Population m a -> Population m a
-resample d = fromList $ do
+resample d = fromWeightedList $ do
   ys <- runPopulation d
   resampleList ys
 
 -- | As 'resample', but with set new population size.
 resampleN :: MonadDist m => Int -> Population m a -> Population m a
-resampleN n d = fromList $ do
+resampleN n d = fromWeightedList $ do
   ys <- runPopulation d
   resampleNList n ys
 
