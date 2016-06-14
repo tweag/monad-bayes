@@ -12,7 +12,6 @@ module Control.Monad.Bayes.Empirical (
     --runEmpirical,
     --population,
     spawn,
-    --all,
     resample,
     resampleN,
     --evidence,
@@ -60,14 +59,6 @@ population e = do
 draw :: MonadDist m => Int -> Empirical m ()
 draw n = (Empirical $ lift $ ListT $ sequence $ replicate n $ return ()) >>
                factor (1 / fromIntegral n)
-
--- | A special version of fold that returns the result in the transformed monad.
-fold :: (Monoid a, Monad m) => Empirical m a -> m a
-fold = fmap (Fold.fold . map fst) . runEmpirical
-
--- | Checks if all samples of the empirical distribution satisfy a condition, using `fold`.
-all :: Monad m => (a -> Bool) -> Empirical m a -> m Bool
-all cond = fmap getAll . fold . fmap (All . cond)
 
 
 
