@@ -27,11 +27,11 @@ g = mkStdGen 0
 
 check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 
-check_preserve_smc = (enumerate . runIdentityT . transform . smc 2 2) sprinkler ~==
+check_preserve_smc = (enumerate . runIdentityT . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-check_smc_skeleton = (enumerate . runIdentityT . transform . smcFast' 2) sprinkler ~==
-                     enumerate sprinkler
+check_preserve_smcrm = (enumerate . runIdentityT . collapse . smcrm 2 1) sprinkler ~==
+                        enumerate sprinkler
 
 sprinkler_posterior = duplicateWeight sprinkler
 
@@ -43,15 +43,12 @@ check_prior_trans = enumerate (mhPriorTrans sprinkler_posterior) ~==
 
 pimhTrans :: MonadDist m => Weighted m Bool -> m Bool
 pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
-  kernel = MHKernel $ const $ fmap (,1) $ transform $ smc 2 2 sprinkler
+  kernel = MHKernel $ const $ fmap (,1) $ collapse $ smc 2 2 sprinkler
 
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
                    enumerate sprinkler
 
-check_resample_move = (enumerate . runIdentityT . transform . resampleMoveSMC 1) sprinkler ~==
-                      enumerate sprinkler
-
-check_trace_mh m m' = enumerate (forgetMHState $ mhTransition $ mhWeightedState $ m) ~==
+check_trace_mh m m' = enumerate (mhForgetState (mhTransition m)) ~==
                       enumerate m'
 
 check_trace_trans = check_trace_mh sprinkler sprinkler
@@ -61,4 +58,4 @@ check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmalle
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> Int
 check_particles observations particles =
-  stdSample (fmap length (runEmpirical $ smc observations particles Gamma.model)) g
+  stdSample (fmap length (runPopulation $ smc observations particles Gamma.model)) g

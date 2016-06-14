@@ -16,6 +16,7 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
+import Control.Monad.Morph
 import Control.Monad.Identity (Identity (Identity), runIdentity)
 import Control.Monad.Trans.Identity (IdentityT (IdentityT), runIdentityT)
 import Control.Monad.Coroutine (Coroutine (Coroutine), resume)
@@ -26,10 +27,10 @@ import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Particle as Particle
+import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
-import Control.Monad.Bayes.Trace
 
 import Data.List (partition)
 
@@ -46,69 +47,82 @@ importance = runWeighted
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a, MonadDist m) =>
-               Int -> Empirical m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runEmpirical $ spawn n >> d
+               Int -> Population m a -> m [(a,Double)]
+importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 -- The first argument is the number of resampling points, the second is
 -- the number of particles used.
 -- If the first argument is smaller than the number of observations in the model,
 -- the algorithm is still correct, but doesn't perform resampling after kth time.
-smc :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
+smc :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
 smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
-        Particle (Empirical m) a -> m [(a,Double)]
-smc' k n d = fmap (enumerate . categorical) $ runEmpirical $ smc k n d
+        Particle (Population m) a -> m [(a,Double)]
+smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
 
--- | Common code of 'smcFast'' and 'resampleMoveSMC'
-smcSkeleton :: forall t m a s.
-               (MonadTrans t, MonadBayes (t (Empirical m)), MonadDist m, Functor s) =>
-               Int                                                -> -- number of particles
-               (forall x. t (Empirical m) x -> Empirical m (s x)) -> -- lower
-               (forall y. s y -> Empirical m (s y))               -> -- kernel
-               (forall z. s z -> z)                               -> -- answer
-               Particle (t (Empirical m)) a -> Empirical m a
-smcSkeleton n lower kernel answer d =
-  fmap answer (fromList (start >>= loop)) where
-  -- add 1 suspension point at the end so that no particle can terminate
-  -- without running into any suspension point
-  finalFactor x = factor 1 >> return x
+-- | Asymptotically faster version of 'smc' that resamples using multinomial
+-- instead of a sequence of categoricals.
+smcFast :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
+smcFast = smcWithResampler resample
 
-  -- spawn n particles at the start, add suspension point at the end
-  start = runLowerResume (lift (lift $ spawn n) >> d >>= finalFactor)
+composeCopies :: Int -> (a -> a) -> (a -> a)
+composeCopies k f = foldr (.) id (replicate k f)
 
-  runLowerResume = runEmpirical . lower . resume
+smcWithResampler :: MonadDist m =>
+                    (forall x. Population m x -> Population m x) ->
+                    Int -> Int -> Particle (Population m) a -> Population m a
 
-  loop :: [(s (Either (Await () (Particle (t (Empirical m)) a)) a), LogFloat)] -> m [(s a, LogFloat)]
-  loop weightedStates =
-    if null weightedStates then
-      return []
-    else do
-      -- resample step
-      resampled <- resampleList weightedStates
+smcWithResampler resampler k n =
+  flatten . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
+  where
+    hoist' = Particle.mapMonad
 
-      -- partition particles based on whether they terminated or not
-      let (notDoneEW, doneEW) = partition (isLeft . answer . fst) resampled
-      let notDone = map (first (fmap fromLeft )) notDoneEW :: [(s(Particle(t(Empirical m))a), LogFloat)]
-      let done    = map (first (fmap fromRight)) doneEW    :: [(s a, LogFloat)]
-      if null notDone then
-        return done
-      else do
-        -- move step
-        let (notDoneStates, notDoneWeights) = unzip notDone
-        movedStatesWithWeight <- fmap concat $ sequence $ map (runEmpirical . kernel) notDoneStates
-        let (movedStates, ignoredWeights) = unzip movedStatesWithWeight
+smcrm :: forall m a. MonadDist m =>
+         Int -> Int ->
+         Particle (WeightRecorderT (Coprimitive (Population m))) a -> Population m a
 
-        -- run particles to the next suspension point
-        let nextParticles = map answer movedStates :: [Particle (t (Empirical m)) a]
-        nextWeightedStates <- fmap concat $ sequence $ map runLowerResume nextParticles
+smcrm k n = marginal . composeCopies k (advancer . mover . resampler) . toState . init
+  where
+  hoist' :: forall m. Monad m => (forall a. m a -> m a) -> Particle m a -> Particle m a
+  hoist' = Particle.mapMonad
 
-        -- adjust weight before, then descend with all particles
-        let nextAdjustedStates = zipWith (second . (*)) notDoneWeights nextWeightedStates
-        let doneStates = map (first (fmap Right)) done
-        loop (doneStates ++ nextAdjustedStates)
+  -- spawn particles at the start of all monads in the stack
+  init :: Particle (WeightRecorderT (Coprimitive (Population m))) a ->
+          Particle (WeightRecorderT (Coprimitive (Population m))) a
+  init = hoist' $ hoist $ Trace.mapMonad (spawn n >>)
+
+  -- convert monad to functor
+  toState :: Particle (WeightRecorderT (Coprimitive (Population m))) a ->
+             --WeightRecorderT (Coprimitive (Population m)) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a) ->
+             --Weighted (Coprimitive (Population m)) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)
+             Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
+  toState = mhState . duplicateWeight . resume
+
+  resampler :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
+               Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
+  resampler = resample
+
+  mover :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
+           Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
+  mover = (>>= mhKernel) -- this is wrong: weight after move should not be saved.
+
+  advancer :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
+              Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
+  advancer m = do
+    state <- m
+    let particle = Coroutine $ return $ mhAnswer state :: Particle (WeightRecorderT (Coprimitive (Population m))) a
+    toState (advance particle)
+
+  marginal :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
+              Population m a
+  marginal m = do
+    state <- m
+    case mhAnswer state of
+      Right value -> return value
+      Left  await -> error "insufficient number of observations" -- missing `finish`
 
   fromRight (Right x) = x
   fromRight (Left  x) = error "Should not happen (coroutine did not terminate)"
@@ -116,58 +130,6 @@ smcSkeleton n lower kernel answer d =
   fromLeft  (Right x) = return  x
   fromLeft  (Left  x) = extract x
 
--- | 'smcFast' implemented via 'smcSkeleton'
-smcFast' :: forall m a. MonadDist m => Int -> Particle (Empirical m) a -> Empirical m a
-smcFast' n d =
-  smcSkeleton n (fmap Identity . runIdentityT) -- lower
-                return                         -- Dirac kernel
-                runIdentity                    -- answer
-                (insertIdentityT d)
-  where
-    -- working around Haskell type parameters not being able to instantiate into
-    -- arbitrary type functions (in this case, the identity type function)
-    insertIdentityT :: forall x. Particle (Empirical m) x -> Particle (IdentityT (Empirical m)) x
-    insertIdentityT = Coroutine . IdentityT . fmap (either (Left . fmap insertIdentityT) Right) . resume
-
--- Private type of 'resampleMoveSMC'
--- To work around Haskell type parameters not being able to instantiate into
--- arbitrary type functions (in this case, @WeightRecorderT . Coprimitive@)
-newtype RM m a = RM { runRM :: (WeightRecorderT (Coprimitive m) a) }
-  deriving (Applicative, Functor, Monad, MonadDist, MonadBayes)
-
-instance MonadTrans RM where
-  lift = RM . lift . lift
-
--- | SMC where particles undergo 1 step of Markov transition after resampling
-resampleMoveSMC :: forall m a. MonadDist m => Int ->
-                   Particle (WeightRecorderT (Coprimitive (Empirical m))) a ->
-                   Empirical m a
-resampleMoveSMC n =
-  smcSkeleton n lower kernel mhAnswer . insertRM
-  where
-    insertRM :: Particle (WeightRecorderT (Coprimitive (Empirical m))) a ->
-                Particle (RM (Empirical m)) a
-    insertRM = Coroutine . RM . fmap (either (Left . fmap insertRM) Right) . resume
-
-    lower :: forall x. RM (Empirical m) x -> Empirical m (MHState (Empirical m) x)
-    lower = mhState . duplicateWeight . runRM
-
-    kernel :: forall y. MHState (Empirical m) y -> Empirical m (MHState (Empirical m) y)
-    kernel = mhKernel
-
--- | Asymptotically faster version of 'smc' that resamples using multinomial
--- instead of a sequence of categoricals.
-smcFast :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
-smcFast = smcWithResampler resample
-
-smcWithResampler :: MonadDist m =>
-                    (forall x. Empirical m x -> Empirical m x) ->
-                    Int -> Int -> Particle (Empirical m) a -> Empirical m a
-
-smcWithResampler resampler k n =
-  flatten . foldr (.) id (replicate k (advance . hoist' resampler)) . hoist' (spawn n >>)
-  where
-    hoist' = Particle.mapMonad
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
@@ -197,14 +159,15 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 -- | Trace MH. Each state of the Markov chain consists of a list
 -- of continuations from the sampling of each primitive distribution
 -- during an execution.
-traceMH :: (MonadDist m) => Weighted (Coprimitive m) a -> m [a]
-traceMH m = mhState m >>= init >>= loop
+traceMH :: (MonadDist m) => Int -> Trace m a -> m [a]
+traceMH n (Trace m) = m >>= init >>= loop n
   where
     init state | mhPosteriorWeight state >  0 = return state
-    init state | mhPosteriorWeight state == 0 = mhState m >>= init
-    loop state = do
+    init state | mhPosteriorWeight state == 0 = m >>= init
+    loop n state | n <= 0 = return []
+    loop n state | n >  0 = do
       nextState <- mhKernel state
-      otherAnswers <- loop nextState
+      otherAnswers <- loop (n - 1) nextState
       return (mhAnswer state : otherAnswers)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
@@ -215,5 +178,5 @@ mhPrior n d = mh n d kernel where
 -- | Particle Independent Metropolis Hastings. The first two arguments are
 -- passed to SMC, the third is the number of samples, equal to
 -- the number of SMC runs.
-pimh :: MonadDist m => Int -> Int -> Int -> Particle (Empirical m) a -> m [a]
-pimh k np ns d = mhPrior ns $ transform $ smc k np d
+pimh :: MonadDist m => Int -> Int -> Int -> Particle (Population (Weighted m)) a -> m [a]
+pimh k np ns d = mhPrior ns $ collapse $ smc k np d

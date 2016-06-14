@@ -34,9 +34,9 @@ main = hspec $ do
         TestEmpirical.pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
         TestEmpirical.many_size `shouldBe` 15
-    context "checking properties of samples" $ do
-      it "correctly checks if all particles satisfy a property" $ do
-        TestEmpirical.all_check `shouldBe` True
+--    context "checking properties of samples" $ do
+--      it "correctly checks if all particles satisfy a property" $ do
+--        TestEmpirical.all_check `shouldBe` True
     context "distribution-preserving transformations" $ do
       it "transform preserves the distribution" $ do
         TestEmpirical.trans_check1 `shouldBe` True
@@ -69,11 +69,13 @@ main = hspec $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
     it "preserves the distribution on the sprinkler model" $ do
       TestInference.check_preserve_smc `shouldBe` True
-      TestInference.check_smc_skeleton `shouldBe` True
     prop "number of particles is equal to its second parameter" $
       \observations particles ->
         observations >= 0 && particles >= 1 ==>
           TestInference.check_particles observations particles == particles
+  describe "Resample-move SMC" $ do
+    it "preserves the distribution on the sprinkler model" $ do
+      TestInference.check_preserve_smcrm `shouldBe` True
   describe "MH" $ do
     it "MH from prior leaves posterior invariant" $ do
       TestInference.check_prior_trans `shouldBe` True
@@ -84,9 +86,6 @@ main = hspec $ do
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
-  describe "Resample-move SMC" $ do
-    it "preserves the distribution on the sprinkler model" $ do
-      TestInference.check_resample_move `shouldBe` True
   describe "Number of SMC observations sufficient for each models" $ do
     check_smc_observations 5 "Gamma.model" Gamma.model
     check_smc_observations 0 "Gamma.exact" Gamma.exact

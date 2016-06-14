@@ -77,6 +77,10 @@ newtype Coprimitive m a = Coprimitive
   }
   deriving (Functor, Applicative, Monad, MonadTrans)
 
+mapMonad :: Monad m =>
+            (forall a. m a -> m a) -> Coprimitive m a -> Coprimitive m a
+mapMonad f = Coprimitive . Coroutine . f . resume . runCoprimitive
+
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
 
@@ -93,14 +97,74 @@ data MHState m a = MHState
   }
   deriving Functor
 
+-- | Run model once, cache primitive samples together with continuations
+-- awaiting the samples
+mhState :: (MonadDist m) => Weighted (Coprimitive m) a -> m (MHState m a)
+mhState m = fmap snd (mhReuse [] m)
+
+-- | Forget cached samples, return a continuation to execute from scratch
+mhReset :: (Monad m) => m (MHState m a) -> Weighted (Coprimitive m) a
+mhReset m = withWeight $ Coprimitive $ Coroutine $ do
+  MHState snapshots weight answer <- m
+  case snapshots of
+    [] ->
+      return $ Right (answer, weight)
+
+    Snapshot d x continuation : _ ->
+      return $ Left $ AwaitSampler d (runCoprimitive . runWeighted . continuation)
+
+newtype Trace m a = Trace { runTrace :: m (MHState m a) }
+  deriving (Functor)
+
+instance Monad m => Applicative (Trace m) where
+  pure  = return
+  (<*>) = liftM2 ($)
+
+instance Monad m => Monad (Trace m) where
+
+  return = Trace . return . MHState [] 1
+
+  m >>= f = Trace $ do
+    MHState ls lw la <- runTrace m
+    MHState rs rw ra <- runTrace (f la)
+    return $ MHState (map (fmap convert) ls ++ map (fmap (addFactor lw)) rs) (lw * rw) ra
+    where
+      --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
+      convert m = withWeight $ do -- (>>= mhReset . runTrace . f)
+        (a, wa) <- runWeighted m
+        (b, wb) <- runWeighted $ mhReset (runTrace (f a))
+        return (b, wa * wb)
+
+      -- addFactor :: LogFloat -> Weighted (Coprimitive m) b -> Weighted (Coprimitive m) b
+      addFactor k = (withWeight (return ((), k)) >>)
+
+instance MonadDist m => MonadDist (Trace m) where
+  primitive d = Trace $ do
+    x <- primitive d
+    return $ MHState [Snapshot d x return] 1 x
+
+instance MonadDist m => MonadBayes (Trace m) where
+  factor k = Trace $ return $ MHState [] k ()
+
+
+mhStep :: (MonadDist m) => Trace m a -> Trace m a
+mhStep (Trace m) = Trace (m >>= mhKernel)
+
+
 -- | Make one MH transition, retain weight from the source distribution
 mhTransition :: (MonadDist m) =>
-                Weighted m (MHState m a) -> Weighted m (MHState m a)
+                WeightRecorderT (Trace m) a -> WeightRecorderT (Trace m) a
 
-mhTransition m = withWeight $ do
-  (oldState, oldWeight) <- runWeighted m
-  newState <- mhKernel oldState
-  return (newState, oldWeight)
+mhTransition m = WeightRecorderT $ withWeight $ Trace $ do
+  oldState @ (MHState s0 w0 (x0, oldWeight)) <- runTrace $ runWeighted $ duplicateWeight m
+  newState @ (MHState s1 w1 (x1, newWeight)) <- mhKernel oldState
+  return $ MHState s1 w1 (x1, oldWeight)
+
+mhForgetState :: (MonadBayes m) => WeightRecorderT (Trace m) a -> m a
+mhForgetState m = do
+  MHState s w (x, weight) <- runTrace $ runWeighted $ duplicateWeight m
+  factor weight
+  return x
 
 -- | *The* Metropolis-Hastings kernel. Each MH-state carries all necessary
 -- information to compute the acceptance ratio.
@@ -128,23 +192,6 @@ mhKernel oldState = do
         accept <- bernoulli acceptRatio
         return (if accept then newState else oldState)
 
--- | Convert a model into a distribution of MH-states, each consisting
--- of a list of continuations from each primitive distribution.
-mhState :: (MonadDist m) => Weighted (Coprimitive m) a -> m (MHState m a)
-mhState m = fmap snd (mhReuse [] m)
-
--- | Transition a subprobability distribution, preserving its weights
-mhWeightedState :: (MonadDist m) => Weighted (Coprimitive m) a -> Weighted m (MHState m a)
-mhWeightedState m = withWeight $ do
-  state <- mhState m
-  return (state, mhPosteriorWeight state)
-
--- | Forget the state (i. e., a list of continuations), return a weighted final result.
-forgetMHState :: (MonadBayes m) => Weighted m (MHState m a) -> m a
-forgetMHState m = do
-  (state, weight) <- runWeighted m
-  factor weight
-  return (mhAnswer state)
 
 -- | Reuse previous samples as much as possible, collect reuse ratio
 mhReuse :: forall m a. (MonadDist m) =>

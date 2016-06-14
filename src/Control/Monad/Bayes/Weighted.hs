@@ -54,7 +54,7 @@ instance MonadDist m => MonadBayes (Weighted m) where
 -- the associated likelihood.
 newtype WeightRecorderT m a =
   WeightRecorderT {runWeightRecorderT :: Weighted m a}
-    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist, MFunctor)
 
 -- | Both record weight and pass it to the underlying monad.
 duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
