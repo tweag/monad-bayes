@@ -57,8 +57,8 @@ population e = do
 -- Bear in mind that invoking `spawn` twice in the same computation
 -- leads to multiplying the number of samples.
 draw :: MonadDist m => Int -> Empirical m ()
-draw n = (Empirical $ lift $ ListT $ sequence $ replicate n $ return ()) >>
-               factor (1 / fromIntegral n)
+draw n = Empirical $ lift $ ListT $ sequence $ replicate n $ return ()
+
 
 
 
@@ -73,7 +73,7 @@ fromWeightedList :: Monad m => m [(a,LogFloat)] -> Population m a
 fromWeightedList = Population . fromList
 
 spawn :: MonadDist m => Int -> Population m ()
-spawn = Population . draw
+spawn n = Population (draw n) >> factor (1 / fromIntegral n)
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => Population m a -> m LogFloat
