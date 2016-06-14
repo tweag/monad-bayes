@@ -16,6 +16,7 @@ module Control.Monad.Bayes.Particle (
     extract
                 ) where
 
+import Control.Monad.Morph
 import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
 import Control.Monad.Coroutine hiding (mapMonad)
@@ -29,7 +30,7 @@ import Control.Monad.Bayes.Class
 -- for implementation of SMC-related methods.
 -- All the probabilistic effects are delegated to the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
-type Particle m a = Coroutine (Await ()) m a
+type Particle = Coroutine (Await ())
 extract (Await f) = f ()
 
 -- | A synchronization barrier where computation is paused.
@@ -53,8 +54,13 @@ mapMonad :: Monad m =>
             (forall a. m a -> m a) -> Particle m a -> Particle m a
 mapMonad f cort = Coroutine {resume= f $ resume cort}
 
-instance MonadDist m => MonadDist (Coroutine (Await ()) m) where
+instance MonadDist m => MonadDist (Particle m) where
     primitive = lift . primitive
 
-instance MonadBayes m => MonadBayes (Coroutine (Await ()) m) where
+instance MonadBayes m => MonadBayes (Particle m) where
     factor w = lift (factor w) >> synchronize
+
+instance MFunctor Particle where
+  -- hoist :: Monad m => (forall x. m x -> n x) -> Particle m x -> Particle n x
+  -- Recursion structure similar to @instance MFunctor Lift@.
+  hoist nat = Coroutine . nat . fmap (either (Left . fmap (hoist nat)) Right) . resume

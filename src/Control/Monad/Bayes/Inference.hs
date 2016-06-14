@@ -55,9 +55,7 @@ importance' n d = fmap (enumerate . categorical) $ runEmpirical $ spawn n >> d
 -- If the first argument is smaller than the number of observations in the model,
 -- the algorithm is still correct, but doesn't perform resampling after kth time.
 smc :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
-smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
-  start = lift (spawn n) >> d
-  step = Particle.mapMonad (resampleN n) . advance
+smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
@@ -160,9 +158,16 @@ resampleMoveSMC n =
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
 smcFast :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
-smcFast k n d = flatten $ foldr (.) id (replicate k step) $ start where
-  start = lift (spawn n) >> d
-  step = Particle.mapMonad resample . advance
+smcFast = smcWithResampler resample
+
+smcWithResampler :: MonadDist m =>
+                    (forall x. Empirical m x -> Empirical m x) ->
+                    Int -> Int -> Particle (Empirical m) a -> Empirical m a
+
+smcWithResampler resampler k n =
+  flatten . foldr (.) id (replicate k (advance . hoist' resampler)) . hoist' (spawn n >>)
+  where
+    hoist' = Particle.mapMonad
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
