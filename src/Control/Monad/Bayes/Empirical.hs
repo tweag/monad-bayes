@@ -56,8 +56,8 @@ population e = do
 -- | Set the number of samples for the empirical distribution.
 -- Bear in mind that invoking `spawn` twice in the same computation
 -- leads to multiplying the number of samples.
-draw :: MonadDist m => Int -> Empirical m ()
-draw n = Empirical $ lift $ ListT $ sequence $ replicate n $ return ()
+draw :: Monad m => Int -> Empirical m ()
+draw n = Empirical $ lift $ ListT $ return $ replicate n ()
 
 
 
