@@ -110,5 +110,5 @@ mhPrior n d = mh n d kernel where
 -- | Particle Independent Metropolis Hastings. The first two arguments are
 -- passed to SMC, the third is the number of samples, equal to
 -- the number of SMC runs.
-pimh :: MonadDist m => Int -> Int -> Int -> Particle (Population m) a -> m [a]
-pimh k np ns d = mhPrior ns $ transform $ smc k np d
+pimh :: MonadDist m => Int -> Int -> Int -> Particle (Population (Weighted m)) a -> m [a]
+pimh k np ns d = mhPrior ns $ collapse $ smc k np d

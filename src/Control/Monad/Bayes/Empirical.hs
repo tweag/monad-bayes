@@ -17,7 +17,6 @@ module Control.Monad.Bayes.Empirical (
     evidence,
     collapse,
     proper,
-    transform
                  ) where
 
 import Prelude hiding (all)
@@ -77,8 +76,8 @@ evidence = fmap snd . proper
 
 -- | Pick a sample at random from the empirical distribution,
 -- according to the weights.
-collapse :: MonadDist m => Empirical m a -> m a
-collapse = fmap fst . proper
+--collapse :: MonadDist m => Empirical m a -> m a
+--collapse = fmap fst . proper
 
 -- | Resample the particles using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
@@ -111,8 +110,8 @@ proper = fmap head . runEmpirical . resampleN 1
 
 
 -- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
-transform :: (MonadDist m, MonadTrans t, MonadBayes (t m)) => Empirical m a -> t m a
-transform e = do
-  (x,p) <- lift $ proper e
+collapse :: (MonadBayes m) => Population m a -> m a
+collapse e = do
+  (x,p) <- proper e
   factor p
   return x
