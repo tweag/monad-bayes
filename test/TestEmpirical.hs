@@ -12,21 +12,21 @@ import Sprinkler
 
 g = mkStdGen 0
 
-pop_size = flip stdSample g $ population $ spawn 5 >> sprinkler
+pop_size = flip stdSample g $ weightedSampleSize $ spawn 5 >> sprinkler
 
-many_size = flip stdSample g $ population $ spawn 5 >> sprinkler >> spawn 3
+many_size = flip stdSample g $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
 
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
 sprinkler_exact = enumerate Sprinkler.soft
 
-all_check = (mass (Empirical.all id (spawn 2 >> sprinkler)) True) ~== 0.09
+--all_check = (mass (Empirical.all id (spawn 2 >> sprinkler)) True) ~== 0.09
 
-trans_check1 = enumerate (runIdentityT (transform sprinkler)) ~==
+trans_check1 = enumerate (runIdentityT (collapse sprinkler)) ~==
                sprinkler_exact
-trans_check2 = enumerate (runIdentityT (transform (spawn 2 >> sprinkler))) ~==
+trans_check2 = enumerate (runIdentityT (collapse (spawn 2 >> sprinkler))) ~==
                sprinkler_exact
 
 resample_check n =
-  (enumerate . runIdentityT . transform . resampleN n) (spawn 2 >> sprinkler) ~==
+  (enumerate . runIdentityT . collapse . resampleN n) (spawn 2 >> sprinkler) ~==
   sprinkler_exact

@@ -15,6 +15,7 @@ module Control.Monad.Bayes.Empirical (
     runPopulation,
     fromWeightedList,
     fromUnweighted,
+    weightedSampleSize,
     spawn,
     resample,
     resampleN,
@@ -87,6 +88,9 @@ fromUnweighted :: Monad m => Empirical m a -> Population m a
 fromUnweighted = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
+
+weightedSampleSize :: Monad m => Population m a -> m Int
+weightedSampleSize = sampleSize . runWeighted . unPopulation
 
 -- | A variant of 'draw' for 'Population'.
 -- The weights are set equal and such that they sum to 1.
