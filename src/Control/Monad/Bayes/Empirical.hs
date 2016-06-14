@@ -7,14 +7,15 @@
 
 module Control.Monad.Bayes.Empirical (
     Population,
+    runPopulation,
     --Empirical,
-    runEmpirical,
-    population,
+    --runEmpirical,
+    --population,
     spawn,
-    all,
+    --all,
     resample,
     resampleN,
-    evidence,
+    --evidence,
     collapse,
     proper,
                  ) where

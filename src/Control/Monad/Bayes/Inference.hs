@@ -39,7 +39,7 @@ importance = runWeighted
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a, MonadDist m) =>
                Int -> Population m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runEmpirical $ spawn n >> d
+importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 -- The first argument is the number of resampling points, the second is
@@ -54,7 +54,7 @@ smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
         Particle (Population m) a -> m [(a,Double)]
-smc' k n d = fmap (enumerate . categorical) $ runEmpirical $ smc k n d
+smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
