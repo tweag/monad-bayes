@@ -6,17 +6,21 @@
  #-}
 
 module Control.Monad.Bayes.Empirical (
+    Empirical,
+    runEmpirical,
+    fromList,
+    sampleSize,
+    draw,
     Population,
     runPopulation,
-    --Empirical,
-    --runEmpirical,
-    --population,
+    fromWeightedList,
+    fromUnweighted,
     spawn,
     resample,
     resampleN,
-    --evidence,
-    collapse,
     proper,
+    evidence,
+    collapse,
                  ) where
 
 import Prelude hiding (all)
@@ -31,22 +35,24 @@ import qualified Data.Foldable as Fold
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
--- | Empirical distribution represented as a set of weighted samples.
--- Forward probabilistic computation is handled by the transformed monad,
--- while conditioning is done by updating empirical weights.
--- There is no automatic normalization or aggregation of weights.
+-- | Empirical distribution represented as a list of samples.
+-- Probabilistic effects are lifted from the transformed monad.
+-- 'Empirical' uses 'ListT' internally, so is only a monad when the transformed
+-- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
     deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
 
+-- | Explicit representation of the sample.
 runEmpirical :: Functor m => Empirical m a -> m [a]
 runEmpirical = runListT . unEmpirical
 
+-- | Initialise 'Empirical' with a concrete sample.
 fromList :: Monad m => m [a] -> Empirical m a
 fromList = Empirical . ListT
 
 -- | The number of samples used for approximation.
-population :: Monad m => Empirical m a -> m Int
-population e = do
+sampleSize :: Monad m => Empirical m a -> m Int
+sampleSize e = do
   zs <- runEmpirical e
   return (length zs)
 
@@ -59,33 +65,33 @@ draw n = Empirical $ ListT $ return $ replicate n ()
 
 
 
-
+-- | A weighted variant of 'Empirical'.
+-- Conditioning is done by accumulating weights.
+-- There is no automatic normalization or aggregation of weights.
 newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
   deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
 
+-- | Explicit representation of the weighted sample.
 runPopulation :: Functor m => Population m a -> m [(a,LogFloat)]
 runPopulation = runEmpirical . runWeighted . unPopulation
 
+-- | Initialise 'Population' with a concrete weighted sample.
 fromWeightedList :: Monad m => m [(a,LogFloat)] -> Population m a
 fromWeightedList = Population . withWeight . fromList
 
+-- | Lift unweighted sample by setting all weights equal.
 fromUnweighted :: Monad m => Empirical m a -> Population m a
-fromUnweighted = Population . lift
+fromUnweighted = fromWeightedList . fmap setWeights . runEmpirical where
+  setWeights xs = map (,w) xs where
+    w = 1 / fromIntegral (length xs)
 
+-- | A variant of 'draw' for 'Population'.
+-- The weights are set equal and such that they sum to 1.
 spawn :: MonadDist m => Int -> Population m ()
-spawn n = fromUnweighted (draw n) >> factor (1 / fromIntegral n)
-
--- | Model evidence estimator, also known as pseudo-marginal likelihood.
-evidence :: MonadDist m => Population m a -> m LogFloat
-evidence = fmap snd . proper
-
--- | Pick a sample at random from the empirical distribution,
--- according to the weights.
---collapse :: MonadDist m => Empirical m a -> m a
---collapse = fmap fst . proper
+spawn n = fromUnweighted (draw n)
 
 -- | A version of 'resampleN' that operates explicitly on lists.
 resampleNList :: MonadDist m => Int -> [(a,LogFloat)] -> m [(a,LogFloat)]
@@ -100,7 +106,7 @@ resampleNList n ys = do
 resampleList :: MonadDist m => [(a,LogFloat)] -> m [(a,LogFloat)]
 resampleList ys = resampleNList (length ys) ys
 
--- | Resample the particles using the underlying monad.
+-- | Resample the population using the underlying monad.
 -- Model evidence estimate is preserved in total weight.
 resample :: MonadDist m => Population m a -> Population m a
 resample d = fromWeightedList $ do
@@ -113,13 +119,16 @@ resampleN n d = fromWeightedList $ do
   ys <- runPopulation d
   resampleNList n ys
 
--- | Properly weighted version of 'collapse', that is returned with
--- model evidence estimator from the same run.
+-- | A properly weighted single sample, that is one picked at random according
+-- to the weights, with an estimator of the model evidence.
 proper :: MonadDist m => Population m a -> m (a,LogFloat)
 proper = fmap head . (>>= resampleNList 1) . runPopulation
 
+-- | Model evidence estimator, also known as pseudo-marginal likelihood.
+evidence :: MonadDist m => Population m a -> m LogFloat
+evidence = fmap snd . proper
 
--- | Pick one sample from the empirical distribution and use model evidence as a 'factor'.
+-- | Pick one point from the population and use model evidence as a 'factor'.
 collapse :: (MonadBayes m) => Population m a -> m a
 collapse e = do
   (x,p) <- proper e
