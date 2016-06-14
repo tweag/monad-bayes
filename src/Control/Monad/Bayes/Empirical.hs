@@ -35,17 +35,14 @@ import Control.Monad.Bayes.Weighted
 -- Forward probabilistic computation is handled by the transformed monad,
 -- while conditioning is done by updating empirical weights.
 -- There is no automatic normalization or aggregation of weights.
-newtype Empirical m a = Empirical {unEmpirical :: Weighted (ListT m) a}
-    deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
+newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
 
-runEmpirical :: Functor m => Empirical m a -> m [(a, LogFloat)]
-runEmpirical = runListT . runWeighted . unEmpirical
+runEmpirical :: Functor m => Empirical m a -> m [a]
+runEmpirical = runListT . unEmpirical
 
-fromList :: Monad m => m [(a, LogFloat)] -> Empirical m a
-fromList = Empirical . withWeight . ListT
-
-instance MonadTrans Empirical where
-    lift = Empirical . lift . lift
+fromList :: Monad m => m [a] -> Empirical m a
+fromList = Empirical . ListT
 
 -- | The number of samples used for approximation.
 population :: Monad m => Empirical m a -> m Int
@@ -57,23 +54,29 @@ population e = do
 -- Bear in mind that invoking `spawn` twice in the same computation
 -- leads to multiplying the number of samples.
 draw :: Monad m => Int -> Empirical m ()
-draw n = Empirical $ lift $ ListT $ return $ replicate n ()
+draw n = Empirical $ ListT $ return $ replicate n ()
 
 
 
 
 
-newtype Population m a = Population {unPopulation :: Empirical m a}
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
+newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
+  deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
+
+instance MonadTrans Population where
+  lift = Population . lift . lift
 
 runPopulation :: Functor m => Population m a -> m [(a,LogFloat)]
-runPopulation = runEmpirical . unPopulation
+runPopulation = runEmpirical . runWeighted . unPopulation
 
 fromWeightedList :: Monad m => m [(a,LogFloat)] -> Population m a
-fromWeightedList = Population . fromList
+fromWeightedList = Population . withWeight . fromList
+
+fromUnweighted :: Monad m => Empirical m a -> Population m a
+fromUnweighted = Population . lift
 
 spawn :: MonadDist m => Int -> Population m ()
-spawn n = Population (draw n) >> factor (1 / fromIntegral n)
+spawn n = fromUnweighted (draw n) >> factor (1 / fromIntegral n)
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => Population m a -> m LogFloat
