@@ -38,7 +38,7 @@ importance = runWeighted
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, Typeable a, MonadDist m) =>
-               Int -> Empirical m a -> m [(a,Double)]
+               Int -> Population m a -> m [(a,Double)]
 importance' n d = fmap (enumerate . categorical) $ runEmpirical $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
@@ -46,19 +46,19 @@ importance' n d = fmap (enumerate . categorical) $ runEmpirical $ spawn n >> d
 -- the number of particles used.
 -- If the first argument is smaller than the number of observations in the model,
 -- the algorithm is still correct, but doesn't perform resampling after kth time.
-smc :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
+smc :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
 smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
   start = lift (spawn n) >> d
   step = Particle.mapMonad (resampleN n) . advance
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
-        Particle (Empirical m) a -> m [(a,Double)]
+        Particle (Population m) a -> m [(a,Double)]
 smc' k n d = fmap (enumerate . categorical) $ runEmpirical $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
-smcFast :: MonadDist m => Int -> Int -> Particle (Empirical m) a -> Empirical m a
+smcFast :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
 smcFast k n d = flatten $ foldr (.) id (replicate k step) $ start where
   start = lift (spawn n) >> d
   step = Particle.mapMonad resample . advance
@@ -110,5 +110,5 @@ mhPrior n d = mh n d kernel where
 -- | Particle Independent Metropolis Hastings. The first two arguments are
 -- passed to SMC, the third is the number of samples, equal to
 -- the number of SMC runs.
-pimh :: MonadDist m => Int -> Int -> Int -> Particle (Empirical m) a -> m [a]
+pimh :: MonadDist m => Int -> Int -> Int -> Particle (Population m) a -> m [a]
 pimh k np ns d = mhPrior ns $ transform $ smc k np d

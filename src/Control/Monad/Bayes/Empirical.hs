@@ -6,7 +6,8 @@
  #-}
 
 module Control.Monad.Bayes.Empirical (
-    Empirical,
+    Population,
+    --Empirical,
     runEmpirical,
     population,
     spawn,
@@ -37,6 +38,8 @@ import Control.Monad.Bayes.Weighted
 -- There is no automatic normalization or aggregation of weights.
 newtype Empirical m a = Empirical {unEmpirical :: Weighted (ListT m) a}
     deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
+
+type Population m = Empirical m
 
 runEmpirical :: Functor m => Empirical m a -> m [(a, LogFloat)]
 runEmpirical = runListT . runWeighted . unEmpirical
