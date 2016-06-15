@@ -21,8 +21,6 @@ module Control.Monad.Bayes.Empirical (
     spawn,
     resample,
     resampleN,
-    resampleList,
-    resampleNList,
     proper,
     evidence,
     collapse,
@@ -46,7 +44,7 @@ import Control.Monad.Bayes.Weighted
 -- 'Empirical' uses 'ListT' internally, so is only a monad when the transformed
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes, MFunctor)
 
 -- | Explicit representation of the sample.
 runEmpirical :: Functor m => Empirical m a -> m [a]
@@ -55,10 +53,6 @@ runEmpirical = runListT . unEmpirical
 -- | Initialise 'Empirical' with a concrete sample.
 fromList :: Monad m => m [a] -> Empirical m a
 fromList = Empirical . ListT
-
--- | Lift a monad morphism through Empirical
-instance MFunctor Empirical where
-  hoist nat = Empirical . hoist nat . unEmpirical
 
 -- | The number of samples used for approximation.
 sampleSize :: Monad m => Empirical m a -> m Int
