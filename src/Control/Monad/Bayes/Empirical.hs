@@ -12,7 +12,8 @@ module Control.Monad.Bayes.Empirical (
     fromList,
     sampleSize,
     draw,
-    Population,
+    Population (Population), -- constructor used in smcrm
+    unPopulation,            -- destructor  used in smcrm
     runPopulation,
     fromWeightedList,
     fromUnweighted,

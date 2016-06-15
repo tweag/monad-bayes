@@ -77,10 +77,6 @@ newtype Coprimitive m a = Coprimitive
   }
   deriving (Functor, Applicative, Monad, MonadTrans)
 
-mapMonad :: Monad m =>
-            (forall a. m a -> m a) -> Coprimitive m a -> Coprimitive m a
-mapMonad f = Coprimitive . Coroutine . f . resume . runCoprimitive
-
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
 
@@ -146,9 +142,35 @@ instance MonadDist m => MonadDist (Trace m) where
 instance MonadDist m => MonadBayes (Trace m) where
   factor k = Trace $ return $ MHState [] k ()
 
+-- | Like Trace, except it passes factors to the underlying monad.
+newtype Trace' m a = Trace' { runTrace' :: Trace m a }
+  deriving (Functor, Applicative, Monad, MonadDist)
+
+instance MonadBayes m => MonadBayes (Trace' m) where
+  factor k = Trace' $ Trace $ do
+    factor k
+    return $ MHState [] k ()
+
+
+mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
+mapMonad nat (Trace m) = Trace (nat m)
+
+mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
+mapMonad' nat (Trace' (Trace m)) = Trace' (Trace (nat m))
 
 mhStep :: (MonadDist m) => Trace m a -> Trace m a
 mhStep (Trace m) = Trace (m >>= mhKernel)
+
+mhForgetWeight :: Monad m => Trace' m a -> Trace' m a
+mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ do
+  state <- m
+  return $ state {mhPosteriorWeight = 1}
+
+marginal :: Functor m => Trace m a -> m a
+marginal = fmap mhAnswer . runTrace
+
+marginal' :: Functor m => Trace' m a -> m a
+marginal' = marginal . runTrace'
 
 
 -- | Make one MH transition, retain weight from the source distribution

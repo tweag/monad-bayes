@@ -82,53 +82,25 @@ smcWithResampler resampler k n =
 
 smcrm :: forall m a. MonadDist m =>
          Int -> Int ->
-         Particle (WeightRecorderT (Coprimitive (Population m))) a -> Population m a
+         Particle (Trace' (Population m)) a -> Population m a
 
-smcrm k n = marginal . composeCopies k (advancer . mover . resampler) . toState . init
+smcrm k n = marginal' . flatten . composeCopies k step . init
   where
-  hoist' :: forall m. Monad m => (forall a. m a -> m a) -> Particle m a -> Particle m a
-  hoist' = Particle.mapMonad
+  hoistC  = Particle.mapMonad
+  hoistT  = Trace.mapMonad'
 
-  -- spawn particles at the start of all monads in the stack
-  init :: Particle (WeightRecorderT (Coprimitive (Population m))) a ->
-          Particle (WeightRecorderT (Coprimitive (Population m))) a
-  init = hoist' $ hoist $ Trace.mapMonad (spawn n >>)
+  init :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  init = hoistC (hoistT (spawn n >>))
 
-  -- convert monad to functor
-  toState :: Particle (WeightRecorderT (Coprimitive (Population m))) a ->
-             --WeightRecorderT (Coprimitive (Population m)) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a) ->
-             --Weighted (Coprimitive (Population m)) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)
-             Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
-  toState = mhState . duplicateWeight . resume
+  step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  step = advance . hoistC (mhStep' . hoistT resample)
 
-  resampler :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
-               Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
-  resampler = resample
-
-  mover :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
-           Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
-  mover = (>>= mhKernel) -- this is wrong: weight after move should not be saved.
-
-  advancer :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
-              Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a))
-  advancer m = do
-    state <- m
-    let particle = Coroutine $ return $ mhAnswer state :: Particle (WeightRecorderT (Coprimitive (Population m))) a
-    toState (advance particle)
-
-  marginal :: Population m (MHState (Population m) (Either (Await () (Particle (WeightRecorderT (Coprimitive (Population m))) a)) a)) ->
-              Population m a
-  marginal m = do
-    state <- m
-    case mhAnswer state of
-      Right value -> return value
-      Left  await -> error "insufficient number of observations" -- missing `finish`
-
-  fromRight (Right x) = x
-  fromRight (Left  x) = error "Should not happen (coroutine did not terminate)"
-
-  fromLeft  (Right x) = return  x
-  fromLeft  (Left  x) = extract x
+  -- subtle point: to preserve posterior, must discard new weight after MH transition.
+  mhStep' :: forall x. Trace' (Population m) x -> Trace' (Population m) x
+  mhStep' (Trace' (Trace (Population w))) = Trace' $ Trace $ Population $ withWeight $ do
+    (oldState, oldWeight) <- runWeighted w
+    (newState, newWeight) <- runWeighted $ unPopulation $ mhKernel oldState
+    return (newState, oldWeight)
 
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
