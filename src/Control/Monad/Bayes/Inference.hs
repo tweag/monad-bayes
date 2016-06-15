@@ -15,12 +15,7 @@ import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
-
 import Control.Monad.Morph
-import Control.Monad.Identity (Identity (Identity), runIdentity)
-import Control.Monad.Trans.Identity (IdentityT (IdentityT), runIdentityT)
-import Control.Monad.Coroutine (Coroutine (Coroutine), resume)
-import Control.Monad.Coroutine.SuspensionFunctors (Await)
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
@@ -31,8 +26,6 @@ import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
-
-import Data.List (partition)
 
 -- | Rejection sampling.
 rejection :: MonadDist m => Rejection m a -> m a

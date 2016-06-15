@@ -12,8 +12,7 @@ module Control.Monad.Bayes.Particle (
     flatten,
     advance,
     finished,
-    mapMonad,
-    extract
+    mapMonad
                 ) where
 
 import Control.Monad.Morph
