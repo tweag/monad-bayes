@@ -83,9 +83,6 @@ instance (MonadDist m) => MonadDist (Coprimitive m) where
 instance (MonadBayes m) => MonadBayes (Coprimitive m) where
   factor = lift . factor
 
--- MHState is probably not a monad transformer, since coroutine
--- is not commutative. Consider converting the list of snapshots
--- to ListT-done-right.
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (Weighted (Coprimitive m) a)]
   , mhPosteriorWeight :: LogFloat -- weight of mhAnswer in posterior
@@ -126,10 +123,7 @@ instance Monad m => Monad (Trace m) where
     return $ MHState (map (fmap convert) ls ++ map (fmap (addFactor lw)) rs) (lw * rw) ra
     where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
-      convert m = withWeight $ do -- (>>= mhReset . runTrace . f)
-        (a, wa) <- runWeighted m
-        (b, wb) <- runWeighted $ mhReset (runTrace (f a))
-        return (b, wa * wb)
+      convert = (>>= mhReset . runTrace . f)
 
       -- addFactor :: LogFloat -> Weighted (Coprimitive m) b -> Weighted (Coprimitive m) b
       addFactor k = (withWeight (return ((), k)) >>)
