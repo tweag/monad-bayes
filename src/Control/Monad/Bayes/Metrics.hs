@@ -3,7 +3,6 @@ module Control.Monad.Bayes.Metrics where
 import Control.Arrow (second)
 import Data.List (sort)
 import Data.Maybe
-import Data.Typeable
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist
@@ -28,7 +27,7 @@ kullbackLeibnerDivergence p q = sum $ do
 -- | Measure goodness-of-fit of samples by Kullback-Leibner divergence
 -- of the categorical distribution defined by the samples against the
 -- target distribution.
-kullbackLeibnerTest :: (Ord a, Typeable a) => [a] -> Dist a -> Double
+kullbackLeibnerTest :: (Ord a) => [a] -> Dist a -> Double
 kullbackLeibnerTest samples = kullbackLeibnerDivergence (categorical $ map (flip (,) 1) samples)
 
 -- | Total variation distance between the empirical distribution

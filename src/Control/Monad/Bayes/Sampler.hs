@@ -64,8 +64,8 @@ instance Monad Sampler where
            y g2
 
 instance MonadDist Sampler where
-    categorical xs = wrapper $ fromWeightedList $
-                     map (first fromLogFloat) $ map swap $ Fold.toList xs
+    discrete xs = wrapper $ fromWeightedList $
+                    map (first fromLogFloat) $ zip xs [0..]
     normal m s  = wrapper $ Normal m s
     gamma a b   = wrapper $ Gamma a (1 / b)
     beta a b    = wrapper $ Beta a b  --need to check parameterization
@@ -81,8 +81,7 @@ wrapper = Sampler . (fst .) . sampleState
 
 instance MonadDist (RVarT m) where
   --should probably normalize before converting from log-domain
-  categorical xs = rvarT $ fromWeightedList $ map (first fromLogFloat . swap) $
-                   Fold.toList xs
+  discrete xs = rvarT $ fromWeightedList $ map (first fromLogFloat) $ zip xs [0..]
   normal m s = rvarT $ Normal m s
   gamma  a b = rvarT $ Gamma a (1 / b)
   beta   a b = rvarT $ Beta a b

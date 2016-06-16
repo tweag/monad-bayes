@@ -1,33 +1,28 @@
 {-# LANGUAGE
-  GADTs
+  GADTs,
+  StandaloneDeriving
  #-}
 
 module Control.Monad.Bayes.Primitive where
 
 import Numeric.SpecFunctions
 import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)
-import Data.Typeable
 
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive a where
-    Categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> Primitive a
+    Discrete :: [LogFloat] -> Primitive Int
     Normal :: Double -> Double -> Primitive Double
     Gamma :: Double -> Double -> Primitive Double
     Beta :: Double -> Double -> Primitive Double
     Uniform :: Double -> Double -> Primitive Double
 
-instance Eq (Primitive a) where
-  Categorical xs == Categorical ys = xs == ys
-  Normal m s     == Normal m' s'   = m == m' && s == s'
-  Gamma  a b     == Gamma  a' b'   = a == a' && b == b'
-  Beta   a b     == Beta   a' b'   = a == a' && b == b'
-  Uniform a b    == Uniform a' b'  = a == a' && b == b'
-  _              == _              = False
+deriving instance Eq   (Primitive a)
+deriving instance Show (Primitive a)
 
 -- | The probability density function.
 pdf :: Primitive a -> a -> LogFloat
-pdf (Categorical d) = \x -> case lookup x d of
+pdf (Discrete d) = \i -> case lookup i (zip [0..] d) of
                               Just p -> p
                               Nothing -> logFloat 0
 pdf (Normal m s) = normalPdf m s

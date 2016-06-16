@@ -21,39 +21,55 @@ import Control.Monad.Trans.Class
 
 import Data.List
 import Data.Number.LogFloat
-import Data.Typeable
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
 reusePrimitive :: Primitive a -> Primitive b -> a -> Maybe b
 reusePrimitive d d' x =
   case (support d, support d') of
-    (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d)              -> Just x
-    (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d)              -> Just x
-    (Discrete       xs , Discrete       ys ) | maybe False (== ys) (cast xs) -> cast x
-    _                                                                        -> Nothing
+    (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d) -> Just x
+    (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
+    (Finite         xs , Finite         ys ) | xs == ys         -> Just x
+    _                                                           -> Nothing
 
 data Support a where
   OpenInterval   :: Double -> Double -> Support Double
   ClosedInterval :: Double -> Double -> Support Double
-  Discrete       :: (Eq a, Typeable a) => [a] -> Support a
+  Finite         :: [Int] -> Support Int
+
+deriving instance Eq   (Support a)
+deriving instance Show (Support a)
 
 support :: Primitive a -> Support a
-support (Categorical xs) = Discrete (map fst xs)
-support (Normal  _ _)    = OpenInterval (-1/0) (1/0)
-support (Gamma   _ _)    = OpenInterval 0 (1/0)
-support (Beta    _ _)    = OpenInterval 0 1
-support (Uniform a b)    = ClosedInterval a b
+support (Discrete ps) = Finite (findIndices (> 0) ps)
+support (Normal  _ _) = OpenInterval (-1/0) (1/0)
+support (Gamma   _ _) = OpenInterval 0 (1/0)
+support (Beta    _ _) = OpenInterval 0 1
+support (Uniform a b) = ClosedInterval a b
 
 data Cache where
   Cache :: Primitive a -> a -> Cache
 
 instance Eq Cache where
-  Cache (Categorical ds) x == Cache (Categorical ds') x' = cast x == Just x' && cast ds == Just ds'
-  Cache d@(Normal   _ _) x == Cache d'@(Normal   _ _) x' = d == d' && x == x'
-  Cache d@(Gamma    _ _) x == Cache d'@(Gamma    _ _) x' = d == d' && x == x'
-  Cache d@(Beta     _ _) x == Cache d'@(Beta     _ _) x' = d == d' && x == x'
-  Cache d@(Uniform  _ _) x == Cache d'@(Uniform  _ _) x' = d == d' && x == x'
+  Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' = d == d' && x == x'
+  Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' = d == d' && x == x'
+  Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' = d == d' && x == x'
+  Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' = d == d' && x == x'
+  Cache d@(Uniform _ _) x == Cache d'@(Uniform _ _) x' = d == d' && x == x'
+  Cache _               _ == Cache _                _  = False
+
+instance Show Cache where
+  showsPrec p cache r =
+    -- Haskell passes precedence 11 for Cache as a constructor argument.
+    -- The precedence of function application seems to be 10.
+    if p > 10 then
+      '(' : printCache cache (')' : r)
+    else
+      printCache cache r
+    where
+      printCache :: Cache -> String -> String
+      printCache (Cache d@(Discrete  _) x) r =
+        "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler y where
