@@ -68,8 +68,11 @@ instance Show Cache where
       printCache cache r
     where
       printCache :: Cache -> String -> String
-      printCache (Cache d@(Discrete  _) x) r =
-        "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler y where
