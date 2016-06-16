@@ -14,7 +14,6 @@ module Control.Monad.Bayes.Weighted (
     duplicateWeight
                   ) where
 
-import Control.Monad.Morph
 import Control.Arrow (first,second)
 import Data.Number.LogFloat
 import Data.Monoid
@@ -38,7 +37,7 @@ unWeight (Weight (Product p)) = p
 -- | A wrapper for 'WriterT' 'Weight' that executes the program
 -- emitting the likelihood score.
 newtype Weighted m a = Weighted {toWriterT :: WriterT Weight m a}
-    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist, MFunctor)
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 runWeighted :: Functor m => Weighted m a -> m (a, LogFloat)
 runWeighted = fmap (second unWeight) . runWriterT . toWriterT
@@ -54,7 +53,7 @@ instance MonadDist m => MonadBayes (Weighted m) where
 -- the associated likelihood.
 newtype WeightRecorderT m a =
   WeightRecorderT {runWeightRecorderT :: Weighted m a}
-    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist, MFunctor)
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
 
 -- | Both record weight and pass it to the underlying monad.
 duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a

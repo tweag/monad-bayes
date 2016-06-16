@@ -15,7 +15,6 @@ import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
-import Control.Monad.Morph
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler

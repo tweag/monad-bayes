@@ -28,7 +28,6 @@ module Control.Monad.Bayes.Empirical (
 
 import Prelude hiding (all)
 
-import Control.Monad.Morph
 import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
@@ -44,7 +43,7 @@ import Control.Monad.Bayes.Weighted
 -- 'Empirical' uses 'ListT' internally, so is only a monad when the transformed
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes, MFunctor)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
 
 -- | Explicit representation of the sample.
 runEmpirical :: Functor m => Empirical m a -> m [a]
@@ -77,9 +76,6 @@ newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
 
 instance MonadTrans Population where
   lift = Population . lift . lift
-
-instance MFunctor Population where
-  hoist nat = Population . hoist (hoist nat) . unPopulation
 
 -- | Explicit representation of the weighted sample.
 runPopulation :: Functor m => Population m a -> m [(a,LogFloat)]

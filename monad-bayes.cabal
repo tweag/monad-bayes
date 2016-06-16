@@ -39,7 +39,6 @@ library
                      , mwc-random
                      , mersenne-random-pure64
                      , monad-memo
-                     , mmorph
   default-language:    Haskell2010
 
 test-suite monad-bayes-test

@@ -15,7 +15,6 @@ module Control.Monad.Bayes.Particle (
     mapMonad
                 ) where
 
-import Control.Monad.Morph
 import Control.Monad.Trans.Class
 import Control.Monad (liftM2)
 import Control.Monad.Coroutine hiding (mapMonad)
@@ -58,8 +57,3 @@ instance MonadDist m => MonadDist (Particle m) where
 
 instance MonadBayes m => MonadBayes (Particle m) where
     factor w = lift (factor w) >> synchronize
-
-instance MFunctor Particle where
-  -- hoist :: Monad m => (forall x. m x -> n x) -> Particle m x -> Particle n x
-  -- Recursion structure similar to @instance MFunctor Lift@.
-  hoist nat = Coroutine . nat . fmap (either (Left . fmap (hoist nat)) Right) . resume
