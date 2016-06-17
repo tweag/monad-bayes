@@ -138,12 +138,15 @@ instance MonadDist m => MonadBayes (Trace m) where
 
 -- | Like Trace, except it passes factors to the underlying monad.
 newtype Trace' m a = Trace' { runTrace' :: Trace m a }
-  deriving (Functor, Applicative, Monad, MonadDist)
+  deriving (Functor, Applicative, Monad, MonadDist, MonadTrans)
 
 instance MonadBayes m => MonadBayes (Trace' m) where
   factor k = Trace' $ Trace $ do
     factor k
     return $ MHState [] k ()
+
+instance MonadTrans Trace where
+  lift = Trace . fmap (MHState [] 1)
 
 
 mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
