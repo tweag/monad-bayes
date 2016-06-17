@@ -48,7 +48,7 @@ pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
                    enumerate sprinkler
 
-check_trace_mh m m' = enumerate (mhForgetState (mhTransition m)) ~==
+check_trace_mh m m' = enumerate (marginal' (mhStep' m)) ~==
                       enumerate m'
 
 check_trace_trans = check_trace_mh sprinkler sprinkler

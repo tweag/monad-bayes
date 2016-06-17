@@ -128,6 +128,9 @@ instance Monad m => Monad (Trace m) where
       -- addFactor :: LogFloat -> Weighted (Coprimitive m) b -> Weighted (Coprimitive m) b
       addFactor k = (withWeight (return ((), k)) >>)
 
+instance MonadTrans Trace where
+  lift = Trace . fmap (MHState [] 1)
+
 instance MonadDist m => MonadDist (Trace m) where
   primitive d = Trace $ do
     x <- primitive d
@@ -137,26 +140,41 @@ instance MonadDist m => MonadBayes (Trace m) where
   factor k = Trace $ return $ MHState [] k ()
 
 -- | Like Trace, except it passes factors to the underlying monad.
-newtype Trace' m a = Trace' { runTrace' :: Trace m a }
-  deriving (Functor, Applicative, Monad, MonadDist, MonadTrans)
+newtype Trace' m a = Trace' { runTrace' :: Trace (WeightRecorderT m) a }
+  deriving (Functor, Applicative, Monad, MonadDist)
+
+instance MonadTrans Trace' where
+  -- lift :: m a -> Trace' m a
+  lift = Trace' . lift . lift
 
 instance MonadBayes m => MonadBayes (Trace' m) where
-  factor k = Trace' $ Trace $ do
+  factor k = Trace' $ do
     factor k
-    return $ MHState [] k ()
-
-instance MonadTrans Trace where
-  lift = Trace . fmap (MHState [] 1)
-
+    lift (factor k)
 
 mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
 mapMonad nat (Trace m) = Trace (nat m)
 
 mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
-mapMonad' nat (Trace' (Trace m)) = Trace' (Trace (nat m))
+mapMonad' nat (Trace' (Trace (WeightRecorderT w))) = Trace' (Trace (WeightRecorderT (withWeight (nat (runWeighted w)))))
 
 mhStep :: (MonadDist m) => Trace m a -> Trace m a
 mhStep (Trace m) = Trace (m >>= mhKernel)
+
+-- | Make one MH transition, retain weight from the source distribution
+mhStep' :: (MonadBayes m) => Trace' m a -> Trace' m a
+mhStep' (Trace' (Trace (WeightRecorderT w))) = Trace' $ Trace $ WeightRecorderT $ withWeight $ do
+  (oldState, oldWeight) <- runWeighted w
+  ((newState, acceptRatio), newWeight) <- runWeighted $ duplicateWeight $ mhPropose oldState
+
+  accept <- bernoulli acceptRatio
+  let nextState = if accept then newState else oldState
+
+  -- at this point, the score in the underlying monad `m` is proportional to `oldWeight * newWeight`.
+  factor (1 / newWeight)
+  -- at this point, the score in the underlying monad `m` is proportional to  `oldWeight`.
+
+  return (nextState, oldWeight)
 
 mhForgetWeight :: Monad m => Trace' m a -> Trace' m a
 mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ do
@@ -167,31 +185,14 @@ marginal :: Functor m => Trace m a -> m a
 marginal = fmap mhAnswer . runTrace
 
 marginal' :: Functor m => Trace' m a -> m a
-marginal' = marginal . runTrace'
+marginal' = fmap fst . runWeighted . runWeightRecorderT . marginal . runTrace'
 
-
--- | Make one MH transition, retain weight from the source distribution
-mhTransition :: (MonadDist m) =>
-                WeightRecorderT (Trace m) a -> WeightRecorderT (Trace m) a
-
-mhTransition m = WeightRecorderT $ withWeight $ Trace $ do
-  oldState @ (MHState s0 w0 (x0, oldWeight)) <- runTrace $ runWeighted $ duplicateWeight m
-  newState @ (MHState s1 w1 (x1, newWeight)) <- mhKernel oldState
-  return $ MHState s1 w1 (x1, oldWeight)
-
-mhForgetState :: (MonadBayes m) => WeightRecorderT (Trace m) a -> m a
-mhForgetState m = do
-  MHState s w (x, weight) <- runTrace $ runWeighted $ duplicateWeight m
-  factor weight
-  return x
-
--- | *The* Metropolis-Hastings kernel. Each MH-state carries all necessary
--- information to compute the acceptance ratio.
-mhKernel :: (MonadDist m) => MHState m a -> m (MHState m a)
-mhKernel oldState = do
+-- | Propose new state, compute acceptance ratio
+mhPropose :: (MonadDist m) => MHState m a -> m (MHState m a, LogFloat)
+mhPropose oldState = do
   let m = length (mhSnapshots oldState)
   if m == 0 then
-    return oldState
+    return (oldState, 1)
   else do
     i <- uniformD [0 .. m - 1]
     let (prev, snapshot : next) = splitAt i (mhSnapshots oldState)
@@ -208,8 +209,15 @@ mhKernel oldState = do
         let denominator  = fromIntegral n * mhPosteriorWeight oldState
         let acceptRatio  = if denominator == 0 then 1 else min 1 (numerator / denominator)
 
-        accept <- bernoulli acceptRatio
-        return (if accept then newState else oldState)
+        return (newState, acceptRatio)
+
+-- | *The* Metropolis-Hastings kernel. Each MH-state carries all necessary
+-- information to compute the acceptance ratio.
+mhKernel :: (MonadDist m) => MHState m a -> m (MHState m a)
+mhKernel oldState = do
+  (newState, acceptRatio) <- mhPropose oldState
+  accept <- bernoulli acceptRatio
+  return (if accept then newState else oldState)
 
 
 -- | Reuse previous samples as much as possible, collect reuse ratio

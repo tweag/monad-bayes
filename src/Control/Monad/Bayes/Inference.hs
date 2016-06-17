@@ -87,14 +87,6 @@ smcrm k n = marginal' . flatten . composeCopies k step . init
   step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
   step = advance . hoistC (mhStep' . hoistT resample)
 
-  -- subtle point: to preserve posterior, must discard new weight after MH transition.
-  mhStep' :: forall x. Trace' (Population m) x -> Trace' (Population m) x
-  mhStep' (Trace' (Trace (Population w))) = Trace' $ Trace $ Population $ withWeight $ do
-    (oldState, oldWeight) <- runWeighted w
-    (newState, newWeight) <- runWeighted $ unPopulation $ mhKernel oldState
-    return (newState, oldWeight)
-
-
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 
