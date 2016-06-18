@@ -2,7 +2,8 @@
   FlexibleContexts,
   ScopedTypeVariables,
   Rank2Types,
-  TupleSections
+  TupleSections,
+  GeneralizedNewtypeDeriving
  #-}
 
 module Control.Monad.Bayes.Inference where
@@ -20,10 +21,10 @@ import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Particle as Particle
+import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
-import Control.Monad.Bayes.Trace
 
 -- | Rejection sampling.
 rejection :: MonadDist m => Rejection m a -> m a
@@ -47,9 +48,7 @@ importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
 -- If the first argument is smaller than the number of observations in the model,
 -- the algorithm is still correct, but doesn't perform resampling after kth time.
 smc :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
-smc k n d = flatten $ foldr (.) id (replicate k step) $ start where
-  start = lift (spawn n) >> d
-  step = Particle.mapMonad (resampleN n) . advance
+smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
@@ -59,25 +58,39 @@ smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
 smcFast :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
-smcFast k n d = flatten $ foldr (.) id (replicate k step) $ start where
-  start = lift (spawn n) >> d
-  step = Particle.mapMonad resample . advance
+smcFast = smcWithResampler resample
+
+composeCopies :: Int -> (a -> a) -> (a -> a)
+composeCopies k f = foldr (.) id (replicate k f)
+
+smcWithResampler :: MonadDist m =>
+                    (forall x. Population m x -> Population m x) ->
+                    Int -> Int -> Particle (Population m) a -> Population m a
+
+smcWithResampler resampler k n =
+  flatten . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
+  where
+    hoist' = Particle.mapMonad
+
+smcrm :: forall m a. MonadDist m =>
+         Int -> Int ->
+         Particle (Trace' (Population m)) a -> Population m a
+
+smcrm k n = marginal' . flatten . composeCopies k step . init
+  where
+  hoistC  = Particle.mapMonad
+  hoistT  = Trace.mapMonad'
+
+  init :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  init = hoistC (hoistT (spawn n >>))
+
+  step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  step = advance . hoistC (mhStep' . hoistT resample)
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
 
-mhKernel'  :: (RandomDB r, MonadDist m) => r -> Updater r m a -> MHKernel m (a, r)
-mhKernel' = const mhKernel
-
-mhKernel :: (RandomDB r, MonadDist m) => Updater r m a -> MHKernel m (a, r)
-mhKernel program = MHKernel $ \(x, r) -> do
-  r1 <- mutate r
-  ((x', r'), leftover) <- runUpdater program r1
-  return ((x', r'), mhCorrectionFactor r r')
-
--- | Metropolis-Hastings algorithm. The idea is that the kernel handles the
--- part of ratio that results from MonadDist effects and transition function,
--- while state carries the factor associated with MonadBayes effects.
+-- | Metropolis-Hastings algorithm.
 mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
 mh n init trans = evalStateT (start >>= chain n) 1 where
   -- start :: StateT LogFloat m a
@@ -99,8 +112,19 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     rest <- chain (n-1) next
     return (x:rest)
 
-mh' :: (RandomDB r, MonadDist m) => r -> Int -> (forall m'. (MonadBayes m') => m' a) -> m [a]
-mh' r0 n program = fmap (map fst) $ mh n (runTrace program) $ mhKernel' r0 program
+-- | Trace MH. Each state of the Markov chain consists of a list
+-- of continuations from the sampling of each primitive distribution
+-- during an execution.
+traceMH :: (MonadDist m) => Int -> Trace m a -> m [a]
+traceMH n (Trace m) = m >>= init >>= loop n
+  where
+    init state | mhPosteriorWeight state >  0 = return state
+    init state | mhPosteriorWeight state == 0 = m >>= init
+    loop n state | n <= 0 = return []
+    loop n state | n >  0 = do
+      nextState <- mhKernel state
+      otherAnswers <- loop (n - 1) nextState
+      return (mhAnswer state : otherAnswers)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]

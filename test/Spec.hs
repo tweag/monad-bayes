@@ -61,6 +61,9 @@ main = hspec $ do
         TestTrace.check_writing `shouldBe` True
       it "correctly reuses values" $ do
         TestTrace.check_reading `shouldBe` True
+    it "has reuse ratio 1 on an empty database" $ do
+      TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
+      TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
@@ -70,6 +73,9 @@ main = hspec $ do
       \observations particles ->
         observations >= 0 && particles >= 1 ==>
           TestInference.check_particles observations particles == particles
+  describe "Resample-move SMC" $ do
+    it "preserves the distribution on the sprinkler model" $ do
+      TestInference.check_preserve_smcrm `shouldBe` True
   describe "MH" $ do
     it "MH from prior leaves posterior invariant" $ do
       TestInference.check_prior_trans `shouldBe` True

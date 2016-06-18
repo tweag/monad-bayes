@@ -26,11 +26,7 @@ library
                        Control.Monad.Bayes.Particle,
                        Control.Monad.Bayes.Inference,
                        Control.Monad.Bayes.Metrics,
-                       Control.Monad.Bayes.Trace,
-                       Control.Monad.Bayes.Trace.WithMultimap,
-                       Control.Monad.Bayes.Trace.ByTime,
-                       Control.Monad.Bayes.Trace.ByDist,
-                       Control.Monad.Bayes.Trace.ByType
+                       Control.Monad.Bayes.Trace
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random
