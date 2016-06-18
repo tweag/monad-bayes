@@ -11,7 +11,6 @@ module Control.Monad.Bayes.Inference where
 import Control.Arrow (first,second)
 import Data.Either
 import Data.Number.LogFloat
-import Data.Typeable
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
@@ -38,7 +37,7 @@ importance :: MonadDist m => Weighted m a -> m (a,LogFloat)
 importance = runWeighted
 
 -- | Multiple importance samples with post-processing.
-importance' :: (Ord a, Typeable a, MonadDist m) =>
+importance' :: (Ord a, MonadDist m) =>
                Int -> Population m a -> m [(a,Double)]
 importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
 
@@ -51,7 +50,7 @@ smc :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
 smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
-smc' :: (Ord a, Typeable a, MonadDist m) => Int -> Int ->
+smc' :: (Ord a, MonadDist m) => Int -> Int ->
         Particle (Population m) a -> m [(a,Double)]
 smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
 

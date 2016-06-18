@@ -8,7 +8,6 @@ module Control.Monad.Bayes.Class where
 
 import qualified Data.Map as Map
 import Data.Number.LogFloat
-import Data.Typeable
 import Numeric.SpecFunctions
 import Data.Monoid
 import Control.Arrow (first,second)
@@ -32,9 +31,10 @@ import Control.Monad.Bayes.Primitive
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
 class Monad m => MonadDist m where
-    {-# MINIMAL primitive | (categorical, normal, gamma, beta, uniform) #-}
-    -- | Categorical distribution, weights need not be normalized.
-    categorical :: (Eq a, Typeable a) => [(a,LogFloat)] -> m a
+    {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
+    -- | Discrete distribution over first n natural numbers.
+    -- | The list of weights needs not sum up to 1.
+    discrete :: [LogFloat] -> m Int
     -- | Normal distribution parameterized by mean and standard deviation.
     normal :: Double -> Double -> m Double
     -- | Gamma distribution parameterized by shape and rate.
@@ -44,21 +44,26 @@ class Monad m => MonadDist m where
     -- | Continuous uniform distribution on an interval
     uniform :: Double -> Double -> m Double
 
-
     -- | One of `Primitive` distributions.
     primitive :: Primitive a -> m a
-    primitive (Categorical d) = categorical d
+    primitive (Discrete d) = discrete d
     primitive (Normal m s) = normal m s
     primitive (Gamma  a b) = gamma  a b
     primitive (Beta   a b) = beta   a b
     primitive (Uniform a b) = uniform a b
 
     -- defaults based on primitive
-    categorical d = primitive $ Categorical d
+    discrete ps   = primitive $ Discrete ps
     normal m s    = primitive $ Normal m s
     gamma  a b    = primitive $ Gamma  a b
     beta   a b    = primitive $ Beta   a b
     uniform a b   = primitive $ Uniform a b
+
+    -- | Categorical distribution, weights need not be normalized.
+    categorical :: [(a,LogFloat)] -> m a
+    categorical d = do
+      i <- discrete (map snd d)
+      return (fst (d !! i))
 
     -- | Bernoulli distribution.
     bernoulli :: LogFloat -> m Bool
@@ -85,11 +90,9 @@ class Monad m => MonadDist m where
                              mass k = c * (p `pow` (fromIntegral k)) / (factorial k)
                              factorial k = logToLogFloat (logFactorial k)
                              c = logToLogFloat (- fromLogFloat p) -- exp (-p)
-    -- | Discrete distribution over first n natural numbers.
-    discrete :: [LogFloat] -> m Int
-    discrete = categorical . zip [0..]
+
     -- | Uniform discrete distribution.
-    uniformD :: (Eq a, Typeable a) => [a] -> m a
+    uniformD :: [a] -> m a
     uniformD xs = categorical $ map (,weight) xs where
                              weight = 1 / fromIntegral (length xs)
 

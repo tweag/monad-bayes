@@ -6,7 +6,6 @@
 import System.Random
 import Data.AEq
 import Data.Maybe
-import Data.Typeable
 import Data.Number.LogFloat
 
 import Control.Monad.Bayes.Class
@@ -21,20 +20,22 @@ extractNormal :: Cache -> Maybe Double
 extractNormal (Cache (Normal _ _) x) = Just x
 extractNormal _ = Nothing
 
-extractBool :: Cache -> Maybe Bool
-extractBool (Cache (Categorical _) x) = cast x
-extractBool _ = Nothing
+extractInt :: Cache -> Maybe Int
+extractInt (Cache (Discrete _) x) = Just x
+extractInt _ = Nothing
 
-m :: MonadDist m => m (Bool,Double)
+discreteWeights = [0.0001, 0.9999]
+
+m :: MonadDist m => m (Int,Double)
 m = do
-  x <- bernoulli 0.5
+  x <- discrete discreteWeights
   y <- normal 0 1
   return (x,y)
 
-compare :: ((Bool,Double), [Cache]) -> Bool
+compare :: ((Int,Double), [Cache]) -> Bool
 compare ((x,y), cs) = fromMaybe False b where
   b = case cs of [c1,c2] -> do
-                              x' <- extractBool c1
+                              x' <- extractInt    c1
                               y' <- extractNormal c2
                               return (x == x' && y == y')
                  _ -> Nothing
@@ -46,7 +47,7 @@ withCache modifiedModel = do
 check_writing = TestTrace.compare (stdSample (withCache (mhState m)) g)
 
 check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g == caches where
-  caches = [ Cache (Categorical [(True, 0.5), (False, 0.5)]) True
+  caches = [ Cache (Discrete discreteWeights) 0
            , Cache (Normal 0 1) 9000
            ]
 

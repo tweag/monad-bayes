@@ -39,8 +39,8 @@ newtype Dist a = Dist {unDist :: Weighted [] a}
     deriving (Functor, Applicative, Monad)
 
 instance MonadDist Dist where
-    categorical d = Dist $ Weighted $ WriterT $ fmap (second weight) $
-                    normalize $ Fold.toList d
+    discrete xs = Dist $ Weighted $ WriterT $ fmap (second weight) $
+                    normalize $ zip [0..] xs
     normal  = error "Dist does not support continuous distributions"
     gamma   = error "Dist does not support continuous distributions"
     beta    = error "Dist does not support continuous distributions"
