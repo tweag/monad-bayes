@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Dist (
     mass,
     compact,
     normalize,
+    normalizeForEvidence,
     enumerate
             ) where
 
@@ -62,22 +63,33 @@ evidence :: Dist a -> LogFloat
 evidence = LogFloat.sum . map snd . toList
 
 -- | Probability mass of a specific value.
+-- Discards model evidence.
 mass :: Ord a => Dist a -> a -> Double
-mass d a = case lookup a (enumerate d) of Just p -> p
-                                          Nothing -> 0
+mass d a = case lookup a (normalize (enumerate d)) of
+             Just p -> p
+             Nothing -> 0
 
 -- | Aggregate weights of equal values.
 -- | The resulting list is sorted ascendingly according to values.
 compact :: Ord a => [(a,Double)] -> [(a,Double)]
 compact = Map.toAscList . Map.fromListWith (+)
 
--- | Normalize the weights to sum to 1.
-normalize :: (Fractional p) => [(a,p)] -> [(a,p)]
-normalize xs = map (second (/ norm)) xs where
+-- | Given subprobability density, compute normalized density and model evidence
+normalizeForEvidence :: (Ord p, Fractional p) => [(a,p)] -> ([(a,p)],p)
+normalizeForEvidence xs =
+  let
     norm = sum (map snd xs)
+  in
+    if norm > 0 then
+      (map (second (/ norm)) xs, norm)
+    else
+      ([], 0)
+
+-- | Normalize the weights to sum to 1.
+normalize :: (Ord p, Fractional p) => [(a,p)] -> [(a,p)]
+normalize = fst . normalizeForEvidence
 
 -- | Aggregation and normalization of weights.
 -- | The resulting list is sorted ascendingly according to values.
 enumerate :: Ord a => Dist a -> [(a,Double)]
-enumerate d = simplify $ explicit d where
-    simplify = normalize . compact
+enumerate = compact . explicit

@@ -100,13 +100,17 @@ spawn :: MonadDist m => Int -> Population m ()
 spawn n = fromUnweighted (draw n)
 
 -- | A version of 'resampleN' that operates explicitly on lists.
+-- Returns the empty list if model evidence is 0.
 resampleNList :: MonadDist m => Int -> [(a,LogFloat)] -> m [(a,LogFloat)]
 resampleNList n ys = do
   let (xs,ws) = unzip ys
   let z = LogFloat.sum ws
-  offsprings <- multinomial ys n
-  let new_samples = concat [replicate k x | (x,k) <- offsprings]
-  return $ map (,z / fromIntegral n) new_samples
+  if z == 0 then
+    return []
+  else do
+    offsprings <- multinomial ys n
+    let new_samples = concat [replicate k x | (x,k) <- offsprings]
+    return $ map (,z / fromIntegral n) new_samples
 
 -- | A version of 'resample' that operates explicitly on lists.
 resampleList :: MonadDist m => [(a,LogFloat)] -> m [(a,LogFloat)]
