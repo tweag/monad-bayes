@@ -66,7 +66,7 @@ instance Monad Sampler where
 instance MonadDist Sampler where
     discrete xs = wrapper $ fromWeightedList $
                     map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
-    normal m s  = wrapper $ Normal m s
+    normal m s  = fmap realToFrac $ wrapper $ Normal (realToFrac m :: Double) (realToFrac s ::Double)
     gamma a b   = wrapper $ Gamma a (1 / b)
     beta a b    = wrapper $ Beta a b  --need to check parameterization
     uniform a b = wrapper $ Uniform a b
@@ -82,7 +82,7 @@ wrapper = Sampler . (fst .) . sampleState
 instance MonadDist (RVarT m) where
   --should probably normalize before converting from log-domain
   discrete xs = rvarT $ fromWeightedList $ map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
-  normal m s = rvarT $ Normal m s
+  normal m s = fmap realToFrac $ rvarT $ Normal (realToFrac m :: Double) (realToFrac s :: Double)
   gamma  a b = rvarT $ Gamma a (1 / b)
   beta   a b = rvarT $ Beta a b
   uniform a b = rvarT $ Uniform a b
