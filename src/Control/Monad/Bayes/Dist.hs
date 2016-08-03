@@ -41,7 +41,7 @@ newtype Dist a = Dist {unDist :: Weighted [] a}
 
 instance MonadDist Dist where
     discrete xs = Dist $ Weighted $ WriterT $ fmap (second weight) $
-                    normalize $ zip [0..] xs
+                    normalize $ zip (map fromIntegral [0..]) xs
     normal  = error "Dist does not support continuous distributions"
     gamma   = error "Dist does not support continuous distributions"
     beta    = error "Dist does not support continuous distributions"
