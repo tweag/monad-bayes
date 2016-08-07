@@ -23,7 +23,7 @@ import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Memo.StateCache
-
+import Data.Typeable
 
 import Control.Monad.Bayes.Primitive
 
@@ -45,7 +45,7 @@ class Monad m => MonadDist m where
     uniform :: Double -> Double -> m Double
 
     -- | One of `Primitive` distributions.
-    primitive :: Primitive a -> m a
+    primitive :: Typeable a => Primitive a -> m a
     primitive (Discrete d) = discrete d
     primitive (Normal m s) = normal m s
     primitive (Gamma  a b) = gamma  a b

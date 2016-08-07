@@ -80,11 +80,11 @@ instance Show Cache where
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler y where
-  AwaitSampler :: Primitive a -> (a -> y) -> AwaitSampler y
+  AwaitSampler :: Typeable a => Primitive a -> (a -> y) -> AwaitSampler y
 
 -- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
 data Snapshot y where
-  Snapshot :: Primitive a -> a -> (a -> y) -> Snapshot y
+  Snapshot :: Typeable a => Primitive a -> a -> (a -> y) -> Snapshot y
 
 deriving instance Functor AwaitSampler
 deriving instance Functor Snapshot
