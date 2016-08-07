@@ -100,21 +100,11 @@ newtype Coprimitive m a = Coprimitive
   }
   deriving (Functor, Applicative, Monad, MonadTrans)
 
--- | Evaluates joint density of a subset of random variables.
--- Specifically this is a product of conditional densities encountered in
--- the trace times the (unnormalized) likelihood of the trace.
--- Missing latent variables are integrated out using a single MC sample,
--- unused values from the list are ignored.
-pseudoDensity :: MonadBayes m =>
-  Coprimitive (Weighted m) a -> [Maybe Dynamic] -> m LogFloat
--- May need to add Typeable a constraint to AwaitSampler for implementation.
--- We need to somehow check if the type matches.
-pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
+instance (MonadDist m) => MonadDist (Coprimitive m) where
+  primitive d = Coprimitive (suspend (AwaitSampler d return))
 
--- | Joint density of all random variables in the program.
--- Failure occurs when the list is too short or when there's a type mismatch.
-jointDensity :: Coprimitive (Weighted Deterministic) a -> [Dynamic] -> Maybe LogFloat
-jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
+instance (MonadBayes m) => MonadBayes (Coprimitive m) where
+  factor = lift . factor
 
 -- | Conditional distribution given a subset of random variables.
 -- For every fixed value its density is included as a factor.
@@ -139,13 +129,24 @@ conditional p xs = condRun (runCoprimitive p) xs where
         -- Value missing or type mismatch - ignore and draw from prior
         Nothing -> drawFromPrior s >>= (`condRun` xs)
 
+-- | Evaluates joint density of a subset of random variables.
+-- Specifically this is a product of conditional densities encountered in
+-- the trace times the (unnormalized) likelihood of the trace.
+-- Missing latent variables are integrated out using the transformed monad,
+-- unused values from the list are ignored.
+pseudoDensity :: MonadBayes m =>
+  Coprimitive (Weighted m) a -> [Maybe Dynamic] -> m LogFloat
+-- May need to add Typeable a constraint to AwaitSampler for implementation.
+-- We need to somehow check if the type matches.
+pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
+
+-- | Joint density of all random variables in the program.
+-- Failure occurs when the list is too short or when there's a type mismatch.
+jointDensity :: Coprimitive (Weighted Deterministic) a -> [Dynamic]
+  -> Maybe LogFloat
+jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
 
 
-instance (MonadDist m) => MonadDist (Coprimitive m) where
-  primitive d = Coprimitive (suspend (AwaitSampler d return))
-
-instance (MonadBayes m) => MonadBayes (Coprimitive m) where
-  factor = lift . factor
 
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (Weighted (Coprimitive m) a)]
