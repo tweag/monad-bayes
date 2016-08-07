@@ -12,6 +12,7 @@ module Control.Monad.Bayes.Trace where
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Deterministic
 
 import Control.Arrow
 import Control.Monad
@@ -21,11 +22,14 @@ import Control.Monad.Trans.Class
 
 import Data.List
 import Data.Number.LogFloat
+import Data.Dynamic
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
 reusePrimitive :: Primitive a -> Primitive b -> a -> Maybe b
 reusePrimitive d d' x =
+  -- Adam: this could be replaced with first checking if a == b and if so then
+  -- if support d == support d'
   case (support d, support d') of
     (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d) -> Just x
     (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
@@ -95,6 +99,27 @@ newtype Coprimitive m a = Coprimitive
   { runCoprimitive :: Coroutine AwaitSampler m a
   }
   deriving (Functor, Applicative, Monad, MonadTrans)
+
+-- | Evaluates joint density of a subset of random variables.
+-- Specifically this is a product of conditional densities encountered in
+-- the trace times the (unnormalized) likelihood of the trace.
+-- Missing latent variables are integrated out using a single MC sample,
+-- unused values from the list are ignored.
+pseudoDensity :: MonadDist m =>
+  Coprimitive (Weighted m) a -> [Maybe Dynamic] -> m LogFloat
+-- May need to add Typeable a constraint to AwaitSampler for implementation.
+-- We need to somehow check if the type matches.
+pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
+
+-- | Joint density of all random variables in the program.
+-- Failure occurs when the list is too short or when there's a type mismatch.
+jointDensity :: Coprimitive (Weighted Deterministic) a -> [Dynamic] -> Maybe LogFloat
+jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
+
+-- | Conditional distribution given a subset of random variables.
+-- For every fixed value its density is included as a factor.
+conditional :: MonadDist m => Coprimitive m a -> [Maybe Dynamic] -> m a
+conditional = undefined
 
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
