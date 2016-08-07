@@ -105,7 +105,7 @@ newtype Coprimitive m a = Coprimitive
 -- the trace times the (unnormalized) likelihood of the trace.
 -- Missing latent variables are integrated out using a single MC sample,
 -- unused values from the list are ignored.
-pseudoDensity :: MonadDist m =>
+pseudoDensity :: MonadBayes m =>
   Coprimitive (Weighted m) a -> [Maybe Dynamic] -> m LogFloat
 -- May need to add Typeable a constraint to AwaitSampler for implementation.
 -- We need to somehow check if the type matches.
@@ -118,8 +118,28 @@ jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
 
 -- | Conditional distribution given a subset of random variables.
 -- For every fixed value its density is included as a factor.
-conditional :: MonadDist m => Coprimitive m a -> [Maybe Dynamic] -> m a
-conditional = undefined
+-- Missing values and type mismatches are treated as no conditioning on that RV.
+conditional :: MonadBayes m => Coprimitive m a -> [Maybe Dynamic] -> m a
+conditional p xs = condRun (runCoprimitive p) xs where
+  -- Draw a value from the prior and proceed.
+  drawFromPrior :: MonadDist m => AwaitSampler a -> m a
+  drawFromPrior (AwaitSampler d k) = fmap k (primitive d)
+
+  -- No more variables to condition on - run from prior.
+  condRun c [] = pogoStickM drawFromPrior c
+  -- Condition on the next variable.
+  condRun c (x:xs) = resume c >>= \t -> case t of
+    -- Program finished - return the final result
+    Right y -> return y
+    -- Random draw encountered - conditional execution
+    Left s@(AwaitSampler d k) ->
+      case (x >>= fromDynamic) of
+        -- A value is available and its type matches the current draw
+        Just v  -> factor (pdf d v) >> condRun (k v) xs
+        -- Value missing or type mismatch - ignore and draw from prior
+        Nothing -> drawFromPrior s >>= (`condRun` xs)
+
+
 
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
