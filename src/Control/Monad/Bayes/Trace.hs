@@ -134,10 +134,8 @@ conditional p xs = condRun (runCoprimitive p) xs where
 -- the trace times the (unnormalized) likelihood of the trace.
 -- Missing latent variables are integrated out using the transformed monad,
 -- unused values from the list are ignored.
-pseudoDensity :: MonadBayes m =>
-  Coprimitive (Weighted m) a -> [Maybe Dynamic] -> m LogFloat
--- May need to add Typeable a constraint to AwaitSampler for implementation.
--- We need to somehow check if the type matches.
+pseudoDensity :: MonadBayes m => Coprimitive (Weighted m) a -> [Maybe Dynamic]
+  -> m LogFloat
 pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
 
 -- | Joint density of all random variables in the program.
