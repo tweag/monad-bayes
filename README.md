@@ -16,4 +16,5 @@ If you are an experienced Haskell developer we would appreciate your suggestions
 
 * Adam Ścibior
 * Yufei Cai
+* Eli Sennesh
 

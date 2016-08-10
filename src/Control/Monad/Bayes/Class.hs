@@ -65,6 +65,13 @@ class Monad m => MonadDist m where
       i <- discrete (map snd d)
       return (fst (d !! i))
 
+    -- | Dirichlet distribution, the conjugate prior to the categorical.
+    -- Weights need not be normalized.
+    dirichlet :: [Double] -> m [Double]
+    dirichlet ws = liftM normalize $ gammas ws where
+      gammas = mapM (\w -> gamma w 1)
+      normalize xs = map (/ (Prelude.sum xs)) xs
+
     -- | Bernoulli distribution.
     bernoulli :: LogFloat -> m Bool
     bernoulli p = categorical [(True,p), (False,1-p)]
