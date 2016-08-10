@@ -28,6 +28,8 @@ main = hspec $ do
       TestDist.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $ do
       TestDist.passed3 `shouldBe` True
+    it "computes expectation correctly" $ do
+      TestDist.passed4 `shouldBe` True
   describe "Empirical" $ do
     context "controlling population" $ do
       it "preserves the population when not expicitly altered" $ do
