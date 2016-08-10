@@ -36,6 +36,8 @@ main = hspec $ do
         TestEmpirical.pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
         TestEmpirical.many_size `shouldBe` 15
+      it "correctly computes population average" $ do
+        TestEmpirical.popAvg_check `shouldBe` True
 --    context "checking properties of samples" $ do
 --      it "correctly checks if all particles satisfy a property" $ do
 --        TestEmpirical.all_check `shouldBe` True
