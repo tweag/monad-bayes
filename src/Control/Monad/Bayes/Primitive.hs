@@ -5,20 +5,26 @@
 
 module Control.Monad.Bayes.Primitive where
 
+import Data.Typeable
 import Numeric.SpecFunctions
 import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)
 
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive a where
-    Discrete :: [LogFloat] -> Primitive Int
+    Discrete :: (Typeable a, Integral a) => [LogFloat] -> Primitive a
     Normal :: Double -> Double -> Primitive Double
     Gamma :: Double -> Double -> Primitive Double
     Beta :: Double -> Double -> Primitive Double
     Uniform :: Double -> Double -> Primitive Double
 
 deriving instance Eq   (Primitive a)
-deriving instance Show (Primitive a)
+instance Show (Primitive a) where
+  show (Discrete xs) = "Discrete " ++ show xs
+  show (Normal  m s) = "Normal "  ++ show m ++ " " ++ show s
+  show (Gamma   a b) = "Gamma "   ++ show a ++ " " ++ show b
+  show (Beta    a b) = "Beta "    ++ show a ++ " " ++ show b
+  show (Uniform a b) = "Uniform " ++ show a ++ " " ++ show b
 
 -- | The probability density function.
 pdf :: Primitive a -> a -> LogFloat

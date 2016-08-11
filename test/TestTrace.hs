@@ -24,9 +24,10 @@ extractNormal (Cache (Normal _ _) x) = Just x
 extractNormal _ = Nothing
 
 extractInt :: Cache -> Maybe Int
-extractInt (Cache (Discrete _) x) = Just x
+extractInt (Cache (Discrete _) x) = Just (fromIntegral x)
 extractInt _ = Nothing
 
+discreteWeights :: [LogFloat]
 discreteWeights = [0.0001, 0.9999]
 
 m :: MonadDist m => m (Int,Double)
@@ -50,7 +51,7 @@ withCache modifiedModel = do
 check_writing = TestTrace.compare (stdSample (withCache (mhState m)) g)
 
 check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g == caches where
-  caches = [ Cache (Discrete discreteWeights) 0
+  caches = [ Cache (Discrete discreteWeights) (0 :: Int)
            , Cache (Normal 0 1) 9000
            ]
 

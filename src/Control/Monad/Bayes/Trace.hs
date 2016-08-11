@@ -20,6 +20,7 @@ import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Trans.Class
 
+import Data.Maybe
 import Data.List
 import Data.Number.LogFloat
 import Data.Dynamic
@@ -33,19 +34,26 @@ reusePrimitive d d' x =
   case (support d, support d') of
     (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d) -> Just x
     (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
-    (Finite         xs , Finite         ys ) | xs == ys         -> Just x
+    (Finite         xs , Finite         ys )                    ->
+      do
+        xs' <- cast xs
+        x'  <- cast x
+        if xs' == ys then Just x' else Nothing
     _                                                           -> Nothing
 
 data Support a where
   OpenInterval   :: Double -> Double -> Support Double
   ClosedInterval :: Double -> Double -> Support Double
-  Finite         :: [Int] -> Support Int
+  Finite         :: (Typeable a, Integral a) => [a] -> Support a
 
 deriving instance Eq   (Support a)
-deriving instance Show (Support a)
+instance Show (Support a) where
+  show (Finite xs) = "Finite " ++ show (map toInteger xs)
+  show (OpenInterval   a b) = "OpenInterval "  ++ show a ++ " " ++ show b
+  show (ClosedInterval a b) = "ClosedInterval" ++ show a ++ " " ++ show b
 
 support :: Primitive a -> Support a
-support (Discrete ps) = Finite (findIndices (> 0) ps)
+support (Discrete ps) = Finite $ map fromIntegral $ findIndices (> 0) ps
 support (Normal  _ _) = OpenInterval (-1/0) (1/0)
 support (Gamma   _ _) = OpenInterval 0 (1/0)
 support (Beta    _ _) = OpenInterval 0 1
@@ -55,7 +63,8 @@ data Cache where
   Cache :: Primitive a -> a -> Cache
 
 instance Eq Cache where
-  Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' = d == d' && x == x'
+  Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' =
+    fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
   Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' = d == d' && x == x'
   Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' = d == d' && x == x'
   Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' = d == d' && x == x'
@@ -72,7 +81,7 @@ instance Show Cache where
       printCache cache r
     where
       printCache :: Cache -> String -> String
-      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
       printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
       printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
       printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
