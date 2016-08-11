@@ -21,3 +21,6 @@ agg = do
 passed2 = enumerate agg ~== [(1,0.25), (2,0.5), (3,0.25)]
 
 passed3 = enumerate Sprinkler.hard ~== enumerate Sprinkler.soft
+
+passed4 =
+  fromLogFloat (expectation (^ 2) (categorical [(1, 0.5), (2, 0.5)])) ~== 2.5

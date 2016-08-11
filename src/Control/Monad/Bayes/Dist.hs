@@ -14,7 +14,8 @@ module Control.Monad.Bayes.Dist (
     compact,
     normalize,
     normalizeForEvidence,
-    enumerate
+    enumerate,
+    expectation
             ) where
 
 import System.Random
@@ -93,3 +94,7 @@ normalize = fst . normalizeForEvidence
 -- | The resulting list is sorted ascendingly according to values.
 enumerate :: Ord a => Dist a -> [(a,Double)]
 enumerate = compact . explicit
+
+-- | Expectation of a given function, does not normalize weights.
+expectation :: (a -> LogFloat) -> Dist a -> LogFloat
+expectation f p = LogFloat.sum $ map (\(x,w) -> f x * w) $ toList p

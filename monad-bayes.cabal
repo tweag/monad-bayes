@@ -22,6 +22,7 @@ library
                        Control.Monad.Bayes.Prior,
                        Control.Monad.Bayes.Rejection,
                        Control.Monad.Bayes.Weighted,
+                       Control.Monad.Bayes.Deterministic,
                        Control.Monad.Bayes.Empirical,
                        Control.Monad.Bayes.Particle,
                        Control.Monad.Bayes.Inference,

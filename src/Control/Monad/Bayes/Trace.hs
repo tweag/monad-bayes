@@ -12,6 +12,7 @@ module Control.Monad.Bayes.Trace where
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Deterministic
 
 import Control.Arrow
 import Control.Monad
@@ -21,11 +22,14 @@ import Control.Monad.Trans.Class
 
 import Data.List
 import Data.Number.LogFloat
+import Data.Dynamic
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
 reusePrimitive :: Primitive a -> Primitive b -> a -> Maybe b
 reusePrimitive d d' x =
+  -- Adam: this could be replaced with first checking if a == b and if so then
+  -- if support d == support d'
   case (support d, support d') of
     (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d) -> Just x
     (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
@@ -76,11 +80,11 @@ instance Show Cache where
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler y where
-  AwaitSampler :: Primitive a -> (a -> y) -> AwaitSampler y
+  AwaitSampler :: Typeable a => Primitive a -> (a -> y) -> AwaitSampler y
 
 -- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
 data Snapshot y where
-  Snapshot :: Primitive a -> a -> (a -> y) -> Snapshot y
+  Snapshot :: Typeable a => Primitive a -> a -> (a -> y) -> Snapshot y
 
 deriving instance Functor AwaitSampler
 deriving instance Functor Snapshot
@@ -101,6 +105,46 @@ instance (MonadDist m) => MonadDist (Coprimitive m) where
 
 instance (MonadBayes m) => MonadBayes (Coprimitive m) where
   factor = lift . factor
+
+-- | Conditional distribution given a subset of random variables.
+-- For every fixed value its density is included as a factor.
+-- Missing values and type mismatches are treated as no conditioning on that RV.
+conditional :: MonadBayes m => Coprimitive m a -> [Maybe Dynamic] -> m a
+conditional p xs = condRun (runCoprimitive p) xs where
+  -- Draw a value from the prior and proceed.
+  drawFromPrior :: MonadDist m => AwaitSampler a -> m a
+  drawFromPrior (AwaitSampler d k) = fmap k (primitive d)
+
+  -- No more variables to condition on - run from prior.
+  condRun c [] = pogoStickM drawFromPrior c
+  -- Condition on the next variable.
+  condRun c (x:xs) = resume c >>= \t -> case t of
+    -- Program finished - return the final result
+    Right y -> return y
+    -- Random draw encountered - conditional execution
+    Left s@(AwaitSampler d k) ->
+      case (x >>= fromDynamic) of
+        -- A value is available and its type matches the current draw
+        Just v  -> factor (pdf d v) >> condRun (k v) xs
+        -- Value missing or type mismatch - ignore and draw from prior
+        Nothing -> drawFromPrior s >>= (`condRun` xs)
+
+-- | Evaluates joint density of a subset of random variables.
+-- Specifically this is a product of conditional densities encountered in
+-- the trace times the (unnormalized) likelihood of the trace.
+-- Missing latent variables are integrated out using the transformed monad,
+-- unused values from the list are ignored.
+pseudoDensity :: MonadBayes m => Coprimitive (Weighted m) a -> [Maybe Dynamic]
+  -> m LogFloat
+pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
+
+-- | Joint density of all random variables in the program.
+-- Failure occurs when the list is too short or when there's a type mismatch.
+jointDensity :: Coprimitive (Weighted Deterministic) a -> [Dynamic]
+  -> Maybe LogFloat
+jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
+
+
 
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (Weighted (Coprimitive m) a)]

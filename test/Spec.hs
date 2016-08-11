@@ -28,12 +28,16 @@ main = hspec $ do
       TestDist.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $ do
       TestDist.passed3 `shouldBe` True
+    it "computes expectation correctly" $ do
+      TestDist.passed4 `shouldBe` True
   describe "Empirical" $ do
     context "controlling population" $ do
       it "preserves the population when not expicitly altered" $ do
         TestEmpirical.pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
         TestEmpirical.many_size `shouldBe` 15
+      it "correctly computes population average" $ do
+        TestEmpirical.popAvg_check `shouldBe` True
 --    context "checking properties of samples" $ do
 --      it "correctly checks if all particles satisfy a property" $ do
 --        TestEmpirical.all_check `shouldBe` True
@@ -64,6 +68,16 @@ main = hspec $ do
     it "has reuse ratio 1 on an empty database" $ do
       TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
       TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
+  describe "Density" $ do
+    it "correctly evaluates conditional distribution" $ do
+      TestTrace.check_missing_conditional `shouldBe` True
+      TestTrace.check_mismatch_conditional `shouldBe` True
+      TestTrace.check_longer_conditional `shouldBe` True
+    it "correctly computes pseudo-marginal density" $ do
+      TestTrace.check_first_density `shouldBe` True
+    it "correctly computes joint density" $ do
+      TestTrace.check_joint_density_true `shouldBe` True
+      TestTrace.check_joint_density_false `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
