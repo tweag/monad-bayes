@@ -3,6 +3,7 @@ module TestEmpirical where
 import System.Random
 import Data.AEq
 import Control.Monad.Trans.Identity
+import Data.Number.LogFloat
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist
@@ -30,3 +31,7 @@ trans_check2 = enumerate (runIdentityT (collapse (spawn 2 >> sprinkler))) ~==
 resample_check n =
   (enumerate . runIdentityT . collapse . resampleN n) (spawn 2 >> sprinkler) ~==
   sprinkler_exact
+
+popAvg_check = fromLogFloat (expectation f Sprinkler.soft) ~== fromLogFloat (expectation id (popAvg f Sprinkler.soft)) where
+  f True = 10
+  f False = 4

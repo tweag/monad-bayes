@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Empirical (
     proper,
     evidence,
     collapse,
+    popAvg
                  ) where
 
 import Prelude hiding (all)
@@ -144,3 +145,10 @@ collapse e = do
   (x,p) <- proper e
   factor p
   return x
+
+-- | Population average of a function, does not normalize weights.
+popAvg :: MonadBayes m => (a -> LogFloat) -> Population m a -> m LogFloat
+popAvg f p = do
+  xs <- runPopulation p
+  let ys = map (\(x,w) -> f x * w) xs
+  return (LogFloat.sum ys)

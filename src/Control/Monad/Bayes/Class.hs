@@ -23,7 +23,7 @@ import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Memo.StateCache
-
+import Data.Typeable
 
 import Control.Monad.Bayes.Primitive
 
@@ -45,7 +45,7 @@ class Monad m => MonadDist m where
     uniform :: Double -> Double -> m Double
 
     -- | One of `Primitive` distributions.
-    primitive :: Primitive a -> m a
+    primitive :: Typeable a => Primitive a -> m a
     primitive (Discrete d) = discrete d
     primitive (Normal m s) = normal m s
     primitive (Gamma  a b) = gamma  a b
@@ -64,6 +64,13 @@ class Monad m => MonadDist m where
     categorical d = do
       i <- discrete (map snd d)
       return (fst (d !! i))
+
+    -- | Dirichlet distribution, the conjugate prior to the categorical.
+    -- Weights need not be normalized.
+    dirichlet :: [Double] -> m [Double]
+    dirichlet ws = liftM normalize $ gammas ws where
+      gammas = mapM (\w -> gamma w 1)
+      normalize xs = map (/ (Prelude.sum xs)) xs
 
     -- | Bernoulli distribution.
     bernoulli :: LogFloat -> m Bool
