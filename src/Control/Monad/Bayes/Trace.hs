@@ -32,12 +32,11 @@ reusePrimitive d d' x =
   -- Adam: this could be replaced with first checking if a == b and if so then
   -- if support d == support d'
   case (support d, support d') of
-    (OpenInterval   a b, OpenInterval   c d) ->
+    (Interval   a b, Interval   c d) ->
      do
        (a',b') <- cast (a,b)
        x'      <- cast x
        if (a',b') == (c,d) then Just x' else Nothing
-    (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
     (Finite         xs , Finite         ys )                    ->
       do
         xs' <- cast xs
@@ -46,23 +45,21 @@ reusePrimitive d d' x =
     _                                                           -> Nothing
 
 data Support a where
-  OpenInterval   :: (Typeable a, Real a, Floating a) => a -> a -> Support a
-  ClosedInterval :: Double -> Double -> Support Double
+  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
   Finite         :: (Typeable a, Integral a) => [a] -> Support a
 
 deriving instance Eq   (Support a)
 instance Show (Support a) where
   show (Finite xs) = "Finite " ++ show (map toInteger xs)
-  show (OpenInterval   a b) =
-    "OpenInterval "  ++ show (toRational a) ++ " " ++ show (toRational b)
-  show (ClosedInterval a b) = "ClosedInterval" ++ show a ++ " " ++ show b
+  show (Interval   a b) =
+    "Interval "  ++ show (toRational a) ++ " " ++ show (toRational b)
 
 support :: Primitive a -> Support a
 support (Discrete ps) = Finite $ map fromIntegral $ findIndices (> 0) ps
-support (Normal  _ _) = OpenInterval (-1/0) (1/0)
-support (Gamma   _ _) = OpenInterval 0 (1/0)
-support (Beta    _ _) = OpenInterval 0 1
-support (Uniform a b) = ClosedInterval a b
+support (Normal  _ _) = Interval (-1/0) (1/0)
+support (Gamma   _ _) = Interval 0 (1/0)
+support (Beta    _ _) = Interval 0 1
+support (Uniform a b) = Interval a b
 
 data Cache where
   Cache :: Primitive a -> a -> Cache
