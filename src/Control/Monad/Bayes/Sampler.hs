@@ -67,9 +67,12 @@ instance MonadDist Sampler where
     discrete xs = wrapper $ fromWeightedList $
                     map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
     normal m s  = fmap realToFrac $ wrapper $ Normal (realToFrac m :: Double) (realToFrac s ::Double)
-    gamma a b   = wrapper $ Gamma a (1 / b)
-    beta a b    = wrapper $ Beta a b  --need to check parameterization
-    uniform a b = wrapper $ Uniform a b
+    gamma a b   = fmap realToFrac $ wrapper $
+      Gamma (realToFrac a :: Double) (1 / (realToFrac b :: Double))
+    beta a b    = fmap realToFrac $ wrapper $
+      Beta (realToFrac a :: Double) (realToFrac b :: Double)
+    uniform a b = fmap realToFrac $ wrapper $
+      Uniform (realToFrac a :: Double) (realToFrac b :: Double)
 
 -- | Wrapper for random-fu distributions.
 wrapper :: Distribution d a => d a -> Sampler a
@@ -83,9 +86,12 @@ instance MonadDist (RVarT m) where
   --should probably normalize before converting from log-domain
   discrete xs = rvarT $ fromWeightedList $ map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
   normal m s = fmap realToFrac $ rvarT $ Normal (realToFrac m :: Double) (realToFrac s :: Double)
-  gamma  a b = rvarT $ Gamma a (1 / b)
-  beta   a b = rvarT $ Beta a b
-  uniform a b = rvarT $ Uniform a b
+  gamma  a b = fmap realToFrac $ rvarT $
+    Gamma (realToFrac a :: Double) (1 / (realToFrac b :: Double))
+  beta   a b = fmap realToFrac $ rvarT $
+    Beta (realToFrac a :: Double) (realToFrac b :: Double)
+  uniform a b = fmap realToFrac $ rvarT $
+    Uniform (realToFrac a :: Double) (realToFrac b :: Double)
   multinomial ps n = do
     let (xs,ws) = unzip ps
     let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws

@@ -69,9 +69,12 @@ instance Eq Cache where
     fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
   Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' = d == d' && x == x'
-  Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' = d == d' && x == x'
-  Cache d@(Uniform _ _) x == Cache d'@(Uniform _ _) x' = d == d' && x == x'
+  Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' =
+    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
+  Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' =
+    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
+  Cache d@(Uniform _ _) x == Cache d'@(Uniform _ _) x' =
+    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
   Cache _               _ == Cache _                _  = False
 
 instance Show Cache where
@@ -86,9 +89,9 @@ instance Show Cache where
       printCache :: Cache -> String -> String
       printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
       printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
-      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
-      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
-      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler y where

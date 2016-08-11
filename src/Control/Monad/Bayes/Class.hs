@@ -34,15 +34,15 @@ class Monad m => MonadDist m where
     {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
     -- | Discrete distribution over first n natural numbers.
     -- | The list of weights needs not sum up to 1.
-    discrete :: (Typeable a, Integral a) => [LogFloat] -> m a
+    discrete :: (Typeable a, Integral a)         => [LogFloat] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
-    normal :: (Typeable a, Real a, Floating a) => a -> a -> m a
+    normal   :: (Typeable a, Real a, Floating a) => a -> a -> m a
     -- | Gamma distribution parameterized by shape and rate.
-    gamma :: Double -> Double -> m Double
+    gamma    :: (Typeable a, Real a, Floating a) => a -> a -> m a
     -- | Beta distribution.
-    beta :: Double -> Double -> m Double
+    beta     :: (Typeable a, Real a, Floating a) => a -> a -> m a
     -- | Continuous uniform distribution on an interval
-    uniform :: Double -> Double -> m Double
+    uniform  :: (Typeable a, Real a, Floating a) => a -> a -> m a
 
     -- | One of `Primitive` distributions.
     primitive :: Typeable a => Primitive a -> m a
