@@ -20,7 +20,7 @@ import Control.Monad.Bayes.Trace
 g = mkStdGen 0
 
 extractNormal :: Cache -> Maybe Double
-extractNormal (Cache (Normal _ _) x) = Just x
+extractNormal (Cache (Normal _ _) x) = Just (realToFrac x)
 extractNormal _ = Nothing
 
 extractInt :: Cache -> Maybe Int
@@ -52,7 +52,7 @@ check_writing = TestTrace.compare (stdSample (withCache (mhState m)) g)
 
 check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g == caches where
   caches = [ Cache (Discrete discreteWeights) (0 :: Int)
-           , Cache (Normal 0 1) 9000
+           , Cache (Normal 0 1) (9000 :: Double)
            ]
 
 check_reuse_ratio m = fromLogFloat (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
@@ -92,13 +92,13 @@ check_longer_conditional =
 -- Computes pseudomarginal density correctly
 check_first_density =
   enumerate (fmap logFromLogFloat (pseudoDensity m [Nothing, Just (toDyn (0.6 :: Double))])) ~==
-    [(logFromLogFloat (pdf (Normal 0 1) 0.6), 1)]
+    [(logFromLogFloat (pdf (Normal 0 1) (0.6 :: Double)), 1)]
 
 -- Computes joint density correctly when possible
 check_joint_density_true =
   case jointDensity m [toDyn (1 :: Int), toDyn (0.5 :: Double)] of
     Just x -> logFromLogFloat x ~==
-      logFromLogFloat ((discreteWeights !! 1) * (pdf (Normal 0 1) 0.5))
+      logFromLogFloat ((discreteWeights !! 1) * (pdf (Normal 0 1) (0.5 :: Double)))
     Nothing -> False
 
 -- Returns Nothing when not possible to compute joint density,

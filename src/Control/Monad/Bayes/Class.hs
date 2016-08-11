@@ -36,7 +36,7 @@ class Monad m => MonadDist m where
     -- | The list of weights needs not sum up to 1.
     discrete :: (Typeable a, Integral a) => [LogFloat] -> m a
     -- | Normal distribution parameterized by mean and standard deviation.
-    normal :: (Real a, Floating a) => a -> a -> m a
+    normal :: (Typeable a, Real a, Floating a) => a -> a -> m a
     -- | Gamma distribution parameterized by shape and rate.
     gamma :: Double -> Double -> m Double
     -- | Beta distribution.
@@ -46,15 +46,15 @@ class Monad m => MonadDist m where
 
     -- | One of `Primitive` distributions.
     primitive :: Typeable a => Primitive a -> m a
-    primitive (Discrete d) = discrete d
-    primitive (Normal m s) = normal m s
-    primitive (Gamma  a b) = gamma  a b
-    primitive (Beta   a b) = beta   a b
+    primitive (Discrete d)  = discrete d
+    primitive (Normal  m s) = normal m s
+    primitive (Gamma   a b) = gamma  a b
+    primitive (Beta    a b) = beta   a b
     primitive (Uniform a b) = uniform a b
 
     -- defaults based on primitive
     discrete ps   = primitive $ Discrete ps
-    normal m s    = fmap realToFrac $ primitive $ Normal (realToFrac m) (realToFrac s)
+    normal m s    = primitive $ Normal m s
     gamma  a b    = primitive $ Gamma  a b
     beta   a b    = primitive $ Beta   a b
     uniform a b   = primitive $ Uniform a b

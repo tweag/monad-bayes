@@ -32,7 +32,11 @@ reusePrimitive d d' x =
   -- Adam: this could be replaced with first checking if a == b and if so then
   -- if support d == support d'
   case (support d, support d') of
-    (OpenInterval   a b, OpenInterval   c d) | (a, b) == (c, d) -> Just x
+    (OpenInterval   a b, OpenInterval   c d) ->
+     do
+       (a',b') <- cast (a,b)
+       x'      <- cast x
+       if (a',b') == (c,d) then Just x' else Nothing
     (ClosedInterval a b, ClosedInterval c d) | (a, b) == (c, d) -> Just x
     (Finite         xs , Finite         ys )                    ->
       do
@@ -42,14 +46,15 @@ reusePrimitive d d' x =
     _                                                           -> Nothing
 
 data Support a where
-  OpenInterval   :: Double -> Double -> Support Double
+  OpenInterval   :: (Typeable a, Real a, Floating a) => a -> a -> Support a
   ClosedInterval :: Double -> Double -> Support Double
   Finite         :: (Typeable a, Integral a) => [a] -> Support a
 
 deriving instance Eq   (Support a)
 instance Show (Support a) where
   show (Finite xs) = "Finite " ++ show (map toInteger xs)
-  show (OpenInterval   a b) = "OpenInterval "  ++ show a ++ " " ++ show b
+  show (OpenInterval   a b) =
+    "OpenInterval "  ++ show (toRational a) ++ " " ++ show (toRational b)
   show (ClosedInterval a b) = "ClosedInterval" ++ show a ++ " " ++ show b
 
 support :: Primitive a -> Support a
@@ -65,7 +70,8 @@ data Cache where
 instance Eq Cache where
   Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
-  Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' = d == d' && x == x'
+  Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' =
+    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
   Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' = d == d' && x == x'
   Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' = d == d' && x == x'
   Cache d@(Uniform _ _) x == Cache d'@(Uniform _ _) x' = d == d' && x == x'
@@ -82,7 +88,7 @@ instance Show Cache where
     where
       printCache :: Cache -> String -> String
       printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
-      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
+      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
       printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
       printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
       printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 x r)
