@@ -41,33 +41,33 @@ pdf (Beta    a b) = betaPdf a b
 pdf (Uniform a b) = uniformPdf a b
 
 -- | PDF of a continuous uniform distribution on an interval
-uniformPdf :: (Real a) => a -> a -> a -> LogFloat
+uniformPdf :: (Real a, Fractional a, Fractional p) => a -> a -> a -> p
 uniformPdf a b x =
   if a <= x && x <= b then
-    logFloat $ 1 / (realToFrac b - realToFrac a)
+    realToFrac $ 1 / (b - a)
   else
     0
 
 -- | PDF of normal distribution parameterized by mean and stddev.
-normalPdf :: (Real a) => a -> a -> a -> LogFloat
+normalPdf :: (Real a, Floating a, Fractional p) => a -> a -> a -> p
 normalPdf mu sigma x =
-  logToLogFloat $ (-0.5 * log (2 * pi * sigma2)) +
-  ((-((realToFrac x) - (realToFrac mu))^2) / (2 * sigma2))
+  realToFrac $ exp $ (-0.5 * log (2 * pi * sigma2)) +
+  ((-((x) - (mu))^2) / (2 * sigma2))
   where
-    sigma2 = realToFrac sigma^2
+    sigma2 = sigma^2
 
 -- | PDF of gamma distribution parameterized by shape and rate.
-gammaPdf :: (Real a) => a -> a -> a -> LogFloat
+gammaPdf :: (Real a, Fractional p) => a -> a -> a -> p
 gammaPdf a b x
   | x > 0     = let (a',b',x') = (realToFrac a, realToFrac b, realToFrac x) in
-    logToLogFloat $ a' * log b' - logGamma a' + (a'-1) * log x' - b' * x'
-  | otherwise = logFloat 0
+    realToFrac $ exp $ a' * log b' - logGamma a' + (a'-1) * log x' - b' * x'
+  | otherwise = fromInteger 0
 
 -- | PDF of beta distribution.
-betaPdf :: (Real a) => a -> a -> a -> LogFloat
+betaPdf :: (Real a, Fractional p) => a -> a -> a -> p
 betaPdf a b x
    | a <= 0 || b <= 0 = error "Negative parameter to Beta"
-   | x <= 0 = logFloat 0
-   | x >= 1 = logFloat 0
+   | x <= 0 = fromInteger 0
+   | x >= 1 = fromInteger 0
    | otherwise = let (a',b',x') = (realToFrac a, realToFrac b, realToFrac x) in
-     logToLogFloat $ (a'-1)*log x' + (b'-1)*log (1-x') - logBeta a' b'
+     realToFrac $ exp $ (a'-1)*log x' + (b'-1)*log (1-x') - logBeta a' b'
