@@ -1,6 +1,7 @@
 {-# LANGUAGE
   GADTs,
-  StandaloneDeriving
+  StandaloneDeriving,
+  FlexibleContexts
  #-}
 
 module Control.Monad.Bayes.Primitive where
@@ -8,6 +9,8 @@ module Control.Monad.Bayes.Primitive where
 import Data.Typeable
 import Numeric.SpecFunctions
 import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)
+
+import Control.Monad.Bayes.LogDomain
 
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
@@ -35,39 +38,38 @@ pdf :: Primitive a -> a -> LogFloat
 pdf (Discrete d) = \i -> case lookup i (zip [0..] d) of
                               Just p -> p
                               Nothing -> logFloat 0
-pdf (Normal  m s) = normalPdf m s
-pdf (Gamma   a b) = gammaPdf a b
-pdf (Beta    a b) = betaPdf a b
-pdf (Uniform a b) = uniformPdf a b
+pdf (Normal  m s) = logToLogFloat . realToFrac . normalPdf m s
+pdf (Gamma   a b) = logToLogFloat . realToFrac . gammaPdf a b
+pdf (Beta    a b) = logToLogFloat . realToFrac . betaPdf a b
+pdf (Uniform a b) = logToLogFloat . realToFrac . uniformPdf a b
 
 -- | PDF of a continuous uniform distribution on an interval
-uniformPdf :: (Real a, Fractional a, Fractional p) => a -> a -> a -> p
+uniformPdf :: (Ord a, Floating a) => a -> a -> a -> LogDomain a
 uniformPdf a b x =
   if a <= x && x <= b then
-    realToFrac $ 1 / (b - a)
+    recip $ toLogDomain (b - a)
   else
     0
 
 -- | PDF of normal distribution parameterized by mean and stddev.
-normalPdf :: (Real a, Floating a, Fractional p) => a -> a -> a -> p
+normalPdf :: Floating a => a -> a -> a -> LogDomain a
 normalPdf mu sigma x =
-  realToFrac $ exp $ (-0.5 * log (2 * pi * sigma2)) +
+  fromLog $ (-0.5 * log (2 * pi * sigma2)) +
   ((-((x) - (mu))^2) / (2 * sigma2))
   where
     sigma2 = sigma^2
 
 -- | PDF of gamma distribution parameterized by shape and rate.
-gammaPdf :: (Real a, Fractional p) => a -> a -> a -> p
+gammaPdf :: (Ord a, Floating a, NumSpec (LogDomain a)) => a -> a -> a -> LogDomain a
 gammaPdf a b x
-  | x > 0     = let (a',b',x') = (realToFrac a, realToFrac b, realToFrac x) in
-    realToFrac $ exp $ a' * log b' - logGamma a' + (a'-1) * log x' - b' * x'
+  | x > 0     = (fromLog $ a * log b + (a-1) * log x - b * x) - gamma (toLogDomain a)
   | otherwise = fromInteger 0
 
 -- | PDF of beta distribution.
-betaPdf :: (Real a, Fractional p) => a -> a -> a -> p
+betaPdf :: (Ord a, Floating a, NumSpec (LogDomain a)) => a -> a -> a -> LogDomain a
 betaPdf a b x
    | a <= 0 || b <= 0 = error "Negative parameter to Beta"
    | x <= 0 = fromInteger 0
    | x >= 1 = fromInteger 0
-   | otherwise = let (a',b',x') = (realToFrac a, realToFrac b, realToFrac x) in
-     realToFrac $ exp $ (a'-1)*log x' + (b'-1)*log (1-x') - logBeta a' b'
+   | otherwise =
+      (fromLog $ (a-1)*log x + (b-1)*log (1-x)) - beta (toLogDomain a) (toLogDomain b)
