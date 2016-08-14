@@ -1,3 +1,6 @@
+{-# LANGUAGE
+  FlexibleInstances
+ #-}
 
 -- Log-domain non-negative real numbers
 -- Essentially a polymorphic version of LogFloat to allow for AD
@@ -78,3 +81,15 @@ instance (Ord a, Floating a) => Floating (LogDomain a) where
   asinh = mapLog asinh
   acosh = mapLog acosh
   atanh = mapLog atanh
+
+class NumSpec a where
+  gamma :: a -> a
+  beta  :: a -> a -> a
+
+instance NumSpec Double where
+  gamma     = exp . logGamma
+  beta a b  = exp $ logBeta a b
+
+instance NumSpec (LogDomain Double) where
+  gamma     = liftLog (logGamma . exp)
+  beta a b  = liftLog2 (\x y -> logBeta (exp x) (exp y)) a b
