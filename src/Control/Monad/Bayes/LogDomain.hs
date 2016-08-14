@@ -82,7 +82,7 @@ instance (Ord a, Floating a) => Floating (LogDomain a) where
   acosh = mapLog acosh
   atanh = mapLog atanh
 
-class NumSpec a where
+class Floating a => NumSpec a where
   gamma :: a -> a
   beta  :: a -> a -> a
 
