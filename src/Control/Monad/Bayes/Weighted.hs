@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Weighted (
 import Control.Arrow (first,second)
 import Data.Monoid
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans.State
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
@@ -39,7 +39,7 @@ unWeight (Weight (Product p)) = p
 
 -- | A wrapper for 'WriterT' ('Weight' 'r') that executes the program
 -- emitting the likelihood score.
-newtype Weighted m a = Weighted {toWriterT :: WriterT (Weight (CustomReal m)) m a}
+newtype Weighted m a = Weighted {toStateT :: StateT (Weight (CustomReal m)) m a}
     deriving(Functor)
 
 deriving instance MonadDist m => Applicative (Weighted m)
@@ -48,19 +48,23 @@ deriving instance MonadDist m => Monad (Weighted m)
 type instance CustomReal (Weighted m) = CustomReal m
 
 runWeighted :: MonadDist m => Weighted m a -> m (a, LogDomain (CustomReal m))
-runWeighted = fmap (second unWeight) . runWriterT . toWriterT
+runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
 
 withWeight :: MonadDist m => m (a, LogDomain (CustomReal m)) -> Weighted m a
-withWeight = Weighted . WriterT . fmap (second weight)
+withWeight m = Weighted $ do
+  (x,w) <- lift m
+  put $ weight w
+  return x
+
 
 instance MonadTrans Weighted where
-  lift = undefined -- Weighted . lift
+  lift = Weighted . lift
 
 instance MonadDist m => MonadDist (Weighted m) where
   primitive = lift . primitive
 
 instance MonadDist m => MonadBayes (Weighted m) where
-    factor = Weighted . tell . weight
+  factor w = Weighted $ modify (* weight w)
 
 -- | Similar to 'Weighted', only the weight is both recorded and passed
 -- to the underlying monad. Useful for getting the exact posterior and
@@ -77,7 +81,7 @@ duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
 duplicateWeight = runWeightRecorderT
 
 instance MonadTrans (WeightRecorderT) where
-  lift = undefined
+  lift = WeightRecorderT . lift
 
 instance MonadDist m => MonadDist (WeightRecorderT m) where
   primitive = WeightRecorderT . primitive
