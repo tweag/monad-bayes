@@ -121,7 +121,7 @@ newtype Coprimitive m a = Coprimitive
 type instance CustomReal (Coprimitive m) = CustomReal m
 
 instance MonadTrans Coprimitive where
-  lift = undefined
+  lift = Coprimitive . lift
 
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
