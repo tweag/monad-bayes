@@ -15,11 +15,11 @@ import Control.Monad.Bayes.LogDomain
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive r a where
-    Discrete :: [r] -> Primitive r Int
-    Normal   :: r -> r -> Primitive r r
-    Gamma    :: r -> r -> Primitive r r
-    Beta     :: r -> r -> Primitive r r
-    Uniform  :: r -> r -> Primitive r r
+    Discrete :: (Ord r, Floating r, Real r, Typeable r) => [r] -> Primitive r Int
+    Normal   :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
+    Gamma    :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
+    Beta     :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
+    Uniform  :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
 
 deriving instance Eq r => Eq   (Primitive r a)
 instance Show r => Show (Primitive r a) where

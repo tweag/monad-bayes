@@ -10,11 +10,11 @@ module Control.Monad.Bayes.Inference where
 
 import Control.Arrow (first,second)
 import Data.Either
-import Data.Number.LogFloat
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
@@ -33,13 +33,13 @@ rejection d = do
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: MonadDist m => Weighted m a -> m (a,LogFloat)
+importance :: MonadDist m => Weighted m a -> m (a,LogDomain (CustomReal m))
 importance = runWeighted
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, MonadDist m) =>
-               Int -> Population m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
+               Int -> Population m a -> m [(a, CustomReal m)]
+importance' n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 -- The first argument is the number of resampling points, the second is
@@ -51,8 +51,8 @@ smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, MonadDist m) => Int -> Int ->
-        Particle (Population m) a -> m [(a,Double)]
-smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
+        Particle (Population m) a -> m [(a, CustomReal m)]
+smc' k n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
@@ -87,7 +87,7 @@ smcrm k n = marginal' . flatten . composeCopies k step . init
   step = advance . hoistC (mhStep' . hoistT resample)
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
-newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
+newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
 
 -- | Metropolis-Hastings algorithm.
 mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
@@ -105,7 +105,7 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
   chain n x = do
     p <- get
     ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
-    accept <- bernoulli $ if p == 0 then 1 else min 1 (q * w / p)
+    accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
     let next = if accept then y else x
     when accept (put q)
     rest <- chain (n-1) next

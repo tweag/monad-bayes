@@ -5,10 +5,14 @@
   ScopedTypeVariables,
   StandaloneDeriving,
   Rank2Types,
-  TupleSections #-}
+  TupleSections,
+  TypeFamilies,
+  FlexibleContexts
+   #-}
 
 module Control.Monad.Bayes.Trace where
 
+import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
@@ -22,12 +26,11 @@ import Control.Monad.Trans.Class
 
 import Data.Maybe
 import Data.List
-import Data.Number.LogFloat
 import Data.Dynamic
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
-reusePrimitive :: Primitive a -> Primitive b -> a -> Maybe b
+reusePrimitive :: Primitive r a -> Primitive r b -> a -> Maybe b
 reusePrimitive d d' x =
   -- Adam: this could be replaced with first checking if a == b and if so then
   -- if support d == support d'
@@ -54,17 +57,17 @@ instance Show (Support a) where
   show (Interval   a b) =
     "Interval "  ++ show (toRational a) ++ " " ++ show (toRational b)
 
-support :: Primitive a -> Support a
+support :: Primitive r a -> Support a
 support (Discrete ps) = Finite $ map fromIntegral $ findIndices (> 0) ps
 support (Normal  _ _) = Interval (-1/0) (1/0)
 support (Gamma   _ _) = Interval 0 (1/0)
 support (Beta    _ _) = Interval 0 1
 support (Uniform a b) = Interval a b
 
-data Cache where
-  Cache :: Primitive a -> a -> Cache
+data Cache r where
+  Cache :: Primitive r a -> a -> Cache r
 
-instance Eq Cache where
+instance Eq (Cache r) where
   Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
   Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' =
@@ -77,43 +80,48 @@ instance Eq Cache where
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
   Cache _               _ == Cache _                _  = False
 
-instance Show Cache where
-  showsPrec p cache r =
-    -- Haskell passes precedence 11 for Cache as a constructor argument.
-    -- The precedence of function application seems to be 10.
-    if p > 10 then
-      '(' : printCache cache (')' : r)
-    else
-      printCache cache r
-    where
-      printCache :: Cache -> String -> String
-      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
-      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
-      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
-      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
-      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+-- instance Show (Cache r) where
+--   showsPrec p cache r =
+--     -- Haskell passes precedence 11 for Cache as a constructor argument.
+--     -- The precedence of function application seems to be 10.
+--     if p > 10 then
+--       '(' : printCache cache (')' : r)
+--     else
+--       printCache cache r
+--     where
+--       printCache :: Cache r -> String -> String
+--       printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
+--       printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+--       printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+--       printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+--       printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
 
 -- Suspension functor: yields primitive distribution, awaits sample.
-data AwaitSampler y where
-  AwaitSampler :: Typeable a => Primitive a -> (a -> y) -> AwaitSampler y
+data AwaitSampler r y where
+  AwaitSampler :: Typeable a => Primitive r a -> (a -> y) -> AwaitSampler r y
 
 -- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
-data Snapshot y where
-  Snapshot :: Typeable a => Primitive a -> a -> (a -> y) -> Snapshot y
+data Snapshot r y where
+  Snapshot :: Typeable a => Primitive r a -> a -> (a -> y) -> Snapshot r y
 
-deriving instance Functor AwaitSampler
-deriving instance Functor Snapshot
+deriving instance Functor (AwaitSampler r)
+deriving instance Functor (Snapshot r)
 
-snapshotToCache :: Snapshot y -> Cache
+snapshotToCache :: Snapshot r y -> Cache r
 snapshotToCache (Snapshot d x _) = Cache d x
 
 -- | Pause probabilistic program whenever a primitive distribution is
 -- encountered, yield the encountered primitive distribution, and
 -- await a sample of that primitive distribution.
 newtype Coprimitive m a = Coprimitive
-  { runCoprimitive :: Coroutine AwaitSampler m a
+  { runCoprimitive :: Coroutine (AwaitSampler (CustomReal m)) m a
   }
-  deriving (Functor, Applicative, Monad, MonadTrans)
+  deriving (Functor, Applicative, Monad)
+
+type instance CustomReal (Coprimitive m) = CustomReal m
+
+instance MonadTrans Coprimitive where
+  lift = undefined
 
 instance (MonadDist m) => MonadDist (Coprimitive m) where
   primitive d = Coprimitive (suspend (AwaitSampler d return))
@@ -127,7 +135,7 @@ instance (MonadBayes m) => MonadBayes (Coprimitive m) where
 conditional :: MonadBayes m => Coprimitive m a -> [Maybe Dynamic] -> m a
 conditional p xs = condRun (runCoprimitive p) xs where
   -- Draw a value from the prior and proceed.
-  drawFromPrior :: MonadDist m => AwaitSampler a -> m a
+  drawFromPrior :: MonadDist m => AwaitSampler (CustomReal m) a -> m a
   drawFromPrior (AwaitSampler d k) = fmap k (primitive d)
 
   -- No more variables to condition on - run from prior.
@@ -150,20 +158,20 @@ conditional p xs = condRun (runCoprimitive p) xs where
 -- Missing latent variables are integrated out using the transformed monad,
 -- unused values from the list are ignored.
 pseudoDensity :: MonadBayes m => Coprimitive (Weighted m) a -> [Maybe Dynamic]
-  -> m LogFloat
+  -> m (LogDomain (CustomReal m))
 pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
 
 -- | Joint density of all random variables in the program.
 -- Failure occurs when the list is too short or when there's a type mismatch.
-jointDensity :: Coprimitive (Weighted Deterministic) a -> [Dynamic]
-  -> Maybe LogFloat
+jointDensity :: Coprimitive (Weighted (Deterministic Double)) a -> [Dynamic]
+  -> Maybe (LogDomain Double)
 jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
 
 
 
 data MHState m a = MHState
-  { mhSnapshots :: [Snapshot (Weighted (Coprimitive m) a)]
-  , mhPosteriorWeight :: LogFloat -- weight of mhAnswer in posterior
+  { mhSnapshots :: [Snapshot (CustomReal m) (Weighted (Coprimitive m) a)]
+  , mhPosteriorWeight :: LogDomain (CustomReal m) -- weight of mhAnswer in posterior
   , mhAnswer :: a
   }
   deriving Functor
@@ -174,7 +182,7 @@ mhState :: (MonadDist m) => Weighted (Coprimitive m) a -> m (MHState m a)
 mhState m = fmap snd (mhReuse [] m)
 
 -- | Forget cached samples, return a continuation to execute from scratch
-mhReset :: (Monad m) => m (MHState m a) -> Weighted (Coprimitive m) a
+mhReset :: (MonadDist m) => m (MHState m a) -> Weighted (Coprimitive m) a
 mhReset m = withWeight $ Coprimitive $ Coroutine $ do
   MHState snapshots weight answer <- m
   case snapshots of
@@ -187,11 +195,13 @@ mhReset m = withWeight $ Coprimitive $ Coroutine $ do
 newtype Trace m a = Trace { runTrace :: m (MHState m a) }
   deriving (Functor)
 
-instance Monad m => Applicative (Trace m) where
+type instance CustomReal (Trace m) = CustomReal m
+
+instance MonadDist m => Applicative (Trace m) where
   pure  = return
   (<*>) = liftM2 ($)
 
-instance Monad m => Monad (Trace m) where
+instance MonadDist m => Monad (Trace m) where
 
   return = Trace . return . MHState [] 1
 
@@ -207,7 +217,7 @@ instance Monad m => Monad (Trace m) where
       addFactor k = (withWeight (return ((), k)) >>)
 
 instance MonadTrans Trace where
-  lift = Trace . fmap (MHState [] 1)
+  lift = undefined --Trace . fmap (MHState [] 1)
 
 instance MonadDist m => MonadDist (Trace m) where
   primitive d = Trace $ do
@@ -219,11 +229,17 @@ instance MonadDist m => MonadBayes (Trace m) where
 
 -- | Like Trace, except it passes factors to the underlying monad.
 newtype Trace' m a = Trace' { runTrace' :: Trace (WeightRecorderT m) a }
-  deriving (Functor, Applicative, Monad, MonadDist)
+  deriving (Functor)
+type instance CustomReal (Trace' m) = CustomReal m
+deriving instance MonadDist m => Applicative (Trace' m)
+deriving instance MonadDist m => Monad (Trace' m)
+deriving instance MonadDist m => MonadDist (Trace' m)
+
+type instance CustomReal (Trace' m) = CustomReal m
 
 instance MonadTrans Trace' where
   -- lift :: m a -> Trace' m a
-  lift = Trace' . lift . lift
+  lift = undefined --Trace' . lift . lift
 
 instance MonadBayes m => MonadBayes (Trace' m) where
   factor k = Trace' $ do
@@ -233,7 +249,7 @@ instance MonadBayes m => MonadBayes (Trace' m) where
 mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
 mapMonad nat (Trace m) = Trace (nat m)
 
-mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
+mapMonad' :: MonadDist m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
 mapMonad' nat (Trace' (Trace (WeightRecorderT w))) = Trace' (Trace (WeightRecorderT (withWeight (nat (runWeighted w)))))
 
 mhStep :: (MonadDist m) => Trace m a -> Trace m a
@@ -245,7 +261,7 @@ mhStep' (Trace' (Trace (WeightRecorderT w))) = Trace' $ Trace $ WeightRecorderT 
   (oldState, oldWeight) <- runWeighted w
   ((newState, acceptRatio), newWeight) <- runWeighted $ duplicateWeight $ mhPropose oldState
 
-  accept <- bernoulli acceptRatio
+  accept <- bernoulli $ fromLogDomain acceptRatio
   let nextState = if accept then newState else oldState
 
   -- at this point, the score in the underlying monad `m` is proportional to `oldWeight * newWeight`.
@@ -254,7 +270,7 @@ mhStep' (Trace' (Trace (WeightRecorderT w))) = Trace' $ Trace $ WeightRecorderT 
 
   return (nextState, oldWeight)
 
-mhForgetWeight :: Monad m => Trace' m a -> Trace' m a
+mhForgetWeight :: MonadDist m => Trace' m a -> Trace' m a
 mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ do
   state <- m
   return $ state {mhPosteriorWeight = 1}
@@ -262,11 +278,11 @@ mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ do
 marginal :: Functor m => Trace m a -> m a
 marginal = fmap mhAnswer . runTrace
 
-marginal' :: Functor m => Trace' m a -> m a
+marginal' :: MonadDist m => Trace' m a -> m a
 marginal' = fmap fst . runWeighted . runWeightRecorderT . marginal . runTrace'
 
 -- | Propose new state, compute acceptance ratio
-mhPropose :: (MonadDist m) => MHState m a -> m (MHState m a, LogFloat)
+mhPropose :: (MonadDist m) => MHState m a -> m (MHState m a, LogDomain (CustomReal m))
 mhPropose oldState = do
   let m = length (mhSnapshots oldState)
   if m == 0 then
@@ -294,15 +310,15 @@ mhPropose oldState = do
 mhKernel :: (MonadDist m) => MHState m a -> m (MHState m a)
 mhKernel oldState = do
   (newState, acceptRatio) <- mhPropose oldState
-  accept <- bernoulli acceptRatio
+  accept <- bernoulli $ fromLogDomain acceptRatio
   return (if accept then newState else oldState)
 
 
 -- | Reuse previous samples as much as possible, collect reuse ratio
 mhReuse :: forall m a. (MonadDist m) =>
-                 [Cache] ->
+                 [Cache (CustomReal m)] ->
                  Weighted (Coprimitive m) a ->
-                 m (LogFloat, MHState m a)
+                 m (LogDomain (CustomReal m), MHState m a)
 
 mhReuse caches m = do
   result <- resume (runCoprimitive (runWeighted m))

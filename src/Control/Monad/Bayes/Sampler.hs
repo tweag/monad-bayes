@@ -2,7 +2,8 @@
   TupleSections,
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
-  FlexibleContexts
+  FlexibleContexts,
+  TypeFamilies
  #-}
 
 module Control.Monad.Bayes.Sampler (
@@ -63,16 +64,14 @@ instance Monad Sampler where
          in
            y g2
 
+type instance CustomReal Sampler = Double
+
 instance MonadDist Sampler where
-    discrete xs = wrapper $ fromWeightedList $
-                    map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
-    normal m s  = fmap realToFrac $ wrapper $ Normal (realToFrac m :: Double) (realToFrac s ::Double)
-    gamma a b   = fmap realToFrac $ wrapper $
-      Gamma (realToFrac a :: Double) (1 / (realToFrac b :: Double))
-    beta a b    = fmap realToFrac $ wrapper $
-      Beta (realToFrac a :: Double) (realToFrac b :: Double)
-    uniform a b = fmap realToFrac $ wrapper $
-      Uniform (realToFrac a :: Double) (realToFrac b :: Double)
+  discrete xs = wrapper $ fromWeightedList $ zip xs (map fromIntegral [0..])
+  normal m s  = fmap realToFrac $ wrapper $ Normal m s
+  gamma a b   = fmap realToFrac $ wrapper $ Gamma a (recip b)
+  beta a b    = fmap realToFrac $ wrapper $ Beta a b
+  uniform a b = fmap realToFrac $ wrapper $ Uniform a b
 
 -- | Wrapper for random-fu distributions.
 wrapper :: Distribution d a => d a -> Sampler a
@@ -82,29 +81,31 @@ wrapper = Sampler . (fst .) . sampleState
 ---------------------------------------------------
 -- MonadDist instance for the RVar monad and concrete samplers
 
+type instance CustomReal (RVarT m) = Double
+
 instance MonadDist (RVarT m) where
-  --should probably normalize before converting from log-domain
-  discrete xs = rvarT $ fromWeightedList $ map (first fromLogFloat) $ zip xs (map fromIntegral [0..])
-  normal m s = fmap realToFrac $ rvarT $ Normal (realToFrac m :: Double) (realToFrac s :: Double)
-  gamma  a b = fmap realToFrac $ rvarT $
-    Gamma (realToFrac a :: Double) (1 / (realToFrac b :: Double))
-  beta   a b = fmap realToFrac $ rvarT $
-    Beta (realToFrac a :: Double) (realToFrac b :: Double)
-  uniform a b = fmap realToFrac $ rvarT $
-    Uniform (realToFrac a :: Double) (realToFrac b :: Double)
-  multinomial ps n = do
-    let (xs,ws) = unzip ps
-    let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws
-    counts <- rvarT $ Multinomial qs n
-    return $ zip xs counts
+  discrete xs = rvarT $ fromWeightedList $ zip xs (map fromIntegral [0..])
+  normal  m s = fmap realToFrac $ rvarT $ Normal m s
+  gamma   a b = fmap realToFrac $ rvarT $ Gamma a (recip b)
+  beta    a b = fmap realToFrac $ rvarT $ Beta a b
+  uniform a b = fmap realToFrac $ rvarT $ Uniform a b
+  -- multinomial ps n = do
+  --   let (xs,ws) = unzip ps
+  --   let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws
+  --   counts <- rvarT $ Multinomial qs n
+  --   return $ zip xs counts
+
+type instance CustomReal IO = Double
 
 instance MonadDist IO where
-    primitive d = convert $ primitive d where
-        convert :: RVar a -> IO a
-        convert = Data.Random.Sample.sample
-    multinomial ps n = convert $ multinomial ps n where
+  primitive d = convert $ primitive d where
       convert :: RVar a -> IO a
       convert = Data.Random.Sample.sample
+  multinomial ps n = convert $ multinomial ps n where
+    convert :: RVar a -> IO a
+    convert = Data.Random.Sample.sample
+
+type instance CustomReal StdSampler = Double
 
 newtype StdSampler a = StdSampler (State StdGen a)
     deriving (Functor, Applicative, Monad)
@@ -119,14 +120,16 @@ instance MonadDist StdSampler where
 stdSample :: StdSampler a -> StdGen -> a
 stdSample (StdSampler s) = evalState s
 
+type instance CustomReal MTSampler = Double
+
 newtype MTSampler a = MTSampler (State PureMT a)
     deriving (Functor, Applicative, Monad)
 instance MonadDist (MTSampler) where
-    primitive d = convert $ primitive d where
-        convert :: RVar a -> MTSampler a
-        convert = MTSampler . Data.Random.Sample.sample
-    multinomial ps n = convert $ multinomial ps n where
+  primitive d = convert $ primitive d where
       convert :: RVar a -> MTSampler a
       convert = MTSampler . Data.Random.Sample.sample
+  multinomial ps n = convert $ multinomial ps n where
+    convert :: RVar a -> MTSampler a
+    convert = MTSampler . Data.Random.Sample.sample
 mtSample :: MTSampler a -> PureMT -> a
 mtSample (MTSampler s) = evalState s
