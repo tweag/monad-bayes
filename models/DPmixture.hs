@@ -1,6 +1,7 @@
 {-# LANGUAGE
  TupleSections,
- FlexibleContexts
+ FlexibleContexts,
+ TypeFamilies
  #-}
 
 module DPmixture (
@@ -35,7 +36,7 @@ obs :: [Double]
 obs = [1.0,1.1,1.2,-1.0,-1.5,-2.0,0.001,0.01,0.005,0.0]
 
 -- | Stick-breaking function.
-stick :: MonadDist m => [CustomReal m] -> [a] -> d a
+stick :: MonadDist m => [CustomReal m] -> [a] -> m a
 stick (b:breaks) (a:atoms) = do
   stop <- bernoulli b
   if stop then return a else stick breaks atoms
@@ -44,14 +45,14 @@ stick (b:breaks) (a:atoms) = do
 -- using the stick-breaking representation.
 dp :: MonadDist m => CustomReal m -> m a -> m (m a)
 dp concentration base = do
-  breaks <- sequence $ repeat $ fmap logFloat $ beta 1 concentration
+  breaks <- sequence $ repeat $ beta 1 concentration
   atoms  <- sequence $ repeat base
   return $ stick breaks atoms
 
 
 
 -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
-dpMixture :: MonadBayes m => m [Int]
+dpMixture :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 dpMixture =
   let
     --lazily generate clusters
@@ -83,7 +84,7 @@ dpMixture =
    fmap (reverse . map (\(x,_,_) -> x) . snd) points
 
 -- | 'dpMixture' restricted to the number of clusters only
-dpClusters :: MonadBayes d => d Int
+dpClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
 dpClusters = fmap (maximum . normalizePartition) dpMixture
 
 -- | Renames identifiers so that they range from 1 to n
@@ -95,16 +96,16 @@ normalizePartition xs = mapMaybe (`lookup` trans) xs where
 -------------------------------------------------------
 -- Strict version using memoization
 
-cluster_param :: MonadDist m => Int -> m (LogFloat, Double, Double)
+cluster_param :: (MonadDist m, CustomReal m ~ Double) => Int -> m (Double, Double, Double)
 cluster_param _ = do
   b <- beta 1 1
   var <- do
     t <- gamma a b
     return (1 / (k*t))
   mean <- normal m var
-  return (logFloat b, mean, var)
+  return (b, mean, var)
 
-dpMem :: MonadBayes m => m [Int]
+dpMem :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 dpMem = startEvalMemoT $ mapM process_point obs where
   process_point x = do
     (c, mean, var) <- get_cluster
@@ -116,7 +117,7 @@ dpMem = startEvalMemoT $ mapM process_point obs where
       stop <- bernoulli b
       if stop then return (c, mean, var) else stick (c+1)
 
-dpMemClusters :: MonadBayes d => d Int
+dpMemClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
 dpMemClusters = fmap (maximum . normalizePartition) dpMem
 
 ----------------------------------------------------------
@@ -192,7 +193,7 @@ partitions n = generate n 1 where
     return (x:xs)
 
 -- | Posterior over the number of clusters
-posteriorClustersDist :: MonadDist d => d Int
+posteriorClustersDist :: (MonadDist m, CustomReal m ~ Double) => m Int
 posteriorClustersDist = categorical $ zip ns $ map lookup ns where
     ns = [1 .. length obs]
-    lookup = logFloat . exactClusters params obs
+    lookup = exactClusters params obs

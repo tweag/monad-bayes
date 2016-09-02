@@ -6,10 +6,10 @@
 import System.Random
 import Data.AEq
 import Data.Maybe
-import Data.Number.LogFloat
 import Control.Monad
 import Data.Dynamic
 
+import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain, toLog)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Primitive
@@ -19,24 +19,24 @@ import Control.Monad.Bayes.Trace
 
 g = mkStdGen 0
 
-extractNormal :: Cache -> Maybe Double
+extractNormal :: Cache Double -> Maybe Double
 extractNormal (Cache (Normal _ _) x) = Just (realToFrac x)
 extractNormal _ = Nothing
 
-extractInt :: Cache -> Maybe Int
+extractInt :: Cache Double -> Maybe Int
 extractInt (Cache (Discrete _) x) = Just (fromIntegral x)
 extractInt _ = Nothing
 
-discreteWeights :: [LogFloat]
+discreteWeights :: Fractional a => [a]
 discreteWeights = [0.0001, 0.9999]
 
-m :: MonadDist m => m (Int,Double)
+m :: (MonadDist m, CustomReal m ~ Double) => m (Int, Double)
 m = do
   x <- discrete discreteWeights
   y <- normal 0 1
   return (x,y)
 
-compare :: ((Int,Double), [Cache]) -> Bool
+compare :: ((Int,Double), [Cache Double]) -> Bool
 compare ((x,y), cs) = fromMaybe False b where
   b = case cs of [c1,c2] -> do
                               x' <- extractInt    c1
@@ -55,9 +55,9 @@ check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g
            , Cache (Normal 0 1) (9000 :: Double)
            ]
 
-check_reuse_ratio m = fromLogFloat (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
+check_reuse_ratio m = toLog (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
 
-conditional_m :: MonadBayes m => Maybe Int -> Maybe Double -> m (Int,Double)
+conditional_m :: (MonadBayes m, CustomReal m ~ Double) => Maybe Int -> Maybe Double -> m (Int,Double)
 conditional_m mx my = liftM2 (,) px py where
   px = case mx of
     Just x -> factor (if x == 0 then 0.0001 else if x == 1 then 0.9999 else 0)
@@ -91,14 +91,14 @@ check_longer_conditional =
 
 -- Computes pseudomarginal density correctly
 check_first_density =
-  enumerate (fmap logFromLogFloat (pseudoDensity m [Nothing, Just (toDyn (0.6 :: Double))])) ~==
-    [(logFromLogFloat (pdf (Normal 0 1) (0.6 :: Double)), 1)]
+  enumerate (fmap toLog (pseudoDensity m [Nothing, Just (toDyn (0.6 :: Double))])) ~==
+    [(toLog (pdf (Normal 0 1) (0.6 :: Double)), 1)]
 
 -- Computes joint density correctly when possible
 check_joint_density_true =
   case jointDensity m [toDyn (1 :: Int), toDyn (0.5 :: Double)] of
-    Just x -> logFromLogFloat x ~==
-      logFromLogFloat ((discreteWeights !! 1) * (pdf (Normal 0 1) (0.5 :: Double)))
+    Just x -> toLog x ~==
+      toLog ((discreteWeights !! 1) * (pdf (Normal 0 1) (0.5 :: Double)))
     Nothing -> False
 
 -- Returns Nothing when not possible to compute joint density,
