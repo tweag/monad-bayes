@@ -15,7 +15,6 @@ module DPmixture (
 
 -- Dirichlet Process mixture of Gaussians
 
-import Data.Number.LogFloat (LogFloat, logFloat)
 import Data.List
 import Data.Maybe
 import Data.Ix (range)
@@ -36,14 +35,14 @@ obs :: [Double]
 obs = [1.0,1.1,1.2,-1.0,-1.5,-2.0,0.001,0.01,0.005,0.0]
 
 -- | Stick-breaking function.
-stick :: MonadDist d => [LogFloat] -> [a] -> d a
+stick :: MonadDist m => [CustomReal m] -> [a] -> d a
 stick (b:breaks) (a:atoms) = do
   stop <- bernoulli b
   if stop then return a else stick breaks atoms
 
 -- | A Dirichlet Process generates a random probability distribution
 -- using the stick-breaking representation.
-dp :: MonadDist d => Double -> d a -> d (d a)
+dp :: MonadDist m => CustomReal m -> m a -> m (m a)
 dp concentration base = do
   breaks <- sequence $ repeat $ fmap logFloat $ beta 1 concentration
   atoms  <- sequence $ repeat base
@@ -52,13 +51,13 @@ dp concentration base = do
 
 
 -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
-dpMixture :: MonadBayes d => d [Int]
+dpMixture :: MonadBayes m => m [Int]
 dpMixture =
   let
     --lazily generate clusters
     clusters = do
       let atoms = [1..]
-      breaks <- sequence $ repeat $ fmap logFloat $ beta 1 1
+      breaks <- sequence $ repeat $ beta 1 1
       let classgen = stick breaks atoms
       vars <- sequence $ repeat $ fmap ((1/) . (*k)) $ gamma a b
       means <- mapM (normal m) vars

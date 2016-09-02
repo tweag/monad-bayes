@@ -10,7 +10,6 @@ module HMM (
 --Hidden Markov Models
 
 --import Numeric.LinearAlgebra.HMatrix -- for the exact posterior only
-import Data.Number.LogFloat
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
@@ -32,7 +31,7 @@ trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
 trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
 -- | The emission model.
-emission :: Int -> Primitive Double
+emission :: Int -> Primitive Double Double
 emission x = Normal (fromIntegral x) 1
 
 -- | Initial state distribution
