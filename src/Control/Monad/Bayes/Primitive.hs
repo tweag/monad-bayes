@@ -8,40 +8,40 @@ module Control.Monad.Bayes.Primitive where
 
 import Data.Typeable
 import Numeric.SpecFunctions
-import Data.Number.LogFloat (LogFloat, logFloat, logToLogFloat)
+--import Data.Number.LogDomain Double (LogDomain Double, LogDomain Double, logToLogDomain Double)
 
 import Control.Monad.Bayes.LogDomain
 
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
-data Primitive a where
-    Discrete :: (Typeable a, Integral a)         => [LogFloat] -> Primitive a
-    Normal   :: (Typeable a, Real a, Floating a) => a -> a -> Primitive a
-    Gamma    :: (Typeable a, Real a, Floating a) => a -> a -> Primitive a
-    Beta     :: (Typeable a, Real a, Floating a) => a -> a -> Primitive a
-    Uniform  :: (Typeable a, Real a, Floating a) => a -> a -> Primitive a
+data Primitive r a where
+    Discrete :: [r] -> Primitive r Int
+    Normal   :: r -> r -> Primitive r r
+    Gamma    :: r -> r -> Primitive r r
+    Beta     :: r -> r -> Primitive r r
+    Uniform  :: r -> r -> Primitive r r
 
-deriving instance Eq   (Primitive a)
-instance Show (Primitive a) where
+deriving instance Eq r => Eq   (Primitive r a)
+instance Show r => Show (Primitive r a) where
   show (Discrete xs) = "Discrete " ++ show xs
   show (Normal  m s) =
-    "Normal "  ++ show (toRational m) ++ " " ++ show (toRational s)
+    "Normal "  ++ show m ++ " " ++ show s
   show (Gamma   a b) =
-    "Gamma "   ++ show (toRational a) ++ " " ++ show (toRational b)
+    "Gamma "   ++ show a ++ " " ++ show b
   show (Beta    a b) =
-    "Beta "    ++ show (toRational a) ++ " " ++ show (toRational b)
+    "Beta "    ++ show a ++ " " ++ show b
   show (Uniform a b) =
-    "Uniform " ++ show (toRational a) ++ " " ++ show (toRational b)
+    "Uniform " ++ show a ++ " " ++ show b
 
 -- | The probability density function.
-pdf :: Primitive a -> a -> LogFloat
+pdf :: (Ord r, Floating r, NumSpec (LogDomain r)) => Primitive r a -> a -> LogDomain r
 pdf (Discrete d) = \i -> case lookup i (zip [0..] d) of
-                              Just p -> p
-                              Nothing -> logFloat 0
-pdf (Normal  m s) = logToLogFloat . realToFrac . normalPdf m s
-pdf (Gamma   a b) = logToLogFloat . realToFrac . gammaPdf a b
-pdf (Beta    a b) = logToLogFloat . realToFrac . betaPdf a b
-pdf (Uniform a b) = logToLogFloat . realToFrac . uniformPdf a b
+                              Just p -> toLogDomain p
+                              Nothing -> 0
+pdf (Normal  m s) = normalPdf m s
+pdf (Gamma   a b) = gammaPdf a b
+pdf (Beta    a b) = betaPdf a b
+pdf (Uniform a b) = uniformPdf a b
 
 -- | PDF of a continuous uniform distribution on an interval
 uniformPdf :: (Ord a, Floating a) => a -> a -> a -> LogDomain a

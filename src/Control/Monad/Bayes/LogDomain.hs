@@ -22,7 +22,7 @@ fromLog :: a -> LogDomain a
 fromLog = LogDomain
 
 -- | Apply a function to a logarithm
-liftLog :: (a -> a) -> LogDomain a -> LogDomain a
+liftLog :: (a -> b) -> LogDomain a -> LogDomain b
 liftLog f = fromLog . f . toLog
 
 -- | Apply a function of two arguments to two logarithms
