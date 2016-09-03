@@ -15,12 +15,12 @@ module Control.Monad.Bayes.Trace where
 import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Weighted hiding (mapMonad)
 import Control.Monad.Bayes.Coprimitive
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.Coroutine
+import Control.Monad.Coroutine hiding (mapMonad)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Trans.Class
 
@@ -86,7 +86,6 @@ instance Show r => Show (Cache r) where
 -- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
 data Snapshot r y where
   Snapshot :: Typeable a => Primitive r a -> a -> (a -> y) -> Snapshot r y
-
 deriving instance Functor (Snapshot r)
 
 snapshotToCache :: Snapshot r y -> Cache r
@@ -97,10 +96,42 @@ snapshotToCache (Snapshot d x _) = Cache d x
 
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (CustomReal m) (Weighted (Coprimitive m) a)]
-  , mhPosteriorWeight :: LogDomain (CustomReal m) -- weight of mhAnswer in posterior
+  , mhPosteriorWeight :: LogDomain (CustomReal m) -- likelihood of the trace
   , mhAnswer :: a
   }
   deriving Functor
+
+-- | Reuse previous samples as much as possible, collect reuse ratio
+mhReuse :: forall m a. (MonadDist m) =>
+                 [Cache (CustomReal m)] ->
+                 Weighted (Coprimitive m) a ->
+                 m (LogDomain (CustomReal m), MHState m a)
+mhReuse caches m = do
+  result <- resume (runCoprimitive (runWeighted m))
+  case result of
+
+    Right (answer, weight) ->
+      return (1, MHState [] weight answer)
+
+    Left (AwaitSampler d' continuation) | (Cache d x : otherCaches) <- caches ->
+      let
+        weightedCtn = withWeight . Coprimitive . continuation
+      in
+        case reusePrimitive d d' x of
+          Nothing -> do
+            x' <- primitive d'
+            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
+            return (reuseRatio, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
+          Just x' -> do
+            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
+            let reuseFactor = pdf d' x' / pdf d x
+            return (reuseRatio * reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
+
+    Left (AwaitSampler d' continuation) | [] <- caches -> do
+      x' <- primitive d'
+      let weightedCtn = withWeight . Coprimitive . continuation
+      (reuseFactor, MHState snapshots weight answer) <- mhReuse [] (weightedCtn x')
+      return (reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
 
 -- | Run model once, cache primitive samples together with continuations
 -- awaiting the samples
@@ -151,46 +182,14 @@ mhKernel oldState = do
   return (if accept then newState else oldState)
 
 
--- | Reuse previous samples as much as possible, collect reuse ratio
-mhReuse :: forall m a. (MonadDist m) =>
-                 [Cache (CustomReal m)] ->
-                 Weighted (Coprimitive m) a ->
-                 m (LogDomain (CustomReal m), MHState m a)
-
-mhReuse caches m = do
-  result <- resume (runCoprimitive (runWeighted m))
-  case result of
-
-    Right (answer, weight) ->
-      return (1, MHState [] weight answer)
-
-    Left (AwaitSampler d' continuation) | (Cache d x : otherCaches) <- caches ->
-      let
-        weightedCtn = withWeight . Coprimitive . continuation
-      in
-        case reusePrimitive d d' x of
-          Nothing -> do
-            x' <- primitive d'
-            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
-            return (reuseRatio, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
-          Just x' -> do
-            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
-            let reuseFactor = pdf d' x' / pdf d x
-            return (reuseRatio * reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
-
-    Left (AwaitSampler d' continuation) | [] <- caches -> do
-      x' <- primitive d'
-      let weightedCtn = withWeight . Coprimitive . continuation
-      (reuseFactor, MHState snapshots weight answer) <- mhReuse [] (weightedCtn x')
-      return (reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
 
 
 
 
-
-
-newtype Trace m a = Trace { runTrace :: m (MHState m a) }
+newtype Trace m a = Trace { unTrace :: LogDomain (CustomReal m) -> m (MHState m a) }
   deriving (Functor)
+runTrace :: MonadDist m => Trace m a -> m (MHState m a)
+runTrace = (`unTrace` 1)
 
 type instance CustomReal (Trace m) = CustomReal m
 
@@ -200,12 +199,12 @@ instance MonadDist m => Applicative (Trace m) where
 
 instance MonadDist m => Monad (Trace m) where
 
-  return = Trace . return . MHState [] 1
+  return x = Trace $ \w -> return (MHState [] w x)
 
-  m >>= f = Trace $ do
-    MHState ls lw la <- runTrace m
-    MHState rs rw ra <- runTrace (f la)
-    return $ MHState (map (fmap convert) ls ++ map (fmap (addFactor lw)) rs) (lw * rw) ra
+  m >>= f = Trace $ \w -> do
+    MHState ls lw la <- unTrace m w
+    MHState rs rw ra <- unTrace (f la) lw
+    return $ MHState (map (fmap convert) ls ++ map (fmap (addFactor lw)) rs) rw ra
     where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
       convert = (>>= mhReset . runTrace . f)
@@ -217,20 +216,20 @@ instance MonadTrans Trace where
   lift = undefined --Trace . fmap (MHState [] 1)
 
 instance MonadDist m => MonadDist (Trace m) where
-  primitive d = Trace $ do
+  primitive d = Trace $ \w -> do
     x <- primitive d
-    return $ MHState [Snapshot d x return] 1 x
+    return $ MHState [Snapshot d x return] w x
 
 instance MonadDist m => MonadBayes (Trace m) where
-  factor k = Trace $ return $ MHState [] k ()
+  factor k = Trace $ \w -> return (MHState [] (w * k) ())
 
 mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
-mapMonad nat (Trace m) = Trace (nat m)
+mapMonad t (Trace m) = Trace (t . m)
 
 mhStep :: (MonadDist m) => Trace m a -> Trace m a
-mhStep (Trace m) = Trace (m >>= mhKernel)
+mhStep (Trace m) = Trace (m >=> mhKernel)
 
-marginal :: Functor m => Trace m a -> m a
+marginal :: MonadDist m => Trace m a -> m a
 marginal = fmap mhAnswer . runTrace
 
 
@@ -255,12 +254,12 @@ instance MonadBayes m => MonadBayes (Trace' m) where
     lift (factor k)
 
 mapMonad' :: MonadDist m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
-mapMonad' nat (Trace' (Trace (WeightRecorderT w))) = Trace' (Trace (WeightRecorderT (withWeight (nat (runWeighted w)))))
+mapMonad' t = Trace' . mapMonad (mapMonadWeightRecorder t) . runTrace'
 
 -- | Make one MH transition, retain weight from the source distribution
 mhStep' :: (MonadBayes m) => Trace' m a -> Trace' m a
-mhStep' (Trace' (Trace (WeightRecorderT w))) = Trace' $ Trace $ WeightRecorderT $ withWeight $ do
-  (oldState, oldWeight) <- runWeighted w
+mhStep' (Trace' (Trace m)) = Trace' $ Trace $ \w -> WeightRecorderT $ withWeight $ do
+  (oldState, oldWeight) <- runWeighted $ runWeightRecorderT $ m w
   ((newState, acceptRatio), newWeight) <- runWeighted $ duplicateWeight $ mhPropose oldState
 
   accept <- bernoulli $ fromLogDomain acceptRatio
@@ -273,8 +272,8 @@ mhStep' (Trace' (Trace (WeightRecorderT w))) = Trace' $ Trace $ WeightRecorderT 
   return (nextState, oldWeight)
 
 mhForgetWeight :: MonadDist m => Trace' m a -> Trace' m a
-mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ do
-  state <- m
+mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ \w -> do
+  state <- m w
   return $ state {mhPosteriorWeight = 1}
 
 marginal' :: MonadDist m => Trace' m a -> m a

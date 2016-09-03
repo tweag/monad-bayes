@@ -115,10 +115,10 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 -- of continuations from the sampling of each primitive distribution
 -- during an execution.
 traceMH :: (MonadDist m) => Int -> Trace m a -> m [a]
-traceMH n (Trace m) = m >>= init >>= loop n
+traceMH n (Trace m) = m 1 >>= init >>= loop n
   where
     init state | mhPosteriorWeight state >  0 = return state
-    init state | mhPosteriorWeight state == 0 = m >>= init
+    init state | mhPosteriorWeight state == 0 = m 1 >>= init
     loop n state | n <= 0 = return []
     loop n state | n >  0 = do
       nextState <- mhKernel state
