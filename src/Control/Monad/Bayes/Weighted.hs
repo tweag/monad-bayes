@@ -2,7 +2,8 @@
   GeneralizedNewtypeDeriving,
   TypeFamilies,
   StandaloneDeriving,
-  FlexibleContexts
+  FlexibleContexts,
+  RankNTypes
  #-}
 
 module Control.Monad.Bayes.Weighted (
@@ -12,9 +13,11 @@ module Control.Monad.Bayes.Weighted (
     Weighted(Weighted),  --constructor is needed in Dist
     withWeight,
     runWeighted,
+    mapMonad,
     WeightRecorderT(WeightRecorderT), -- constructor used in Trace
     runWeightRecorderT,               -- destructor  used in Trace
-    duplicateWeight
+    duplicateWeight,
+    mapMonadWeightRecorder
                   ) where
 
 import Control.Arrow (first,second)
@@ -62,6 +65,9 @@ withWeight m = Weighted $ do
   put $ weight w
   return x
 
+mapMonad :: MonadDist m => (forall a. m a -> m a) -> Weighted m a -> Weighted m a
+mapMonad t = withWeight . t . runWeighted
+
 -- | Similar to 'Weighted', only the weight is both recorded and passed
 -- to the underlying monad. Useful for getting the exact posterior and
 -- the associated likelihood.
@@ -77,3 +83,6 @@ instance MonadBayes m => MonadBayes (WeightRecorderT m) where
 -- | Both record weight and pass it to the underlying monad.
 duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
 duplicateWeight = runWeightRecorderT
+
+mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorderT m a -> WeightRecorderT m a
+mapMonadWeightRecorder t = WeightRecorderT . mapMonad t . runWeightRecorderT
