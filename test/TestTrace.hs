@@ -16,6 +16,7 @@ import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Coprimitive
 
 g = mkStdGen 0
 
