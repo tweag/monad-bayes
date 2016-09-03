@@ -204,16 +204,16 @@ instance MonadDist m => Monad (Trace m) where
   m >>= f = Trace $ \w -> do
     MHState ls lw la <- unTrace m w
     MHState rs rw ra <- unTrace (f la) lw
-    return $ MHState (map (fmap convert) ls ++ map (fmap (addFactor lw)) rs) rw ra
+    return $ MHState (map (fmap (convert w)) ls ++ rs) rw ra
     where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
-      convert = (>>= mhReset . runTrace . f)
+      convert w = (>>= mhReset . (`unTrace` w) . f)
 
       -- addFactor :: LogFloat -> Weighted (Coprimitive m) b -> Weighted (Coprimitive m) b
       addFactor k = (withWeight (return ((), k)) >>)
 
 instance MonadTrans Trace where
-  lift = undefined --Trace . fmap (MHState [] 1)
+  lift m = Trace $ \w -> fmap (MHState [] w) m
 
 instance MonadDist m => MonadDist (Trace m) where
   primitive d = Trace $ \w -> do
@@ -246,7 +246,7 @@ type instance CustomReal (Trace' m) = CustomReal m
 
 instance MonadTrans Trace' where
   -- lift :: m a -> Trace' m a
-  lift = undefined --Trace' . lift . lift
+  lift = Trace' . lift . lift
 
 instance MonadBayes m => MonadBayes (Trace' m) where
   factor k = Trace' $ do
