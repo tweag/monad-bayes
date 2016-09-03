@@ -56,7 +56,7 @@ check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g
            , Cache (Normal 0 1) (9000 :: Double)
            ]
 
-check_reuse_ratio m = toLog (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
+check_reuse_ratio m = fromLogDomain (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
 
 conditional_m :: (MonadBayes m, CustomReal m ~ Double) => Maybe Int -> Maybe Double -> m (Int,Double)
 conditional_m mx my = liftM2 (,) px py where
