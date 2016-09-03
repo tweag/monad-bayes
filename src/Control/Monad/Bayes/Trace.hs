@@ -47,22 +47,7 @@ reusePrimitive d d' x =
         if xs' == ys then Just x' else Nothing
     _                                                           -> Nothing
 
-data Support a where
-  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
-  Finite         :: (Typeable a, Integral a) => [a] -> Support a
 
-deriving instance Eq   (Support a)
-instance Show (Support a) where
-  show (Finite xs) = "Finite " ++ show (map toInteger xs)
-  show (Interval   a b) =
-    "Interval "  ++ show (toRational a) ++ " " ++ show (toRational b)
-
-support :: Primitive r a -> Support a
-support (Discrete ps) = Finite $ map fromIntegral $ findIndices (> 0) ps
-support (Normal  _ _) = Interval (-1/0) (1/0)
-support (Gamma   _ _) = Interval 0 (1/0)
-support (Beta    _ _) = Interval 0 1
-support (Uniform a b) = Interval a b
 
 data Cache r where
   Cache :: Primitive r a -> a -> Cache r

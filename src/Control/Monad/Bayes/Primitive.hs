@@ -8,7 +8,7 @@ module Control.Monad.Bayes.Primitive where
 
 import Data.Typeable
 import Numeric.SpecFunctions
---import Data.Number.LogDomain Double (LogDomain Double, LogDomain Double, logToLogDomain Double)
+import Data.List
 
 import Control.Monad.Bayes.LogDomain
 
@@ -21,20 +21,28 @@ data Primitive r a where
     Beta     :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
     Uniform  :: (Ord r, Floating r, Real r, Typeable r) => r -> r -> Primitive r r
 
-deriving instance Eq r => Eq   (Primitive r a)
-instance Show r => Show (Primitive r a) where
-  show (Discrete xs) = "Discrete " ++ show xs
-  show (Normal  m s) =
-    "Normal "  ++ show m ++ " " ++ show s
-  show (Gamma   a b) =
-    "Gamma "   ++ show a ++ " " ++ show b
-  show (Beta    a b) =
-    "Beta "    ++ show a ++ " " ++ show b
-  show (Uniform a b) =
-    "Uniform " ++ show a ++ " " ++ show b
+deriving instance Eq (Primitive r a)
+deriving instance Show r => Show (Primitive r a)
+
+-- | Data type representing support of a proability distribution.
+-- There is currently no distinction between open and closed intervals,
+-- since it was not important in any code written so far.
+data Support a where
+  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
+  Finite         :: (Typeable a, Integral a) => [a] -> Support a
+deriving instance Eq   (Support a)
+deriving instance Show a => Show (Support a)
+
+-- | Computes support of a primitive distribution.
+support :: Primitive r a -> Support a
+support (Discrete ps) = Finite $ findIndices (> 0) ps
+support (Normal  _ _) = Interval (-1/0) (1/0)
+support (Gamma   _ _) = Interval 0 (1/0)
+support (Beta    _ _) = Interval 0 1
+support (Uniform a b) = Interval a b
 
 -- | The probability density function.
-pdf :: (Ord r, Floating r, NumSpec (LogDomain r)) => Primitive r a -> a -> LogDomain r
+pdf :: (NumSpec (LogDomain r)) => Primitive r a -> a -> LogDomain r
 pdf (Discrete d) = \i -> case lookup i (zip [0..] d) of
                               Just p -> toLogDomain p
                               Nothing -> 0
