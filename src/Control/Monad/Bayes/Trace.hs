@@ -80,21 +80,21 @@ instance Eq (Cache r) where
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
   Cache _               _ == Cache _                _  = False
 
--- instance Show (Cache r) where
---   showsPrec p cache r =
---     -- Haskell passes precedence 11 for Cache as a constructor argument.
---     -- The precedence of function application seems to be 10.
---     if p > 10 then
---       '(' : printCache cache (')' : r)
---     else
---       printCache cache r
---     where
---       printCache :: Cache r -> String -> String
---       printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toInteger x) r)
---       printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
---       printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
---       printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
---       printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (toRational x) r)
+instance Show r => Show (Cache r) where
+  showsPrec p cache r =
+    -- Haskell passes precedence 11 for Cache as a constructor argument.
+    -- The precedence of function application seems to be 10.
+    if p > 10 then
+      '(' : printCache cache (')' : r)
+    else
+      printCache cache r
+    where
+      printCache :: Cache r -> String -> String
+      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler r y where
