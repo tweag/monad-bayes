@@ -4,7 +4,12 @@
   FlexibleContexts
  #-}
 
-module Control.Monad.Bayes.Primitive where
+module Control.Monad.Bayes.Primitive (
+  Primitive (Discrete, Normal, Gamma, Beta, Uniform),
+  Support (Finite, Interval),
+  support,
+  pdf
+) where
 
 import Data.Typeable
 import Numeric.SpecFunctions
@@ -28,8 +33,8 @@ deriving instance Show r => Show (Primitive r a)
 -- There is currently no distinction between open and closed intervals,
 -- since it was not important in any code written so far.
 data Support a where
-  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
   Finite         :: (Typeable a, Integral a) => [a] -> Support a
+  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
 deriving instance Eq   (Support a)
 deriving instance Show a => Show (Support a)
 
