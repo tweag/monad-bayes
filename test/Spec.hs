@@ -87,13 +87,6 @@ main = hspec $ do
       \observations particles ->
         observations >= 0 && particles >= 1 ==>
           TestInference.check_particles observations particles == particles
-  describe "Resample-move SMC" $ do
-    it "ISMH preserves the posterior on the sprinkler model" $ do
-      TestInference.check_preserve_ismh `shouldBe` True
-    it "SMH preserves the posterior on the sprinkler model" $ do
-      TestInference.check_preserve_smh `shouldBe` True
-    it "preserves the distribution on the sprinkler model" $ do
-      TestInference.check_preserve_smcrm `shouldBe` True
   describe "MH" $ do
     it "MH from prior leaves posterior invariant" $ do
       TestInference.check_prior_trans `shouldBe` True
@@ -101,6 +94,13 @@ main = hspec $ do
       TestInference.check_trace_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do
       TestInference.check_trace_support `shouldBe` True
+  describe "Population/Trace/Particle hybrids" $ do
+    it "ISMH preserves the posterior on the sprinkler model" $ do
+      TestInference.check_preserve_ismh `shouldBe` True
+    it "SMH preserves the posterior on the sprinkler model" $ do
+      TestInference.check_preserve_smh `shouldBe` True
+    it "Resample-move SMC preserves the posterior on the sprinkler model" $ do
+      TestInference.check_preserve_smcrm `shouldBe` True
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
