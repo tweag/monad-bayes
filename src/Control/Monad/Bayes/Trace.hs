@@ -209,9 +209,6 @@ instance MonadDist m => Monad (Trace m) where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
       convert w = (>>= mhReset . (`unTrace` w) . f)
 
-      -- addFactor :: LogFloat -> Weighted (Coprimitive m) b -> Weighted (Coprimitive m) b
-      addFactor k = (withWeight (return ((), k)) >>)
-
 instance MonadTrans Trace where
   lift m = Trace $ \w -> fmap (MHState [] w) m
 

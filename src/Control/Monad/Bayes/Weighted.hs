@@ -66,7 +66,7 @@ withWeight m = Weighted $ do
   return x
 
 mapMonad :: MonadDist m => (forall a. m a -> m a) -> Weighted m a -> Weighted m a
-mapMonad t = withWeight . t . runWeighted
+mapMonad t = Weighted . mapStateT t . toStateT
 
 -- | Similar to 'Weighted', only the weight is both recorded and passed
 -- to the underlying monad. Useful for getting the exact posterior and
