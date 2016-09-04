@@ -97,6 +97,7 @@ snapshotToCache (Snapshot d x _) = Cache d x
 
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (CustomReal m) (Weighted (Coprimitive m) a)]
+    -- continuations in snapshots produce full likelihood of the whole trace
   , mhPosteriorWeight :: LogDomain (CustomReal m) -- likelihood of the trace
   , mhAnswer :: a
   }
@@ -110,17 +111,21 @@ mhReuse :: forall m a. (MonadDist m) =>
 mhReuse caches m = do
   result <- resume (runCoprimitive (runWeighted m))
   case result of
-
+    -- program finished
     Right (answer, weight) ->
       return (1, MHState [] weight answer)
-
+    -- random choice encountered
     Left (AwaitSampler d' continuation) ->
       let
+        -- package continuation
         wCtn = withWeight . Coprimitive . continuation
+        -- new value and MH correction factor from reuse
         (newSample, reuseFactor) = case caches of
+          -- reuse
           (Cache d x : cs) | Just x' <- reusePrimitive d d' x -> (return x', pdf d' x' / pdf d x)
+          -- can't reuse - sample from prior
           _ -> (primitive d', 1)
-        -- Cached value is discarded even on mismatch
+        -- cached value is discarded even on mismatch
         otherCaches = tailSafe caches
       in
         do
@@ -145,6 +150,8 @@ mhReset m = withWeight $ Coprimitive $ Coroutine $ do
 
     Snapshot d x continuation : _ ->
       return $ Left $ AwaitSampler d (runCoprimitive . runWeighted . continuation)
+
+-- Adam: is it the case that mhReset . mhState = id = mhState . mhReset?
 
 -- | Propose new state, compute acceptance ratio
 mhPropose :: (MonadDist m) => MHState m a -> m (MHState m a, LogDomain (CustomReal m))
@@ -201,10 +208,11 @@ instance MonadDist m => Monad (Trace m) where
   m >>= f = Trace $ \w -> do
     MHState ls lw la <- unTrace m w
     MHState rs rw ra <- unTrace (f la) lw
-    return $ MHState (map (fmap (convert w)) ls ++ rs) rw ra
+    return $ MHState (map (fmap (convert lw)) ls ++ rs) rw ra
     where
       --convert w :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
-      convert w = (>>= mhReset . (`unTrace` w) . f)
+      convert p = (>>= mhReset . (`unTrace` p) . f)
+
 
 instance MonadTrans Trace where
   lift m = Trace $ \w -> fmap (MHState [] w) m
@@ -212,7 +220,7 @@ instance MonadTrans Trace where
 instance MonadDist m => MonadDist (Trace m) where
   primitive d = Trace $ \w -> do
     x <- primitive d
-    return $ MHState [Snapshot d x return] w x
+    return $ MHState [Snapshot d x (\x -> factor w >> return x)] w x
 
 instance MonadDist m => MonadBayes (Trace m) where
   factor k = Trace $ \w -> return (MHState [] (w * k) ())
