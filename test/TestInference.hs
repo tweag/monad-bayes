@@ -30,6 +30,12 @@ check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
+check_preserve_ismh = (enumerate . collapse . ismh 2 2) sprinkler ~==
+                      enumerate sprinkler
+
+check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+                      enumerate sprinkler
+
 check_preserve_smcrm = (enumerate . collapse . smcrm 2 1) sprinkler ~==
                         enumerate sprinkler
 
@@ -48,7 +54,7 @@ pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
                    enumerate sprinkler
 
-check_trace_mh m m' = enumerate (marginal' (mhStep' m)) ~==
+check_trace_mh m m' = enumerate (marginal' (mhStep' (mhStep' m))) ~==
                       enumerate m'
 
 check_trace_trans = check_trace_mh sprinkler sprinkler

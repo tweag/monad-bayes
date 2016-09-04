@@ -88,6 +88,10 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==>
           TestInference.check_particles observations particles == particles
   describe "Resample-move SMC" $ do
+    it "ISMH preserves the posterior on the sprinkler model" $ do
+      TestInference.check_preserve_ismh `shouldBe` True
+    it "SMH preserves the posterior on the sprinkler model" $ do
+      TestInference.check_preserve_smh `shouldBe` True
     it "preserves the distribution on the sprinkler model" $ do
       TestInference.check_preserve_smcrm `shouldBe` True
   describe "MH" $ do

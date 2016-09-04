@@ -86,6 +86,18 @@ smcrm k n = marginal' . flatten . composeCopies k step . init
   step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
   step = advance . hoistC (mhStep' . hoistT resample)
 
+-- | Importance Sampling with Metropolis-Hastings transitions.
+-- Draws initial samples using IS and applies a number of MH transitions
+-- to each of them independently.
+-- Can be seen as a precursor to Simulated Annealing.
+ismh :: MonadDist m => Int -> Int -> Trace' (Population m) a -> Population m a
+ismh s n = marginal' . composeCopies s mhStep' . Trace.mapMonad' (spawn n >>)
+
+-- | Sequential Metropolis-Hastings.
+-- Alternates several MH transitions with running the program another step forward.
+smh :: MonadBayes m => Int -> Int -> Particle (Trace' m) a -> m a
+smh k s = marginal' . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep'))
+
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
 
