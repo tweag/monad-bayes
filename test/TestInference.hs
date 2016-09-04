@@ -27,10 +27,10 @@ g = mkStdGen 0
 
 check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 
-check_preserve_smc = (enumerate . runIdentityT . collapse . smc 2 2) sprinkler ~==
+check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-check_preserve_smcrm = (enumerate . runIdentityT . collapse . smcrm 2 1) sprinkler ~==
+check_preserve_smcrm = (enumerate . collapse . smcrm 2 1) sprinkler ~==
                         enumerate sprinkler
 
 sprinkler_posterior = duplicateWeight sprinkler
