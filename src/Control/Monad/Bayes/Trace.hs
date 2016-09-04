@@ -206,7 +206,7 @@ instance MonadDist m => Monad (Trace m) where
     MHState rs rw ra <- unTrace (f la) lw
     return $ MHState (map (fmap (convert w)) ls ++ rs) rw ra
     where
-      --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
+      --convert w :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
       convert w = (>>= mhReset . (`unTrace` w) . f)
 
 instance MonadTrans Trace where
@@ -242,7 +242,6 @@ deriving instance MonadDist m => MonadDist (Trace' m)
 type instance CustomReal (Trace' m) = CustomReal m
 
 instance MonadTrans Trace' where
-  -- lift :: m a -> Trace' m a
   lift = Trace' . lift . lift
 
 instance MonadBayes m => MonadBayes (Trace' m) where
@@ -257,7 +256,7 @@ mapMonad' t = Trace' . mapMonad (mapMonadWeightRecorder t) . runTrace'
 mhStep' :: (MonadBayes m) => Trace' m a -> Trace' m a
 mhStep' (Trace' m) = Trace' $ Trace $ \w -> lift $ do
   (x,s) <- runWeighted $ duplicateWeight $ unTrace (mhStep $ mapMonad resetWeightRecorder m) w
-  -- | Reverse the effect of factors in mhStep on the transformed monad.
+  -- Reverse the effect of factors in mhStep on the transformed monad.
   factor (1 / s)
   return x
 
