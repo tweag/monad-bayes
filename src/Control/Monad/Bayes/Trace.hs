@@ -27,6 +27,7 @@ import Control.Monad.Trans.Class
 import Data.Maybe
 import Data.List
 import Data.Dynamic
+import Safe (tailSafe)
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
@@ -113,25 +114,21 @@ mhReuse caches m = do
     Right (answer, weight) ->
       return (1, MHState [] weight answer)
 
-    Left (AwaitSampler d' continuation) | (Cache d x : otherCaches) <- caches ->
+    Left (AwaitSampler d' continuation) ->
       let
-        weightedCtn = withWeight . Coprimitive . continuation
+        wCtn = withWeight . Coprimitive . continuation
+        (newSample, reuseFactor) = case caches of
+          (Cache d x : cs) | Just x' <- reusePrimitive d d' x -> (return x', pdf d' x' / pdf d x)
+          _ -> (primitive d', 1)
+        -- Cached value is discarded even on mismatch
+        otherCaches = tailSafe caches
       in
-        case reusePrimitive d d' x of
-          Nothing -> do
-            x' <- primitive d'
-            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
-            return (reuseRatio, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
-          Just x' -> do
-            (reuseRatio, MHState snapshots weight answer) <- mhReuse otherCaches (weightedCtn x')
-            let reuseFactor = pdf d' x' / pdf d x
-            return (reuseRatio * reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
+        do
+          x' <- newSample
+          let s = Snapshot d' x' wCtn
+          (reuseRatio, MHState snaps w a) <- mhReuse otherCaches (wCtn x')
+          return (reuseRatio * reuseFactor, MHState (s : snaps) w a)
 
-    Left (AwaitSampler d' continuation) | [] <- caches -> do
-      x' <- primitive d'
-      let weightedCtn = withWeight . Coprimitive . continuation
-      (reuseFactor, MHState snapshots weight answer) <- mhReuse [] (weightedCtn x')
-      return (reuseFactor, MHState (Snapshot d' x' weightedCtn : snapshots) weight answer)
 
 -- | Run model once, cache primitive samples together with continuations
 -- awaiting the samples
