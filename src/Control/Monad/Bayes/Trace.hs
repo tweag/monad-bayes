@@ -208,10 +208,12 @@ instance MonadDist m => Monad (Trace m) where
   m >>= f = Trace $ \w -> do
     MHState ls lw la <- unTrace m w
     MHState rs rw ra <- unTrace (f la) lw
-    return $ MHState (map (fmap (convert lw)) ls ++ rs) rw ra
+    return $ MHState (map (fmap convert) ls ++ rs) rw ra
     where
-      --convert w :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
-      convert p = (>>= mhReset . (`unTrace` p) . f)
+      --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
+      convert m = do
+        (x,w) <- lift $ runWeighted m
+        mhReset $ unTrace (f x) w
 
 
 instance MonadTrans Trace where
