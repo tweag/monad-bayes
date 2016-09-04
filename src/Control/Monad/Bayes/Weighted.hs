@@ -13,9 +13,11 @@ module Control.Monad.Bayes.Weighted (
     Weighted,
     withWeight,
     runWeighted,
+    resetWeight,
     mapMonad,
     WeightRecorderT,
     duplicateWeight,
+    resetWeightRecorder,
     mapMonadWeightRecorder
                   ) where
 
@@ -64,6 +66,10 @@ withWeight m = Weighted $ do
   put $ weight w
   return x
 
+-- | Reset weight to 1.
+resetWeight :: MonadDist m => Weighted m a -> Weighted m a
+resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
+
 mapMonad :: MonadDist m => (forall a. m a -> m a) -> Weighted m a -> Weighted m a
 mapMonad t = Weighted . mapStateT t . toStateT
 
@@ -82,6 +88,10 @@ instance MonadBayes m => MonadBayes (WeightRecorderT m) where
 -- | Both record weight and pass it to the underlying monad.
 duplicateWeight :: WeightRecorderT m a -> Weighted m a
 duplicateWeight = runWeightRecorderT
+
+-- | Reset weight record to 1, not modifying the transformed monad.
+resetWeightRecorder :: MonadDist m => WeightRecorderT m a -> WeightRecorderT m a
+resetWeightRecorder = WeightRecorderT . resetWeight . runWeightRecorderT
 
 mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorderT m a -> WeightRecorderT m a
 mapMonadWeightRecorder t = WeightRecorderT . mapMonad t . runWeightRecorderT
