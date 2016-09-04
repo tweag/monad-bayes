@@ -10,12 +10,11 @@ module Control.Monad.Bayes.Weighted (
     Weight,
     weight,
     unWeight,
-    Weighted(Weighted),  --constructor is needed in Dist
+    Weighted,
     withWeight,
     runWeighted,
     mapMonad,
-    WeightRecorderT(WeightRecorderT), -- constructor used in Trace
-    runWeightRecorderT,               -- destructor  used in Trace
+    WeightRecorderT,
     duplicateWeight,
     mapMonadWeightRecorder
                   ) where
@@ -81,7 +80,7 @@ instance MonadBayes m => MonadBayes (WeightRecorderT m) where
   factor w = WeightRecorderT (factor w >> lift (factor w))
 
 -- | Both record weight and pass it to the underlying monad.
-duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
+duplicateWeight :: WeightRecorderT m a -> Weighted m a
 duplicateWeight = runWeightRecorderT
 
 mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorderT m a -> WeightRecorderT m a

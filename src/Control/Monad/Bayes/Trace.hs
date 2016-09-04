@@ -255,8 +255,8 @@ mapMonad' t = Trace' . mapMonad (mapMonadWeightRecorder t) . runTrace'
 
 -- | Make one MH transition, retain weight from the source distribution
 mhStep' :: (MonadBayes m) => Trace' m a -> Trace' m a
-mhStep' (Trace' (Trace m)) = Trace' $ Trace $ \w -> WeightRecorderT $ withWeight $ do
-  (oldState, oldWeight) <- runWeighted $ runWeightRecorderT $ m w
+mhStep' (Trace' (Trace m)) = Trace' $ Trace $ \w -> lift $ do
+  (oldState, _) <- runWeighted $ duplicateWeight $ m w
   ((newState, acceptRatio), newWeight) <- runWeighted $ duplicateWeight $ mhPropose oldState
 
   accept <- bernoulli $ fromLogDomain acceptRatio
@@ -266,7 +266,7 @@ mhStep' (Trace' (Trace m)) = Trace' $ Trace $ \w -> WeightRecorderT $ withWeight
   factor (1 / newWeight)
   -- at this point, the score in the underlying monad `m` is proportional to  `oldWeight`.
 
-  return (nextState, oldWeight)
+  return nextState
 
 mhForgetWeight :: MonadDist m => Trace' m a -> Trace' m a
 mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ \w -> do
@@ -274,4 +274,4 @@ mhForgetWeight (Trace' (Trace m)) = Trace' $ Trace $ \w -> do
   return $ state {mhPosteriorWeight = 1}
 
 marginal' :: MonadDist m => Trace' m a -> m a
-marginal' = fmap fst . runWeighted . runWeightRecorderT . marginal . runTrace'
+marginal' = fmap fst . runWeighted . duplicateWeight . marginal . runTrace'
