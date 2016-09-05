@@ -41,10 +41,10 @@ check_preserve_smcrm = (enumerate . collapse . smcrm 2 1) sprinkler ~==
 
 sprinkler_posterior = duplicateWeight sprinkler
 
-mhPriorTrans :: MonadDist m => Weighted m Bool -> m Bool
-mhPriorTrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
+mhPriorrans :: MonadDist m => Weighted m Bool -> m Bool
+mhPriorrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
 
-check_prior_trans = enumerate (mhPriorTrans sprinkler_posterior) ~==
+check_prior_trans = enumerate (mhPriorrans sprinkler_posterior) ~==
                     enumerate sprinkler
 
 pimhTrans :: MonadDist m => Weighted m Bool -> m Bool

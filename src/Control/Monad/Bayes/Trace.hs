@@ -258,7 +258,7 @@ marginal' = fmap mhAnswer . runTrace'
 
 
 -- | Like Trace', except it passes factors to the underlying monad.
-newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorderT m) a }
+newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorder m) a }
   deriving (Functor)
 type instance CustomReal (Trace m) = CustomReal m
 deriving instance MonadDist m => Applicative (Trace m)

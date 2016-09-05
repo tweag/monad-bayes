@@ -15,7 +15,7 @@ module Control.Monad.Bayes.Weighted (
     runWeighted,
     resetWeight,
     mapMonad,
-    WeightRecorderT,
+    WeightRecorder,
     duplicateWeight,
     resetWeightRecorder,
     mapMonadWeightRecorder
@@ -76,22 +76,22 @@ mapMonad t = Weighted . mapStateT t . toStateT
 -- | Similar to 'Weighted', only the weight is both recorded and passed
 -- to the underlying monad. Useful for getting the exact posterior and
 -- the associated likelihood.
-newtype WeightRecorderT m a =
-  WeightRecorderT {runWeightRecorderT :: Weighted m a}
+newtype WeightRecorder m a =
+  WeightRecorder {runWeightRecorder :: Weighted m a}
     deriving(Functor, Applicative, Monad, MonadTrans)
-type instance CustomReal (WeightRecorderT m) = CustomReal m
-deriving instance MonadDist m => MonadDist (WeightRecorderT m)
+type instance CustomReal (WeightRecorder m) = CustomReal m
+deriving instance MonadDist m => MonadDist (WeightRecorder m)
 
-instance MonadBayes m => MonadBayes (WeightRecorderT m) where
-  factor w = WeightRecorderT (factor w >> lift (factor w))
+instance MonadBayes m => MonadBayes (WeightRecorder m) where
+  factor w = WeightRecorder (factor w >> lift (factor w))
 
 -- | Both record weight and pass it to the underlying monad.
-duplicateWeight :: WeightRecorderT m a -> Weighted m a
-duplicateWeight = runWeightRecorderT
+duplicateWeight :: WeightRecorder m a -> Weighted m a
+duplicateWeight = runWeightRecorder
 
 -- | Reset weight record to 1, not modifying the transformed monad.
-resetWeightRecorder :: MonadDist m => WeightRecorderT m a -> WeightRecorderT m a
-resetWeightRecorder = WeightRecorderT . resetWeight . runWeightRecorderT
+resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
+resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
-mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorderT m a -> WeightRecorderT m a
-mapMonadWeightRecorder t = WeightRecorderT . mapMonad t . runWeightRecorderT
+mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorder m a -> WeightRecorder m a
+mapMonadWeightRecorder t = WeightRecorder . mapMonad t . runWeightRecorder
