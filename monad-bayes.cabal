@@ -34,7 +34,6 @@ library
                      , containers
                      , random
                      , random-fu
-                     , logfloat
                      , mtl
                      , transformers
                      , math-functions
@@ -57,7 +56,6 @@ test-suite monad-bayes-test
                      , ieee754
                      , mtl
                      , math-functions
-                     , logfloat
                      , transformers
 --                     , hmatrix
                      , monad-memo
@@ -85,7 +83,6 @@ benchmark monad-bayes-bench
   build-depends:       base
                      , monad-bayes
                      , random-fu
-                     , logfloat
                      , mtl
                      , math-functions
 --                     , hmatrix

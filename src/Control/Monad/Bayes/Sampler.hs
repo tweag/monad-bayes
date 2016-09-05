@@ -19,7 +19,6 @@ import System.Random
 import System.Random.MWC
 import System.Random.Mersenne.Pure64
 import Control.Monad (liftM2)
-import qualified Data.Number.LogFloat as LogFloat
 import Data.Tuple
 import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
@@ -29,7 +28,6 @@ import Data.Random.Distribution
 import qualified Data.Random.Sample
 import Data.Random hiding (sample)
 import Control.Arrow (first,second)
-import Data.Number.LogFloat
 import qualified Data.Foldable as Fold
 import Control.Monad.State.Lazy
 

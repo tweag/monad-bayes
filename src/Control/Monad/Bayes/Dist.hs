@@ -23,7 +23,6 @@ import System.Random
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
-import Data.Number.LogFloat (LogFloat, fromLogFloat, logFloat)
 import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Data.Either
