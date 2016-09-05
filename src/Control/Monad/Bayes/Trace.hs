@@ -10,7 +10,26 @@
   FlexibleContexts
    #-}
 
-module Control.Monad.Bayes.Trace where
+module Control.Monad.Bayes.Trace (
+  Cache(Cache),
+  Snapshot(Snapshot),
+  snapshotToCache,
+  MHState(MHState),
+  mhSnapshots,
+  mhPosteriorWeight,
+  mhAnswer,
+  mhReuse,
+  mhState,
+  mhKernel,
+  Trace' (Trace'),
+  mapMonad',
+  mhStep',
+  marginal',
+  Trace,
+  mapMonad,
+  mhStep,
+  marginal
+) where
 
 import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Primitive
