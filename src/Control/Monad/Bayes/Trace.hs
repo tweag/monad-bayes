@@ -190,82 +190,82 @@ mhKernel oldState = do
 
 
 
-newtype Trace m a = Trace { unTrace :: LogDomain (CustomReal m) -> m (MHState m a) }
+newtype Trace' m a = Trace' { unTrace' :: LogDomain (CustomReal m) -> m (MHState m a) }
   deriving (Functor)
-runTrace :: MonadDist m => Trace m a -> m (MHState m a)
-runTrace = (`unTrace` 1)
+runTrace' :: MonadDist m => Trace' m a -> m (MHState m a)
+runTrace' = (`unTrace'` 1)
 
-type instance CustomReal (Trace m) = CustomReal m
+type instance CustomReal (Trace' m) = CustomReal m
 
-instance MonadDist m => Applicative (Trace m) where
+instance MonadDist m => Applicative (Trace' m) where
   pure  = return
   (<*>) = liftM2 ($)
 
-instance MonadDist m => Monad (Trace m) where
+instance MonadDist m => Monad (Trace' m) where
 
-  return x = Trace $ \w -> return (MHState [] w x)
+  return x = Trace' $ \w -> return (MHState [] w x)
 
-  m >>= f = Trace $ \w -> do
-    MHState ls lw la <- unTrace m w
-    MHState rs rw ra <- unTrace (f la) lw
+  m >>= f = Trace' $ \w -> do
+    MHState ls lw la <- unTrace' m w
+    MHState rs rw ra <- unTrace' (f la) lw
     return $ MHState (map (fmap convert) ls ++ rs) rw ra
     where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
       convert m = do
         (x,w) <- lift $ runWeighted m
-        mhReset $ unTrace (f x) w
+        mhReset $ unTrace' (f x) w
 
 
-instance MonadTrans Trace where
-  lift m = Trace $ \w -> fmap (MHState [] w) m
+instance MonadTrans Trace' where
+  lift m = Trace' $ \w -> fmap (MHState [] w) m
 
-instance MonadDist m => MonadDist (Trace m) where
-  primitive d = Trace $ \w -> do
+instance MonadDist m => MonadDist (Trace' m) where
+  primitive d = Trace' $ \w -> do
     x <- primitive d
     return $ MHState [Snapshot d x (\x -> factor w >> return x)] w x
 
-instance MonadDist m => MonadBayes (Trace m) where
-  factor k = Trace $ \w -> return (MHState [] (w * k) ())
+instance MonadDist m => MonadBayes (Trace' m) where
+  factor k = Trace' $ \w -> return (MHState [] (w * k) ())
 
-mapMonad :: Monad m => (forall x. m x -> m x) -> Trace m x -> Trace m x
-mapMonad t (Trace m) = Trace (t . m)
+mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
+mapMonad' t (Trace' m) = Trace' (t . m)
 
-mhStep :: (MonadDist m) => Trace m a -> Trace m a
-mhStep (Trace m) = Trace (m >=> mhKernel)
+mhStep' :: (MonadDist m) => Trace' m a -> Trace' m a
+mhStep' (Trace' m) = Trace' (m >=> mhKernel)
 
-marginal :: MonadDist m => Trace m a -> m a
-marginal = fmap mhAnswer . runTrace
+marginal' :: MonadDist m => Trace' m a -> m a
+marginal' = fmap mhAnswer . runTrace'
 
 
 
--- | Like Trace, except it passes factors to the underlying monad.
-newtype Trace' m a = Trace' { runTrace' :: Trace (WeightRecorderT m) a }
+-- | Like Trace', except it passes factors to the underlying monad.
+newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorderT m) a }
   deriving (Functor)
-type instance CustomReal (Trace' m) = CustomReal m
-deriving instance MonadDist m => Applicative (Trace' m)
-deriving instance MonadDist m => Monad (Trace' m)
-deriving instance MonadDist m => MonadDist (Trace' m)
+type instance CustomReal (Trace m) = CustomReal m
+deriving instance MonadDist m => Applicative (Trace m)
+deriving instance MonadDist m => Monad (Trace m)
+deriving instance MonadDist m => MonadDist (Trace m)
 
-type instance CustomReal (Trace' m) = CustomReal m
+type instance CustomReal (Trace m) = CustomReal m
 
-instance MonadTrans Trace' where
-  lift = Trace' . lift . lift
+instance MonadTrans Trace where
+  lift = Trace . lift . lift
 
-instance MonadBayes m => MonadBayes (Trace' m) where
-  factor k = Trace' $ do
+instance MonadBayes m => MonadBayes (Trace m) where
+  factor k = Trace $ do
     factor k
     lift (factor k)
 
-mapMonad' :: MonadDist m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
-mapMonad' t = Trace' . mapMonad (mapMonadWeightRecorder t) . runTrace'
+mapMonad :: MonadDist m => (forall x. m x -> m x) -> Trace m x -> Trace m x
+mapMonad t = Trace . mapMonad' (mapMonadWeightRecorder t) . runTrace
 
 -- | Make one MH transition, retain weight from the source distribution
-mhStep' :: (MonadBayes m) => Trace' m a -> Trace' m a
-mhStep' (Trace' m) = Trace' $ Trace $ \w -> lift $ do
-  (x,s) <- runWeighted $ duplicateWeight $ unTrace (mhStep $ mapMonad resetWeightRecorder m) w
+mhStep :: (MonadBayes m) => Trace m a -> Trace m a
+mhStep (Trace m) = Trace $ Trace' $ \w -> lift $ do
+  (x,s) <- runWeighted $ duplicateWeight $ unTrace' (mhStep' $ mapMonad' resetWeightRecorder m) w
   -- Reverse the effect of factors in mhStep on the transformed monad.
   factor (1 / s)
   return x
 
-marginal' :: MonadDist m => Trace' m a -> m a
-marginal' = fmap fst . runWeighted . duplicateWeight . marginal . runTrace'
+marginal :: MonadDist m => Trace m a -> m a
+marginal = fmap fst . runWeighted . duplicateWeight . marginal' . runTrace

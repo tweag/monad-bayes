@@ -73,30 +73,30 @@ smcWithResampler resampler k n =
 
 smcrm :: forall m a. MonadDist m =>
          Int -> Int ->
-         Particle (Trace' (Population m)) a -> Population m a
+         Particle (Trace (Population m)) a -> Population m a
 
-smcrm k n = marginal' . flatten . composeCopies k step . init
+smcrm k n = marginal . flatten . composeCopies k step . init
   where
   hoistC  = Particle.mapMonad
-  hoistT  = Trace.mapMonad'
+  hoistT  = Trace.mapMonad
 
-  init :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  init :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
   init = hoistC (hoistT (spawn n >>))
 
-  step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
-  step = advance . hoistC (mhStep' . hoistT resample)
+  step :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  step = advance . hoistC (mhStep . hoistT resample)
 
 -- | Importance Sampling with Metropolis-Hastings transitions.
 -- Draws initial samples using IS and applies a number of MH transitions
 -- to each of them independently.
 -- Can be seen as a precursor to Simulated Annealing.
-ismh :: MonadDist m => Int -> Int -> Trace' (Population m) a -> Population m a
-ismh s n = marginal' . composeCopies s mhStep' . Trace.mapMonad' (spawn n >>)
+ismh :: MonadDist m => Int -> Int -> Trace (Population m) a -> Population m a
+ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
 
 -- | Sequential Metropolis-Hastings.
 -- Alternates several MH transitions with running the program another step forward.
-smh :: MonadBayes m => Int -> Int -> Particle (Trace' m) a -> m a
-smh k s = marginal' . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep'))
+smh :: MonadBayes m => Int -> Int -> Particle (Trace m) a -> m a
+smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
@@ -126,8 +126,8 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 -- | Trace MH. Each state of the Markov chain consists of a list
 -- of continuations from the sampling of each primitive distribution
 -- during an execution.
-traceMH :: (MonadDist m) => Int -> Trace m a -> m [a]
-traceMH n (Trace m) = m 1 >>= init >>= loop n
+traceMH :: (MonadDist m) => Int -> Trace' m a -> m [a]
+traceMH n (Trace' m) = m 1 >>= init >>= loop n
   where
     init state | mhPosteriorWeight state >  0 = return state
     init state | mhPosteriorWeight state == 0 = m 1 >>= init
