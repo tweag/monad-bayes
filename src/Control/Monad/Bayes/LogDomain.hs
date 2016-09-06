@@ -46,8 +46,10 @@ instance Show a => Show (LogDomain a) where
   show = show . toLog
 
 instance (Ord a, Floating a) => Num (LogDomain a) where
-  (LogDomain x) + (LogDomain y) = if x >= y then fromLog (x + log (1 + exp(y - x))) else fromLog (y + log (1 + exp (x - y)))
-  x - y = undefined
+  x + y = if x >= y then fromLog (toLog x + log (1 + exp (toLog y - toLog x)))
+                    else y + x
+  x - y = if x >= y then fromLog (toLog x + log (1 - exp (toLog y - toLog x)))
+                    else y - x
   (*) = liftLog2 (+)
   negate x = error "LogDomain does not support negation"
   abs = id
@@ -94,8 +96,6 @@ class Floating a => NumSpec a where
   logBeta a b = log $ beta a b
 
 instance NumSpec Double where
-  gamma     = exp . logGamma
-  beta a b  = exp $ logBeta a b
   logGamma  = Spec.logGamma
   logBeta   = Spec.logBeta
 
