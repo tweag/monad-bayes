@@ -3,7 +3,8 @@
   StandaloneDeriving,
   TypeFamilies,
   DeriveFunctor,
-  GeneralizedNewtypeDeriving
+  GeneralizedNewtypeDeriving,
+  FlexibleContexts
    #-}
 
 module Control.Monad.Bayes.Coprimitive (
@@ -12,13 +13,16 @@ module Control.Monad.Bayes.Coprimitive (
   runCoprimitive,
   conditional,
   pseudoDensity,
-  jointDensity
+  jointDensity,
+  contJointDensity,
+  unsafeContJointDensity
 ) where
 
 import Control.Monad.Trans.Class
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Dynamic
+import Data.Maybe
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Primitive
@@ -84,6 +88,14 @@ pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
 
 -- | Joint density of all random variables in the program.
 -- Failure occurs when the list is too short or when there's a type mismatch.
-jointDensity :: Coprimitive (Weighted (Deterministic Double)) a -> [Dynamic]
-  -> Maybe (LogDomain Double)
+jointDensity :: MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [Dynamic]
+  -> Maybe (LogDomain r)
 jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
+
+-- | Like 'jointDensity', but assumes all random variables are continuous.
+contJointDensity ::  MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> Maybe (LogDomain r)
+contJointDensity p xs = jointDensity p (map toDyn xs)
+
+-- | Like 'contJointDensity', but throws an error if density can not be computed.
+unsafeContJointDensity ::  MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> LogDomain r
+unsafeContJointDensity p xs = fromMaybe (error "Could not compute density: some random variables are discrete or the list of random variables is too short") $ contJointDensity p xs
