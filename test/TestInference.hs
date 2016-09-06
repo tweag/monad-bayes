@@ -30,7 +30,7 @@ check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-check_preserve_ismh = (enumerate . collapse . ismh 2 2) sprinkler ~==
+check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
                       enumerate sprinkler
 
 check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
