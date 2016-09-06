@@ -9,6 +9,7 @@ import qualified TestParticle
 import qualified TestTrace
 import qualified TestInference
 import qualified TestSMCObservations
+import qualified TestGradient
 
 import qualified Dice
 import qualified Gamma
@@ -114,6 +115,11 @@ main = hspec $ do
     check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
     check_smc_observations 16 "HMM.hmm" HMM.hmm
     check_smc_observations 10 "DPmixture.dpMem" DPmixture.dpMem
+  describe "Density computation" $ do
+    it "gives correct value on gamma-normal-beta model" $ do
+      TestGradient.check_density `shouldBe` True
+    it "gives correct gradient on gamma-normal-beta model" $ do
+      TestGradient.check_gradient `shouldBe` True
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do

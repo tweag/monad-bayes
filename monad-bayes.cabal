@@ -57,6 +57,8 @@ test-suite monad-bayes-test
                      , mtl
                      , math-functions
                      , transformers
+                     , ad
+                     , reflection
 --                     , hmatrix
                      , monad-memo
   ghc-options:         -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
@@ -70,6 +72,7 @@ test-suite monad-bayes-test
                        TestWeighted,
                        TestSMCObservations,
                        TestTrace,
+                       TestGradient,
                        StrictlySmallerSupport,
                        BetaBin,
                        DPmixture,
