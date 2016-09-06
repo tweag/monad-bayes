@@ -82,20 +82,20 @@ conditional p xs = condRun (runCoprimitive p) xs where
 -- the trace times the (unnormalized) likelihood of the trace.
 -- Missing latent variables are integrated out using the transformed monad,
 -- unused values from the list are ignored.
-pseudoDensity :: MonadBayes m => Coprimitive (Weighted m) a -> [Maybe Dynamic]
+pseudoDensity :: MonadDist m => Coprimitive (Weighted m) a -> [Maybe Dynamic]
   -> m (LogDomain (CustomReal m))
 pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
 
 -- | Joint density of all random variables in the program.
 -- Failure occurs when the list is too short or when there's a type mismatch.
-jointDensity :: MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [Dynamic]
+jointDensity :: MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [Dynamic]
   -> Maybe (LogDomain r)
 jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
 
 -- | Like 'jointDensity', but assumes all random variables are continuous.
-contJointDensity ::  MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> Maybe (LogDomain r)
+contJointDensity ::  MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> Maybe (LogDomain r)
 contJointDensity p xs = jointDensity p (map toDyn xs)
 
 -- | Like 'contJointDensity', but throws an error if density can not be computed.
-unsafeContJointDensity ::  MonadBayes (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> LogDomain r
+unsafeContJointDensity ::  MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> LogDomain r
 unsafeContJointDensity p xs = fromMaybe (error "Could not compute density: some random variables are discrete or the list of random variables is too short") $ contJointDensity p xs
