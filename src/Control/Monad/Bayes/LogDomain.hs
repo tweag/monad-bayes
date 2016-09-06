@@ -83,8 +83,11 @@ instance (Ord a, Floating a) => Floating (LogDomain a) where
   atanh = mapLog atanh
 
 class Floating a => NumSpec a where
+  {-# MINIMAL (gamma | logGamma) , (beta | logBeta) #-}
   gamma :: a -> a
+  gamma = exp . logGamma
   beta  :: a -> a -> a
+  beta a b = exp $ logBeta a b
   logGamma :: a -> a
   logGamma = log . gamma
   logBeta :: a -> a -> a
