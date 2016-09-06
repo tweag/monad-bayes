@@ -76,7 +76,7 @@ dpMixture =
       let mean = means !! cluster
       let var  = vars  !! cluster
       let point = (cluster, var, mean)
-      observe (Normal mean (sqrt var)) y
+      observe (Continuous (Normal mean (sqrt var))) y
       return (clusters, point : rest)
 
   in
@@ -109,7 +109,7 @@ dpMem :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 dpMem = startEvalMemoT $ mapM process_point obs where
   process_point x = do
     (c, mean, var) <- get_cluster
-    observe (Normal mean (sqrt var)) x
+    observe (Continuous (Normal mean (sqrt var))) x
     return c
   get_cluster = stick 0 where
     stick c = do

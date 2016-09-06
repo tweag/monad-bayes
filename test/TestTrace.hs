@@ -21,7 +21,7 @@ import Control.Monad.Bayes.Coprimitive
 g = mkStdGen 0
 
 extractNormal :: Cache Double -> Maybe Double
-extractNormal (Cache (Normal _ _) x) = Just (realToFrac x)
+extractNormal (Cache (Continuous (Normal _ _)) x) = Just (realToFrac x)
 extractNormal _ = Nothing
 
 extractInt :: Cache Double -> Maybe Int
@@ -53,7 +53,7 @@ check_writing = TestTrace.compare (stdSample (withCache (mhState m)) g)
 
 check_reading = stdSample (fmap snd $ withCache (fmap snd $ mhReuse caches m)) g == caches where
   caches = [ Cache (Discrete discreteWeights) (0 :: Int)
-           , Cache (Normal 0 1) (9000 :: Double)
+           , Cache (Continuous (Normal 0 1)) (9000 :: Double)
            ]
 
 check_reuse_ratio m = fromLogDomain (stdSample (fmap fst (mhReuse [] m)) g) ~== 1
@@ -65,7 +65,7 @@ conditional_m mx my = liftM2 (,) px py where
       >> return x
     Nothing -> discrete discreteWeights
   py = case my of
-    Just x -> factor (pdf (Normal 0 1) x) >> return x
+    Just x -> factor (pdf (Continuous (Normal 0 1)) x) >> return x
     Nothing -> normal 0 1
 
 check_conditional :: Maybe Int -> Maybe Double -> Bool
@@ -93,13 +93,13 @@ check_longer_conditional =
 -- Computes pseudomarginal density correctly
 check_first_density =
   enumerate (fmap toLog (pseudoDensity m [Nothing, Just (toDyn (0.6 :: Double))])) ~==
-    [(toLog (pdf (Normal 0 1) (0.6 :: Double)), 1)]
+    [(toLog (pdf (Continuous (Normal 0 1)) (0.6 :: Double)), 1)]
 
 -- Computes joint density correctly when possible
 check_joint_density_true =
   case jointDensity m [toDyn (1 :: Int), toDyn (0.5 :: Double)] of
     Just x -> toLog x ~==
-      toLog ((discreteWeights !! 1) * (pdf (Normal 0 1) (0.5 :: Double)))
+      toLog ((discreteWeights !! 1) * (pdf (Continuous (Normal 0 1)) (0.5 :: Double)))
     Nothing -> False
 
 -- Returns Nothing when not possible to compute joint density,

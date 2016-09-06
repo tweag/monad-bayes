@@ -33,7 +33,7 @@ trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
 -- | The emission model.
 emission :: Int -> Primitive Double Double
-emission x = Normal (fromIntegral x) 1
+emission x = Continuous (Normal (fromIntegral x) 1)
 
 -- | Initial state distribution
 start :: MonadDist m => m [Int]

@@ -75,13 +75,13 @@ data Cache r where
 instance Eq (Cache r) where
   Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
-  Cache d@(Normal  _ _) x == Cache d'@(Normal  _ _) x' =
+  Cache d@(Continuous(Normal  _ _)) x == Cache d'@(Continuous(Normal  _ _)) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Gamma   _ _) x == Cache d'@(Gamma   _ _) x' =
+  Cache d@(Continuous(Gamma   _ _)) x == Cache d'@(Continuous(Gamma   _ _)) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Beta    _ _) x == Cache d'@(Beta    _ _) x' =
+  Cache d@(Continuous(Beta    _ _)) x == Cache d'@(Continuous(Beta    _ _)) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Uniform _ _) x == Cache d'@(Uniform _ _) x' =
+  Cache d@(Continuous(Uniform _ _)) x == Cache d'@(Continuous(Uniform _ _)) x' =
     fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
   Cache _               _ == Cache _                _  = False
 
@@ -96,10 +96,10 @@ instance Show r => Show (Cache r) where
     where
       printCache :: Cache r -> String -> String
       printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Normal  _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Gamma   _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Beta    _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Uniform _ _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Continuous(Normal  _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Continuous(Gamma   _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Continuous(Beta    _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Continuous(Uniform _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
 
 
 

@@ -54,17 +54,17 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Typeable (Custom
     -- | One of `Primitive` distributions.
     primitive :: Typeable a => Primitive (CustomReal m) a -> m a
     primitive (Discrete d)  = discrete d
-    primitive (Normal  m s) = normal m s
-    primitive (Gamma   a b) = gamma  a b
-    primitive (Beta    a b) = beta   a b
-    primitive (Uniform a b) = uniform a b
+    primitive (Continuous (Normal  m s)) = normal m s
+    primitive (Continuous (Gamma   a b)) = gamma  a b
+    primitive (Continuous (Beta    a b)) = beta   a b
+    primitive (Continuous (Uniform a b)) = uniform a b
 
     -- defaults based on primitive
     discrete ps   = primitive $ Discrete ps
-    normal m s    = primitive $ Normal m s
-    gamma  a b    = primitive $ Gamma  a b
-    beta   a b    = primitive $ Beta   a b
-    uniform a b   = primitive $ Uniform a b
+    normal m s    = primitive $ Continuous (Normal  m s)
+    gamma  a b    = primitive $ Continuous (Gamma   a b)
+    beta   a b    = primitive $ Continuous (Beta    a b)
+    uniform a b   = primitive $ Continuous (Uniform a b)
 
     -- | Categorical distribution, weights need not be normalized.
     categorical :: [(a,CustomReal m)] -> m a
