@@ -12,7 +12,7 @@ module Control.Monad.Bayes.Primitive (
   pdf
 ) where
 
-import Numeric.SpecFunctions
+--import Numeric.SpecFunctions
 import Data.List
 
 import Control.Monad.Bayes.LogDomain
@@ -79,16 +79,15 @@ normalPdf mu sigma x =
     sigma2 = sigma^2
 
 -- | PDF of gamma distribution parameterized by shape and rate.
-gammaPdf :: (Ord a, Floating a, NumSpec (LogDomain a)) => a -> a -> a -> LogDomain a
+gammaPdf :: (Ord a, Floating a, NumSpec a) => a -> a -> a -> LogDomain a
 gammaPdf a b x
-  | x > 0     = (fromLog $ a * log b + (a-1) * log x - b * x) - gamma (toLogDomain a)
-  | otherwise = fromInteger 0
+  | x > 0     = fromLog $ a * log b + (a-1) * log x - b * x - logGamma a
+  | otherwise = 0
 
 -- | PDF of beta distribution.
-betaPdf :: (Ord a, Floating a, NumSpec (LogDomain a)) => a -> a -> a -> LogDomain a
+betaPdf :: (Ord a, Floating a, NumSpec a) => a -> a -> a -> LogDomain a
 betaPdf a b x
    | a <= 0 || b <= 0 = error "Negative parameter to Beta"
-   | x <= 0 = fromInteger 0
-   | x >= 1 = fromInteger 0
-   | otherwise =
-      (fromLog $ (a-1)*log x + (b-1)*log (1-x)) - beta (toLogDomain a) (toLogDomain b)
+   | x <= 0 = 0
+   | x >= 1 = 0
+   | otherwise = fromLog $ (a-1) * log x + (b-1) * log (1-x) - logBeta a b
