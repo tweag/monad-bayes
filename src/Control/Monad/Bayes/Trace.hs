@@ -45,45 +45,26 @@ import Control.Monad.Trans.Class
 
 import Data.Maybe
 import Data.List
-import Data.Dynamic
+import Data.Typeable
 import Safe (tailSafe)
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.
 reusePrimitive :: Primitive r a -> Primitive r b -> a -> Maybe b
 reusePrimitive d d' x =
-  -- Adam: this could be replaced with first checking if a == b and if so then
-  -- if support d == support d'
-  case (support d, support d') of
-    (Interval   a b, Interval   c d) ->
-     do
-       (a',b') <- cast (a,b)
-       x'      <- cast x
-       if (a',b') == (c,d) then Just x' else Nothing
-    (Finite         xs , Finite         ys )                    ->
-      do
-        xs' <- cast xs
-        x'  <- cast x
-        if xs' == ys then Just x' else Nothing
-    _                                                           -> Nothing
-
+  case (d,d') of
+    (Discrete   xs, Discrete   xs') | support d == support d' -> Just x
+    (Continuous xs, Continuous xs') | support d == support d' -> Just x
+    _                                                         -> Nothing
 
 
 data Cache r where
   Cache :: Primitive r a -> a -> Cache r
 
 instance Eq (Cache r) where
-  Cache d@(Discrete  _) x == Cache d'@(Discrete  _) x' =
-    fromMaybe False (do {p <- cast d; y <- cast x; return (y == x' && p == d')})
-  Cache d@(Continuous(Normal  _ _)) x == Cache d'@(Continuous(Normal  _ _)) x' =
-    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Continuous(Gamma   _ _)) x == Cache d'@(Continuous(Gamma   _ _)) x' =
-    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Continuous(Beta    _ _)) x == Cache d'@(Continuous(Beta    _ _)) x' =
-    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache d@(Continuous(Uniform _ _)) x == Cache d'@(Continuous(Uniform _ _)) x' =
-    fromMaybe False (do {p <- cast d; y <- cast x; return (p == d' && y == x')})
-  Cache _               _ == Cache _                _  = False
+  Cache d@(Discrete   _) x == Cache d'@(Discrete  _) x'  = d == d' && x == x'
+  Cache d@(Continuous _) x == Cache d'@(Continuous _) x' = d == d' && x == x'
+  Cache _               _  == Cache _                _   = False
 
 instance Show r => Show (Cache r) where
   showsPrec p cache r =
@@ -95,11 +76,8 @@ instance Show r => Show (Cache r) where
       printCache cache r
     where
       printCache :: Cache r -> String -> String
-      printCache (Cache d@(Discrete  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Continuous(Normal  _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Continuous(Gamma   _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Continuous(Beta    _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
-      printCache (Cache d@(Continuous(Uniform _ _)) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Discrete    _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
+      printCache (Cache d@(Continuous  _) x) r = "Cache " ++ showsPrec 11 d (' ' : showsPrec 11 (show x) r)
 
 
 
