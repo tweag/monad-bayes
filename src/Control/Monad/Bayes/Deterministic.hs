@@ -9,8 +9,6 @@ module Control.Monad.Bayes.Deterministic(
   maybeDeterministic
 ) where
 
-import Data.Typeable
-
 import Control.Monad.Bayes.LogDomain (LogDomain, NumSpec)
 import Control.Monad.Bayes.Class
 
@@ -24,10 +22,10 @@ newtype Deterministic r a = Deterministic (Maybe a)
 
 type instance CustomReal (Deterministic r) = r
 
-instance (Ord r, Typeable r, Real r, NumSpec r) => MonadDist (Deterministic r) where
+instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r) where
   primitive d = Deterministic Nothing
 
-instance (Ord r, Typeable r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
+instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
   factor w = Deterministic Nothing
 
 -- | Converts a probabilistic type into a deterministic one,

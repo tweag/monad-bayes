@@ -24,7 +24,6 @@ import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Memo.StateCache
-import Data.Typeable
 
 import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
@@ -36,7 +35,7 @@ type family CustomReal (m :: * -> *) :: *
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
-class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Typeable (CustomReal m), Real (CustomReal m)) => MonadDist m where
+class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal m)) => MonadDist m where
 
     {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
     -- | Discrete distribution over first n natural numbers.
@@ -52,7 +51,7 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Typeable (Custom
     uniform  :: CustomReal m -> CustomReal m -> m (CustomReal m)
 
     -- | One of `Primitive` distributions.
-    primitive :: Typeable a => Primitive (CustomReal m) a -> m a
+    primitive :: Primitive (CustomReal m) a -> m a
     primitive (Discrete d)  = discrete d
     primitive (Continuous (Normal  m s)) = normal m s
     primitive (Continuous (Gamma   a b)) = gamma  a b

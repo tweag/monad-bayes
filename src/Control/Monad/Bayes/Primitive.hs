@@ -12,7 +12,6 @@ module Control.Monad.Bayes.Primitive (
   pdf
 ) where
 
-import Data.Typeable
 import Numeric.SpecFunctions
 import Data.List
 
@@ -24,8 +23,8 @@ data PrimitiveReal r = Normal r r | Gamma r r | Beta r r | Uniform r r
 -- | Primitive distributions for which we can compute density.
 -- Here the weights of Categorical must be normalized.
 data Primitive r a where
-    Discrete :: (Ord r, Floating r, Real r, Typeable r) => [r] -> Primitive r Int
-    Continuous :: (Ord r, Floating r, Real r, Typeable r) => PrimitiveReal r -> Primitive r r
+    Discrete :: (Ord r, Floating r, Real r) => [r] -> Primitive r Int
+    Continuous :: (Ord r, Floating r, Real r) => PrimitiveReal r -> Primitive r r
 
 deriving instance Eq (Primitive r a)
 deriving instance Show r => Show (Primitive r a)
@@ -34,8 +33,8 @@ deriving instance Show r => Show (Primitive r a)
 -- There is currently no distinction between open and closed intervals,
 -- since it was not important in any code written so far.
 data Support a where
-  Finite         :: (Typeable a, Integral a) => [a] -> Support a
-  Interval       :: (Typeable a, Real a, Floating a) => a -> a -> Support a
+  Finite         :: (Integral a) => [a] -> Support a
+  Interval       :: (Real a, Floating a) => a -> a -> Support a
 deriving instance Eq   (Support a)
 deriving instance Show a => Show (Support a)
 
@@ -44,7 +43,7 @@ support :: Primitive r a -> Support a
 support (Discrete ps) = Finite $ findIndices (> 0) ps
 support (Continuous d) = supportReal d
 
-supportReal :: (Floating r, Real r, Typeable r) => PrimitiveReal r -> Support r
+supportReal :: (Floating r, Real r) => PrimitiveReal r -> Support r
 supportReal (Normal  _ _) = Interval (-1/0) (1/0)
 supportReal (Gamma   _ _) = Interval 0 (1/0)
 supportReal (Beta    _ _) = Interval 0 1

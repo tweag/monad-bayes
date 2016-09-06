@@ -21,7 +21,6 @@ module Control.Monad.Bayes.Coprimitive (
 import Control.Monad.Trans.Class
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
-import Data.Typeable
 import Data.Maybe
 
 import Control.Monad.Bayes.LogDomain
@@ -32,7 +31,7 @@ import Control.Monad.Bayes.Deterministic
 
 -- Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler r y where
-  AwaitSampler :: Typeable a => Primitive r a -> (a -> y) -> AwaitSampler r y
+  AwaitSampler :: Primitive r a -> (a -> y) -> AwaitSampler r y
 deriving instance Functor (AwaitSampler r)
 
 -- | Pause probabilistic program whenever a primitive distribution is

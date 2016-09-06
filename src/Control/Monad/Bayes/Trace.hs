@@ -45,7 +45,6 @@ import Control.Monad.Trans.Class
 
 import Data.Maybe
 import Data.List
-import Data.Typeable
 import Safe (tailSafe)
 
 -- | An old primitive sample is reusable if both distributions have the
@@ -83,7 +82,7 @@ instance Show r => Show (Cache r) where
 
 -- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
 data Snapshot r y where
-  Snapshot :: Typeable a => Primitive r a -> a -> (a -> y) -> Snapshot r y
+  Snapshot :: Primitive r a -> a -> (a -> y) -> Snapshot r y
 deriving instance Functor (Snapshot r)
 
 snapshotToCache :: Snapshot r y -> Cache r
