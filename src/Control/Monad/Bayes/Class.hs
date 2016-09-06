@@ -36,7 +36,7 @@ type family CustomReal (m :: * -> *) :: *
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
 -- For better granularity discrete and continuous distributions could be separated.
-class (Monad m, Ord (CustomReal m), Floating (CustomReal m), Log.NumSpec (Log.LogDomain (CustomReal m)), Typeable (CustomReal m), Real (CustomReal m)) => MonadDist m where
+class (Monad m, Ord (CustomReal m), Floating (CustomReal m), Log.NumSpec (CustomReal m), Typeable (CustomReal m), Real (CustomReal m)) => MonadDist m where
 
     {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
     -- | Discrete distribution over first n natural numbers.

@@ -6,7 +6,7 @@
 -- Essentially a polymorphic version of LogFloat to allow for AD
 module Control.Monad.Bayes.LogDomain where
 
-import Numeric.SpecFunctions
+import qualified Numeric.SpecFunctions as Spec
 
 -- | Log-domain non-negative real numbers.
 -- Essentially a polymorphic version of LogFloat to allow for AD.
@@ -85,11 +85,17 @@ instance (Ord a, Floating a) => Floating (LogDomain a) where
 class Floating a => NumSpec a where
   gamma :: a -> a
   beta  :: a -> a -> a
+  logGamma :: a -> a
+  logGamma = log . gamma
+  logBeta :: a -> a -> a
+  logBeta a b = log $ beta a b
 
 instance NumSpec Double where
   gamma     = exp . logGamma
   beta a b  = exp $ logBeta a b
+  logGamma  = Spec.logGamma
+  logBeta   = Spec.logBeta
 
-instance NumSpec (LogDomain Double) where
+instance (Ord a, NumSpec a) => NumSpec (LogDomain a) where
   gamma     = liftLog (logGamma . exp)
   beta a b  = liftLog2 (\x y -> logBeta (exp x) (exp y)) a b
