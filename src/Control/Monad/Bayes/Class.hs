@@ -136,7 +136,7 @@ class MonadDist m => MonadBayes m where
 
     -- | Soft conditioning on a noisy value.
     -- By default implemented as a `factor` with corresponding PDF.
-    observe :: Primitive r a -> a -> m ()
+    observe :: Primitive (CustomReal m) a -> a -> m ()
     observe d x = factor (pdf d x)
 
 
