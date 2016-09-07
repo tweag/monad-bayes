@@ -73,16 +73,16 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
 
     -- | Dirichlet distribution, the conjugate prior to the categorical.
     -- Weights need not be normalized.
-    dirichlet :: (Fractional (CustomReal m)) => [CustomReal m] -> m [CustomReal m]
+    dirichlet :: [CustomReal m] -> m [CustomReal m]
     dirichlet ws = liftM normalize $ gammas ws where
       gammas = mapM (\w -> gamma w 1)
       normalize xs = map (/ (Prelude.sum xs)) xs
 
     -- | Bernoulli distribution.
-    bernoulli :: Num (CustomReal m) => CustomReal m -> m Bool
+    bernoulli :: CustomReal m -> m Bool
     bernoulli p = categorical [(True,p), (False,1-p)]
     -- | Binomial distribution. Returns the number of successes.
-    binomial :: Floating (CustomReal m) => Int -> CustomReal m -> m Int
+    binomial :: Int -> CustomReal m -> m Int
     binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
                      mass k = (realToFrac (n `choose` k)) * (p ^ k') *
                               ((1-p) ^ (n'-k')) where
@@ -95,23 +95,23 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       let counts = Map.toList $ Map.fromListWith (+) (zip indexes (repeat 1))
       return $ map (first (xs !!)) counts
     -- | Geometric distribution starting at 0.
-    geometric :: Floating (CustomReal m) => CustomReal m -> m Int
+    geometric :: CustomReal m -> m Int
     geometric p = categorical $ map (\k -> (k, p * q ^ (fromIntegral k))) [0..] where
                              q = 1 - p
     -- | Poisson distribution.
-    poisson :: Floating (CustomReal m) => CustomReal m -> m Int
+    poisson :: CustomReal m -> m Int
     poisson p = categorical $ map (\k -> (k, mass k)) [0..] where
                              mass k = c * (p ^ (fromIntegral k)) /
                                 (realToFrac (factorial k))
                              c = exp (-p)
 
     -- | Uniform discrete distribution.
-    uniformD :: Fractional (CustomReal m) => [a] -> m a
+    uniformD :: [a] -> m a
     uniformD xs = categorical $ map (,weight) xs where
                              weight = 1 / fromIntegral (length xs)
 
     -- | Exponential distribution parameterized by rate.
-    exponential :: Fractional (CustomReal m) => CustomReal m -> m (CustomReal m)
+    exponential :: CustomReal m -> m (CustomReal m)
     exponential rate = gamma 1 (1 / rate)
 
     -- | Continuous uniform distribution.
