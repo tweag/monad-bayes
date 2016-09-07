@@ -3,7 +3,8 @@
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
   FlexibleContexts,
-  RankNTypes
+  RankNTypes,
+  TypeFamilies
  #-}
 
 module Control.Monad.Bayes.Particle (
@@ -52,8 +53,10 @@ mapMonad :: Monad m =>
             (forall a. m a -> m a) -> Particle m a -> Particle m a
 mapMonad f cort = Coroutine {resume= f $ resume cort}
 
+type instance CustomReal (Particle m) = CustomReal m
+
 instance MonadDist m => MonadDist (Particle m) where
-    primitive = lift . primitive
+  primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (Particle m) where
-    factor w = lift (factor w) >> synchronize
+  factor w = lift (factor w) >> synchronize

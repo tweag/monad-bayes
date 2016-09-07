@@ -10,7 +10,7 @@ import Control.Monad.Trans.Identity
 import System.Random
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Empirical
@@ -23,22 +23,31 @@ import qualified Gamma
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
 
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
+
 g = mkStdGen 0
 
 check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
 
-check_preserve_smc = (enumerate . runIdentityT . collapse . smc 2 2) sprinkler ~==
+check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-check_preserve_smcrm = (enumerate . runIdentityT . collapse . smcrm 2 1) sprinkler ~==
+check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
+                      enumerate sprinkler
+
+check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+                      enumerate sprinkler
+
+check_preserve_smcrm = (enumerate . collapse . smcrm 2 1) sprinkler ~==
                         enumerate sprinkler
 
 sprinkler_posterior = duplicateWeight sprinkler
 
-mhPriorTrans :: MonadDist m => Weighted m Bool -> m Bool
-mhPriorTrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
+mhPriorrans :: MonadDist m => Weighted m Bool -> m Bool
+mhPriorrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
 
-check_prior_trans = enumerate (mhPriorTrans sprinkler_posterior) ~==
+check_prior_trans = enumerate (mhPriorrans sprinkler_posterior) ~==
                     enumerate sprinkler
 
 pimhTrans :: MonadDist m => Weighted m Bool -> m Bool
@@ -48,7 +57,7 @@ pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
 check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
                    enumerate sprinkler
 
-check_trace_mh m m' = enumerate (marginal' (mhStep' m)) ~==
+check_trace_mh m m' = enumerate (marginal (mhStep (mhStep m))) ~==
                       enumerate m'
 
 check_trace_trans = check_trace_mh sprinkler sprinkler

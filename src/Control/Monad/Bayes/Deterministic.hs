@@ -1,5 +1,7 @@
 {-# LANGUAGE
-  GeneralizedNewtypeDeriving
+  GeneralizedNewtypeDeriving,
+  TypeFamilies,
+  FlexibleInstances
  #-}
 
 module Control.Monad.Bayes.Deterministic(
@@ -7,6 +9,7 @@ module Control.Monad.Bayes.Deterministic(
   maybeDeterministic
 ) where
 
+import Control.Monad.Bayes.LogDomain (LogDomain, NumSpec)
 import Control.Monad.Bayes.Class
 
 -- | A wrapper for deterministic code.
@@ -14,16 +17,18 @@ import Control.Monad.Bayes.Class
 -- but the type system can not ensure that,
 -- `Deterministic` can be used to remove the `MonadBayes` constraint
 -- in a type-safe way.
-newtype Deterministic a = Deterministic (Maybe a)
+newtype Deterministic r a = Deterministic (Maybe a)
   deriving(Functor, Applicative, Monad)
 
-instance MonadDist Deterministic where
+type instance CustomReal (Deterministic r) = r
+
+instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r) where
   primitive d = Deterministic Nothing
 
-instance MonadBayes Deterministic where
+instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
   factor w = Deterministic Nothing
 
 -- | Converts a probabilistic type into a deterministic one,
 -- provided that no probabilistic effects are actually used.
-maybeDeterministic :: Deterministic a -> Maybe a
+maybeDeterministic :: Deterministic r a -> Maybe a
 maybeDeterministic (Deterministic m) = m

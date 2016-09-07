@@ -10,11 +10,11 @@ module Control.Monad.Bayes.Inference where
 
 import Control.Arrow (first,second)
 import Data.Either
-import Data.Number.LogFloat
 import Control.Monad.Trans.Maybe
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
@@ -33,13 +33,13 @@ rejection d = do
             Nothing -> rejection d
 
 -- | Simple importance sampling from the prior.
-importance :: MonadDist m => Weighted m a -> m (a,LogFloat)
+importance :: MonadDist m => Weighted m a -> m (a,LogDomain (CustomReal m))
 importance = runWeighted
 
 -- | Multiple importance samples with post-processing.
 importance' :: (Ord a, MonadDist m) =>
-               Int -> Population m a -> m [(a,Double)]
-importance' n d = fmap (enumerate . categorical) $ runPopulation $ spawn n >> d
+               Int -> Population m a -> m [(a, CustomReal m)]
+importance' n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ spawn n >> d
 
 -- | Sequential Monte Carlo from the prior.
 -- The first argument is the number of resampling points, the second is
@@ -51,8 +51,8 @@ smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing.
 smc' :: (Ord a, MonadDist m) => Int -> Int ->
-        Particle (Population m) a -> m [(a,Double)]
-smc' k n d = fmap (enumerate . categorical) $ runPopulation $ smc k n d
+        Particle (Population m) a -> m [(a, CustomReal m)]
+smc' k n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
@@ -73,21 +73,33 @@ smcWithResampler resampler k n =
 
 smcrm :: forall m a. MonadDist m =>
          Int -> Int ->
-         Particle (Trace' (Population m)) a -> Population m a
+         Particle (Trace (Population m)) a -> Population m a
 
-smcrm k n = marginal' . flatten . composeCopies k step . init
+smcrm k n = marginal . flatten . composeCopies k step . init
   where
   hoistC  = Particle.mapMonad
-  hoistT  = Trace.mapMonad'
+  hoistT  = Trace.mapMonad
 
-  init :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
+  init :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
   init = hoistC (hoistT (spawn n >>))
 
-  step :: Particle (Trace' (Population m)) a -> Particle (Trace' (Population m)) a
-  step = advance . hoistC (mhStep' . hoistT resample)
+  step :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  step = advance . hoistC (mhStep . hoistT resample)
+
+-- | Importance Sampling with Metropolis-Hastings transitions.
+-- Draws initial samples using IS and applies a number of MH transitions
+-- to each of them independently.
+-- Can be seen as a precursor to Simulated Annealing.
+ismh :: MonadDist m => Int -> Int -> Trace (Population m) a -> Population m a
+ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
+
+-- | Sequential Metropolis-Hastings.
+-- Alternates several MH transitions with running the program another step forward.
+smh :: MonadBayes m => Int -> Int -> Particle (Trace m) a -> m a
+smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
-newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a,LogFloat)}
+newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
 
 -- | Metropolis-Hastings algorithm.
 mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
@@ -105,7 +117,7 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
   chain n x = do
     p <- get
     ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
-    accept <- bernoulli $ if p == 0 then 1 else min 1 (q * w / p)
+    accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
     let next = if accept then y else x
     when accept (put q)
     rest <- chain (n-1) next
@@ -114,11 +126,11 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 -- | Trace MH. Each state of the Markov chain consists of a list
 -- of continuations from the sampling of each primitive distribution
 -- during an execution.
-traceMH :: (MonadDist m) => Int -> Trace m a -> m [a]
-traceMH n (Trace m) = m >>= init >>= loop n
+traceMH :: (MonadDist m) => Int -> Trace' m a -> m [a]
+traceMH n (Trace' m) = m 1 >>= init >>= loop n
   where
     init state | mhPosteriorWeight state >  0 = return state
-    init state | mhPosteriorWeight state == 0 = m >>= init
+    init state | mhPosteriorWeight state == 0 = m 1 >>= init
     loop n state | n <= 0 = return []
     loop n state | n >  0 = do
       nextState <- mhKernel state

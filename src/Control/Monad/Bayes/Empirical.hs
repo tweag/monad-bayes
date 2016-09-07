@@ -3,7 +3,9 @@
   GeneralizedNewtypeDeriving,
   FlexibleInstances,
   FlexibleContexts,
-  Rank2Types
+  Rank2Types,
+  TypeFamilies,
+  StandaloneDeriving
  #-}
 
 module Control.Monad.Bayes.Empirical (
@@ -29,13 +31,14 @@ module Control.Monad.Bayes.Empirical (
 
 import Prelude hiding (all)
 
+import Control.Arrow (first,second)
 import Control.Monad.Trans.Class
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
-import Data.Number.LogFloat as LogFloat
 import Data.Monoid
 import qualified Data.Foldable as Fold
 
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
@@ -44,7 +47,10 @@ import Control.Monad.Bayes.Weighted
 -- 'Empirical' uses 'ListT' internally, so is only a monad when the transformed
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist, MonadBayes)
+    deriving (Functor, Applicative, Monad, MonadTrans)
+type instance CustomReal (Empirical m) = CustomReal m
+deriving instance MonadDist m => MonadDist (Empirical m)
+deriving instance MonadBayes m => MonadBayes (Empirical m)
 
 -- | Explicit representation of the sample.
 runEmpirical :: Functor m => Empirical m a -> m [a]
@@ -73,26 +79,32 @@ draw n = Empirical $ ListT $ return $ replicate n ()
 -- Conditioning is done by accumulating weights.
 -- There is no automatic normalization or aggregation of weights.
 newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
-  deriving (Functor, Applicative, Monad, MonadDist, MonadBayes)
+  deriving (Functor)
+
+type instance CustomReal (Population m) = CustomReal m
+deriving instance MonadDist m => Applicative (Population m)
+deriving instance MonadDist m => Monad (Population m)
+deriving instance MonadDist m => MonadDist (Population m)
+deriving instance MonadDist m => MonadBayes (Population m)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
 
 -- | Explicit representation of the weighted sample.
-runPopulation :: Functor m => Population m a -> m [(a,LogFloat)]
+runPopulation :: MonadDist m => Population m a -> m [(a,LogDomain (CustomReal m))]
 runPopulation = runEmpirical . runWeighted . unPopulation
 
 -- | Initialise 'Population' with a concrete weighted sample.
-fromWeightedList :: Monad m => m [(a,LogFloat)] -> Population m a
+fromWeightedList :: MonadDist m => m [(a,LogDomain (CustomReal m))] -> Population m a
 fromWeightedList = Population . withWeight . fromList
 
 -- | Lift unweighted sample by setting all weights equal.
-fromUnweighted :: Monad m => Empirical m a -> Population m a
+fromUnweighted :: MonadDist m => Empirical m a -> Population m a
 fromUnweighted = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
 
-weightedSampleSize :: Monad m => Population m a -> m Int
+weightedSampleSize :: MonadDist m => Population m a -> m Int
 weightedSampleSize = sampleSize . runWeighted . unPopulation
 
 -- | A variant of 'draw' for 'Population'.
@@ -102,19 +114,19 @@ spawn n = fromUnweighted (draw n)
 
 -- | A version of 'resampleN' that operates explicitly on lists.
 -- Returns the empty list if model evidence is 0.
-resampleNList :: MonadDist m => Int -> [(a,LogFloat)] -> m [(a,LogFloat)]
+resampleNList :: MonadDist m => Int -> [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain (CustomReal m))]
 resampleNList n ys = do
   let (xs,ws) = unzip ys
-  let z = LogFloat.sum ws
+  let z = sum ws
   if z == 0 then
     return []
   else do
-    offsprings <- multinomial ys n
+    offsprings <- multinomial (map (second fromLogDomain) ys) n
     let new_samples = concat [replicate k x | (x,k) <- offsprings]
     return $ map (,z / fromIntegral n) new_samples
 
 -- | A version of 'resample' that operates explicitly on lists.
-resampleList :: MonadDist m => [(a,LogFloat)] -> m [(a,LogFloat)]
+resampleList :: MonadDist m => [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain (CustomReal m))]
 resampleList ys = resampleNList (length ys) ys
 
 -- | Resample the population using the underlying monad.
@@ -132,11 +144,11 @@ resampleN n d = fromWeightedList $ do
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with an estimator of the model evidence.
-proper :: MonadDist m => Population m a -> m (a,LogFloat)
+proper :: MonadDist m => Population m a -> m (a,LogDomain (CustomReal m))
 proper = fmap head . (>>= resampleNList 1) . runPopulation
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
-evidence :: MonadDist m => Population m a -> m LogFloat
+evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
 evidence = fmap snd . proper
 
 -- | Pick one point from the population and use model evidence as a 'factor'.
@@ -147,8 +159,8 @@ collapse e = do
   return x
 
 -- | Population average of a function, does not normalize weights.
-popAvg :: MonadBayes m => (a -> LogFloat) -> Population m a -> m LogFloat
+popAvg :: MonadBayes m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
 popAvg f p = do
   xs <- runPopulation p
-  let ys = map (\(x,w) -> f x * w) xs
-  return (LogFloat.sum ys)
+  let ys = map (\(x,w) -> f x * fromLogDomain w) xs
+  return (sum ys)

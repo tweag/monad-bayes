@@ -1,5 +1,6 @@
 {-# LANGUAGE
- FlexibleContexts
+ FlexibleContexts,
+ TypeFamilies
  #-}
 
 module HMM (
@@ -10,7 +11,6 @@ module HMM (
 --Hidden Markov Models
 
 --import Numeric.LinearAlgebra.HMatrix -- for the exact posterior only
-import Data.Number.LogFloat
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
@@ -26,24 +26,24 @@ values = [0.9,0.8,0.7,0,-0.025,5,2,0.1,0,
           0.13,0.45,6,0.2,0.3,-1,-1]
 
 -- | The transition model.
-trans :: MonadDist d => Int -> d Int
+trans :: MonadDist m => Int -> m Int
 trans (-1) = categorical $ zip states [0.1, 0.4, 0.5]
 trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
 trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
 -- | The emission model.
-emission :: Int -> Primitive Double
-emission x = Normal (fromIntegral x) 1
+emission :: Int -> Primitive Double Double
+emission x = Continuous (Normal (fromIntegral x) 1)
 
 -- | Initial state distribution
-start :: MonadDist d => d [Int]
+start :: MonadDist m => m [Int]
 start = uniformD $ map (:[]) states
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
-hmm :: MonadBayes d => d [Int]
+hmm :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 hmm = fmap reverse states where
   states = foldl expand start values
-  expand :: MonadBayes d => d [Int] -> Double -> d [Int]
+  --expand :: MonadBayes m => m [Int] -> Double -> m [Int]
   expand d y = do
     rest <- d
     x    <- trans $ head rest

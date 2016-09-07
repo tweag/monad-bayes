@@ -3,9 +3,15 @@ module TestParticle where
 import Data.AEq
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Particle
 import Sprinkler
+
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
+
+mass :: Ord a => Dist.Dist Double a -> a -> Double 
+mass = Dist.mass
 
 two_sync :: MonadBayes m => m Int
 two_sync = do

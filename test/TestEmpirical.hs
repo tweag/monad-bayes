@@ -3,13 +3,19 @@ module TestEmpirical where
 import System.Random
 import Data.AEq
 import Control.Monad.Trans.Identity
-import Data.Number.LogFloat
 
+import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Empirical as Empirical
 import Sprinkler
+
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
+
+expectation :: (a -> Double) -> Dist.Dist Double a -> Double
+expectation = Dist.expectation
 
 g = mkStdGen 0
 
@@ -32,6 +38,6 @@ resample_check n =
   (enumerate . runIdentityT . collapse . resampleN n) (spawn 2 >> sprinkler) ~==
   sprinkler_exact
 
-popAvg_check = fromLogFloat (expectation f Sprinkler.soft) ~== fromLogFloat (expectation id (popAvg f Sprinkler.soft)) where
+popAvg_check = (expectation f Sprinkler.soft) ~== (expectation id (popAvg f Sprinkler.soft)) where
   f True = 10
   f False = 4

@@ -1,5 +1,6 @@
 {-# LANGUAGE
-  GeneralizedNewtypeDeriving
+  GeneralizedNewtypeDeriving,
+  TypeFamilies
  #-}
 
 module Control.Monad.Bayes.Rejection (
@@ -17,12 +18,17 @@ import Control.Monad.Bayes.Class
 -- 'condition' works correctly, while 'factor' and'observe'
 -- result in an error.
 newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadDist)
+    deriving (Functor, Applicative, Monad, MonadTrans)
 
 -- | Equivalent to 'runMaybeT'
 runRejection :: Rejection m a -> m (Maybe a)
 runRejection = runMaybeT . toMaybeT
 
+type instance CustomReal (Rejection m) = CustomReal m
+
+instance MonadDist m => MonadDist (Rejection m) where
+  primitive = lift . primitive
+
 instance MonadDist m => MonadBayes (Rejection m) where
-    factor _ = error "Rejection does not support soft conditioning"
-    condition b = unless b (fail "")
+  factor _ = error "Rejection does not support soft conditioning"
+  condition b = unless b (fail "")
