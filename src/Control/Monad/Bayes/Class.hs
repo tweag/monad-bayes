@@ -131,13 +131,12 @@ class MonadDist m => MonadBayes m where
 
     -- | Hard conditioning on an arbitrary predicate.
     -- By default implemented in terms of `factor`.
-    condition :: (Floating (CustomReal m), Ord (CustomReal m)) => Bool -> m ()
+    condition :: Bool -> m ()
     condition b = if b then factor 1 else factor 0
 
     -- | Soft conditioning on a noisy value.
     -- By default implemented as a `factor` with corresponding PDF.
-    observe :: (r ~ CustomReal m, Ord r, Floating r, Log.NumSpec (Log.LogDomain r))
-      => Primitive r a -> a -> m ()
+    observe :: Primitive r a -> a -> m ()
     observe d x = factor (pdf d x)
 
 
