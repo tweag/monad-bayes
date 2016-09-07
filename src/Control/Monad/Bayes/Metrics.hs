@@ -4,6 +4,7 @@ import Control.Arrow (second)
 import Data.List (sort)
 import Data.Maybe
 
+import Control.Monad.Bayes.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Primitive
@@ -17,7 +18,7 @@ import Control.Monad.Bayes.Primitive
 --    discreteKLDivergence p q = D_KL( p || q )
 --                            = sum_x p(x) log (p(x) / q(x))
 -- @
-kullbackLeibnerDivergence :: (Ord a) => Dist a -> Dist a -> Double
+kullbackLeibnerDivergence :: (Ord a, Ord r, Floating r) => Dist r a -> Dist r a -> r
 kullbackLeibnerDivergence p q = sum $ do
   let qs = enumerate q
   let densityQ x = fromMaybe 0 $ lookup x qs
@@ -27,7 +28,7 @@ kullbackLeibnerDivergence p q = sum $ do
 -- | Measure goodness-of-fit of samples by Kullback-Leibner divergence
 -- of the categorical distribution defined by the samples against the
 -- target distribution.
-kullbackLeibnerTest :: (Ord a) => [a] -> Dist a -> Double
+kullbackLeibnerTest :: (Ord a, Ord r, NumSpec r, Real r) => [a] -> Dist r a -> r
 kullbackLeibnerTest samples = kullbackLeibnerDivergence (categorical $ map (flip (,) 1) samples)
 
 -- | Total variation distance between the empirical distribution

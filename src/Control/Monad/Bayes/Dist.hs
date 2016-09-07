@@ -30,28 +30,28 @@ import Data.Either
 import Control.Monad.List
 import Control.Monad.Writer
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
 -- | Representation of discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.
 -- There is no automatic normalization or aggregation of (value,weight) pairs.
-newtype Dist a = Dist {unDist :: [(a, Weight Double)]}
+newtype Dist r a = Dist {unDist :: [(a, Weight r)]}
 
-type instance CustomReal Dist = Double
+type instance CustomReal (Dist r) = r
 
-instance Functor Dist where
+instance Functor (Dist r) where
   fmap f = Dist . fmap (first f) . unDist
 
-instance Applicative Dist where
+instance (Ord r, Floating r) => Applicative (Dist r) where
   pure x = Dist $ [(x,1)]
   df <*> dx = Dist [(f x, p * q) | (f,p) <- unDist df, (x,q) <- unDist dx]
 
-instance Monad Dist where
+instance (Ord r, Floating r) => Monad (Dist r) where
   dx >>= df = Dist [(y, p * q) | (x,p) <- unDist dx, (y,q) <- unDist (df x)]
 
-instance MonadDist Dist where
+instance (Ord r, Real r, NumSpec r) => MonadDist (Dist r) where
   discrete xs = Dist $ fmap (second (weight . toLogDomain)) $
                   normalize $ zip (map fromIntegral [0..]) xs
   normal  = error "Dist does not support continuous distributions"
@@ -59,24 +59,24 @@ instance MonadDist Dist where
   beta    = error "Dist does not support continuous distributions"
   uniform = error "Dist does not support continuous distributions"
 
-instance MonadBayes Dist where
+instance (Ord r, Real r, NumSpec r) => MonadBayes (Dist r) where
   factor w = Dist [((), weight w)]
 
 -- | Returns an explicit representation of a `Dist`.
-toList :: Dist a -> [(a, LogDomain Double)]
+toList :: Dist r a -> [(a, LogDomain r)]
 toList = map (second unWeight) . unDist
 
 -- | Same as `toList`, only weights are converted to `Double`.
-explicit :: Dist a -> [(a,Double)]
+explicit :: Floating r => Dist r a -> [(a,r)]
 explicit = map (second fromLogDomain) . toList
 
 -- | Returns the model evidence, that is sum of all weights.
-evidence :: Dist a -> LogDomain Double
+evidence :: (Ord r, Floating r) => Dist r a -> LogDomain r
 evidence = sum . map snd . toList
 
 -- | Probability mass of a specific value.
 -- Discards model evidence.
-mass :: Ord a => Dist a -> a -> Double
+mass :: (Ord r, Floating r, Ord a) => Dist r a -> a -> r
 mass d a = case lookup a (normalize (enumerate d)) of
              Just p -> p
              Nothing -> 0
@@ -103,9 +103,9 @@ normalize = fst . normalizeForEvidence
 
 -- | Aggregation and normalization of weights.
 -- | The resulting list is sorted ascendingly according to values.
-enumerate :: Ord a => Dist a -> [(a,Double)]
+enumerate :: (Floating r, Ord a) => Dist r a -> [(a,r)]
 enumerate = compact . explicit
 
 -- | Expectation of a given function, does not normalize weights.
-expectation :: (a -> Double) -> Dist a -> Double
+expectation :: Floating r => (a -> r) -> Dist r a -> r
 expectation f p = sum $ map (\(x,w) -> f x * fromLogDomain w) $ toList p

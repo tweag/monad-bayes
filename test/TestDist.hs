@@ -2,10 +2,19 @@ module TestDist where
 
 import Data.AEq
 
-import Control.Monad.Bayes.LogDomain (fromLogDomain)
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
 import Sprinkler
+
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
+
+evidence :: Dist.Dist Double a -> LogDomain Double
+evidence = Dist.evidence
+
+expectation :: (a -> Double) -> Dist.Dist Double a -> Double
+expectation = Dist.expectation
 
 unnorm :: MonadDist m => m Int
 unnorm = discrete [0.5,0.8]

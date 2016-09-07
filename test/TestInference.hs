@@ -10,7 +10,7 @@ import Control.Monad.Trans.Identity
 import System.Random
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Empirical
@@ -22,6 +22,9 @@ import qualified Gamma
 
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
+
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
 
 g = mkStdGen 0
 

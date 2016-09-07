@@ -6,10 +6,16 @@ import Control.Monad.Trans.Identity
 
 import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Empirical as Empirical
 import Sprinkler
+
+enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
+enumerate = Dist.enumerate
+
+expectation :: (a -> Double) -> Dist.Dist Double a -> Double
+expectation = Dist.expectation
 
 g = mkStdGen 0
 
