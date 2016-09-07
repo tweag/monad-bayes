@@ -79,8 +79,8 @@ matrix:
 
   # Nightly builds are allowed to fail
   - env: BUILD=stack ARGS="--resolver nightly"
-   compiler: ": #stack nightly"
-   addons: {apt: {packages: [libgmp,libgmp-dev]}}
+    compiler: ": #stack nightly"
+    addons: {apt: {packages: [libgmp,libgmp-dev]}}
 
   # Build on OS X in addition to Linux
   - env: BUILD=stack ARGS=""
@@ -100,8 +100,8 @@ matrix:
     os: osx
 
   - env: BUILD=stack ARGS="--resolver nightly"
-   compiler: ": #stack nightly osx"
-   os: osx
+    compiler: ": #stack nightly osx"
+    os: osx
 
   allow_failures:
   - env: BUILD=cabal GHCVER=head  CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
