@@ -28,26 +28,27 @@ import Control.Monad.Trans.Memo.StateCache
 import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
 
--- | The type used to represent real numbers.
--- It is abstracted to allow for AD.
-type family CustomReal (m :: * -> *) :: *
-
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
--- For better granularity discrete and continuous distributions could be separated.
 class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal m)) => MonadDist m where
 
     {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
-    -- | Discrete distribution over first n natural numbers.
-    -- | The list of weights needs not sum up to 1.
+    -- | Discrete distribution over the first n natural numbers (including 0).
+    -- The list should be non-empty, finite, and contain only non-negative values, at least one of them being positive.
+    -- The weights are automatically normalized if they do not sum to 1.
     discrete :: [CustomReal m] -> m Int
-    -- | Normal distribution parameterized by mean and standard deviation.
-    normal   :: CustomReal m -> CustomReal m -> m (CustomReal m)
-    -- | Gamma distribution parameterized by shape and rate.
-    gamma    :: CustomReal m -> CustomReal m -> m (CustomReal m)
+    -- | Normal distribution.
+    normal   :: CustomReal m -- ^ mean
+             -> CustomReal m -- ^ standard deviation
+             -> m (CustomReal m)
+    -- | Gamma distribution.
+    gamma    :: CustomReal m -- ^ shape
+             -> CustomReal m -- ^ rate
+             -> m (CustomReal m)
     -- | Beta distribution.
     beta     :: CustomReal m -> CustomReal m -> m (CustomReal m)
-    -- | Continuous uniform distribution on an interval
+    -- | Continuous uniform distribution on an interval.
+    -- There is no distinction between open and closed intervals.
     uniform  :: CustomReal m -> CustomReal m -> m (CustomReal m)
 
     -- | One of `Primitive` distributions.
@@ -65,56 +66,83 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
     beta   a b    = primitive $ Continuous (Beta    a b)
     uniform a b   = primitive $ Continuous (Uniform a b)
 
-    -- | Categorical distribution, weights need not be normalized.
+    -- | Categorical distribution.
+    -- The weights should conform to the same rules as for `discrete`.
+    --
+    -- > discrete xs = categorical (zip [0..] xs)
     categorical :: [(a,CustomReal m)] -> m a
     categorical d = do
       i <- discrete (map snd d)
       return (fst (d !! i))
 
-    -- | Dirichlet distribution, the conjugate prior to the categorical.
-    -- Weights need not be normalized.
-    dirichlet :: [CustomReal m] -> m [CustomReal m]
-    dirichlet ws = liftM normalize $ gammas ws where
-      gammas = mapM (\w -> gamma w 1)
-      normalize xs = map (/ (Prelude.sum xs)) xs
-
     -- | Bernoulli distribution.
+    --
+    -- > bernoulli p = categorical [(True,p), (False,1-p)]
     bernoulli :: CustomReal m -> m Bool
-    bernoulli p = categorical [(True,p), (False,1-p)]
+    bernoulli p | p >= 0 && p <= 1 = categorical [(True,p), (False,1-p)]
+    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+
     -- | Binomial distribution. Returns the number of successes.
     binomial :: Int -> CustomReal m -> m Int
+    binomial n _ | n < 0 = error $ "Binomial: the number of trials " ++ show n ++ " is negative"
+    binomial n p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
     binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
                      mass k = (realToFrac (n `choose` k)) * (p ^ k') *
                               ((1-p) ^ (n'-k')) where
                                                   n' = fromIntegral n
                                                   k' = fromIntegral k
+
+    -- | Multinomial distribution.
+    -- Corresponds to multiple independent draws from `categorical`.
+    -- `multinomial` is to `categorical` as `binomial` is to `bernoulli`.
     multinomial :: [(a,CustomReal m)] -> Int -> m [(a,Int)]
     multinomial ps n = do
       let (xs,ws) = unzip ps
       indexes <- sequence $ replicate n $ discrete ws
       let counts = Map.toList $ Map.fromListWith (+) (zip indexes (repeat 1))
       return $ map (first (xs !!)) counts
+
     -- | Geometric distribution starting at 0.
     geometric :: CustomReal m -> m Int
-    geometric p = categorical $ map (\k -> (k, p * q ^ (fromIntegral k))) [0..] where
+    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+    geometric p = unsafeDiscrete $ map ((p *) . (q ^)) [0..] where
                              q = 1 - p
+
     -- | Poisson distribution.
     poisson :: CustomReal m -> m Int
-    poisson p = categorical $ map (\k -> (k, mass k)) [0..] where
+    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p) ++ " is not positive."
+    poisson p = unsafeDiscrete $ map mass [0..] where
                              mass k = c * (p ^ (fromIntegral k)) /
                                 (realToFrac (factorial k))
                              c = exp (-p)
 
     -- | Uniform discrete distribution.
+    -- The list should be non-empty and finite.
     uniformD :: [a] -> m a
+    uniformD xs | length xs == 0 = error $ "UniformD: the argument list is empty"
     uniformD xs = categorical $ map (,weight) xs where
                              weight = 1 / fromIntegral (length xs)
 
     -- | Exponential distribution parameterized by rate.
+    --
+    -- > exponential r = gamma 1 (1/r)
     exponential :: CustomReal m -> m (CustomReal m)
     exponential rate = gamma 1 (1 / rate)
 
-    -- | Continuous uniform distribution.
+    -- | Dirichlet distribution, the conjugate prior to `categorical`.
+    -- The list should be finite and its elements should be positive.
+    dirichlet :: [CustomReal m] -> m [CustomReal m]
+    dirichlet ws = liftM normalize $ gammas ws where
+      gammas = mapM (\w -> gamma w 1)
+      normalize xs = map (/ (Prelude.sum xs)) xs
+
+    -- | A variant of `discrete` that does not check normalization of weights.
+    -- Can be particularly useful for definiting discrete distributions with
+    -- infinite support.
+    unsafeDiscrete :: [CustomReal m] -> m Int
+    unsafeDiscrete = discrete
+
+    -- default for `uniform` based on `beta`
     --uniform :: Double -> Double -> m Double
     --uniform 0 1 = beta 1 1
     --uniform a b = do
@@ -126,19 +154,26 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
 class MonadDist m => MonadBayes m where
 
     -- | Conditioning with an arbitrary factor, as found in factor graphs.
-    -- If possible it is preferred to write models using `condition` and `observe`.
+    -- Bear in mind that some inference algorithms may require `factor`s to be
+    -- non-negative to work correctly.
     factor :: Log.LogDomain (CustomReal m) -> m ()
 
     -- | Hard conditioning on an arbitrary predicate.
-    -- By default implemented in terms of `factor`.
+    --
+    -- > condition b = factor (if b then 1 else 0)
     condition :: Bool -> m ()
-    condition b = if b then factor 1 else factor 0
+    condition b = factor $ if b then 1 else 0
 
     -- | Soft conditioning on a noisy value.
-    -- By default implemented as a `factor` with corresponding PDF.
+    --
+    -- > observe d x = factor (pdf d x)
     observe :: Primitive (CustomReal m) a -> a -> m ()
     observe d x = factor (pdf d x)
 
+-- | The type used to represent real numbers in a given monad.
+-- In most cases this is just `Double`, but
+-- it is abstracted mostly to support Automatic Differentiation.
+type family CustomReal (m :: * -> *) :: *
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
