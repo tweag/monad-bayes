@@ -9,38 +9,51 @@ module Control.Monad.Bayes.LogDomain where
 import qualified Numeric.SpecFunctions as Spec
 
 -- | Log-domain non-negative real numbers.
--- Essentially a polymorphic version of LogFloat to allow for AD.
+-- Used to prevent underflow when computing small probabilities.
 newtype LogDomain a = LogDomain a
   deriving (Eq, Ord)
 
--- | A raw representation of a logarithm.
-toLog :: LogDomain a -> a
-toLog (LogDomain x) = x
-
--- | Inverse of `toLog`
-fromLog :: a -> LogDomain a
-fromLog = LogDomain
-
--- | Apply a function to a logarithm
-liftLog :: (a -> b) -> LogDomain a -> LogDomain b
-liftLog f = fromLog . f . toLog
-
--- | Apply a function of two arguments to two logarithms
-liftLog2 :: (a -> b -> c) -> LogDomain a -> LogDomain b -> LogDomain c
-liftLog2 f x y = fromLog $ f (toLog x) (toLog y)
-
--- | Convert to log-domain
+-- | Convert to log-domain.
 toLogDomain :: Floating a => a -> LogDomain a
 toLogDomain = fromLog . log
 
--- | Inverse of `log-domain`
+-- | Inverse of `toLogDomain`.
+--
+-- > toLogDomain . fromLogDomain = id
+-- > fromLogDomain . toLogDomain = id
 fromLogDomain :: Floating a => LogDomain a -> a
 fromLogDomain = exp . toLog
 
 -- | Apply a function to a log-domain value by first exponentiating,
--- then applying the function, then differentiating.
+-- then applying the function, then taking the logarithm.
+--
+-- > mapLog f = toLogDomain . f . fromLogDomain
 mapLog :: (Floating a, Floating b) => (a -> b) -> LogDomain a -> LogDomain b
 mapLog f = toLogDomain . f . fromLogDomain
+
+-- | A raw representation of a logarithm.
+--
+-- > toLog = log . fromLogDomain
+toLog :: LogDomain a -> a
+toLog (LogDomain x) = x
+
+-- | Inverse of `toLog`.
+--
+-- > fromLog = toLogDomain . exp
+fromLog :: a -> LogDomain a
+fromLog = LogDomain
+
+-- | Apply a function to a logarithm.
+--
+-- > liftLog f = fromLog . f . toLog
+liftLog :: (a -> b) -> LogDomain a -> LogDomain b
+liftLog f = fromLog . f . toLog
+
+-- | Apply a function of two arguments to two logarithms.
+--
+-- > liftLog2 f x y = fromLog $ f (toLog x) (toLog y)
+liftLog2 :: (a -> b -> c) -> LogDomain a -> LogDomain b -> LogDomain c
+liftLog2 f x y = fromLog $ f (toLog x) (toLog y)
 
 instance Show a => Show (LogDomain a) where
   show = show . toLog
@@ -49,7 +62,7 @@ instance (Ord a, Floating a) => Num (LogDomain a) where
   x + y = if x >= y then fromLog (toLog x + log (1 + exp (toLog y - toLog x)))
                     else y + x
   x - y = if x >= y then fromLog (toLog x + log (1 - exp (toLog y - toLog x)))
-                    else y - x
+                    else error "LogDomain: subtraction resulted in a negative value"
   (*) = liftLog2 (+)
   negate x = error "LogDomain does not support negation"
   abs = id
@@ -84,14 +97,23 @@ instance (Ord a, Floating a) => Floating (LogDomain a) where
   acosh = mapLog acosh
   atanh = mapLog atanh
 
+-- | A class for numeric types that provide certain special functions.
 class Floating a => NumSpec a where
   {-# MINIMAL (gamma | logGamma) , (beta | logBeta) #-}
+  -- | Gamma function.
   gamma :: a -> a
   gamma = exp . logGamma
+  -- | Beta function.
   beta  :: a -> a -> a
   beta a b = exp $ logBeta a b
+  -- | Logarithm of `gamma`.
+  --
+  -- > logGamma = log . gamma
   logGamma :: a -> a
   logGamma = log . gamma
+  -- | Logarithm of `beta`
+  --
+  -- > logBeta a b = log (beta a b)
   logBeta :: a -> a -> a
   logBeta a b = log $ beta a b
 
