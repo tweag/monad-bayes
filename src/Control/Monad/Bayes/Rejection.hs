@@ -13,14 +13,15 @@ import Control.Monad.Trans.Maybe
 
 import Control.Monad.Bayes.Class
 
--- | A wrapper for 'MaybeT' that uses it for conditioning.
+-- | A probability monad that aborts when a condition is violated.
 -- Only hard conditioning is allowed, that is
--- 'condition' works correctly, while 'factor' and'observe'
+-- 'condition' works correctly, while 'factor' and 'observe'
 -- result in an error.
 newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
     deriving (Functor, Applicative, Monad, MonadTrans)
 
--- | Equivalent to 'runMaybeT'
+-- | Run the probabilistic computation and produce a result if all conditions
+-- are satisfied.
 runRejection :: Rejection m a -> m (Maybe a)
 runRejection = runMaybeT . toMaybeT
 

@@ -42,9 +42,9 @@ import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
--- | Empirical distribution represented as a list of samples.
+-- | Empirical distribution represented as a list of values.
 -- Probabilistic effects are lifted from the transformed monad.
--- 'Empirical' uses 'ListT' internally, so is only a monad when the transformed
+-- 'Empirical' satisfies monad laws only when the transformed
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
     deriving (Functor, Applicative, Monad, MonadTrans)
@@ -67,8 +67,11 @@ sampleSize e = do
   return (length zs)
 
 -- | Set the number of samples for the empirical distribution.
--- Bear in mind that invoking `spawn` twice in the same computation
+-- Bear in mind that invoking `draw` twice in the same computation
 -- leads to multiplying the number of samples.
+-- Additionally, using `draw` with different arguments in different branches
+-- of a probabilistic program leads to a bias in the final sample, since
+-- the branch that uses more points is over-represented.
 draw :: Monad m => Int -> Empirical m ()
 draw n = Empirical $ ListT $ return $ replicate n ()
 
@@ -104,11 +107,15 @@ fromUnweighted = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
 
+-- | The number of points in the weighted sample,
+-- not to be confused with effective sample size.
 weightedSampleSize :: MonadDist m => Population m a -> m Int
 weightedSampleSize = sampleSize . runWeighted . unPopulation
 
 -- | A variant of 'draw' for 'Population'.
 -- The weights are set equal and such that they sum to 1.
+-- It is therefore safe to use `spawn` in arbitrary places in the program
+-- without introducing bias.
 spawn :: MonadDist m => Int -> Population m ()
 spawn n = fromUnweighted (draw n)
 
@@ -130,13 +137,13 @@ resampleList :: MonadDist m => [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain
 resampleList ys = resampleNList (length ys) ys
 
 -- | Resample the population using the underlying monad.
--- Model evidence estimate is preserved in total weight.
+-- The total weight is preserved.
 resample :: MonadDist m => Population m a -> Population m a
 resample d = fromWeightedList $ do
   ys <- runPopulation d
   resampleList ys
 
--- | As 'resample', but with set new population size.
+-- | As 'resample', but with chosen new population size.
 resampleN :: MonadDist m => Int -> Population m a -> Population m a
 resampleN n d = fromWeightedList $ do
   ys <- runPopulation d
@@ -151,14 +158,15 @@ proper = fmap head . (>>= resampleNList 1) . runPopulation
 evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
 evidence = fmap snd . proper
 
--- | Pick one point from the population and use model evidence as a 'factor'.
+-- | Pick one point from the population and use model evidence as a 'factor'
+-- in the transformed monad.
 collapse :: (MonadBayes m) => Population m a -> m a
 collapse e = do
   (x,p) <- proper e
   factor p
   return x
 
--- | Population average of a function, does not normalize weights.
+-- | Population average of a function, computed using unnormalized weights.
 popAvg :: MonadBayes m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
 popAvg f p = do
   xs <- runPopulation p

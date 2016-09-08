@@ -34,9 +34,11 @@ import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, Num
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
--- | Representation of discrete distribution as a list of weighted values.
+-- | Representation of a discrete distribution as a list of weighted values.
 -- Probabilistic computation and conditioning is performed by exact enumeration.
--- There is no automatic normalization or aggregation of (value,weight) pairs.
+-- There is no automatic normalization or aggregation of weights.
+--
+-- The first parameter is a numeric type used to represent weights.
 newtype Dist r a = Dist {unDist :: [(a, Weight r)]}
 
 type instance CustomReal (Dist r) = r
@@ -63,10 +65,12 @@ instance (Ord r, Real r, NumSpec r) => MonadBayes (Dist r) where
   factor w = Dist [((), weight w)]
 
 -- | Returns an explicit representation of a `Dist`.
+-- The resulting list may contain several entries for the same value.
+-- The sum of all weights is the model evidence.
 toList :: Dist r a -> [(a, LogDomain r)]
 toList = map (second unWeight) . unDist
 
--- | Same as `toList`, only weights are converted to `Double`.
+-- | Same as `toList`, only weights are converted from log-domain.
 explicit :: Floating r => Dist r a -> [(a,r)]
 explicit = map (second fromLogDomain) . toList
 
@@ -74,19 +78,18 @@ explicit = map (second fromLogDomain) . toList
 evidence :: (Ord r, Floating r) => Dist r a -> LogDomain r
 evidence = sum . map snd . toList
 
--- | Probability mass of a specific value.
--- Discards model evidence.
+-- | Normalized probability mass of a specific value.
 mass :: (Ord r, Floating r, Ord a) => Dist r a -> a -> r
 mass d a = case lookup a (normalize (enumerate d)) of
              Just p -> p
              Nothing -> 0
 
 -- | Aggregate weights of equal values.
--- | The resulting list is sorted ascendingly according to values.
+-- The resulting list is sorted ascendingly according to values.
 compact :: (Num r, Ord a) => [(a,r)] -> [(a,r)]
 compact = Map.toAscList . Map.fromListWith (+)
 
--- | Given subprobability density, compute normalized density and model evidence
+-- | Like `normalize`, but additionally returns the model evidence.
 normalizeForEvidence :: (Ord p, Fractional p) => [(a,p)] -> ([(a,p)],p)
 normalizeForEvidence xs =
   let
@@ -101,11 +104,13 @@ normalizeForEvidence xs =
 normalize :: (Ord p, Fractional p) => [(a,p)] -> [(a,p)]
 normalize = fst . normalizeForEvidence
 
--- | Aggregation and normalization of weights.
--- | The resulting list is sorted ascendingly according to values.
+-- | Aggregate and normalize of weights.
+-- The resulting list is sorted ascendingly according to values.
+--
+-- > enumerate = compact . explicit
 enumerate :: (Floating r, Ord a) => Dist r a -> [(a,r)]
 enumerate = compact . explicit
 
--- | Expectation of a given function, does not normalize weights.
+-- | Expectation of a given function computed using unnormalized weights.
 expectation :: Floating r => (a -> r) -> Dist r a -> r
 expectation f p = sum $ map (\(x,w) -> f x * fromLogDomain w) $ toList p

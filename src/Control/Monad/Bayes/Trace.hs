@@ -56,7 +56,8 @@ reusePrimitive d d' x =
     (Continuous xs, Continuous xs') | support d == support d' -> Just x
     _                                                         -> Nothing
 
-
+-- | A GADT for caching primitive distributions and values drawn from them.
+-- The parameter is a numeric type used for representing real numbers.
 data Cache r where
   Cache :: Primitive r a -> a -> Cache r
 
@@ -80,27 +81,30 @@ instance Show r => Show (Cache r) where
 
 
 
--- Suspension functor: yield primitive distribution and previous sample, awaits new sample.
+-- | Suspension functor: yield primitive distribution and previous sample, await new sample.
+-- The first parameter is a numeric type used for representing real numbers.
 data Snapshot r y where
   Snapshot :: Primitive r a -> a -> (a -> y) -> Snapshot r y
 deriving instance Functor (Snapshot r)
 
+-- | Discard the continuation.
 snapshotToCache :: Snapshot r y -> Cache r
 snapshotToCache (Snapshot d x _) = Cache d x
 
 
 
-
+-- | An intermediate state used in the Metropolis-Hastings algorithm.
 data MHState m a = MHState
   { mhSnapshots :: [Snapshot (CustomReal m) (Weighted (Coprimitive m) a)]
-    -- continuations in snapshots produce full likelihood of the whole trace
-  , mhPosteriorWeight :: LogDomain (CustomReal m) -- likelihood of the trace
-  , mhAnswer :: a
+    -- ^ A list of snapshots of all random variables in the program.
+    -- Continuations in snapshots produce full likelihood of the whole trace.
+  , mhPosteriorWeight :: LogDomain (CustomReal m) -- ^ Likelihood of the trace.
+  , mhAnswer :: a -- ^ The final value in the trace.
   }
   deriving Functor
 
--- | Reuse previous samples as much as possible, collect reuse ratio
-mhReuse :: forall m a. (MonadDist m) =>
+-- | Reuse previous samples as much as possible, collect reuse ratio.
+mhReuse :: (MonadDist m) =>
                  [Cache (CustomReal m)] ->
                  Weighted (Coprimitive m) a ->
                  m (LogDomain (CustomReal m), MHState m a)
@@ -132,11 +136,11 @@ mhReuse caches m = do
 
 
 -- | Run model once, cache primitive samples together with continuations
--- awaiting the samples
+-- awaiting the samples.
 mhState :: (MonadDist m) => Weighted (Coprimitive m) a -> m (MHState m a)
 mhState m = fmap snd (mhReuse [] m)
 
--- | Forget cached samples, return a continuation to execute from scratch
+-- | Forget cached samples, return a continuation to execute from scratch.
 mhReset :: (MonadDist m) => m (MHState m a) -> Weighted (Coprimitive m) a
 mhReset m = withWeight $ Coprimitive $ Coroutine $ do
   MHState snapshots weight answer <- m
@@ -173,8 +177,8 @@ mhPropose oldState = do
 
         return (newState, acceptRatio)
 
--- | *The* Metropolis-Hastings kernel. Each MH-state carries all necessary
--- information to compute the acceptance ratio.
+-- | The Lightweight Metropolis-Hastings kernel. Each MH-state carries all
+-- necessary information to compute the acceptance ratio.
 mhKernel :: (MonadDist m) => MHState m a -> m (MHState m a)
 mhKernel oldState = do
   (newState, acceptRatio) <- mhPropose oldState
@@ -183,9 +187,7 @@ mhKernel oldState = do
 
 
 
-
-
-
+-- | A probability monad that keeps the execution trace.
 newtype Trace' m a = Trace' { unTrace' :: LogDomain (CustomReal m) -> m (MHState m a) }
   deriving (Functor)
 runTrace' :: MonadDist m => Trace' m a -> m (MHState m a)
@@ -223,18 +225,23 @@ instance MonadDist m => MonadDist (Trace' m) where
 instance MonadDist m => MonadBayes (Trace' m) where
   factor k = Trace' $ \w -> return (MHState [] (w * k) ())
 
+-- | Modify the transformed monad.
+-- This is only applied to the current trace, not to future ones resulting from
+-- MH transitions.
 mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
 mapMonad' t (Trace' m) = Trace' (t . m)
 
+-- | Perform a single step of the Lightweight Metropolis-Hastings algorithm.
 mhStep' :: (MonadDist m) => Trace' m a -> Trace' m a
 mhStep' (Trace' m) = Trace' (m >=> mhKernel)
 
+-- | Discard the trace.
 marginal' :: MonadDist m => Trace' m a -> m a
 marginal' = fmap mhAnswer . runTrace'
 
 
 
--- | Like Trace', except it passes factors to the underlying monad.
+-- | Like 'Trace'', except it passes factors to the underlying monad as well.
 newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorder m) a }
   deriving (Functor)
 type instance CustomReal (Trace m) = CustomReal m
@@ -251,11 +258,15 @@ instance MonadBayes m => MonadBayes (Trace m) where
   factor k = Trace $ do
     factor k
     lift (factor k)
-
+-- | Modify the transformed monad.
+-- This is only applied to the current trace, not to future ones resulting from
+-- MH transitions.
 mapMonad :: MonadDist m => (forall x. m x -> m x) -> Trace m x -> Trace m x
 mapMonad t = Trace . mapMonad' (mapMonadWeightRecorder t) . runTrace
 
--- | Make one MH transition, retain weight from the source distribution
+-- | Perform a single step of the Lightweight Metropolis-Hastings algorithm.
+-- In the new trace factors are not passed to the transformed monad,
+-- so in there the likelihood remains fixed.
 mhStep :: (MonadBayes m) => Trace m a -> Trace m a
 mhStep (Trace m) = Trace $ Trace' $ \w -> lift $ do
   (x,s) <- runWeighted $ duplicateWeight $ unTrace' (mhStep' $ mapMonad' resetWeightRecorder m) w
@@ -263,5 +274,6 @@ mhStep (Trace m) = Trace $ Trace' $ \w -> lift $ do
   factor (1 / s)
   return x
 
+-- | Discard the trace.
 marginal :: MonadDist m => Trace m a -> m a
 marginal = fmap fst . runWeighted . duplicateWeight . marginal' . runTrace

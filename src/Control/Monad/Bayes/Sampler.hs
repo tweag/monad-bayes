@@ -35,12 +35,12 @@ import Control.Monad.Bayes.Class
 
 -- | A random sampler using `StdGen` as a source of randomness.
 -- It uses `split` instead of passing the modified generator,
--- which makes `Sampler` lazy and potentially parallel.
--- Can be used for probabilistic computation, but not with conditioning,
--- unless transformed.
+-- which makes `Sampler` lazy and potentially parallel,
+-- but strictly speaking not associative.
 newtype Sampler a = Sampler (StdGen -> a)
     deriving (Functor)
 
+-- | Samples a value using the supplied RNG.
 sample :: Sampler a -> StdGen -> a
 sample (Sampler s) = s
 
@@ -105,6 +105,9 @@ instance MonadDist IO where
 
 type instance CustomReal StdSampler = Double
 
+-- | A sampler that uses `StdGen` to generate random numbers.
+-- Unlike `Sampler`, it passes the generator using a state monad,
+-- so it satisfies the monad laws but is not lazy.
 newtype StdSampler a = StdSampler (State StdGen a)
     deriving (Functor, Applicative, Monad)
 instance MonadDist StdSampler where
@@ -115,11 +118,13 @@ instance MonadDist StdSampler where
     convert :: RVar a -> StdSampler a
     convert = StdSampler . Data.Random.Sample.sample
 
+-- | Samples a value using the supplied RNG.
 stdSample :: StdSampler a -> StdGen -> a
 stdSample (StdSampler s) = evalState s
 
 type instance CustomReal MTSampler = Double
 
+-- | Similar to `StdSampler`, but uses a Mersenne Twister instead.
 newtype MTSampler a = MTSampler (State PureMT a)
     deriving (Functor, Applicative, Monad)
 instance MonadDist (MTSampler) where
@@ -129,5 +134,7 @@ instance MonadDist (MTSampler) where
   multinomial ps n = convert $ multinomial ps n where
     convert :: RVar a -> MTSampler a
     convert = MTSampler . Data.Random.Sample.sample
+
+-- | Samples a value using the supplied RNG.
 mtSample :: MTSampler a -> PureMT -> a
 mtSample (MTSampler s) = evalState s

@@ -17,21 +17,24 @@ import Data.List
 
 import Control.Monad.Bayes.LogDomain
 
+-- | Continuous 'Primitive' distributions.
+-- Parameterization as in the 'MonadDist' class.
 data PrimitiveReal r = Normal r r | Gamma r r | Beta r r | Uniform r r
   deriving (Eq,Show)
 
 -- | Primitive distributions for which we can compute density.
--- Here the weights of Categorical must be normalized.
 data Primitive r a where
-    Discrete :: (Ord r, Floating r, Real r) => [r] -> Primitive r Int
-    Continuous :: (Ord r, Floating r, Real r) => PrimitiveReal r -> Primitive r r
+  -- Discrete distribution over the first n natural numbers (including 0).
+  -- The list holds probabilities of those numbers, they must be normalized.
+  Discrete :: (Ord r, Floating r, Real r) => [r] -> Primitive r Int
+  -- Continuous primitive distribution, wrapped in another ADT.
+  Continuous :: (Ord r, Floating r, Real r) => PrimitiveReal r -> Primitive r r
 
 deriving instance Eq (Primitive r a)
 deriving instance Show r => Show (Primitive r a)
 
 -- | Data type representing support of a proability distribution.
--- There is currently no distinction between open and closed intervals,
--- since it was not important in any code written so far.
+-- There is no distinction between open and closed intervals.
 data Support a where
   Finite         :: (Integral a) => [a] -> Support a
   Interval       :: (Real a, Floating a) => a -> a -> Support a
@@ -43,6 +46,7 @@ support :: Primitive r a -> Support a
 support (Discrete ps) = Finite $ findIndices (> 0) ps
 support (Continuous d) = supportReal d
 
+-- | Computes support of a real-valued primitive distribution.
 supportReal :: (Floating r, Real r) => PrimitiveReal r -> Support r
 supportReal (Normal  _ _) = Interval (-1/0) (1/0)
 supportReal (Gamma   _ _) = Interval 0 (1/0)
@@ -50,12 +54,16 @@ supportReal (Beta    _ _) = Interval 0 1
 supportReal (Uniform a b) = Interval a b
 
 -- | The probability density function.
+-- For discrete distribution it's the density with respect to the counting measure,
+-- for continuous distributions with respect to the Lebesgue measure.
 pdf :: (Ord r, NumSpec r) => Primitive r a -> a -> LogDomain r
 pdf (Discrete d) = \i -> case lookup i (zip [0..] d) of
                               Just p -> toLogDomain p
                               Nothing -> 0
 pdf (Continuous d) = pdfReal d
 
+-- | The probability density function for real-valued distributions
+-- with respect to the Lebesgue measure.
 pdfReal :: (Ord r, NumSpec r) => PrimitiveReal r -> r -> LogDomain r
 pdfReal (Normal  m s) = normalPdf m s
 pdfReal (Gamma   a b) = gammaPdf a b

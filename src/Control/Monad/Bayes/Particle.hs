@@ -27,7 +27,7 @@ import Control.Monad.Bayes.Class
 -- | Particle represents a computation that can be paused at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly useful
 -- for implementation of SMC-related methods.
--- All the probabilistic effects are delegated to the transformed monad,
+-- All the probabilistic effects are lifted from the transformed monad,
 -- but also `synchronize` is inserted after each `factor`.
 type Particle = Coroutine (Await ())
 extract (Await f) = f ()
@@ -36,12 +36,14 @@ extract (Await f) = f ()
 synchronize :: Monad m => Particle m ()
 synchronize = await
 
--- | Removes the synchronization barriers.
+-- | Remove the synchronization barriers.
 flatten :: Monad m => Particle m a -> m a
 flatten = pogoStick extract
 
 -- | Run a particle to the next barrier.
 -- If the computation is finished do nothing.
+--
+-- > flatten = flatten . advance
 advance :: Monad m => Particle m a -> Particle m a
 advance = bounce extract
 
@@ -49,6 +51,8 @@ advance = bounce extract
 finished :: Monad m => Particle m a -> m Bool
 finished = fmap isRight . resume
 
+-- | Modify the transformed monad.
+-- This operation only applies to computation up to the first barrier.
 mapMonad :: Monad m =>
             (forall a. m a -> m a) -> Particle m a -> Particle m a
 mapMonad f cort = Coroutine {resume= f $ resume cort}

@@ -29,7 +29,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Deterministic
 
--- Suspension functor: yields primitive distribution, awaits sample.
+-- | Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler r y where
   AwaitSampler :: Primitive r a -> (a -> y) -> AwaitSampler r y
 deriving instance Functor (AwaitSampler r)
@@ -54,7 +54,7 @@ instance (MonadBayes m) => MonadBayes (Coprimitive m) where
   factor = lift . factor
 
 -- | Conditional distribution given a subset of random variables.
--- For every fixed value its density is included as a factor.
+-- For every fixed value its PDF is included as a `factor`.
 -- Missing values and type mismatches are treated as no conditioning on that RV.
 conditional :: MonadBayes m => Coprimitive m a -> [Maybe (Either Int (CustomReal m))] -> m a
 conditional p xs = condRun (runCoprimitive p) xs where

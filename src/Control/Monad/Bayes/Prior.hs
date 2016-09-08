@@ -25,6 +25,6 @@ instance MonadDist m => MonadDist (Prior m) where
 instance MonadDist m => MonadBayes (Prior m) where
     factor _ = return ()
 
--- | Sampling from the prior discarding conditioning.
+-- | Discard conditioning and just use the prior.
 prior :: Prior m a -> m a
 prior = runIdentityT . runPrior

@@ -17,6 +17,8 @@ import Control.Monad.Bayes.Class
 -- but the type system can not ensure that,
 -- `Deterministic` can be used to remove the `MonadBayes` constraint
 -- in a type-safe way.
+--
+-- The first parameter is a numeric type used to represent real numbers.
 newtype Deterministic r a = Deterministic (Maybe a)
   deriving(Functor, Applicative, Monad)
 
