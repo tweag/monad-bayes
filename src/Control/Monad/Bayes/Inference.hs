@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
 
--- | Rejection sampling. Only works with `condition`, not with `factor` or `observe`.
+-- | Rejection sampling. The program must not contain factors larger than 1.
 rejection :: MonadDist m => Rejection m a -> m a
 rejection d = do
   m <- runRejection d
