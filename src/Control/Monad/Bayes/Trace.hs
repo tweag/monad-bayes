@@ -11,20 +11,6 @@
    #-}
 
 module Control.Monad.Bayes.Trace (
-  Cache(Cache),
-  Snapshot(Snapshot),
-  snapshotToCache,
-  MHState(MHState),
-  mhSnapshots,
-  mhPosteriorWeight,
-  mhAnswer,
-  mhReuse,
-  mhState,
-  mhKernel,
-  Trace' (Trace'),
-  mapMonad',
-  mhStep',
-  marginal',
   Trace,
   mapMonad,
   mhStep,
