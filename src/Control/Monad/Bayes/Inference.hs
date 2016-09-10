@@ -135,19 +135,17 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
     return (x:rest)
 
 -- | Lightweight Metropolis-Hastings.
--- The first trace is drawn from the prior, using rejection sampling until
--- a trace with non-zero likelihood is found.
-traceMH :: (MonadDist m) => Int -- ^ number of MH transitions
-                         -> Trace' m a -> m [a]
-traceMH n (Trace' m) = m 1 >>= init >>= loop n
-  where
-    init state | mhPosteriorWeight state >  0 = return state
-    init state | mhPosteriorWeight state == 0 = m 1 >>= init
-    loop n state | n <= 0 = return []
-    loop n state | n >  0 = do
-      nextState <- mhKernel state
-      otherAnswers <- loop (n - 1) nextState
-      return (mhAnswer state : otherAnswers)
+-- The first sample is drawn from the prior, so the number of MH transitions
+-- is one less than the number of samples.
+-- Beware that if the initial sample has zero likelihood, it is possible
+-- that all the samples produced have zero likelihood.
+traceMH :: MonadDist m => Int -- ^ number of samples produced
+                       -> Trace (WriterT [a] (Prior m)) a -> m [a]
+traceMH n m = prior $ execWriterT $ marginal $ composeCopies (n-1) mhStep $ record m where
+  record m = do
+    x <- m
+    lift (tell [x])
+    return x
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
