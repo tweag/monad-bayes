@@ -91,6 +91,8 @@ main = hspec $ do
   describe "MH" $ do
     it "MH from prior leaves posterior invariant" $ do
       TestInference.check_prior_trans `shouldBe` True
+    it "Trace MH produces correct number of samples" $ do
+      TestInference.trace_mh_length 11 `shouldBe` 11
     it "Trace MH leaves posterior invariant" $ do
       TestInference.check_trace_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do

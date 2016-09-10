@@ -60,6 +60,8 @@ check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
 check_trace_mh m m' = enumerate (marginal (mhStep (mhStep m))) ~==
                       enumerate m'
 
+trace_mh_length n = length (stdSample (traceMH n sprinkler) g)
+
 check_trace_trans = check_trace_mh sprinkler sprinkler
 
 check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
