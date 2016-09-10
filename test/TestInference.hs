@@ -42,20 +42,21 @@ check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
 check_preserve_smcrm = (enumerate . collapse . smcrm 2 1) sprinkler ~==
                         enumerate sprinkler
 
+sprinkler_posterior :: MonadBayes m => Weighted m Bool
 sprinkler_posterior = duplicateWeight sprinkler
 
-mhPriorrans :: MonadDist m => Weighted m Bool -> m Bool
-mhPriorrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
+-- mhPriorrans :: MonadDist m => Weighted m Bool -> m Bool
+-- mhPriorrans d = fmap (!! 1) $ mh 2 d (MHKernel $ const $ fmap (,1) sprinkler)
 
-check_prior_trans = enumerate (mhPriorrans sprinkler_posterior) ~==
-                    enumerate sprinkler
+-- check_prior_trans = enumerate (fmap (!! 2) (mhPrior 2 sprinkler_posterior)) ~==
+--                     enumerate sprinkler
 
-pimhTrans :: MonadDist m => Weighted m Bool -> m Bool
-pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
-  kernel = MHKernel $ const $ fmap (,1) $ collapse $ smc 2 2 sprinkler
+-- pimhTrans :: MonadDist m => Weighted m Bool -> m Bool
+-- pimhTrans d = fmap (!! 1) $ mh 2 d kernel where
+--   kernel = MHKernel $ const $ fmap (,1) $ collapse $ smc 2 2 sprinkler
 
-check_pimh_trans = enumerate (pimhTrans sprinkler_posterior) ~==
-                   enumerate sprinkler
+-- check_pimh_trans = enumerate (fmap (!! 2) (pimh 2 2 2 sprinkler_posterior)) ~==
+--                    enumerate sprinkler
 
 check_trace_mh m m' = enumerate (marginal (mhStep (mhStep m))) ~==
                       enumerate m'

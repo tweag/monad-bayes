@@ -60,15 +60,15 @@ main = hspec $ do
       TestParticle.check_sync 0 `shouldBe` True
       TestParticle.check_sync 1 `shouldBe` True
       TestParticle.check_sync 2 `shouldBe` True
-  describe "Trace" $ do
-    context "RandomDB = [Cache]" $ do
-      it "correctly records values" $ do
-        TestTrace.check_writing `shouldBe` True
-      it "correctly reuses values" $ do
-        TestTrace.check_reading `shouldBe` True
-    it "has reuse ratio 1 on an empty database" $ do
-      TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
-      TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
+  -- describe "Trace" $ do
+  --   context "RandomDB = [Cache]" $ do
+  --     it "correctly records values" $ do
+  --       TestTrace.check_writing `shouldBe` True
+  --     it "correctly reuses values" $ do
+  --       TestTrace.check_reading `shouldBe` True
+  --   it "has reuse ratio 1 on an empty database" $ do
+  --     TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
+  --     TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
   describe "Density" $ do
     it "correctly evaluates conditional distribution" $ do
       TestTrace.check_missing_conditional `shouldBe` True
@@ -89,8 +89,8 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==>
           TestInference.check_particles observations particles == particles
   describe "MH" $ do
-    it "MH from prior leaves posterior invariant" $ do
-      TestInference.check_prior_trans `shouldBe` True
+    -- it "MH from prior leaves posterior invariant" $ do
+    --   TestInference.check_prior_trans `shouldBe` True
     it "Trace MH produces correct number of samples" $ do
       TestInference.trace_mh_length 11 `shouldBe` 11
     it "Trace MH leaves posterior invariant" $ do
