@@ -6,7 +6,20 @@
   GeneralizedNewtypeDeriving
  #-}
 
-module Control.Monad.Bayes.Inference where
+module Control.Monad.Bayes.Inference (
+  rejection,
+  importance,
+  importance',
+  smc,
+  smc',
+  smcWithResampler,
+  smcrm,
+  ismh,
+  smh,
+  traceMH,
+  mhPrior,
+  pimh
+) where
 
 import Control.Arrow (first,second)
 import Data.Either
@@ -25,12 +38,17 @@ import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
 
--- | Rejection sampling. The program must not contain factors larger than 1.
-rejection :: MonadDist m => Rejection m a -> m a
-rejection d = do
-  m <- runRejection d
-  case m of Just x  -> return x
-            Nothing -> rejection d
+-- | Rejection sampling that proposes from the prior.
+-- The accept/reject decision is made for the whole program rather than
+-- individual variables.
+-- The program must not contain factors larger than 1.
+rejection :: MonadDist m => Int -- ^ number of samples accepted
+                         -> Rejection m a -> m [a]
+rejection n d = sequence $ replicate n $ sample where
+  sample = do
+    m <- runRejection d
+    case m of Just x  -> return x
+              Nothing -> sample
 
 -- | Simple importance sampling from the prior.
 importance :: MonadDist m => Weighted m a -> m (a,LogDomain (CustomReal m))
