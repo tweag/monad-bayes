@@ -174,6 +174,7 @@ mhKernel oldState = do
 
 
 -- | A probability monad that keeps the execution trace.
+-- Unlike `Trace`, it does not pass conditioning to the transformed monad.
 newtype Trace' m a = Trace' { unTrace' :: LogDomain (CustomReal m) -> m (MHState m a) }
   deriving (Functor)
 runTrace' :: MonadDist m => Trace' m a -> m (MHState m a)
@@ -227,7 +228,13 @@ marginal' = fmap mhAnswer . runTrace'
 
 
 
--- | Like 'Trace'', except it passes factors to the underlying monad as well.
+-- | A probability monad that keeps the execution trace.
+-- It passes `factor`s to the transformed monad during the first execution,
+-- but not at subsequent ones, such as during MH transitions.
+-- Current implementation only works correctly if in the transformed monad
+-- factors can be arbitrarily reordered with other probabilistic effects
+-- without affecting observable behaviour.
+-- This property in particular holds true for `Weighted`.
 newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorder m) a }
   deriving (Functor)
 type instance CustomReal (Trace m) = CustomReal m
