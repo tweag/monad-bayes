@@ -29,7 +29,8 @@ library
                        Control.Monad.Bayes.Inference,
                        Control.Monad.Bayes.Metrics,
                        Control.Monad.Bayes.Coprimitive,
-                       Control.Monad.Bayes.Trace
+                       Control.Monad.Bayes.Trace,
+                       Control.Monad.Bayes
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , random
