@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Empirical
+Description : Representation of distributions using multiple samples
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   TupleSections,
   GeneralizedNewtypeDeriving,

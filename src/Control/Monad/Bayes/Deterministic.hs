@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Deterministic
+Description : Escaping probabilistic computation that is in fact deterministic
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   GeneralizedNewtypeDeriving,
   TypeFamilies,

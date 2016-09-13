@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Rejection
+Description : Rejection-based probability monad
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   GeneralizedNewtypeDeriving,
   TypeFamilies

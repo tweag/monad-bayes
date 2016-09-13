@@ -1,3 +1,15 @@
+{-|
+Module      : Control.Monad.Bayes.Trace
+Description : Probabilistic computation accumulating a trace
+Copyright   : (c) Yufei Cai, 2016
+              (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   GADTs,
   GeneralizedNewtypeDeriving,

@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Dist
+Description : Exact representation of distributions with finite support
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   TupleSections,
   GeneralizedNewtypeDeriving,

@@ -1,3 +1,15 @@
+{-|
+Module      : Control.Monad.Bayes.Coprimitive
+Description : Coprimitive probability monad and density functions
+Copyright   : (c) Yufei Cai, 2016
+              (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   GADTs,
   StandaloneDeriving,

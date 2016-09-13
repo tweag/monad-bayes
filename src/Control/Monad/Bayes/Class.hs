@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Class
+Description : Types for probabilistic modelling
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   TupleSections,
   GADTs,

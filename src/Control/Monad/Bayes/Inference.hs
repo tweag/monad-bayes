@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Inference
+Description : Inference algorithms for probabilistic programs
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   FlexibleContexts,
   ScopedTypeVariables,

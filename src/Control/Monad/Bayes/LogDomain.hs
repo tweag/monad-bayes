@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.LogDomain
+Description : Numeric types representing numbers using their logarithms
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
+
 {-# LANGUAGE
   FlexibleInstances
  #-}
