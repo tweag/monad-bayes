@@ -19,7 +19,7 @@ import qualified Control.Monad.Bayes.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Coprimitive
+import Control.Monad.Bayes.Conditional
 
 instance (Reifies s Tape) => Log.NumSpec (Reverse s Double) where
   logGamma = lift1 Log.logGamma (Id . Spec.digamma . runId)

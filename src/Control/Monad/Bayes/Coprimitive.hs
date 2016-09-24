@@ -22,12 +22,7 @@ Portability : GHC
 module Control.Monad.Bayes.Coprimitive (
   AwaitSampler (AwaitSampler),
   Coprimitive (Coprimitive),
-  runCoprimitive,
-  conditional,
-  pseudoDensity,
-  jointDensity,
-  contJointDensity,
-  unsafeContJointDensity
+  runCoprimitive
 ) where
 
 import Control.Monad.Trans.Class
@@ -64,53 +59,3 @@ instance (MonadDist m) => MonadDist (Coprimitive m) where
 
 instance (MonadBayes m) => MonadBayes (Coprimitive m) where
   factor = lift . factor
-
--- | Conditional distribution given a subset of random variables.
--- For every fixed value its PDF is included as a `factor`.
--- Missing values and type mismatches are treated as no conditioning on that RV.
-conditional :: MonadBayes m => Coprimitive m a -> [Maybe (Either Int (CustomReal m))] -> m a
-conditional p xs = condRun (runCoprimitive p) xs where
-  -- Draw a value from the prior and proceed.
-  drawFromPrior :: MonadDist m => AwaitSampler (CustomReal m) a -> m a
-  drawFromPrior (AwaitSampler d k) = fmap k (primitive d)
-
-  condRun :: MonadBayes m => Coroutine (AwaitSampler (CustomReal m)) m a -> [Maybe (Either Int (CustomReal m))] -> m a
-  -- No more variables to condition on - run from prior.
-  condRun c [] = pogoStickM drawFromPrior c
-  -- Condition on the next variable.
-  condRun c (x:xs) = resume c >>= \t -> case t of
-    -- Program finished - return the final result
-    Right y -> return y
-    -- Random draw encountered - conditional execution
-    Left s@(AwaitSampler d@(Discrete   _) k) | Just (Left v) <- x ->
-      -- A value is available and its type matches the current draw
-      factor (pdf d v) >> condRun (k v) xs
-    Left s@(AwaitSampler d@(Continuous _) k) | Just (Right v) <- x ->
-      -- A value is available and its type matches the current draw
-      factor (pdf d v) >> condRun (k v) xs
-    Left s ->
-      -- Value missing or type mismatch - ignore and draw from prior
-      drawFromPrior s >>= (`condRun` xs)
-
--- | Evaluates joint density of a subset of random variables.
--- Specifically this is a product of conditional densities encountered in
--- the trace times the (unnormalized) likelihood of the trace.
--- Missing latent variables are integrated out using the transformed monad,
--- unused values from the list are ignored.
-pseudoDensity :: MonadDist m => Coprimitive (Weighted m) a -> [Maybe (Either Int (CustomReal m))]
-  -> m (LogDomain (CustomReal m))
-pseudoDensity p xs = fmap snd $ runWeighted $ conditional p xs
-
--- | Joint density of all random variables in the program.
--- Failure occurs when the list is too short or when there's a type mismatch.
-jointDensity :: MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [Either Int r]
-  -> Maybe (LogDomain r)
-jointDensity p xs = maybeDeterministic $ pseudoDensity p (map Just xs)
-
--- | Like 'jointDensity', but assumes all random variables are continuous.
-contJointDensity ::  MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> Maybe (LogDomain r)
-contJointDensity p xs = jointDensity p (map Right xs)
-
--- | Like 'contJointDensity', but throws an error if density can not be computed.
-unsafeContJointDensity ::  MonadDist (Deterministic r) => Coprimitive (Weighted (Deterministic r)) a -> [r] -> LogDomain r
-unsafeContJointDensity p xs = fromMaybe (error "Could not compute density: some random variables are discrete or the list of random variables is too short") $ contJointDensity p xs
