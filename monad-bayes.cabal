@@ -74,6 +74,7 @@ test-suite monad-bayes-test
                        TestSMCObservations,
                        TestTrace,
                        TestGradient,
+                       TestConditional,
                        StrictlySmallerSupport,
                        BetaBin,
                        DPmixture,

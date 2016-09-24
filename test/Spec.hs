@@ -10,6 +10,7 @@ import qualified TestTrace
 import qualified TestInference
 import qualified TestSMCObservations
 import qualified TestGradient
+import qualified TestConditional
 
 import qualified Dice
 import qualified Gamma
@@ -71,13 +72,13 @@ main = hspec $ do
   --     TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
   describe "Density" $ do
     it "correctly evaluates conditional distribution" $ do
-      TestTrace.check_missing_conditional `shouldBe` True
-      TestTrace.check_longer_conditional `shouldBe` True
+      TestConditional.check_missing_conditional `shouldBe` True
+      TestConditional.check_longer_conditional `shouldBe` True
     it "correctly computes pseudo-marginal density" $ do
-      TestTrace.check_first_density `shouldBe` True
+      TestConditional.check_first_density `shouldBe` True
     it "correctly computes joint density" $ do
-      TestTrace.check_joint_density_true `shouldBe` True
-      TestTrace.check_joint_density_false `shouldBe` True
+      TestConditional.check_joint_density_true `shouldBe` True
+      TestConditional.check_joint_density_false `shouldBe` True
   describe "SMC" $ do
     it "terminates" $ do
       seq TestInference.check_terminate_smc () `shouldBe` ()
