@@ -72,7 +72,6 @@ main = hspec $ do
   describe "Density" $ do
     it "correctly evaluates conditional distribution" $ do
       TestTrace.check_missing_conditional `shouldBe` True
-      TestTrace.check_mismatch_conditional `shouldBe` True
       TestTrace.check_longer_conditional `shouldBe` True
     it "correctly computes pseudo-marginal density" $ do
       TestTrace.check_first_density `shouldBe` True
