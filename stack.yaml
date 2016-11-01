@@ -3,4 +3,4 @@ packages:
 - '.'
 extra-deps:
 - monad-memo-0.4.1
-resolver: lts-6.15
+resolver: lts-7.7
