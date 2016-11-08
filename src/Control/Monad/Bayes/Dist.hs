@@ -24,9 +24,11 @@ module Control.Monad.Bayes.Dist (
     evidence,
     mass,
     compact,
+    kl,
     normalize,
     normalizeForEvidence,
     enumerate,
+    density,
     expectation
             ) where
 
@@ -35,7 +37,7 @@ import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
 import qualified Data.Foldable as Fold
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import Data.Either
 
 import Control.Monad.List
@@ -100,6 +102,14 @@ mass d a = case lookup a (normalize (enumerate d)) of
 compact :: (Num r, Ord a) => [(a,r)] -> [(a,r)]
 compact = Map.toAscList . Map.fromListWith (+)
 
+-- \ KL divergence between two distributions.
+-- The distributions should be normalized to ensure correct results.
+kl :: (Floating r, Ord a) => Dist r a -> Dist r a -> r
+kl p q = expectation f p where
+  f x = log $ dp x / dq x
+  dp = density p
+  dq = density q
+
 -- | Like `normalize`, but additionally returns the model evidence.
 normalizeForEvidence :: (Ord p, Fractional p) => [(a,p)] -> ([(a,p)],p)
 normalizeForEvidence xs =
@@ -121,6 +131,10 @@ normalize = fst . normalizeForEvidence
 -- > enumerate = compact . explicit
 enumerate :: (Floating r, Ord a) => Dist r a -> [(a,r)]
 enumerate = compact . explicit
+
+-- | Compute the unnormalized density of the distribution.
+density :: (Floating r, Ord a) => Dist r a -> a -> r
+density = (Map.!) . Map.fromListWith (+) . explicit
 
 -- | Expectation of a given function computed using unnormalized weights.
 expectation :: Floating r => (a -> r) -> Dist r a -> r
