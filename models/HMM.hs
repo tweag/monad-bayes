@@ -56,8 +56,8 @@ hmm = fmap reverse states where
 -- Exact marginal posterior with forward-backward
 
 exactMarginals :: (MonadDist m, CustomReal m ~ Double) => [m Int]
-exactMarginals = map marginal [1 .. length values] where
-    marginal i = categorical $ zip states $ map (lookup i) [1 .. length states]
+exactMarginals = map marginal [0 .. length values - 1] where
+    marginal i = categorical $ zip states $ map (lookup i) [0.. length states - 1]
     lookup = hmmExactMarginal initial tmatrix scores
 
 initial :: Vector Double
@@ -67,7 +67,7 @@ tmatrix :: Matrix Double
 tmatrix = fromColumns $ map (fromList . map snd . Dist.explicit . trans) states
 
 scores :: [Vector Double]
-scores = map (\y -> fromList $ map (fromLogDomain .(\x -> pdf (emission x) y)) states) values
+scores = map (\y -> fromList $ map (fromLogDomain . (\x -> pdf (emission x) y)) states) values
 
 -- | Runs forward-backward, then looks up the probability of ith latent
 -- variable being in state s.
