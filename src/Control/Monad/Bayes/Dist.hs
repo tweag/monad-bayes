@@ -30,7 +30,6 @@ module Control.Monad.Bayes.Dist (
     expectation
             ) where
 
-import System.Random
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
 import Control.Monad (liftM, liftM2)
