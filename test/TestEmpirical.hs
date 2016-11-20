@@ -17,11 +17,9 @@ enumerate = Dist.enumerate
 expectation :: (a -> Double) -> Dist.Dist Double a -> Double
 expectation = Dist.expectation
 
-g = mkStdGen 0
+pop_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
 
-pop_size = flip stdSample g $ weightedSampleSize $ spawn 5 >> sprinkler
-
-many_size = flip stdSample g $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
+many_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
 
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft

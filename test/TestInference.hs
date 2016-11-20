@@ -26,9 +26,7 @@ sprinkler = Sprinkler.soft
 enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
 enumerate = Dist.enumerate
 
-g = mkStdGen 0
-
-check_terminate_smc = stdSample (smc' 2 5 sprinkler) g
+check_terminate_smc = sampleIOfixed (smc' 2 5 sprinkler)
 
 check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
@@ -61,13 +59,13 @@ sprinkler_posterior = duplicateWeight sprinkler
 check_trace_mh m m' = enumerate (marginal (mhStep (mhStep m))) ~==
                       enumerate m'
 
-trace_mh_length n = length (stdSample (traceMH n sprinkler) g)
+trace_mh_length n = fmap length (sampleIOfixed (traceMH n sprinkler))
 
 check_trace_trans = check_trace_mh sprinkler sprinkler
 
 check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
 
 -- | Count the number of particles produced by SMC
-check_particles :: Int -> Int -> Int
+check_particles :: Int -> Int -> IO Int
 check_particles observations particles =
-  stdSample (fmap length (runPopulation $ smc observations particles Gamma.model)) g
+  sampleIOfixed (fmap length (runPopulation $ smc observations particles Gamma.model))

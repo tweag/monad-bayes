@@ -17,16 +17,15 @@ import qualified HMM as HMM
 
 g = mkStdGen 0
 
-smcParticles :: Int -> Int -> Particle (Population Sampler) a -> [(a, LogDomain Double)]
-smcParticles observations particles model = sample (runPopulation $ smc observations particles model) g
+smcParticles :: Int -> Int -> Particle (Population SamplerIO) a -> IO [(a, LogDomain Double)]
+smcParticles observations particles model = sampleIOfixed (runPopulation $ smc observations particles model)
 
 sameWeights :: [(a, LogDomain Double)] -> Bool
 sameWeights xs = length (nub $ map snd xs) == 1
 
 -- | Check whether the weights of SMC particles are equal.
-check_smc_weight :: Int -> Int -> Particle (Population Sampler) a -> Bool
+check_smc_weight :: Int -> Int -> Particle (Population SamplerIO) a -> IO Bool
 check_smc_weight observations particles model =
-  let
-    samples = smcParticles observations particles model
-  in
-    length samples == particles && sameWeights samples
+  do
+    samples <- smcParticles observations particles model
+    return $ length samples == particles && sameWeights samples

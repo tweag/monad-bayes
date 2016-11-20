@@ -22,7 +22,8 @@ main :: IO ()
 main = hspec $ do
   describe "Weighted" $ do
     it "accumulates likelihood correctly" $ do
-      TestWeighted.passed `shouldBe` True
+      passed <- TestWeighted.passed
+      passed `shouldBe` True
   describe "Dist" $ do
     it "normalizes categorical" $ do
       TestDist.passed1 `shouldBe` True
@@ -35,9 +36,11 @@ main = hspec $ do
   describe "Empirical" $ do
     context "controlling population" $ do
       it "preserves the population when not expicitly altered" $ do
-        TestEmpirical.pop_size `shouldBe` 5
+        pop_size <- TestEmpirical.pop_size
+        pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
-        TestEmpirical.many_size `shouldBe` 15
+        many_size <- TestEmpirical.many_size
+        many_size `shouldBe` 15
       it "correctly computes population average" $ do
         TestEmpirical.popAvg_check `shouldBe` True
 --    context "checking properties of samples" $ do
@@ -86,13 +89,15 @@ main = hspec $ do
       TestInference.check_preserve_smc `shouldBe` True
     prop "number of particles is equal to its second parameter" $
       \observations particles ->
-        observations >= 0 && particles >= 1 ==>
-          TestInference.check_particles observations particles == particles
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          check_particles <- TestInference.check_particles observations particles
+          return $ check_particles == particles
   describe "MH" $ do
     -- it "MH from prior leaves posterior invariant" $ do
     --   TestInference.check_prior_trans `shouldBe` True
     it "Trace MH produces correct number of samples" $ do
-      TestInference.trace_mh_length 11 `shouldBe` 11
+      trace_mh_length <- TestInference.trace_mh_length 11
+      trace_mh_length `shouldBe` 11
     it "Trace MH leaves posterior invariant" $ do
       TestInference.check_trace_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do
@@ -124,4 +129,5 @@ main = hspec $ do
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do
-      TestSMCObservations.check_smc_weight n 30 model `shouldBe` True
+      check_smc_weight <- TestSMCObservations.check_smc_weight n 30 model
+      check_smc_weight `shouldBe` True

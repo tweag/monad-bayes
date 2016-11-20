@@ -20,16 +20,11 @@ Portability : GHC
 module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
-    Sampler,
-    sample,
-    StdSampler,
-    stdSample,
-    MTSampler,
-    mtSample
+    sampleIOfixed
                ) where
 
 import System.Random
-import System.Random.MWC (GenIO, createSystemRandom, uniformR)
+import System.Random.MWC (GenIO, create, createSystemRandom, uniformR)
 import qualified System.Random.MWC.Distributions as MWC
 import System.Random.Mersenne.Pure64
 import Control.Monad (liftM2)
@@ -57,6 +52,11 @@ newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
 -- For efficiency this operation should be applied at the very end, ideally once per program.
 sampleIO :: SamplerIO a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
+
+-- | Like `sampleIO`, but with a fixed random seed.
+-- Useful for reproducibility.
+sampleIOfixed :: SamplerIO a -> IO a
+sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
 type instance CustomReal SamplerIO = Double
 
