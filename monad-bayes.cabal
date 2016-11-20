@@ -40,6 +40,8 @@ library
                      , mwc-random
                      , safe
                      , vector
+                     , ad
+                     , reflection
   default-language:    Haskell2010
 
 test-suite monad-bayes-test
@@ -54,8 +56,6 @@ test-suite monad-bayes-test
                      , mtl
                      , math-functions
                      , transformers
-                     , ad
-                     , reflection
 --                     , hmatrix
 --                     , monad-memo
   ghc-options:         -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
