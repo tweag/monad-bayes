@@ -5,7 +5,7 @@ import Test.QuickCheck
 import qualified TestWeighted
 import qualified TestDist
 import qualified TestEmpirical
-import qualified TestParticle
+import qualified TestSequential
 import qualified TestTrace
 import qualified TestInference
 import qualified TestSMCObservations
@@ -55,15 +55,15 @@ main = hspec $ do
         TestEmpirical.resample_check 2 `shouldBe` True
   describe "Particle" $ do
     it "stops at every factor" $ do
-      TestParticle.check_two_sync 0 `shouldBe` True
-      TestParticle.check_two_sync 1 `shouldBe` True
-      TestParticle.check_two_sync 2 `shouldBe` True
+      TestSequential.check_two_sync 0 `shouldBe` True
+      TestSequential.check_two_sync 1 `shouldBe` True
+      TestSequential.check_two_sync 2 `shouldBe` True
     it "preserves the distribution" $ do
-      TestParticle.check_preserve `shouldBe` True
+      TestSequential.check_preserve `shouldBe` True
     it "produces correct intermediate weights" $ do
-      TestParticle.check_sync 0 `shouldBe` True
-      TestParticle.check_sync 1 `shouldBe` True
-      TestParticle.check_sync 2 `shouldBe` True
+      TestSequential.check_sync 0 `shouldBe` True
+      TestSequential.check_sync 1 `shouldBe` True
+      TestSequential.check_sync 2 `shouldBe` True
   -- describe "Trace" $ do
   --   context "RandomDB = [Cache]" $ do
   --     it "correctly records values" $ do
@@ -72,7 +72,7 @@ main = hspec $ do
   --       TestTrace.check_reading `shouldBe` True
   --   it "has reuse ratio 1 on an empty database" $ do
   --     TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
-  --     TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
+  --     TestTrace.check_reuse_ratio TestSequential.sprinkler `shouldBe` True
   describe "Density" $ do
     it "correctly evaluates conditional distribution" $ do
       TestConditional.check_missing_conditional `shouldBe` True

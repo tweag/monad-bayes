@@ -9,19 +9,19 @@ import Control.Monad.Bayes.LogDomain (LogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Inference
-import Control.Monad.Bayes.Particle
+import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Sampler
 
 import qualified HMM as HMM
 
-smcParticles :: Int -> Int -> Particle (Population SamplerIO) a -> IO [(a, LogDomain Double)]
+smcParticles :: Int -> Int -> Sequential (Population SamplerIO) a -> IO [(a, LogDomain Double)]
 smcParticles observations particles model = sampleIOfixed (runPopulation $ smc observations particles model)
 
 sameWeights :: [(a, LogDomain Double)] -> Bool
 sameWeights xs = length (nub $ map snd xs) == 1
 
 -- | Check whether the weights of SMC particles are equal.
-check_smc_weight :: Int -> Int -> Particle (Population SamplerIO) a -> IO Bool
+check_smc_weight :: Int -> Int -> Sequential (Population SamplerIO) a -> IO Bool
 check_smc_weight observations particles model =
   do
     samples <- smcParticles observations particles model

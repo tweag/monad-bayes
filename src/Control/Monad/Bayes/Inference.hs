@@ -43,7 +43,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Particle as Particle
+import Control.Monad.Bayes.Sequential as Sequential
 import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Empirical
 import Control.Monad.Bayes.Dist
@@ -76,17 +76,17 @@ importance' n d = fmap compact $ importance n d
 -- | Sequential Monte Carlo from the prior.
 smc :: MonadDist m => Int -- ^ number of resampling points
                    -> Int -- ^ number of particles
-                   -> Particle (Population m) a -> Population m a
+                   -> Sequential (Population m) a -> Population m a
 smc k n = smcWithResampler (resampleN n) k n
 
 -- | `smc` with post-processing like in 'importance''.
 smc' :: (Ord a, MonadDist m) => Int -> Int ->
-        Particle (Population m) a -> m [(a, CustomReal m)]
+        Sequential (Population m) a -> m [(a, CustomReal m)]
 smc' k n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
 -- instead of a sequence of categoricals.
--- smcFast :: MonadDist m => Int -> Int -> Particle (Population m) a -> Population m a
+-- smcFast :: MonadDist m => Int -> Int -> Sequential (Population m) a -> Population m a
 -- smcFast = smcWithResampler resample
 
 -- | Apply a function a given number of times.
@@ -98,12 +98,12 @@ smcWithResampler :: MonadDist m =>
   (forall x. Population m x -> Population m x) -- ^ resampling function
   -> Int -- ^ number of resampling points
   -> Int -- ^ number of particles
-  -> Particle (Population m) a -> Population m a
+  -> Sequential (Population m) a -> Population m a
 
 smcWithResampler resampler k n =
-  flatten . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
+  finish . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
   where
-    hoist' = Particle.mapMonad
+    hoist' = Sequential.hoist
 
 -- | Resample-move Sequential Monte Carlo algorithm.
 -- Rejuvenates particles with a single step of Lightweight Metropolis-Hastings
@@ -112,17 +112,17 @@ smcrm :: forall m a. MonadDist m =>
          Int -- ^ number of resampling points
          -> Int -- ^ number of MH transitions at each step
          -> Int -- ^ number of particles
-         -> Particle (Trace (Population m)) a -> Population m a
+         -> Sequential (Trace (Population m)) a -> Population m a
 
-smcrm k s n = marginal . flatten . composeCopies k step . init
+smcrm k s n = marginal . finish . composeCopies k step . init
   where
-  hoistC  = Particle.mapMonad
+  hoistC  = Sequential.hoist
   hoistT  = Trace.mapMonad
 
-  init :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  init :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
   init = hoistC (hoistT (spawn n >>))
 
-  step :: Particle (Trace (Population m)) a -> Particle (Trace (Population m)) a
+  step :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
   step = advance . hoistC (composeCopies s mhStep . hoistT resample)
 
 -- | Importance Sampling with Metropolis-Hastings transitions.
@@ -138,8 +138,8 @@ ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
 -- Alternates several MH transitions with running the program another step forward.
 smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Int -- ^ number of MH transitions at each point
-                    -> Particle (Trace m) a -> m a
-smh k s = marginal . flatten . composeCopies k (advance . composeCopies s (Particle.mapMonad mhStep))
+                    -> Sequential (Trace m) a -> m a
+smh k s = marginal . finish . composeCopies k (advance . composeCopies s (Sequential.hoist mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
@@ -184,10 +184,10 @@ mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
 mhPrior n d = mh n d kernel where
     kernel = MHKernel $ const $ fmap (,1) d
 
--- | Particle Independent Metropolis Hastings.
+-- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
 pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of particles in SMC
                     -> Int -- ^ number of independent SMC runs
-                    -> Particle (Population (Weighted m)) a -> m [a]
+                    -> Sequential (Population (Weighted m)) a -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smc k np d
