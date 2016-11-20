@@ -42,6 +42,7 @@ library
                      , mwc-random
                      , mersenne-random-pure64
                      , safe
+                     , vector
   default-language:    Haskell2010
 
 test-suite monad-bayes-test

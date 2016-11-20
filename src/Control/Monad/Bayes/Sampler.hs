@@ -18,6 +18,8 @@ Portability : GHC
  #-}
 
 module Control.Monad.Bayes.Sampler (
+    SamplerIO,
+    sampleIO,
     Sampler,
     sample,
     StdSampler,
@@ -27,9 +29,11 @@ module Control.Monad.Bayes.Sampler (
                ) where
 
 import System.Random
-import System.Random.MWC
+import System.Random.MWC (GenIO, createSystemRandom, uniformR)
+import qualified System.Random.MWC.Distributions as MWC
 import System.Random.Mersenne.Pure64
 import Control.Monad (liftM2)
+import Data.Vector (fromList)
 import Data.Tuple
 import Data.Random.Distribution.Beta
 import Data.Random.Distribution.Normal
@@ -41,8 +45,37 @@ import Data.Random hiding (sample)
 import Control.Arrow (first,second)
 import qualified Data.Foldable as Fold
 import Control.Monad.State.Lazy
+import Control.Monad.Trans.Reader
 
 import Control.Monad.Bayes.Class
+
+-- | An `IO` based random sampler using the MWC-Random package.
+newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
+  deriving(Functor, Applicative, Monad)
+
+-- | Initialize PRNG using OS-supplied randomness.
+-- For efficiency this operation should be applied at the very end, ideally once per program.
+sampleIO :: SamplerIO a -> IO a
+sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
+
+type instance CustomReal SamplerIO = Double
+
+-- | Helper for converting distributions supplied by MWC-Random
+fromMWC :: (GenIO -> IO a) -> SamplerIO a
+fromMWC s = SamplerIO $ ask >>= lift . s
+
+instance MonadDist SamplerIO where
+  discrete ps      = fromMWC $ MWC.categorical (Data.Vector.fromList ps)
+  normal m s       = fromMWC $ MWC.normal m s
+  gamma a b        = fromMWC $ MWC.gamma a (recip b)
+  beta a b         = fromMWC $ MWC.beta a b
+  uniform a b      = fromMWC $ uniformR (a,b)
+  exponential rate = fromMWC $ MWC.exponential (recip rate)
+  geometric p      = fromMWC $ MWC.geometric0 p
+  bernoulli p      = fromMWC $ MWC.bernoulli p
+  dirichlet ws     = fromMWC $ MWC.dirichlet ws
+
+
 
 -- | A random sampler using `StdGen` as a source of randomness.
 -- It uses `split` instead of passing the modified generator,
@@ -103,16 +136,6 @@ instance MonadDist (RVarT m) where
   --   let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws
   --   counts <- rvarT $ Multinomial qs n
   --   return $ zip xs counts
-
-type instance CustomReal IO = Double
-
-instance MonadDist IO where
-  primitive d = convert $ primitive d where
-      convert :: RVar a -> IO a
-      convert = Data.Random.Sample.sample
-  multinomial ps n = convert $ multinomial ps n where
-    convert :: RVar a -> IO a
-    convert = Data.Random.Sample.sample
 
 type instance CustomReal StdSampler = Double
 
