@@ -34,7 +34,6 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Memo.StateCache
 
 import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
@@ -266,13 +265,4 @@ instance MonadDist m => MonadDist (ContT r m) where
   primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (ContT r m) where
-  factor = lift . factor
-
-
-type instance CustomReal (StateCache c m) = CustomReal m
-
-instance MonadDist m => MonadDist (StateCache c m) where
-  primitive = lift . primitive
-
-instance MonadBayes m => MonadBayes (StateCache c m) where
   factor = lift . factor

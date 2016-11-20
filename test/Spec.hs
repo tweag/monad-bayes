@@ -116,7 +116,6 @@ main = hspec $ do
     check_smc_observations 0 "BetaBin.latent" (BetaBin.latent 5)
     check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
     check_smc_observations 16 "HMM.hmm" HMM.hmm
-    check_smc_observations 10 "DPmixture.dpMem" DPmixture.dpMem
   describe "Density computation" $ do
     it "gives correct value on gamma-normal-beta model" $ do
       TestGradient.check_density `shouldBe` True

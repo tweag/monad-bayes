@@ -9,8 +9,8 @@ module DPmixture (
                   dp,
                   dpMixture,
                   dpClusters,
-                  dpMem,
-                  dpMemClusters,
+--                  dpMem,
+--                  dpMemClusters,
                   posteriorClustersDist
                  ) where
 
@@ -20,10 +20,12 @@ import Data.List
 import Data.Maybe
 import Data.Ix (range)
 import Numeric.SpecFunctions (logGamma, factorial)
-import Control.Monad.Memo (memo, startEvalMemoT)
+-- import Control.Monad.Memo (memo, startEvalMemoT)
+-- import Control.Monad.Trans.Memo.StateCache
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
+
 
 type NormalInvGamma = (Double,Double,Double,Double)
 
@@ -96,29 +98,29 @@ normalizePartition xs = mapMaybe (`lookup` trans) xs where
 -------------------------------------------------------
 -- Strict version using memoization
 
-cluster_param :: (MonadDist m, CustomReal m ~ Double) => Int -> m (Double, Double, Double)
-cluster_param _ = do
-  b <- beta 1 1
-  var <- do
-    t <- gamma a b
-    return (1 / (k*t))
-  mean <- normal m var
-  return (b, mean, var)
-
-dpMem :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
-dpMem = startEvalMemoT $ mapM process_point obs where
-  process_point x = do
-    (c, mean, var) <- get_cluster
-    observe (Continuous (Normal mean (sqrt var))) x
-    return c
-  get_cluster = stick 0 where
-    stick c = do
-      (b, mean, var) <- memo cluster_param c
-      stop <- bernoulli b
-      if stop then return (c, mean, var) else stick (c+1)
-
-dpMemClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
-dpMemClusters = fmap (maximum . normalizePartition) dpMem
+-- cluster_param :: (MonadDist m, CustomReal m ~ Double) => Int -> m (Double, Double, Double)
+-- cluster_param _ = do
+--   b <- beta 1 1
+--   var <- do
+--     t <- gamma a b
+--     return (1 / (k*t))
+--   mean <- normal m var
+--   return (b, mean, var)
+--
+-- dpMem :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
+-- dpMem = startEvalMemoT $ mapM process_point obs where
+--   process_point x = do
+--     (c, mean, var) <- get_cluster
+--     observe (Continuous (Normal mean (sqrt var))) x
+--     return c
+--   get_cluster = stick 0 where
+--     stick c = do
+--       (b, mean, var) <- memo cluster_param c
+--       stop <- bernoulli b
+--       if stop then return (c, mean, var) else stick (c+1)
+--
+-- dpMemClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
+-- dpMemClusters = fmap (maximum . normalizePartition) dpMem
 
 ----------------------------------------------------------
 -- Exact posterior
@@ -197,3 +199,14 @@ posteriorClustersDist :: (MonadDist m, CustomReal m ~ Double) => m Int
 posteriorClustersDist = categorical $ zip ns $ map lookup ns where
     ns = [1 .. length obs]
     lookup = exactClusters params obs
+
+
+--------------------------------------
+-- Instances for memoization
+-- type instance CustomReal (StateCache c m) = CustomReal m
+--
+-- instance MonadDist m => MonadDist (StateCache c m) where
+--   primitive = lift . primitive
+--
+-- instance MonadBayes m => MonadBayes (StateCache c m) where
+--   factor = lift . factor
