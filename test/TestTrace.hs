@@ -5,7 +5,6 @@
 
 -- Some of the type annotations in this file are no longer required
 
-import System.Random
 import Data.AEq
 import Data.Maybe
 import Control.Monad
@@ -17,8 +16,6 @@ import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Trace
-
-g = mkStdGen 0
 
 -- extractNormal :: Cache Double -> Maybe Double
 -- extractNormal (Cache (Continuous (Normal _ _)) x) = Just (realToFrac x)

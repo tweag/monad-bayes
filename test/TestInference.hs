@@ -7,7 +7,6 @@ module TestInference where
 
 import Data.AEq
 import Control.Monad.Trans.Identity
-import System.Random
 
 import Control.Monad.Bayes.Class
 import qualified Control.Monad.Bayes.Dist as Dist

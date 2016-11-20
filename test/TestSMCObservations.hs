@@ -4,7 +4,6 @@
 module TestSMCObservations where
 
 import Data.List
-import System.Random
 
 import Control.Monad.Bayes.LogDomain (LogDomain)
 import Control.Monad.Bayes.Class
@@ -14,8 +13,6 @@ import Control.Monad.Bayes.Particle
 import Control.Monad.Bayes.Sampler
 
 import qualified HMM as HMM
-
-g = mkStdGen 0
 
 smcParticles :: Int -> Int -> Particle (Population SamplerIO) a -> IO [(a, LogDomain Double)]
 smcParticles observations particles model = sampleIOfixed (runPopulation $ smc observations particles model)

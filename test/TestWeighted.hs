@@ -6,7 +6,6 @@ module TestWeighted where
 
 import Test.Hspec
 import Data.AEq
-import System.Random
 import Control.Monad.State
 import Data.List
 

@@ -1,6 +1,5 @@
 module TestEmpirical where
 
-import System.Random
 import Data.AEq
 import Control.Monad.Trans.Identity
 
