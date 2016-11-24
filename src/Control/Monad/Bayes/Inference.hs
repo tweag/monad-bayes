@@ -103,7 +103,7 @@ smcWithResampler :: MonadDist m =>
 smcWithResampler resampler k n =
   finish . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
   where
-    hoist' = Sequential.hoist
+    hoist' = Sequential.hoistFirst
 
 -- | Resample-move Sequential Monte Carlo algorithm.
 -- Rejuvenates particles with a single step of Lightweight Metropolis-Hastings
@@ -116,7 +116,7 @@ smcrm :: forall m a. MonadDist m =>
 
 smcrm k s n = marginal . finish . composeCopies k step . init
   where
-  hoistC  = Sequential.hoist
+  hoistC  = Sequential.hoistFirst
   hoistT  = Trace.mapMonad
 
   init :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
@@ -139,7 +139,7 @@ ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
 smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Int -- ^ number of MH transitions at each point
                     -> Sequential (Trace m) a -> m a
-smh k s = marginal . finish . composeCopies k (advance . composeCopies s (Sequential.hoist mhStep))
+smh k s = marginal . finish . composeCopies k (advance . composeCopies s (Sequential.hoistFirst mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
