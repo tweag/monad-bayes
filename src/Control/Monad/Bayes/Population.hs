@@ -10,16 +10,10 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Population (
-    Empirical,
-    runEmpirical,
-    fromList,
-    --sampleSize,
-    draw,
     Population,
     runPopulation,
     fromWeightedList,
     fromEmpirical,
-    --weightedSampleSize,
     spawn,
     resample,
     proper,
