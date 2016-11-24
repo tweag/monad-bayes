@@ -38,7 +38,7 @@ import Control.Arrow
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import qualified Control.Monad.Bayes.Dist as Dist
 import qualified Control.Monad.Bayes.Inference as Infer

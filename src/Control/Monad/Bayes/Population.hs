@@ -1,5 +1,5 @@
 {-|
-Module      : Control.Monad.Bayes.Empirical
+Module      : Control.Monad.Bayes.Population
 Description : Representation of distributions using multiple samples
 Copyright   : (c) Adam Scibior, 2016
 License     : MIT
@@ -9,7 +9,7 @@ Portability : GHC
 
 -}
 
-module Control.Monad.Bayes.Empirical (
+module Control.Monad.Bayes.Population (
     Empirical,
     runEmpirical,
     fromList,

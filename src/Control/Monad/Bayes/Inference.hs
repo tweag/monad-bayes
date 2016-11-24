@@ -38,7 +38,7 @@ import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential
 import Control.Monad.Bayes.Trace    as Trace
-import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Prior
 

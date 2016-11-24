@@ -24,7 +24,7 @@ library
                        Control.Monad.Bayes.Rejection,
                        Control.Monad.Bayes.Weighted,
                        Control.Monad.Bayes.Deterministic,
-                       Control.Monad.Bayes.Empirical,
+                       Control.Monad.Bayes.Population,
                        Control.Monad.Bayes.Sequential,
                        Control.Monad.Bayes.Inference,
                        Control.Monad.Bayes.Coprimitive,
