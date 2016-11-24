@@ -10,103 +10,105 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Dist (
+    Enumerator,
+    toPopulation,
+    hoist,
     Dist,
     toList,
     explicit,
     evidence,
     mass,
     compact,
-    normalize,
-    normalizeForEvidence,
     enumerate,
     expectation
             ) where
 
-import Control.Applicative (Applicative, pure, (<*>))
-import Control.Arrow (first, second)
+import Control.Applicative (Applicative, pure)
+import Control.Arrow (second)
 import qualified Data.Map as Map
+import Control.Monad.Trans
+import Data.Maybe (fromMaybe)
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted
+import qualified Control.Monad.Bayes.Population as Pop
+import Control.Monad.Bayes.Deterministic
 
--- | Representation of a discrete distribution as a list of weighted values.
--- Probabilistic computation and conditioning is performed by exact enumeration.
--- There is no automatic normalization or aggregation of weights.
---
--- The first parameter is a numeric type used to represent weights.
-newtype Dist r a = Dist {unDist :: [(a, Weight r)]}
 
-type instance CustomReal (Dist r) = r
+-- | A transformer similar to 'Population', but additionally integrates
+-- discrete random variables by enumerating all execution paths.
+newtype Enumerator m a = Enumerator {runEnumerator :: Pop.Population m a}
+  deriving(Functor, Applicative, Monad, MonadTrans)
 
-instance Functor (Dist r) where
-  fmap f = Dist . fmap (first f) . unDist
+type instance CustomReal (Enumerator m) = CustomReal m
 
-instance (Ord r, Floating r) => Applicative (Dist r) where
-  pure x = Dist $ [(x,1)]
-  df <*> dx = Dist [(f x, p * q) | (f,p) <- unDist df, (x,q) <- unDist dx]
+instance MonadDist m => MonadDist (Enumerator m) where
+  discrete ps = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] ps
+  normal  m s = lift $ normal  m s
+  gamma   a b = lift $ gamma   a b
+  beta    a b = lift $ beta    a b
+  uniform a b = lift $ uniform a b
 
-instance (Ord r, Floating r) => Monad (Dist r) where
-  dx >>= df = Dist [(y, p * q) | (x,p) <- unDist dx, (y,q) <- unDist (df x)]
+instance MonadDist m => MonadBayes (Enumerator m) where
+  factor w = Enumerator $ factor w
 
-instance (Ord r, Real r, NumSpec r) => MonadDist (Dist r) where
-  discrete xs = Dist $ fmap (second (weight . toLogDomain)) $
-                  normalize $ zip [0..] xs
-  normal  = error "Dist does not support continuous distributions"
-  gamma   = error "Dist does not support continuous distributions"
-  beta    = error "Dist does not support continuous distributions"
-  uniform = error "Dist does not support continuous distributions"
+-- | Convert 'Enumerator' to 'Population'.
+toPopulation :: Enumerator m a -> Pop.Population m a
+toPopulation = runEnumerator
 
-instance (Ord r, Real r, NumSpec r) => MonadBayes (Dist r) where
-  factor w = Dist [((), weight w)]
+-- | Apply a transformation to the inner monad.
+hoist :: (MonadDist m, MonadDist n, CustomReal m ~ CustomReal n) =>
+  (forall x. m x -> n x) -> Enumerator m a -> Enumerator n a
+hoist f = Enumerator . Pop.hoist f . toPopulation
 
--- | Returns an explicit representation of a `Dist`.
--- The resulting list may contain several entries for the same value.
--- The sum of all weights is the model evidence.
-toList :: Dist r a -> [(a, LogDomain r)]
-toList = map (second unWeight) . unDist
+-- | A monad for discrete distributions enumerating all possible paths.
+-- Throws an error if a continuous distribution is used.
+type Dist r a = Enumerator (Deterministic r) a
+
+-- | Throws an error if continuous random variables were used in 'Dist'.
+ensureDiscrete :: Deterministic r a -> a
+ensureDiscrete =
+  fromMaybe (error "Dist: there were unhandled continuous random variables") .
+  maybeDeterministic
+
+-- | Returns the posterior as a list of weight-value pairs without any post-processing,
+-- such as normalization or aggregation
+toList :: (Real r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
+toList = ensureDiscrete . Pop.runPopulation . toPopulation
 
 -- | Same as `toList`, only weights are converted from log-domain.
-explicit :: Floating r => Dist r a -> [(a,r)]
+explicit :: (Real r, NumSpec r) => Dist r a -> [(a,r)]
 explicit = map (second fromLogDomain) . toList
 
 -- | Returns the model evidence, that is sum of all weights.
-evidence :: (Ord r, Floating r) => Dist r a -> LogDomain r
-evidence = sum . map snd . toList
+evidence :: (Real r, NumSpec r) => Dist r a -> LogDomain r
+evidence = ensureDiscrete . Pop.evidence . toPopulation
 
 -- | Normalized probability mass of a specific value.
-mass :: (Ord r, Floating r, Ord a) => Dist r a -> a -> r
-mass d a = case lookup a (normalize (enumerate d)) of
+mass :: (Real r, NumSpec r, Ord a) => Dist r a -> a -> r
+mass d = f where
+  f a = case lookup a m of
              Just p -> p
              Nothing -> 0
+  m = normalize (enumerate d)
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
 compact :: (Num r, Ord a) => [(a,r)] -> [(a,r)]
 compact = Map.toAscList . Map.fromListWith (+)
 
--- | Like `normalize`, but additionally returns the model evidence.
-normalizeForEvidence :: (Ord p, Fractional p) => [(a,p)] -> ([(a,p)],p)
-normalizeForEvidence xs =
-  let
-    norm = sum (map snd xs)
-  in
-    if norm > 0 then
-      (map (second (/ norm)) xs, norm)
-    else
-      ([], 0)
-
 -- | Normalize the weights to sum to 1.
-normalize :: (Ord p, Fractional p) => [(a,p)] -> [(a,p)]
-normalize = fst . normalizeForEvidence
+normalize :: Fractional p => [(a,p)] -> [(a,p)]
+normalize xs = map (second (/ z)) xs where
+  z = sum $ map snd xs
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
 --
 -- > enumerate = compact . explicit
-enumerate :: (Floating r, Ord a) => Dist r a -> [(a,r)]
+enumerate :: (Real r, NumSpec r, Ord a) => Dist r a -> [(a,r)]
 enumerate = compact . explicit
 
 -- | Expectation of a given function computed using unnormalized weights.
-expectation :: Floating r => (a -> r) -> Dist r a -> r
-expectation f p = sum $ map (\(x,w) -> f x * fromLogDomain w) $ toList p
+expectation :: (Real r, NumSpec r) => (a -> r) -> Dist r a -> r
+expectation f = ensureDiscrete . Pop.popAvg f . toPopulation

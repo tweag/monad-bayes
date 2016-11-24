@@ -125,7 +125,7 @@ proper m = do
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
-evidence = fmap snd . proper
+evidence = fmap (sum . map snd) . runPopulation
 
 -- | Pick one point from the population and use model evidence as a 'factor'
 -- in the transformed monad.
@@ -143,12 +143,8 @@ mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 -- | Normalizes the weights in the population so that their sum is 1.
 normalize :: MonadDist m => Population m a -> Population m a
 normalize = mapPopulation norm where
-  norm pop = pure $ zip xs normalized where
-    (xs,ws) = unzip pop
-    z = sum ws
-    n = fromIntegral $ length xs
-    normalized = map (/ (z * n)) ws
-
+    norm xs = pure $ map (second (/ z)) xs where
+      z = sum $ map snd xs
 
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: MonadBayes m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
