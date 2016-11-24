@@ -71,7 +71,7 @@ runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
 withWeight :: MonadDist m => m (a, LogDomain (CustomReal m)) -> Weighted m a
 withWeight m = Weighted $ do
   (x,w) <- lift m
-  put $ weight w
+  modify (* weight w)
   return x
 
 -- | Reset weight to 1.
