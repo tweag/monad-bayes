@@ -70,7 +70,7 @@ importance' n d = fmap compact $ importance n d
 smc :: MonadDist m => Int -- ^ number of resampling points
                    -> Int -- ^ number of particles
                    -> Sequential (Population m) a -> Population m a
-smc k n = smcWithResampler (resampleN n) k n
+smc k n = smcWithResampler resample k n
 
 -- | `smc` with post-processing like in 'importance''.
 smc' :: (Ord a, MonadDist m) => Int -> Int ->

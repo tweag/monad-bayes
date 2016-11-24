@@ -74,7 +74,7 @@ test-suite monad-bayes-test
   main-is:             Spec.hs
   other-modules:       Sprinkler,
                        TestDist,
-                       TestEmpirical,
+                       TestPopulation,
                        TestInference,
                        TestSequential,
                        TestWeighted,

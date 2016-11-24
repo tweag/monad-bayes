@@ -18,14 +18,15 @@ module Control.Monad.Bayes.Population (
     Population,
     runPopulation,
     fromWeightedList,
-    fromUnweighted,
+    fromEmpirical,
     weightedSampleSize,
     spawn,
     resample,
-    resampleN,
     proper,
     evidence,
     collapse,
+    mapPopulation,
+    normalize,
     popAvg
                  ) where
 
@@ -58,10 +59,8 @@ fromList :: m [a] -> Empirical m a
 fromList = Empirical . ListT
 
 -- | The number of samples used for approximation.
-sampleSize :: Monad m => Empirical m a -> m Int
-sampleSize e = do
-  zs <- runEmpirical e
-  return (length zs)
+sampleSize :: Functor m => Empirical m a -> m Int
+sampleSize = fmap length . runEmpirical
 
 -- | Set the number of samples for the empirical distribution.
 -- Bear in mind that invoking `draw` twice in the same computation
@@ -69,8 +68,8 @@ sampleSize e = do
 -- Additionally, using `draw` with different arguments in different branches
 -- of a probabilistic program leads to a bias in the final sample, since
 -- the branch that uses more points is over-represented.
-draw :: Monad m => Int -> Empirical m ()
-draw n = Empirical $ ListT $ return $ replicate n ()
+draw :: Applicative m => Int -> Empirical m ()
+draw n = fromList $ pure $ replicate n ()
 
 
 
@@ -99,8 +98,8 @@ fromWeightedList :: MonadDist m => m [(a,LogDomain (CustomReal m))] -> Populatio
 fromWeightedList = Population . withWeight . fromList
 
 -- | Lift unweighted sample by setting all weights equal.
-fromUnweighted :: MonadDist m => Empirical m a -> Population m a
-fromUnweighted = fromWeightedList . fmap setWeights . runEmpirical where
+fromEmpirical :: MonadDist m => Empirical m a -> Population m a
+fromEmpirical = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
 
@@ -114,42 +113,29 @@ weightedSampleSize = sampleSize . runWeighted . unPopulation
 -- It is therefore safe to use `spawn` in arbitrary places in the program
 -- without introducing bias.
 spawn :: MonadDist m => Int -> Population m ()
-spawn n = fromUnweighted (draw n)
-
--- | A version of 'resampleN' that operates explicitly on lists.
--- Returns the empty list if model evidence is 0.
-resampleNList :: MonadDist m => Int -> [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain (CustomReal m))]
-resampleNList n ys = do
-  let (_,ws) = unzip ys
-  let z = sum ws
-  if z == 0 then
-    return []
-  else do
-    offsprings <- multinomial (map (second fromLogDomain) ys) n
-    let new_samples = concat [replicate k x | (x,k) <- offsprings]
-    return $ map (,z / fromIntegral n) new_samples
-
--- | A version of 'resample' that operates explicitly on lists.
-resampleList :: MonadDist m => [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain (CustomReal m))]
-resampleList ys = resampleNList (length ys) ys
+spawn n = fromEmpirical (draw n)
 
 -- | Resample the population using the underlying monad.
 -- The total weight is preserved.
 resample :: MonadDist m => Population m a -> Population m a
-resample d = fromWeightedList $ do
-  ys <- runPopulation d
-  resampleList ys
-
--- | As 'resample', but with chosen new population size.
-resampleN :: MonadDist m => Int -> Population m a -> Population m a
-resampleN n d = fromWeightedList $ do
-  ys <- runPopulation d
-  resampleNList n ys
+resample m = fromWeightedList $ do
+  pop <- runPopulation m
+  let (xs, ps) = unzip pop
+  let n = length xs
+  let z = sum ps
+  offsprings <- sequenceA $ replicate n $ categorical $ map (second fromLogDomain) pop
+  return $ map (, z / fromIntegral n) offsprings
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with an estimator of the model evidence.
 proper :: MonadDist m => Population m a -> m (a,LogDomain (CustomReal m))
-proper = fmap head . (>>= resampleNList 1) . runPopulation
+proper m = do
+  pop <- runPopulation m
+  let (xs, ps) = unzip pop
+  let z = sum ps
+  index <- discrete $ map fromLogDomain ps
+  let x = xs !! index
+  return (x,z)
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
@@ -162,6 +148,21 @@ collapse e = do
   (x,p) <- proper e
   factor p
   return x
+
+-- | Applies a random transformation to a population.
+mapPopulation :: MonadDist m => ([(a, LogDomain (CustomReal m))] -> m [(a, LogDomain (CustomReal m))]) ->
+  Population m a -> Population m a
+mapPopulation f m = fromWeightedList $ runPopulation m >>= f
+
+-- | Normalizes the weights in the population so that their sum is 1.
+normalize :: MonadDist m => Population m a -> Population m a
+normalize = mapPopulation norm where
+  norm pop = pure $ zip xs normalized where
+    (xs,ws) = unzip pop
+    z = sum ws
+    n = fromIntegral $ length xs
+    normalized = map (/ (z * n)) ws
+
 
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: MonadBayes m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)

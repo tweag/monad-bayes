@@ -4,7 +4,7 @@ import Test.QuickCheck
 
 import qualified TestWeighted
 import qualified TestDist
-import qualified TestEmpirical
+import qualified TestPopulation
 import qualified TestSequential
 import qualified TestTrace
 import qualified TestInference
@@ -36,23 +36,23 @@ main = hspec $ do
   describe "Empirical" $ do
     context "controlling population" $ do
       it "preserves the population when not expicitly altered" $ do
-        pop_size <- TestEmpirical.pop_size
+        pop_size <- TestPopulation.pop_size
         pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
-        many_size <- TestEmpirical.many_size
+        many_size <- TestPopulation.many_size
         many_size `shouldBe` 15
       it "correctly computes population average" $ do
-        TestEmpirical.popAvg_check `shouldBe` True
+        TestPopulation.popAvg_check `shouldBe` True
 --    context "checking properties of samples" $ do
 --      it "correctly checks if all particles satisfy a property" $ do
---        TestEmpirical.all_check `shouldBe` True
+--        TestPopulation.all_check `shouldBe` True
     context "distribution-preserving transformations" $ do
       it "transform preserves the distribution" $ do
-        TestEmpirical.trans_check1 `shouldBe` True
-        TestEmpirical.trans_check2 `shouldBe` True
+        TestPopulation.trans_check1 `shouldBe` True
+        TestPopulation.trans_check2 `shouldBe` True
       it "resample preserves the distribution" $ do
-        TestEmpirical.resample_check 1 `shouldBe` True
-        TestEmpirical.resample_check 2 `shouldBe` True
+        TestPopulation.resample_check 1 `shouldBe` True
+        TestPopulation.resample_check 2 `shouldBe` True
   describe "Particle" $ do
     it "stops at every factor" $ do
       TestSequential.check_two_sync 0 `shouldBe` True

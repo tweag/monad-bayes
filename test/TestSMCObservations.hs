@@ -7,7 +7,7 @@ import Data.List
 
 import Control.Monad.Bayes.LogDomain (LogDomain)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Sampler

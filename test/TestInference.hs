@@ -12,7 +12,7 @@ import Control.Monad.Bayes.Class
 import qualified Control.Monad.Bayes.Dist as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Inference
 import Sprinkler
