@@ -24,13 +24,7 @@ module Control.Monad.Bayes.Dist (
 
 import Control.Applicative (Applicative, pure, (<*>))
 import Control.Arrow (first, second)
-import Control.Monad (liftM, liftM2)
-import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
-import Data.Either
-
-import Control.Monad.List
-import Control.Monad.Writer
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
 import Control.Monad.Bayes.Class
@@ -57,7 +51,7 @@ instance (Ord r, Floating r) => Monad (Dist r) where
 
 instance (Ord r, Real r, NumSpec r) => MonadDist (Dist r) where
   discrete xs = Dist $ fmap (second (weight . toLogDomain)) $
-                  normalize $ zip (map fromIntegral [0..]) xs
+                  normalize $ zip [0..] xs
   normal  = error "Dist does not support continuous distributions"
   gamma   = error "Dist does not support continuous distributions"
   beta    = error "Dist does not support continuous distributions"

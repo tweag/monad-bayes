@@ -28,15 +28,12 @@ module Control.Monad.Bayes.Inference (
   pimh
 ) where
 
-import Control.Arrow (first,second)
-import Data.Either
-import Control.Monad.Trans.Maybe
+import Control.Arrow (second)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
+import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential
@@ -110,13 +107,13 @@ smcrm :: forall m a. MonadDist m =>
          -> Int -- ^ number of particles
          -> Sequential (Trace (Population m)) a -> Population m a
 
-smcrm k s n = marginal . finish . composeCopies k step . init
+smcrm k s n = marginal . finish . composeCopies k step . start
   where
   hoistC  = Sequential.hoistFirst
   hoistT  = Trace.mapMonad
 
-  init :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
-  init = hoistC (hoistT (spawn n >>))
+  start :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
+  start = hoistC (hoistT (spawn n >>))
 
   step :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
   step = advance . hoistC (composeCopies s mhStep . hoistT resample)
@@ -142,10 +139,10 @@ newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal
 
 -- | Generic Metropolis-Hastings algorithm.
 mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
-mh n init trans = evalStateT (start >>= chain n) 1 where
+mh n initial trans = evalStateT (start >>= chain n) 1 where
   -- start :: StateT LogFloat m a
   start = do
-    (x, p) <- lift $ runWeighted init
+    (x, p) <- lift $ runWeighted initial
     if p == 0 then
       start
     else
@@ -153,13 +150,13 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 
   --chain :: Int -> a -> StateT LogFloat m [a]
   chain 0 _ = return []
-  chain n x = do
+  chain k x = do
     p <- get
     ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
     accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
     let next = if accept then y else x
     when accept (put q)
-    rest <- chain (n-1) next
+    rest <- chain (k-1) next
     return (x:rest)
 
 -- | Lightweight Metropolis-Hastings.
@@ -170,8 +167,8 @@ mh n init trans = evalStateT (start >>= chain n) 1 where
 traceMH :: MonadDist m => Int -- ^ number of samples produced
                        -> Trace (WriterT [a] (Prior m)) a -> m [a]
 traceMH n m = prior $ execWriterT $ marginal $ composeCopies (n-1) mhStep $ record m where
-  record m = do
-    x <- m
+  record d = do
+    x <- d
     lift (tell [x])
     return x
 

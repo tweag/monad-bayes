@@ -22,14 +22,10 @@ module Control.Monad.Bayes.Conditional (
 import Control.Monad.State
 import Data.Maybe
 import Control.Arrow (first)
-
 import Data.Reflection
 import Numeric.AD
 import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse
-import Numeric.AD.Internal.Identity
-import Numeric.AD.Jacobian
-import qualified Numeric.SpecFunctions as Spec
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Weighted
@@ -100,11 +96,6 @@ unsafeContJointDensity m xs = fromMaybe (error "Could not compute density: some 
 
 -------------------------------------------------
 -- Automatic Differentiation
-
-instance (Reifies s Tape) => NumSpec (Reverse s Double) where
-  logGamma = lift1 logGamma (Id . Spec.digamma . runId)
-  logBeta  = lift2 logBeta (\(Id x) (Id y) -> (Id (psi x - psi (x+y)), Id (psi y - psi (x+y))))
-    where psi = Spec.digamma
 
 -- | Like 'unsafeContJointDensity', but additionally returns the gradient.
 -- Note that this is the gradient of the log-likelihood, even though it is not represented using 'LogDomain'.

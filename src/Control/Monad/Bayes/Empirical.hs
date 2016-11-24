@@ -31,14 +31,11 @@ module Control.Monad.Bayes.Empirical (
 
 import Prelude hiding (all)
 
-import Control.Arrow (first,second)
+import Control.Arrow (second)
 import Control.Monad.Trans.Class
-import Control.Monad.State.Lazy
 import Control.Monad.Trans.List
-import Data.Monoid
-import qualified Data.Foldable as Fold
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 
@@ -53,11 +50,11 @@ deriving instance MonadDist m => MonadDist (Empirical m)
 deriving instance MonadBayes m => MonadBayes (Empirical m)
 
 -- | Explicit representation of the sample.
-runEmpirical :: Functor m => Empirical m a -> m [a]
+runEmpirical :: Empirical m a -> m [a]
 runEmpirical = runListT . unEmpirical
 
 -- | Initialise 'Empirical' with a concrete sample.
-fromList :: Monad m => m [a] -> Empirical m a
+fromList :: m [a] -> Empirical m a
 fromList = Empirical . ListT
 
 -- | The number of samples used for approximation.
@@ -123,7 +120,7 @@ spawn n = fromUnweighted (draw n)
 -- Returns the empty list if model evidence is 0.
 resampleNList :: MonadDist m => Int -> [(a,LogDomain (CustomReal m))] -> m [(a,LogDomain (CustomReal m))]
 resampleNList n ys = do
-  let (xs,ws) = unzip ys
+  let (_,ws) = unzip ys
   let z = sum ws
   if z == 0 then
     return []

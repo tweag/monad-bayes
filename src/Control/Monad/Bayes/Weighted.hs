@@ -24,7 +24,7 @@ module Control.Monad.Bayes.Weighted (
     mapMonadWeightRecorder
                   ) where
 
-import Control.Arrow (first,second)
+import Control.Arrow (second)
 import Data.Monoid
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
@@ -79,7 +79,7 @@ resetWeight :: MonadDist m => Weighted m a -> Weighted m a
 resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
 
 -- | Apply a transformation to the transformed monad.
-mapMonad :: MonadDist m => (forall a. m a -> m a) -> Weighted m a -> Weighted m a
+mapMonad :: (forall x. m x -> m x) -> Weighted m a -> Weighted m a
 mapMonad t = Weighted . mapStateT t . toStateT
 
 -- | Similar to 'Weighted', only each factor is both  passed to the transformed
@@ -103,5 +103,5 @@ resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
 resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
 -- | Apply a transformation to the transformed monad.
-mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorder m a -> WeightRecorder m a
+mapMonadWeightRecorder :: MonadDist m => (forall x. m x -> m x) -> WeightRecorder m a -> WeightRecorder m a
 mapMonadWeightRecorder t = WeightRecorder . mapMonad t . runWeightRecorder

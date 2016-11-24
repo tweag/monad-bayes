@@ -18,8 +18,7 @@ module Control.Monad.Bayes.Class where
 
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
-import Data.Monoid
-import Control.Arrow (first,second)
+import Control.Arrow (first)
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
@@ -87,17 +86,15 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
     -- > bernoulli p = categorical [(True,p), (False,1-p)]
     bernoulli :: CustomReal m -> m Bool
     bernoulli p | p >= 0 && p <= 1 = categorical [(True,p), (False,1-p)]
-    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
 
     -- | Binomial distribution. Returns the number of successes.
     binomial :: Int -> CustomReal m -> m Int
     binomial n _ | n < 0 = error $ "Binomial: the number of trials " ++ show n ++ " is negative"
-    binomial n p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+    binomial _ p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
     binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
-                     mass k = (realToFrac (n `choose` k)) * (p ^ k') *
-                              ((1-p) ^ (n'-k')) where
-                                                  n' = fromIntegral n
-                                                  k' = fromIntegral k
+                     mass k = realToFrac (n `choose` k) * (p ^ k) *
+                              ((1-p) ^ (n-k))
 
     -- | Multinomial distribution.
     -- Corresponds to multiple independent draws from `categorical`.
@@ -111,16 +108,16 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
 
     -- | Geometric distribution starting at 0.
     geometric :: CustomReal m -> m Int
-    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
-    geometric p = unsafeDiscrete $ map ((p *) . (q ^)) [0..] where
+    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
+    geometric p = unsafeDiscrete $ map ((p *) . (q ^)) ([0..] :: [Int]) where
                              q = 1 - p
 
     -- | Poisson distribution.
     poisson :: CustomReal m -> m Int
-    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p) ++ " is not positive."
+    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p :: Double) ++ " is not positive."
     poisson p = unsafeDiscrete $ map mass [0..] where
-                             mass k = c * (p ^ (fromIntegral k)) /
-                                (realToFrac (factorial k))
+                             mass k = c * (p ^ k) /
+                                realToFrac (factorial k)
                              c = exp (-p)
 
     -- | Uniform discrete distribution.

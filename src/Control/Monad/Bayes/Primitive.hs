@@ -90,10 +90,10 @@ uniformPdf a b x =
 -- | PDF of normal distribution parameterized by mean and stddev.
 normalPdf :: Floating a => a -> a -> a -> LogDomain a
 normalPdf mu sigma x =
-  fromLog $ (-0.5 * log (2 * pi * sigma2)) +
-  ((-((x) - (mu))^2) / (2 * sigma2))
+  fromLog $ (-0.5 * log (2 * pi * sq sigma)) +
+  ((- sq (x - mu)) / (2 * sq sigma))
   where
-    sigma2 = sigma^2
+    sq y = y ^ (2 :: Int)
 
 -- | PDF of gamma distribution parameterized by shape and rate.
 gammaPdf :: (Ord a, Floating a, NumSpec a) => a -> a -> a -> LogDomain a

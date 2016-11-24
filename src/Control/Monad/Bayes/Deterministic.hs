@@ -14,7 +14,7 @@ module Control.Monad.Bayes.Deterministic(
   maybeDeterministic
 ) where
 
-import Control.Monad.Bayes.LogDomain (LogDomain, NumSpec)
+import Control.Monad.Bayes.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 
 -- | A wrapper for deterministic code.
@@ -30,10 +30,10 @@ newtype Deterministic r a = Deterministic (Maybe a)
 type instance CustomReal (Deterministic r) = r
 
 instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r) where
-  primitive d = Deterministic Nothing
+  primitive _ = Deterministic Nothing
 
 instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
-  factor w = Deterministic Nothing
+  factor _ = Deterministic Nothing
 
 -- | Converts a probabilistic type into a deterministic one,
 -- provided that no probabilistic effects are actually used.

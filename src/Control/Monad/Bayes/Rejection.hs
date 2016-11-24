@@ -38,7 +38,7 @@ instance MonadDist m => MonadDist (Rejection m) where
   primitive = lift . primitive
 
 instance MonadDist m => MonadBayes (Rejection m) where
-  factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w) ++ " is not in [0,1] range."
+  factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w :: Double) ++ " is not in [0,1] range."
   factor w = do
     accept <- bernoulli (fromLogDomain w)
     unless accept (fail "")

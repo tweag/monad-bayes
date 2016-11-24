@@ -14,6 +14,11 @@ Portability : GHC
 module Control.Monad.Bayes.LogDomain where
 
 import qualified Numeric.SpecFunctions as Spec
+import Data.Reflection
+import Numeric.AD.Mode.Reverse
+import Numeric.AD.Internal.Reverse
+import Numeric.AD.Internal.Identity
+import Numeric.AD.Jacobian
 
 -- | Log-domain non-negative real numbers.
 -- Used to prevent underflow when computing small probabilities.
@@ -71,7 +76,7 @@ instance (Ord a, Floating a) => Num (LogDomain a) where
   x - y = if x >= y then fromLog (toLog x + log (1 - exp (toLog y - toLog x)))
                     else error "LogDomain: subtraction resulted in a negative value"
   (*) = liftLog2 (+)
-  negate x = error "LogDomain does not support negation"
+  negate _ = error "LogDomain does not support negation"
   abs = id
   signum x = if toLog x == -1/0 then 0 else 1
   fromInteger = toLogDomain . fromInteger
@@ -131,3 +136,11 @@ instance NumSpec Double where
 instance (Ord a, NumSpec a) => NumSpec (LogDomain a) where
   gamma     = liftLog (logGamma . exp)
   beta a b  = liftLog2 (\x y -> logBeta (exp x) (exp y)) a b
+
+-------------------------------------------------
+-- Automatic Differentiation instances
+
+instance (Reifies s Tape) => NumSpec (Reverse s Double) where
+  logGamma = lift1 logGamma (Id . Spec.digamma . runId)
+  logBeta  = lift2 logBeta (\(Id x) (Id y) -> (Id (psi x - psi (x+y)), Id (psi y - psi (x+y))))
+    where psi = Spec.digamma
