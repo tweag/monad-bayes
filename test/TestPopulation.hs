@@ -16,6 +16,8 @@ enumerate = Dist.enumerate
 expectation :: (a -> Double) -> Dist.Dist Double a -> Double
 expectation = Dist.expectation
 
+weightedSampleSize = fmap length . runPopulation
+
 pop_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
 
 many_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3

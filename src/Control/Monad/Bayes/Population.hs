@@ -13,13 +13,13 @@ module Control.Monad.Bayes.Population (
     Empirical,
     runEmpirical,
     fromList,
-    sampleSize,
+    --sampleSize,
     draw,
     Population,
     runPopulation,
     fromWeightedList,
     fromEmpirical,
-    weightedSampleSize,
+    --weightedSampleSize,
     spawn,
     resample,
     proper,
@@ -27,7 +27,8 @@ module Control.Monad.Bayes.Population (
     collapse,
     mapPopulation,
     normalize,
-    popAvg
+    popAvg,
+    hoist
                  ) where
 
 import Prelude hiding (all)
@@ -57,10 +58,6 @@ runEmpirical = runListT . unEmpirical
 -- | Initialise 'Empirical' with a concrete sample.
 fromList :: m [a] -> Empirical m a
 fromList = Empirical . ListT
-
--- | The number of samples used for approximation.
-sampleSize :: Functor m => Empirical m a -> m Int
-sampleSize = fmap length . runEmpirical
 
 -- | Set the number of samples for the empirical distribution.
 -- Bear in mind that invoking `draw` twice in the same computation
@@ -102,11 +99,6 @@ fromEmpirical :: MonadDist m => Empirical m a -> Population m a
 fromEmpirical = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
-
--- | The number of points in the weighted sample,
--- not to be confused with effective sample size.
-weightedSampleSize :: MonadDist m => Population m a -> m Int
-weightedSampleSize = sampleSize . runWeighted . unPopulation
 
 -- | A variant of 'draw' for 'Population'.
 -- The weights are set equal and such that they sum to 1.
@@ -170,3 +162,7 @@ popAvg f p = do
   xs <- runPopulation p
   let ys = map (\(x,w) -> f x * fromLogDomain w) xs
   return (sum ys)
+
+-- | Applies a transformation to the inner monad.
+hoist :: (MonadDist m, MonadDist n, CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Population m a -> Population n a
+hoist f = fromWeightedList . f . runPopulation
