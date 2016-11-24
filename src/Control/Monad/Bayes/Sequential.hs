@@ -9,15 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  TupleSections,
-  GeneralizedNewtypeDeriving,
-  FlexibleInstances,
-  FlexibleContexts,
-  RankNTypes,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Sequential (
     Sequential,
     suspend,

@@ -9,14 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies,
-  StandaloneDeriving,
-  FlexibleContexts,
-  RankNTypes
- #-}
-
 module Control.Monad.Bayes.Weighted (
     Weight,
     weight,

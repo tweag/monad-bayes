@@ -10,11 +10,7 @@ Portability : GHC
 -}
 
 {-# LANGUAGE
-  FlexibleContexts,
-  ScopedTypeVariables,
-  Rank2Types,
-  TupleSections,
-  GeneralizedNewtypeDeriving
+  ScopedTypeVariables
  #-}
 
 module Control.Monad.Bayes.Inference (

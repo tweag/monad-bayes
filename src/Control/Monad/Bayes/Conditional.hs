@@ -9,14 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies,
-  FlexibleContexts,
-  FlexibleInstances,
-  RankNTypes
-   #-}
-
 module Control.Monad.Bayes.Conditional (
   Conditional,
   conditional,

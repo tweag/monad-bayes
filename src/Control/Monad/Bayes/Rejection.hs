@@ -9,14 +9,11 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Rejection (
                   Rejection,
-                  runRejection) where
+                  runRejection,
+                  hoist
+                  ) where
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -45,3 +42,6 @@ instance MonadDist m => MonadBayes (Rejection m) where
   factor w = do
     accept <- bernoulli (fromLogDomain w)
     unless accept (fail "")
+
+hoist :: (forall x. m x -> n x) -> Rejection m a -> Rejection n a
+hoist f = Rejection . MaybeT . f . runRejection

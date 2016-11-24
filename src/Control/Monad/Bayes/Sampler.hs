@@ -9,13 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  FlexibleInstances,
-  FlexibleContexts,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,

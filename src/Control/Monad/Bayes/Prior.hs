@@ -9,14 +9,10 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Prior (
     Prior,
-    prior
+    prior,
+    hoist
               ) where
 
 import Control.Monad.Trans.Class
@@ -39,3 +35,7 @@ instance MonadDist m => MonadBayes (Prior m) where
 -- | Discard conditioning and just use the prior.
 prior :: Prior m a -> m a
 prior = runIdentityT . runPrior
+
+-- | Apply a transformation to the inner monad.
+hoist :: (forall x. m x -> n x) -> Prior m a -> Prior n a
+hoist f = Prior . IdentityT . f . runIdentityT . runPrior

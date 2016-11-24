@@ -44,6 +44,16 @@ library
                      , reflection
   ghc-options:         -Wall
   default-language:    Haskell2010
+  default-extensions:  RankNTypes
+                     , GeneralizedNewtypeDeriving
+                     , StandaloneDeriving
+                     , TypeFamilies
+                     , FlexibleContexts
+                     , FlexibleInstances
+                     , TupleSections
+  other-extensions:    GADTs
+                     , ScopedTypeVariables
+                     , DeriveFunctor
 
 test-suite monad-bayes-test
   type:                exitcode-stdio-1.0

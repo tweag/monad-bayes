@@ -9,12 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies,
-  FlexibleInstances
- #-}
-
 module Control.Monad.Bayes.Deterministic(
   Deterministic,
   maybeDeterministic

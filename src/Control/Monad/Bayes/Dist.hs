@@ -9,14 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  TupleSections,
-  GeneralizedNewtypeDeriving,
-  FlexibleInstances,
-  FlexibleContexts,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Dist (
     Dist,
     toList,

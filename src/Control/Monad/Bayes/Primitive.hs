@@ -10,9 +10,7 @@ Portability : GHC
 -}
 
 {-# LANGUAGE
-  GADTs,
-  StandaloneDeriving,
-  FlexibleContexts
+  GADTs
  #-}
 
 module Control.Monad.Bayes.Primitive (

@@ -9,16 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  TupleSections,
-  GeneralizedNewtypeDeriving,
-  FlexibleInstances,
-  FlexibleContexts,
-  Rank2Types,
-  TypeFamilies,
-  StandaloneDeriving
- #-}
-
 module Control.Monad.Bayes.Empirical (
     Empirical,
     runEmpirical,

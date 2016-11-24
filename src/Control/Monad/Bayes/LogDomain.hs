@@ -9,10 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  FlexibleInstances
- #-}
-
 -- Log-domain non-negative real numbers
 -- Essentially a polymorphic version of LogFloat to allow for AD
 module Control.Monad.Bayes.LogDomain where

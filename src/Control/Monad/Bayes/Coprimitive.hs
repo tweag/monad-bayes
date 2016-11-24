@@ -12,11 +12,7 @@ Portability : GHC
 
 {-# LANGUAGE
   GADTs,
-  StandaloneDeriving,
-  TypeFamilies,
-  DeriveFunctor,
-  GeneralizedNewtypeDeriving,
-  FlexibleContexts
+  DeriveFunctor
    #-}
 
 module Control.Monad.Bayes.Coprimitive (

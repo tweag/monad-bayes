@@ -10,10 +10,7 @@ Portability : GHC
 -}
 
 {-# LANGUAGE
-  TupleSections,
-  GADTs,
-  TypeFamilies,
-  FlexibleContexts
+  GADTs
  #-}
 
 
