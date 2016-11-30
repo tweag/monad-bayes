@@ -30,6 +30,7 @@ library
                        Control.Monad.Bayes.Coprimitive,
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
+                       Control.Monad.Bayes.Augmented
                        Control.Monad.Bayes
   build-depends:       base >= 4.7 && < 5
                      , containers
