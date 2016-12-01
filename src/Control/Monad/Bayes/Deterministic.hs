@@ -11,8 +11,11 @@ Portability : GHC
 
 module Control.Monad.Bayes.Deterministic(
   Deterministic,
-  maybeDeterministic
+  maybeDeterministic,
+  unsafeDeterministic
 ) where
+
+import Data.Maybe (fromMaybe)
 
 import Control.Monad.Bayes.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
@@ -39,3 +42,8 @@ instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
 -- provided that no probabilistic effects are actually used.
 maybeDeterministic :: Deterministic r a -> Maybe a
 maybeDeterministic (Deterministic m) = m
+
+-- | Converts a probabilistic type into a deterministic one,
+-- throws an error if probabilistic effects were actually used.
+unsafeDeterministic :: Deterministic r a -> a
+unsafeDeterministic = fromMaybe (error "Deterministic: There were probabilistic effects") . maybeDeterministic
