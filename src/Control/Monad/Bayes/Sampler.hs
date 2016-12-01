@@ -44,7 +44,7 @@ fromMWC :: (GenIO -> IO a) -> SamplerIO a
 fromMWC s = SamplerIO $ ask >>= lift . s
 
 instance MonadDist SamplerIO where
-  discrete ps      = fromMWC $ MWC.categorical (Data.Vector.fromList ps)
+  discrete ps      = fromMWC $ MWC.categorical $ Data.Vector.fromList $ map (/ sum ps) ps
   normal m s       = fromMWC $ MWC.normal m s
   gamma a b        = fromMWC $ MWC.gamma a (recip b)
   beta a b         = fromMWC $ MWC.beta a b
