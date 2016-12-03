@@ -16,6 +16,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Class where
 
+import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
 import Control.Arrow (first)
@@ -80,6 +81,14 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
     categorical d = do
       i <- discrete (map snd d)
       return (fst (d !! i))
+
+    logCategorical :: [(a, Log.LogDomain (CustomReal m))] -> m a
+    logCategorical d = do
+      i <- logDiscrete (map snd d)
+      return (fst (d !! i))
+
+    logDiscrete :: [Log.LogDomain (CustomReal m)] -> m Int
+    logDiscrete ps = discrete $ fmap (Log.fromLogDomain . ( / Fold.maximum ps)) ps
 
     -- | Bernoulli distribution.
     --
