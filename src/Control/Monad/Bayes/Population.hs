@@ -109,8 +109,12 @@ resample m = fromWeightedList $ do
   let (xs, ps) = unzip pop
   let n = length xs
   let z = sum ps
-  offsprings <- sequenceA $ replicate n $ categorical $ map (second fromLogDomain) pop
-  return $ map (, z / fromIntegral n) offsprings
+  if z > 0 then do
+    offsprings <- sequenceA $ replicate n $ logCategorical pop
+    return $ map (, z / fromIntegral n) offsprings
+  else
+    -- if all weights are zero do not resample
+    return pop
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with an estimator of the model evidence.
@@ -119,7 +123,10 @@ proper m = do
   pop <- runPopulation m
   let (xs, ps) = unzip pop
   let z = sum ps
-  index <- discrete $ map fromLogDomain ps
+  index <- if z > 0 then
+      logDiscrete ps
+    else
+      uniformD [0..(length xs)]
   let x = xs !! index
   return (x,z)
 
