@@ -88,12 +88,13 @@ uniformPdf a b x =
     0
 
 -- | PDF of normal distribution parameterized by mean and stddev.
-normalPdf :: Floating a => a -> a -> a -> LogDomain a
-normalPdf mu sigma x =
-  fromLog $ (-0.5 * log (2 * pi * sq sigma)) +
-  ((- sq (x - mu)) / (2 * sq sigma))
-  where
-    sq y = y ^ (2 :: Int)
+normalPdf :: (Ord a, Floating a) => a -> a -> a -> LogDomain a
+normalPdf mu sigma x
+  | sigma <= 0 = error "PDF: non-positive standard deviation in Normal"
+  | otherwise  = fromLog $ (-0.5 * log (2 * pi * sq sigma)) +
+                ((- sq (x - mu)) / (2 * sq sigma))
+                  where
+                    sq y = y ^ (2 :: Int)
 
 -- | PDF of gamma distribution parameterized by shape and rate.
 gammaPdf :: (Ord a, Floating a, NumSpec a) => a -> a -> a -> LogDomain a
