@@ -71,8 +71,8 @@ instance Show a => Show (LogDomain a) where
   show = show . toLog
 
 instance (Ord a, Floating a) => Num (LogDomain a) where
-  x + y = if x >= y then fromLog (toLog x + log (1 + exp (toLog y - toLog x)))
-                    else y + x
+  x + y = if y > x then y + x
+                   else fromLog (toLog x + log (1 + exp (toLog y - toLog x)))
   x - y = if x >= y then fromLog (toLog x + log (1 - exp (toLog y - toLog x)))
                     else error "LogDomain: subtraction resulted in a negative value"
   (*) = liftLog2 (+)
