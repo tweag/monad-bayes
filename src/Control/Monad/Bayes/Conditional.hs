@@ -11,6 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Conditional (
   Conditional,
+  hoist,
   maybeConditional,
   unsafeConditional,
   maybeDensity,
@@ -62,6 +63,9 @@ instance MonadBayes m => MonadDist (Conditional m) where
 
 instance MonadBayes m => MonadBayes (Conditional m) where
   factor = lift . factor
+
+hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Conditional m a -> Conditional n a
+hoist f (Conditional m) = Conditional $ mapStateT (mapMaybeT f) m
 
 -- | Conditional distribution given a subset of random variables.
 -- For every fixed value its PDF is included as a `factor`.

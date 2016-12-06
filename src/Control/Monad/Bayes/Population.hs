@@ -126,7 +126,7 @@ proper m = do
   index <- if z > 0 then
       logDiscrete ps
     else
-      uniformD [0..(length xs)]
+      uniformD [0..(length xs - 1)]
   let x = xs !! index
   return (x,z)
 
