@@ -55,7 +55,7 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_pimh_trans = enumerate (fmap (!! 2) (pimh 2 2 2 sprinkler_posterior)) ~==
 --                    enumerate sprinkler
 
-check_trace_mh m m' = enumerate (marginal (mhStep (mhStep m))) ~==
+check_trace_mh m m' = enumerate (dropTrace (mhStep (mhStep m))) ~==
                       enumerate m'
 
 trace_mh_length n = fmap length (sampleIOfixed (traceMH n sprinkler))
