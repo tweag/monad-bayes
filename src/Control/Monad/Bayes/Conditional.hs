@@ -64,6 +64,7 @@ instance MonadBayes m => MonadDist (Conditional m) where
 instance MonadBayes m => MonadBayes (Conditional m) where
   factor = lift . factor
 
+-- | Applies a transformation to the inner monad.
 hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Conditional m a -> Conditional n a
 hoist f (Conditional m) = Conditional $ mapStateT (mapMaybeT f) m
 

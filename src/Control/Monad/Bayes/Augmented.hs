@@ -11,6 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Augmented (
   Augmented,
+  hoist,
   withTrace,
   trace
 ) where
@@ -41,6 +42,10 @@ instance MonadDist m => MonadDist (Augmented m) where
 
 instance MonadBayes m => MonadBayes (Augmented m) where
   factor = lift . factor
+
+-- | Applies a transformation to the inner monad.
+hoist :: (forall x. m x -> n x) -> Augmented m a -> Augmented n a
+hoist f (Augmented m) = Augmented $ mapWriterT f m
 
 -- | Collect program output and its trace.
 withTrace :: Augmented m a -> m (a, Trace (CustomReal m))

@@ -10,10 +10,10 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Rejection (
-                  Rejection,
-                  runRejection,
-                  hoist
-                  ) where
+  Rejection,
+  runRejection,
+  hoist
+  ) where
 
 import Control.Monad
 import Control.Monad.Trans.Class
