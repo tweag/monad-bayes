@@ -32,7 +32,7 @@ import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse
 
 import Control.Monad.Bayes.LogDomain
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Deterministic
@@ -73,7 +73,7 @@ hoist f (Conditional m) = Conditional $ mapStateT (mapMaybeT f) m
 -- Missing values are treated as no conditioning on that RV.
 maybeConditional :: Monad m => Conditional m a -> Trace (CustomReal m) -> MaybeT m a
 maybeConditional (Conditional m) t = do
-  (x, remaining) <- runStateT m (fromTrace t)
+  (x, remaining) <- runStateT m (toLists t)
   unless (null (fst remaining) && null (snd remaining)) (fail "")
   return x
 
@@ -101,7 +101,7 @@ unsafeJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Dete
 unsafeJointDensity m t = unsafeDeterministic $ unsafeDensity m t
 
 unsafeJointDensityGradient :: (forall s. Reifies s Tape =>  Conditional (Weighted (Deterministic (Reverse s Double))) a) -> [Double] -> (LogDomain Double, [Double])
-unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . toTrace . (,[])) xs
+unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
 
 
 --

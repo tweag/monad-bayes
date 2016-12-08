@@ -1,5 +1,5 @@
 {-|
-Module      : Control.Monad.Bayes.Trace
+  Module      : Control.Monad.Bayes.Trace
 Description : Probabilistic computation accumulating a trace
 Copyright   : (c) Yufei Cai, 2016
               (c) Adam Scibior, 2016
@@ -17,21 +17,21 @@ Portability : GHC
    #-}
 
 module Control.Monad.Bayes.Trace (
-  Trace,
-  mapMonad,
+  Traced,
+  hoist,
   mhStep,
-  marginal
+  dropTrace
 ) where
 
 import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (mapMonad)
+import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Coprimitive
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.Coroutine hiding (mapMonad)
+import Control.Monad.Coroutine hiding (hoist)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Control.Monad.Trans.Class
 
@@ -181,56 +181,56 @@ mhKernel oldState = do
 
 -- | A probability monad that keeps the execution trace.
 -- Unlike `Trace`, it does not pass conditioning to the transformed monad.
-newtype Trace' m a = Trace' { unTrace' :: LogDomain (CustomReal m) -> m (MHState m a) }
+newtype Traced' m a = Traced' { unTraced' :: LogDomain (CustomReal m) -> m (MHState m a) }
   deriving (Functor)
-runTrace' :: MonadDist m => Trace' m a -> m (MHState m a)
-runTrace' = (`unTrace'` 1)
+runTraced' :: MonadDist m => Traced' m a -> m (MHState m a)
+runTraced' = (`unTraced'` 1)
 
-type instance CustomReal (Trace' m) = CustomReal m
+type instance CustomReal (Traced' m) = CustomReal m
 
-instance MonadDist m => Applicative (Trace' m) where
+instance MonadDist m => Applicative (Traced' m) where
   pure  = return
   (<*>) = liftM2 ($)
 
-instance MonadDist m => Monad (Trace' m) where
+instance MonadDist m => Monad (Traced' m) where
 
-  return x = Trace' $ \w -> return (MHState [] w x)
+  return x = Traced' $ \w -> return (MHState [] w x)
 
-  m >>= f = Trace' $ \w -> do
-    MHState ls lw la <- unTrace' m w
-    MHState rs rw ra <- unTrace' (f la) lw
+  m >>= f = Traced' $ \w -> do
+    MHState ls lw la <- unTraced' m w
+    MHState rs rw ra <- unTraced' (f la) lw
     return $ MHState (map (fmap convert) ls ++ rs) rw ra
     where
       --convert :: Weighted (Coprimitive m) a -> Weighted (Coprimitive m) b
       convert m = do
         (x,w) <- lift $ runWeighted m
-        mhReset $ unTrace' (f x) w
+        mhReset $ unTraced' (f x) w
 
 
-instance MonadTrans Trace' where
-  lift m = Trace' $ \w -> fmap (MHState [] w) m
+instance MonadTrans Traced' where
+  lift m = Traced' $ \w -> fmap (MHState [] w) m
 
-instance MonadDist m => MonadDist (Trace' m) where
-  primitive d = Trace' $ \w -> do
+instance MonadDist m => MonadDist (Traced' m) where
+  primitive d = Traced' $ \w -> do
     x <- primitive d
     return $ MHState [Snapshot d x (\x -> factor w >> return x)] w x
 
-instance MonadDist m => MonadBayes (Trace' m) where
-  factor k = Trace' $ \w -> return (MHState [] (w * k) ())
+instance MonadDist m => MonadBayes (Traced' m) where
+  factor k = Traced' $ \w -> return (MHState [] (w * k) ())
 
 -- | Modify the transformed monad.
 -- This is only applied to the current trace, not to future ones resulting from
 -- MH transitions.
-mapMonad' :: Monad m => (forall x. m x -> m x) -> Trace' m x -> Trace' m x
-mapMonad' t (Trace' m) = Trace' (t . m)
+hoist' :: Monad m => (forall x. m x -> m x) -> Traced' m x -> Traced' m x
+hoist' t (Traced' m) = Traced' (t . m)
 
 -- | Perform a single step of the Lightweight Metropolis-Hastings algorithm.
-mhStep' :: (MonadDist m) => Trace' m a -> Trace' m a
-mhStep' (Trace' m) = Trace' (m >=> mhKernel)
+mhStep' :: (MonadDist m) => Traced' m a -> Traced' m a
+mhStep' (Traced' m) = Traced' (m >=> mhKernel)
 
 -- | Discard the trace.
-marginal' :: MonadDist m => Trace' m a -> m a
-marginal' = fmap mhAnswer . runTrace'
+dropTrace' :: MonadDist m => Traced' m a -> m a
+dropTrace' = fmap mhAnswer . runTraced'
 
 
 
@@ -241,38 +241,38 @@ marginal' = fmap mhAnswer . runTrace'
 -- factors can be arbitrarily reordered with other probabilistic effects
 -- without affecting observable behaviour.
 -- This property in particular holds true for `Weighted`.
-newtype Trace m a = Trace { runTrace :: Trace' (WeightRecorder m) a }
+newtype Traced m a = Traced { runTraced :: Traced' (WeightRecorder m) a }
   deriving (Functor)
-type instance CustomReal (Trace m) = CustomReal m
-deriving instance MonadDist m => Applicative (Trace m)
-deriving instance MonadDist m => Monad (Trace m)
-deriving instance MonadDist m => MonadDist (Trace m)
+type instance CustomReal (Traced m) = CustomReal m
+deriving instance MonadDist m => Applicative (Traced m)
+deriving instance MonadDist m => Monad (Traced m)
+deriving instance MonadDist m => MonadDist (Traced m)
 
-type instance CustomReal (Trace m) = CustomReal m
+type instance CustomReal (Traced m) = CustomReal m
 
-instance MonadTrans Trace where
-  lift = Trace . lift . lift
+instance MonadTrans Traced where
+  lift = Traced . lift . lift
 
-instance MonadBayes m => MonadBayes (Trace m) where
-  factor k = Trace $ do
+instance MonadBayes m => MonadBayes (Traced m) where
+  factor k = Traced $ do
     factor k
     lift (factor k)
 -- | Modify the transformed monad.
 -- This is only applied to the current trace, not to future ones resulting from
 -- MH transitions.
-mapMonad :: MonadDist m => (forall x. m x -> m x) -> Trace m x -> Trace m x
-mapMonad t = Trace . mapMonad' (mapMonadWeightRecorder t) . runTrace
+hoist :: MonadDist m => (forall x. m x -> m x) -> Traced m x -> Traced m x
+hoist t = Traced . hoist' (hoistWeightRecorder t) . runTraced
 
 -- | Perform a single step of the Lightweight Metropolis-Hastings algorithm.
 -- In the new trace factors are not passed to the transformed monad,
 -- so in there the likelihood remains fixed.
-mhStep :: (MonadBayes m) => Trace m a -> Trace m a
-mhStep (Trace m) = Trace $ Trace' $ \w -> lift $ do
-  (x,s) <- runWeighted $ duplicateWeight $ unTrace' (mhStep' $ mapMonad' resetWeightRecorder m) w
+mhStep :: (MonadBayes m) => Traced m a -> Traced m a
+mhStep (Traced m) = Traced $ Traced' $ \w -> lift $ do
+  (x,s) <- runWeighted $ duplicateWeight $ unTraced' (mhStep' $ hoist' resetWeightRecorder m) w
   -- Reverse the effect of factors in mhStep on the transformed monad.
   factor (1 / s)
   return x
 
 -- | Discard the trace.
-marginal :: MonadDist m => Trace m a -> m a
-marginal = fmap fst . runWeighted . duplicateWeight . marginal' . runTrace
+dropTrace :: MonadDist m => Traced m a -> m a
+dropTrace = fmap fst . runWeighted . duplicateWeight . dropTrace' . runTraced

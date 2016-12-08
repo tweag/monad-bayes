@@ -33,7 +33,7 @@ import Control.Monad.Trans.List
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Weighted hiding (hoist)
 
 -- | Empirical distribution represented as a list of values.
 -- Probabilistic effects are lifted from the transformed monad.

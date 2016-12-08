@@ -105,17 +105,17 @@ smcrm :: forall m a. MonadDist m =>
          Int -- ^ number of resampling points
          -> Int -- ^ number of MH transitions at each step
          -> Int -- ^ number of particles
-         -> Sequential (Trace (Population m)) a -> Population m a
+         -> Sequential (Traced (Population m)) a -> Population m a
 
-smcrm k s n = marginal . finish . composeCopies k step . start
+smcrm k s n = dropTrace . finish . composeCopies k step . start
   where
   hoistC  = Sequential.hoistFirst
-  hoistT  = Trace.mapMonad
+  hoistT  = Trace.hoist
 
-  start :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
+  start :: Sequential (Traced (Population m)) a -> Sequential (Traced (Population m)) a
   start = hoistC (hoistT (spawn n >>))
 
-  step :: Sequential (Trace (Population m)) a -> Sequential (Trace (Population m)) a
+  step :: Sequential (Traced (Population m)) a -> Sequential (Traced (Population m)) a
   step = advance . hoistC (composeCopies s mhStep . hoistT resample)
 
 -- | Importance Sampling with Metropolis-Hastings transitions.
@@ -124,15 +124,15 @@ smcrm k s n = marginal . finish . composeCopies k step . start
 -- Can be seen as a precursor to Simulated Annealing.
 ismh :: MonadDist m => Int -- ^ number of MH transitions for each point
                     -> Int -- ^ population size
-                    -> Trace (Population m) a -> Population m a
-ismh s n = marginal . composeCopies s mhStep . Trace.mapMonad (spawn n >>)
+                    -> Traced (Population m) a -> Population m a
+ismh s n = dropTrace . composeCopies s mhStep . Trace.hoist (spawn n >>)
 
 -- | Sequential Metropolis-Hastings.
 -- Alternates several MH transitions with running the program another step forward.
 smh :: MonadBayes m => Int -- ^ number of suspension points
                     -> Int -- ^ number of MH transitions at each point
-                    -> Sequential (Trace m) a -> m a
-smh k s = marginal . finish . composeCopies k (advance . composeCopies s (Sequential.hoistFirst mhStep))
+                    -> Sequential (Traced m) a -> m a
+smh k s = dropTrace . finish . composeCopies k (advance . composeCopies s (Sequential.hoistFirst mhStep))
 
 -- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
 newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
@@ -165,8 +165,8 @@ mh n initial trans = evalStateT (start >>= chain n) 1 where
 -- Beware that if the initial sample has zero likelihood, it is possible
 -- that all the samples produced have zero likelihood.
 traceMH :: MonadDist m => Int -- ^ number of samples produced
-                       -> Trace (WriterT [a] (Prior m)) a -> m [a]
-traceMH n m = prior $ execWriterT $ marginal $ composeCopies (n-1) mhStep $ record m where
+                       -> Traced (WriterT [a] (Prior m)) a -> m [a]
+traceMH n m = prior $ execWriterT $ dropTrace $ composeCopies (n-1) mhStep $ record m where
   record d = do
     x <- d
     lift (tell [x])

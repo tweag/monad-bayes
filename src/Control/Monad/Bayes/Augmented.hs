@@ -11,8 +11,8 @@ Portability : GHC
 
 module Control.Monad.Bayes.Augmented (
   Trace,
-  toTrace,
-  fromTrace,
+  fromLists,
+  toLists,
   Augmented,
   withTrace,
   trace
@@ -30,12 +30,12 @@ newtype Trace r = Trace ([r],[Int])
   deriving(Monoid)
 
 -- | Package values as a trace.
-toTrace :: ([r],[Int]) -> Trace r
-toTrace = Trace
+fromLists :: ([r],[Int]) -> Trace r
+fromLists = Trace
 
 -- | Extract values from a trace.
-fromTrace :: Trace r -> ([r],[Int])
-fromTrace (Trace t) = t
+toLists :: Trace r -> ([r],[Int])
+toLists (Trace t) = t
 
 
 -- | A transformer that includes all the latent random variables in the output.
@@ -50,7 +50,7 @@ instance MonadTrans Augmented where
 instance MonadDist m => MonadDist (Augmented m) where
   primitive d = Augmented $ do
     x <- primitive d
-    tell $ toTrace $ case d of
+    tell $ fromLists $ case d of
       Discrete   _ -> (mempty, [x])
       Continuous _ -> ([x], mempty)
     return x
