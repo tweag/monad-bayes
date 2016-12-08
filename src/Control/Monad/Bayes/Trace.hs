@@ -17,6 +17,9 @@ Portability : GHC
    #-}
 
 module Control.Monad.Bayes.Trace (
+  Trace,
+  fromLists,
+  toLists,
   Traced,
   hoist,
   mhStep,
@@ -38,6 +41,19 @@ import Control.Monad.Trans.Class
 import Data.Maybe
 import Data.List
 import Safe (tailSafe)
+
+-- | Trace of a probabilistic program is a collection of values for all the
+-- latent random variables.
+newtype Trace r = Trace ([r],[Int])
+  deriving(Monoid)
+
+-- | Package values as a trace.
+fromLists :: ([r],[Int]) -> Trace r
+fromLists = Trace
+
+-- | Extract values from a trace.
+toLists :: Trace r -> ([r],[Int])
+toLists (Trace t) = t
 
 -- | An old primitive sample is reusable if both distributions have the
 -- same support.

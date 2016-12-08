@@ -36,7 +36,7 @@ import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Deterministic
-import Control.Monad.Bayes.Augmented
+import Control.Monad.Bayes.Trace hiding (hoist)
 
 -- | A probability monad that allows conditioning on the latent variables.
 newtype Conditional m a = Conditional (StateT ([CustomReal m], [Int]) (MaybeT m) a)

@@ -10,9 +10,6 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Augmented (
-  Trace,
-  fromLists,
-  toLists,
   Augmented,
   withTrace,
   trace
@@ -23,20 +20,7 @@ import Control.Monad.Trans.Writer
 
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-
--- | Trace of a probabilistic program is a collection of values for all the
--- latent random variables.
-newtype Trace r = Trace ([r],[Int])
-  deriving(Monoid)
-
--- | Package values as a trace.
-fromLists :: ([r],[Int]) -> Trace r
-fromLists = Trace
-
--- | Extract values from a trace.
-toLists :: Trace r -> ([r],[Int])
-toLists (Trace t) = t
-
+import Control.Monad.Bayes.Trace
 
 -- | A transformer that includes all the latent random variables in the output.
 newtype Augmented m a = Augmented (WriterT (Trace (CustomReal m)) m a)
