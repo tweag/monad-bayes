@@ -3,7 +3,7 @@ module TestSequential where
 import Data.AEq
 
 import Control.Monad.Bayes.Class
-import qualified Control.Monad.Bayes.Dist as Dist
+import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Sequential
 import Sprinkler
 

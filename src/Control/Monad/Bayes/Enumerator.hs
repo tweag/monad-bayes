@@ -1,6 +1,6 @@
 {-|
-Module      : Control.Monad.Bayes.Dist
-Description : Exact representation of distributions with finite support
+Module      : Control.Monad.Bayes.Enumerator
+Description : Exhaustive enumeration of discrete random variables
 Copyright   : (c) Adam Scibior, 2016
 License     : MIT
 Maintainer  : ams240@cam.ac.uk
@@ -9,12 +9,12 @@ Portability : GHC
 
 -}
 
-module Control.Monad.Bayes.Dist (
+module Control.Monad.Bayes.Enumerator (
     Enumerator,
     toPopulation,
     hoist,
     Dist,
-    toList,
+    logExplicit,
     explicit,
     evidence,
     mass,
@@ -73,12 +73,12 @@ ensureDiscrete =
 
 -- | Returns the posterior as a list of weight-value pairs without any post-processing,
 -- such as normalization or aggregation
-toList :: (Real r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
-toList = ensureDiscrete . Pop.runPopulation . toPopulation
+logExplicit :: (Real r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
+logExplicit = ensureDiscrete . Pop.runPopulation . toPopulation
 
 -- | Same as `toList`, only weights are converted from log-domain.
 explicit :: (Real r, NumSpec r) => Dist r a -> [(a,r)]
-explicit = map (second fromLogDomain) . toList
+explicit = map (second fromLogDomain) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
 evidence :: (Real r, NumSpec r) => Dist r a -> LogDomain r

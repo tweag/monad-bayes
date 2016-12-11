@@ -14,7 +14,7 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Conditional
 import qualified Control.Monad.Bayes.Trace as Trace
 

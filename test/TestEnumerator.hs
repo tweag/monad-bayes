@@ -1,9 +1,9 @@
-module TestDist where
+module TestEnumerator where
 
 import Data.AEq
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
-import qualified Control.Monad.Bayes.Dist as Dist
+import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Class
 import Sprinkler
 

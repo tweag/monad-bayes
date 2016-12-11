@@ -14,7 +14,7 @@ module HMM (
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Primitive
-import qualified Control.Monad.Bayes.Dist as Dist
+import qualified Control.Monad.Bayes.Enumerator as Dist
 
 -- | States of the HMM
 states :: [Int]
