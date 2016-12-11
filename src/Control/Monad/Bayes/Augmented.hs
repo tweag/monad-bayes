@@ -21,7 +21,7 @@ import Control.Monad.Trans.Writer
 
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Trace hiding (hoist)
 
 -- | A transformer that includes all the latent random variables in the output.
 newtype Augmented m a = Augmented (WriterT (Trace (CustomReal m)) m a)
@@ -44,7 +44,7 @@ instance MonadBayes m => MonadBayes (Augmented m) where
   factor = lift . factor
 
 -- | Applies a transformation to the inner monad.
-hoist :: (forall x. m x -> n x) -> Augmented m a -> Augmented n a
+hoist :: CustomReal m ~ CustomReal n => (forall x. m x -> n x) -> Augmented m a -> Augmented n a
 hoist f (Augmented m) = Augmented $ mapWriterT f m
 
 -- | Collect program output and its trace.
