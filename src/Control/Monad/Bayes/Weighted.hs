@@ -103,5 +103,5 @@ resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
 resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
 -- | Apply a transformation to the transformed monad.
-hoistWeightRecorder :: MonadDist m => (forall x. m x -> m x) -> WeightRecorder m a -> WeightRecorder m a
+hoistWeightRecorder :: (forall x. m x -> m x) -> WeightRecorder m a -> WeightRecorder m a
 hoistWeightRecorder t = WeightRecorder . hoist t . runWeightRecorder

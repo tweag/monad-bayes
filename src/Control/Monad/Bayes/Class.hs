@@ -82,11 +82,13 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       i <- discrete (map snd d)
       return (fst (d !! i))
 
+    -- | Like 'categorical', but weights are given in log domain.
     logCategorical :: [(a, Log.LogDomain (CustomReal m))] -> m a
     logCategorical d = do
       i <- logDiscrete (map snd d)
       return (fst (d !! i))
 
+    -- | Like 'discrete', but weights are given in log domain.
     logDiscrete :: [Log.LogDomain (CustomReal m)] -> m Int
     logDiscrete ps = discrete $ fmap (Log.fromLogDomain . ( / Fold.maximum ps)) ps
 
@@ -118,13 +120,13 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
     -- | Geometric distribution starting at 0.
     geometric :: CustomReal m -> m Int
     geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
-    geometric p = unsafeDiscrete $ map ((p *) . (q ^)) ([0..] :: [Int]) where
+    geometric p = discrete $ map ((p *) . (q ^)) ([0..] :: [Int]) where
                              q = 1 - p
 
     -- | Poisson distribution.
     poisson :: CustomReal m -> m Int
     poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p :: Double) ++ " is not positive."
-    poisson p = unsafeDiscrete $ map mass [0..] where
+    poisson p = discrete $ map mass [0..] where
                              mass k = c * (p ^ k) /
                                 realToFrac (factorial k)
                              c = exp (-p)
@@ -149,18 +151,6 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       gammas = mapM (\w -> gamma w 1)
       normalize xs = map (/ (Prelude.sum xs)) xs
 
-    -- | A variant of `discrete` that does not check normalization of weights.
-    -- Can be particularly useful for definiting discrete distributions with
-    -- infinite support.
-    unsafeDiscrete :: [CustomReal m] -> m Int
-    unsafeDiscrete = discrete
-
-    -- default for `uniform` based on `beta`
-    --uniform :: Double -> Double -> m Double
-    --uniform 0 1 = beta 1 1
-    --uniform a b = do
-    --  r <- uniform 0 1
-    --  return (a + (b-a)*r)
 
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.

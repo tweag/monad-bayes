@@ -26,7 +26,7 @@ import Data.Either
 
 import Control.Monad.Bayes.Class
 
--- | Sequential represents a computation that can be paused at certain points.
+-- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly useful
 -- for implementation of SMC-related methods.
 -- All the probabilistic effects are lifted from the transformed monad,

@@ -42,7 +42,7 @@ data Primitive r a where
 deriving instance Eq (Primitive r a)
 deriving instance Show r => Show (Primitive r a)
 
--- | Data type representing support of a proability distribution.
+-- | Data type representing support of a probability distribution.
 -- There is no distinction between open and closed intervals.
 data Support a where
   Finite         :: (Integral a) => [a] -> Support a

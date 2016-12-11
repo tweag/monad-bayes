@@ -29,6 +29,7 @@ newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
 
 -- | Run the probabilistic computation and produce a result if all conditions
 -- are satisfied.
+-- Throws an error if any factors exceed 1.
 runRejection :: Rejection m a -> m (Maybe a)
 runRejection = runMaybeT . toMaybeT
 

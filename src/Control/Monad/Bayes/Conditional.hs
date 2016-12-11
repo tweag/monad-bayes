@@ -39,6 +39,7 @@ import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace hiding (hoist)
 
 -- | A probability monad that allows conditioning on the latent variables.
+-- The variables which aren't conditioned on should be lifted from the transformed monad.
 newtype Conditional m a = Conditional (StateT ([CustomReal m], [Int]) (MaybeT m) a)
   deriving (Functor, Applicative, Monad)
 
@@ -68,71 +69,48 @@ instance MonadBayes m => MonadBayes (Conditional m) where
 hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Conditional m a -> Conditional n a
 hoist f (Conditional m) = Conditional $ mapStateT (mapMaybeT f) m
 
--- | Conditional distribution given a subset of random variables.
--- For every fixed value its PDF is included as a `factor`.
--- Discrete and continuous random variables are treated separately.
--- Missing values are treated as no conditioning on that RV.
-maybeConditional :: Monad m => Conditional m a -> Trace (CustomReal m) -> MaybeT m a
-maybeConditional (Conditional m) t = do
-  (x, remaining) <- runStateT m (toLists t)
-  unless (null (fst remaining) && null (snd remaining)) (fail "")
-  return x
-
 errorTraceShape :: Maybe a -> a
 errorTraceShape = fromMaybe (error "Conditional: Trace shape does not match")
 
 unsafeTraceShape :: Functor m => MaybeT m a -> m a
 unsafeTraceShape = fmap errorTraceShape . runMaybeT
 
+-- | Conditional distribution given a subset of random variables.
+-- For every fixed value its PDF is included as a `factor` in the transformed monad.
+-- 'Nothing' is returned on trace shape mismatch only.
+maybeConditional :: Monad m => Conditional m a -> Trace (CustomReal m) -> MaybeT m a
+maybeConditional (Conditional m) t = do
+  (x, remaining) <- runStateT m (toLists t)
+  unless (null (fst remaining) && null (snd remaining)) (fail "")
+  return x
+
+-- | Like 'maybeConditional', but throws an error on trace shape mismatch.
 unsafeConditional :: Monad m => Conditional m a -> Trace (CustomReal m) -> m a
 unsafeConditional m t = unsafeTraceShape $ maybeConditional m t
 
+-- | Computes the joint (pseudo-) density of the random variables in the model.
+-- The variables lifted from the transformed monad are not affected.
+-- 'Nothing' is returned on trace shape mismatch only.
 maybeDensity :: MonadDist m => Conditional (Weighted m) a -> Trace (CustomReal m) -> MaybeT m (LogDomain (CustomReal m))
 maybeDensity m t = MaybeT $ do
   (mx, w) <- runWeighted $ runMaybeT $ maybeConditional m t
   return (mx $> w)
 
+-- | Like 'maybeDensity', but throws an error on trace shape mismatch.
 unsafeDensity :: MonadDist m => Conditional (Weighted m) a -> Trace (CustomReal m) -> m (LogDomain (CustomReal m))
 unsafeDensity m t = unsafeTraceShape $ maybeDensity m t
 
+-- | Computes the joint density of all random variables in the model.
+-- 'Nothing' is returned on trace shape mismatch or if not all of the random variables were used for conditioning.
 maybeJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> Trace r -> Maybe (LogDomain r)
 maybeJointDensity m t = join $ maybeDeterministic $ runMaybeT $ maybeDensity m t
 
+-- | Like 'maybeJointDensity', but throws an error instead of returning 'Nothing'.
 unsafeJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> Trace r -> LogDomain r
 unsafeJointDensity m t = unsafeDeterministic $ unsafeDensity m t
 
+-- | Joint density of all random variables and its gradient.
+-- Only continuous random variables are allowed.
+-- Throws an error under the same conditions as 'unsafeJointDensity'.
 unsafeJointDensityGradient :: (forall s. Reifies s Tape =>  Conditional (Weighted (Deterministic (Reverse s Double))) a) -> [Double] -> (LogDomain Double, [Double])
 unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
-
-
---
---
--- -- | Evaluates joint density of a subset of random variables.
--- -- Specifically this is a product of conditional densities encountered in
--- -- the trace times the (unnormalized) likelihood of the trace.
--- -- Missing latent variables are integrated out using the transformed monad,
--- -- unused values from the list are ignored.
--- pseudoDensity :: MonadDist m => Conditional (Weighted m) a -> ([Maybe (CustomReal m)], [Maybe Int]) -> m (LogDomain (CustomReal m))
--- pseudoDensity m = fmap snd . runWeighted . conditional m
---
--- -- | Joint density of all random variables in the program.
--- -- Failure occurs when the lists are too short.
--- jointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> ([r], [Int]) -> Maybe (LogDomain r)
--- jointDensity m (xs,cs) = maybeDeterministic $ pseudoDensity m (map Just xs, map Just cs)
---
--- -- | Like 'jointDensity', but assumes all random variables are continuous.
--- contJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> [r] -> Maybe (LogDomain r)
--- contJointDensity m xs = jointDensity m (xs,[])
---
--- -- | Like 'contJointDensity', but throws an error if density can not be computed.
--- unsafeContJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> [r] -> LogDomain r
--- unsafeContJointDensity m xs = fromMaybe (error "Could not compute density: some random variables are discrete or the list of random variables is too short") $ contJointDensity m xs
---
---
--- -------------------------------------------------
--- -- Automatic Differentiation
---
--- -- | Like 'unsafeContJointDensity', but additionally returns the gradient.
--- -- Note that this is the gradient of the log-likelihood, even though it is not represented using 'LogDomain'.
--- unsafeContJointDensityGradient :: (forall s. Reifies s Tape =>  Conditional (Weighted (Deterministic (Reverse s Double))) a) -> [Double] -> (LogDomain Double, [Double])
--- unsafeContJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeContJointDensity m) xs

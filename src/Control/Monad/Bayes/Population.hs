@@ -13,7 +13,6 @@ module Control.Monad.Bayes.Population (
     Population,
     runPopulation,
     fromWeightedList,
-    fromEmpirical,
     spawn,
     resample,
     proper,
@@ -65,7 +64,7 @@ draw n = fromList $ pure $ replicate n ()
 
 
 
--- | A weighted variant of 'Empirical'.
+-- | A population consisting of weighted samples.
 -- Conditioning is done by accumulating weights.
 -- There is no automatic normalization or aggregation of weights.
 newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
@@ -94,14 +93,14 @@ fromEmpirical = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
 
--- | A variant of 'draw' for 'Population'.
--- The weights are set equal and such that they sum to 1.
+-- | Increase the sample size by a given factor.
+-- The weights are adjusted such that their sum is preserved.
 -- It is therefore safe to use `spawn` in arbitrary places in the program
 -- without introducing bias.
 spawn :: MonadDist m => Int -> Population m ()
 spawn n = fromEmpirical (draw n)
 
--- | Resample the population using the underlying monad.
+-- | Resample the population using the underlying monad and a simple resampling scheme.
 -- The total weight is preserved.
 resample :: MonadDist m => Population m a -> Population m a
 resample m = fromWeightedList $ do
@@ -117,7 +116,7 @@ resample m = fromWeightedList $ do
     return pop
 
 -- | A properly weighted single sample, that is one picked at random according
--- to the weights, with an estimator of the model evidence.
+-- to the weights, with the sum of all weights.
 proper :: MonadDist m => Population m a -> m (a,LogDomain (CustomReal m))
 proper m = do
   pop <- runPopulation m
@@ -134,8 +133,10 @@ proper m = do
 evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
 evidence = fmap (sum . map snd) . runPopulation
 
--- | Pick one point from the population and use model evidence as a 'factor'
+-- | Picks one point from the population and uses model evidence as a 'factor'
 -- in the transformed monad.
+-- This way a single sample can be selected from a population without
+-- introducing bias.
 collapse :: (MonadBayes m) => Population m a -> m a
 collapse e = do
   (x,p) <- proper e
@@ -148,6 +149,7 @@ mapPopulation :: MonadDist m => ([(a, LogDomain (CustomReal m))] -> m [(a, LogDo
 mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
 -- | Normalizes the weights in the population so that their sum is 1.
+-- This transformation introduces bias.
 normalize :: MonadDist m => Population m a -> Population m a
 normalize = mapPopulation norm where
     norm xs = pure $ map (second (/ z)) xs where
