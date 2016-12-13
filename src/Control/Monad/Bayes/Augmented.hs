@@ -12,8 +12,9 @@ Portability : GHC
 module Control.Monad.Bayes.Augmented (
   Augmented,
   hoist,
-  withTrace,
-  trace
+  marginal,
+  augmented,
+  joint
 ) where
 
 import Control.Monad.Trans
@@ -47,10 +48,14 @@ instance MonadBayes m => MonadBayes (Augmented m) where
 hoist :: CustomReal m ~ CustomReal n => (forall x. m x -> n x) -> Augmented m a -> Augmented n a
 hoist f (Augmented m) = Augmented $ mapWriterT f m
 
+-- | Discard the trace.
+marginal :: Monad m => Augmented m a -> m a
+marginal (Augmented m) = fmap fst $ runWriterT m
+
 -- | Collect program output and its trace.
-withTrace :: Augmented m a -> m (a, Trace (CustomReal m))
-withTrace (Augmented m) = runWriterT m
+augmented :: Monad m => Augmented m a -> Augmented m (a, Trace (CustomReal m))
+augmented (Augmented m) = Augmented $ listen m
 
 -- | Collect only program trace.
-trace :: Functor m => Augmented m a -> m (Trace (CustomReal m))
-trace = fmap snd . withTrace
+joint :: Monad m => Augmented m a -> Augmented m (Trace (CustomReal m))
+joint = fmap snd . augmented
