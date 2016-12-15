@@ -4,9 +4,10 @@
  #-}
 
 module HMM (
-            hmm,
-            exactMarginals
-           ) where
+  values,
+  hmm,
+  exactMarginals
+  ) where
 
 --Hidden Markov Models
 

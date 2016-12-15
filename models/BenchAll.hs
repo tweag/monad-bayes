@@ -1,4 +1,6 @@
-{-# LANGUAGE Rank2Types
+{-# LANGUAGE
+  Rank2Types,
+  TypeFamilies
  #-}
 
 -- Import all models under maintenance.
@@ -19,7 +21,8 @@ import Control.Monad.Bayes.Inference
 import Control.Monad.Bayes.Population
 
 import System.IO
-import Control.Arrow (second)
+import Control.Arrow (first, second)
+import Control.Monad (unless)
 
 ns = [1..10]
 
@@ -31,17 +34,32 @@ kl p q = expectation f p where
   dp = mass p
   dq = mass q
 
+hmmKL :: (MonadDist m, CustomReal m ~ Double) => Population m [Int] -> m Double
+hmmKL m = do
+  -- obtain samples from the joint
+  samples <- fmap (map (second fromLogDomain)) $ runPopulation m
+  -- convert to a list of marginal samples for each time step
+  let marginals = map (\i -> map (first (!! i)) samples) [1 .. (length HMM.values)]
+  let exact = HMM.exactMarginals
+  unless (length marginals == length exact) $ error $ "hmmKL: length mismatch " ++ show (length marginals) ++ " and " ++ show (length exact)
+  -- compute the sum of all marginal KLs
+  let result = sum $ zipWith kl (map categorical marginals) exact
+  return result
+
 main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
+
+  smcRes <- sampleIO $ hmmKL (smc (length HMM.values) 1000 HMM.hmm)
+  putStrLn $ show $ smcRes
 
   -- pimhSamples <- pimh 10 100 1000 DPmixture.dpMemClusters
   -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
   -- putStrLn $ show $ pimhResults
 
-  smcSamples <- sampleIO $ sequence $ replicate 10 $ fmap (map (second fromLogDomain)) $ runPopulation $ smc 16 100 $ fmap head HMM.hmm
-  let smcResults = map ((`kl` (head (tail HMM.exactMarginals))) . categorical . concat . (`take` smcSamples)) ns
-  putStrLn $ show $ smcResults
+  -- smcSamples <- sampleIO $ sequence $ replicate 10 $ fmap (map (second fromLogDomain)) $ runPopulation $ smc 16 100 $ fmap head HMM.hmm
+  -- let smcResults = map ((`kl` (head (tail HMM.exactMarginals))) . categorical . concat . (`take` smcSamples)) ns
+  -- putStrLn $ show $ smcResults
 
   --putStrLn $ show $ Dist.explicit $ DPmixture.posteriorClustersDist
 
