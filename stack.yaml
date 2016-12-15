@@ -1,6 +1,5 @@
 flags: {}
 packages:
 - '.'
-extra-deps:
-- monad-memo-0.4.1
+extra-deps: []
 resolver: lts-7.7

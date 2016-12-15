@@ -10,19 +10,16 @@ Portability : GHC
 -}
 
 {-# LANGUAGE
-  TupleSections,
-  GADTs,
-  TypeFamilies,
-  FlexibleContexts
+  GADTs
  #-}
 
 
 module Control.Monad.Bayes.Class where
 
+import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
-import Data.Monoid
-import Control.Arrow (first,second)
+import Control.Arrow (first)
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
@@ -34,7 +31,6 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Memo.StateCache
 
 import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
@@ -86,22 +82,30 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       i <- discrete (map snd d)
       return (fst (d !! i))
 
+    -- | Like 'categorical', but weights are given in log domain.
+    logCategorical :: [(a, Log.LogDomain (CustomReal m))] -> m a
+    logCategorical d = do
+      i <- logDiscrete (map snd d)
+      return (fst (d !! i))
+
+    -- | Like 'discrete', but weights are given in log domain.
+    logDiscrete :: [Log.LogDomain (CustomReal m)] -> m Int
+    logDiscrete ps = discrete $ fmap (Log.fromLogDomain . ( / Fold.maximum ps)) ps
+
     -- | Bernoulli distribution.
     --
     -- > bernoulli p = categorical [(True,p), (False,1-p)]
     bernoulli :: CustomReal m -> m Bool
     bernoulli p | p >= 0 && p <= 1 = categorical [(True,p), (False,1-p)]
-    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
 
     -- | Binomial distribution. Returns the number of successes.
     binomial :: Int -> CustomReal m -> m Int
     binomial n _ | n < 0 = error $ "Binomial: the number of trials " ++ show n ++ " is negative"
-    binomial n p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
+    binomial _ p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
     binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
-                     mass k = (realToFrac (n `choose` k)) * (p ^ k') *
-                              ((1-p) ^ (n'-k')) where
-                                                  n' = fromIntegral n
-                                                  k' = fromIntegral k
+                     mass k = realToFrac (n `choose` k) * (p ^ k) *
+                              ((1-p) ^ (n-k))
 
     -- | Multinomial distribution.
     -- Corresponds to multiple independent draws from `categorical`.
@@ -115,16 +119,16 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
 
     -- | Geometric distribution starting at 0.
     geometric :: CustomReal m -> m Int
-    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p) ++ " is out of range [0,1]."
-    geometric p = unsafeDiscrete $ map ((p *) . (q ^)) [0..] where
+    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
+    geometric p = discrete $ map ((p *) . (q ^)) ([0..] :: [Int]) where
                              q = 1 - p
 
     -- | Poisson distribution.
     poisson :: CustomReal m -> m Int
-    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p) ++ " is not positive."
-    poisson p = unsafeDiscrete $ map mass [0..] where
-                             mass k = c * (p ^ (fromIntegral k)) /
-                                (realToFrac (factorial k))
+    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p :: Double) ++ " is not positive."
+    poisson p = discrete $ map mass [0..] where
+                             mass k = c * (p ^ k) /
+                                realToFrac (factorial k)
                              c = exp (-p)
 
     -- | Uniform discrete distribution.
@@ -147,18 +151,6 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       gammas = mapM (\w -> gamma w 1)
       normalize xs = map (/ (Prelude.sum xs)) xs
 
-    -- | A variant of `discrete` that does not check normalization of weights.
-    -- Can be particularly useful for definiting discrete distributions with
-    -- infinite support.
-    unsafeDiscrete :: [CustomReal m] -> m Int
-    unsafeDiscrete = discrete
-
-    -- default for `uniform` based on `beta`
-    --uniform :: Double -> Double -> m Double
-    --uniform 0 1 = beta 1 1
-    --uniform a b = do
-    --  r <- uniform 0 1
-    --  return (a + (b-a)*r)
 
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.
@@ -266,13 +258,4 @@ instance MonadDist m => MonadDist (ContT r m) where
   primitive = lift . primitive
 
 instance MonadBayes m => MonadBayes (ContT r m) where
-  factor = lift . factor
-
-
-type instance CustomReal (StateCache c m) = CustomReal m
-
-instance MonadDist m => MonadDist (StateCache c m) where
-  primitive = lift . primitive
-
-instance MonadBayes m => MonadBayes (StateCache c m) where
   factor = lift . factor

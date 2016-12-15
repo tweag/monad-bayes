@@ -9,14 +9,11 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies
- #-}
-
 module Control.Monad.Bayes.Rejection (
-                  Rejection,
-                  runRejection) where
+  Rejection,
+  runRejection,
+  hoist
+  ) where
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -32,6 +29,7 @@ newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
 
 -- | Run the probabilistic computation and produce a result if all conditions
 -- are satisfied.
+-- Throws an error if any factors exceed 1.
 runRejection :: Rejection m a -> m (Maybe a)
 runRejection = runMaybeT . toMaybeT
 
@@ -41,7 +39,10 @@ instance MonadDist m => MonadDist (Rejection m) where
   primitive = lift . primitive
 
 instance MonadDist m => MonadBayes (Rejection m) where
-  factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w) ++ " is not in [0,1] range."
+  factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w :: Double) ++ " is not in [0,1] range."
   factor w = do
     accept <- bernoulli (fromLogDomain w)
     unless accept (fail "")
+
+hoist :: (forall x. m x -> n x) -> Rejection m a -> Rejection n a
+hoist f = Rejection . MaybeT . f . runRejection

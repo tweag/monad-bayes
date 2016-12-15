@@ -3,9 +3,9 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
 import qualified TestWeighted
-import qualified TestDist
-import qualified TestEmpirical
-import qualified TestParticle
+import qualified TestEnumerator
+import qualified TestPopulation
+import qualified TestSequential
 import qualified TestTrace
 import qualified TestInference
 import qualified TestSMCObservations
@@ -22,45 +22,48 @@ main :: IO ()
 main = hspec $ do
   describe "Weighted" $ do
     it "accumulates likelihood correctly" $ do
-      TestWeighted.passed `shouldBe` True
+      passed <- TestWeighted.passed
+      passed `shouldBe` True
   describe "Dist" $ do
     it "normalizes categorical" $ do
-      TestDist.passed1 `shouldBe` True
+      TestEnumerator.passed1 `shouldBe` True
     it "sorts samples and aggregates weights" $ do
-      TestDist.passed2 `shouldBe` True
+      TestEnumerator.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $ do
-      TestDist.passed3 `shouldBe` True
+      TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $ do
-      TestDist.passed4 `shouldBe` True
+      TestEnumerator.passed4 `shouldBe` True
   describe "Empirical" $ do
     context "controlling population" $ do
       it "preserves the population when not expicitly altered" $ do
-        TestEmpirical.pop_size `shouldBe` 5
+        pop_size <- TestPopulation.pop_size
+        pop_size `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do
-        TestEmpirical.many_size `shouldBe` 15
+        many_size <- TestPopulation.many_size
+        many_size `shouldBe` 15
       it "correctly computes population average" $ do
-        TestEmpirical.popAvg_check `shouldBe` True
+        TestPopulation.popAvg_check `shouldBe` True
 --    context "checking properties of samples" $ do
 --      it "correctly checks if all particles satisfy a property" $ do
---        TestEmpirical.all_check `shouldBe` True
+--        TestPopulation.all_check `shouldBe` True
     context "distribution-preserving transformations" $ do
       it "transform preserves the distribution" $ do
-        TestEmpirical.trans_check1 `shouldBe` True
-        TestEmpirical.trans_check2 `shouldBe` True
+        TestPopulation.trans_check1 `shouldBe` True
+        TestPopulation.trans_check2 `shouldBe` True
       it "resample preserves the distribution" $ do
-        TestEmpirical.resample_check 1 `shouldBe` True
-        TestEmpirical.resample_check 2 `shouldBe` True
+        TestPopulation.resample_check 1 `shouldBe` True
+        TestPopulation.resample_check 2 `shouldBe` True
   describe "Particle" $ do
     it "stops at every factor" $ do
-      TestParticle.check_two_sync 0 `shouldBe` True
-      TestParticle.check_two_sync 1 `shouldBe` True
-      TestParticle.check_two_sync 2 `shouldBe` True
+      TestSequential.check_two_sync 0 `shouldBe` True
+      TestSequential.check_two_sync 1 `shouldBe` True
+      TestSequential.check_two_sync 2 `shouldBe` True
     it "preserves the distribution" $ do
-      TestParticle.check_preserve `shouldBe` True
+      TestSequential.check_preserve `shouldBe` True
     it "produces correct intermediate weights" $ do
-      TestParticle.check_sync 0 `shouldBe` True
-      TestParticle.check_sync 1 `shouldBe` True
-      TestParticle.check_sync 2 `shouldBe` True
+      TestSequential.check_sync 0 `shouldBe` True
+      TestSequential.check_sync 1 `shouldBe` True
+      TestSequential.check_sync 2 `shouldBe` True
   -- describe "Trace" $ do
   --   context "RandomDB = [Cache]" $ do
   --     it "correctly records values" $ do
@@ -69,7 +72,7 @@ main = hspec $ do
   --       TestTrace.check_reading `shouldBe` True
   --   it "has reuse ratio 1 on an empty database" $ do
   --     TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
-  --     TestTrace.check_reuse_ratio TestParticle.sprinkler `shouldBe` True
+  --     TestTrace.check_reuse_ratio TestSequential.sprinkler `shouldBe` True
   describe "Density" $ do
     it "correctly evaluates conditional distribution" $ do
       TestConditional.check_missing_conditional `shouldBe` True
@@ -86,13 +89,15 @@ main = hspec $ do
       TestInference.check_preserve_smc `shouldBe` True
     prop "number of particles is equal to its second parameter" $
       \observations particles ->
-        observations >= 0 && particles >= 1 ==>
-          TestInference.check_particles observations particles == particles
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          check_particles <- TestInference.check_particles observations particles
+          return $ check_particles == particles
   describe "MH" $ do
     -- it "MH from prior leaves posterior invariant" $ do
     --   TestInference.check_prior_trans `shouldBe` True
     it "Trace MH produces correct number of samples" $ do
-      TestInference.trace_mh_length 11 `shouldBe` 11
+      trace_mh_length <- TestInference.trace_mh_length 11
+      trace_mh_length `shouldBe` 11
     it "Trace MH leaves posterior invariant" $ do
       TestInference.check_trace_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do
@@ -116,7 +121,6 @@ main = hspec $ do
     check_smc_observations 0 "BetaBin.latent" (BetaBin.latent 5)
     check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
     check_smc_observations 16 "HMM.hmm" HMM.hmm
-    check_smc_observations 10 "DPmixture.dpMem" DPmixture.dpMem
   describe "Density computation" $ do
     it "gives correct value on gamma-normal-beta model" $ do
       TestGradient.check_density `shouldBe` True
@@ -125,4 +129,5 @@ main = hspec $ do
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do
-      TestSMCObservations.check_smc_weight n 30 model `shouldBe` True
+      check_smc_weight <- TestSMCObservations.check_smc_weight n 30 model
+      check_smc_weight `shouldBe` True

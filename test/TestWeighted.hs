@@ -6,7 +6,6 @@ module TestWeighted where
 
 import Test.Hspec
 import Data.AEq
-import System.Random
 import Control.Monad.State
 import Data.List
 
@@ -26,13 +25,7 @@ model = do
 result :: (MonadDist m, CustomReal m ~ Double) => m ((Int,Double), Double)
 result = fmap head $ importance 1 model
 
-gs :: [StdGen]
-gs = take 100 $ unfoldr (Just . split) $ mkStdGen 0
-
-samples :: [((Int,Double), Double)]
-samples = map (stdSample result) gs
-
-passed = all id $ map check samples
+passed = fmap check (sampleIOfixed result)
 
 check :: ((Int,Double), Double) -> Bool
 check ((0,1),1) = True

@@ -9,18 +9,15 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies,
-  FlexibleInstances
- #-}
-
 module Control.Monad.Bayes.Deterministic(
   Deterministic,
-  maybeDeterministic
+  maybeDeterministic,
+  unsafeDeterministic
 ) where
 
-import Control.Monad.Bayes.LogDomain (LogDomain, NumSpec)
+import Data.Maybe (fromMaybe)
+
+import Control.Monad.Bayes.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 
 -- | A wrapper for deterministic code.
@@ -36,12 +33,17 @@ newtype Deterministic r a = Deterministic (Maybe a)
 type instance CustomReal (Deterministic r) = r
 
 instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r) where
-  primitive d = Deterministic Nothing
+  primitive _ = Deterministic Nothing
 
 instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
-  factor w = Deterministic Nothing
+  factor _ = Deterministic Nothing
 
 -- | Converts a probabilistic type into a deterministic one,
 -- provided that no probabilistic effects are actually used.
 maybeDeterministic :: Deterministic r a -> Maybe a
 maybeDeterministic (Deterministic m) = m
+
+-- | Converts a probabilistic type into a deterministic one,
+-- throws an error if probabilistic effects were actually used.
+unsafeDeterministic :: Deterministic r a -> a
+unsafeDeterministic = fromMaybe (error "Deterministic: There were probabilistic effects") . maybeDeterministic

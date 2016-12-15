@@ -9,14 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving,
-  TypeFamilies,
-  StandaloneDeriving,
-  FlexibleContexts,
-  RankNTypes
- #-}
-
 module Control.Monad.Bayes.Weighted (
     Weight,
     weight,
@@ -25,14 +17,14 @@ module Control.Monad.Bayes.Weighted (
     withWeight,
     runWeighted,
     resetWeight,
-    mapMonad,
+    hoist,
     WeightRecorder,
     duplicateWeight,
     resetWeightRecorder,
-    mapMonadWeightRecorder
+    hoistWeightRecorder
                   ) where
 
-import Control.Arrow (first,second)
+import Control.Arrow (second)
 import Data.Monoid
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
@@ -79,7 +71,7 @@ runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
 withWeight :: MonadDist m => m (a, LogDomain (CustomReal m)) -> Weighted m a
 withWeight m = Weighted $ do
   (x,w) <- lift m
-  put $ weight w
+  modify (* weight w)
   return x
 
 -- | Reset weight to 1.
@@ -87,8 +79,8 @@ resetWeight :: MonadDist m => Weighted m a -> Weighted m a
 resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
 
 -- | Apply a transformation to the transformed monad.
-mapMonad :: MonadDist m => (forall a. m a -> m a) -> Weighted m a -> Weighted m a
-mapMonad t = Weighted . mapStateT t . toStateT
+hoist :: (forall x. m x -> m x) -> Weighted m a -> Weighted m a
+hoist t = Weighted . mapStateT t . toStateT
 
 -- | Similar to 'Weighted', only each factor is both  passed to the transformed
 -- monad and its value is accumulated in a weight.
@@ -111,5 +103,5 @@ resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
 resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
 -- | Apply a transformation to the transformed monad.
-mapMonadWeightRecorder :: MonadDist m => (forall a. m a -> m a) -> WeightRecorder m a -> WeightRecorder m a
-mapMonadWeightRecorder t = WeightRecorder . mapMonad t . runWeightRecorder
+hoistWeightRecorder :: (forall x. m x -> m x) -> WeightRecorder m a -> WeightRecorder m a
+hoistWeightRecorder t = WeightRecorder . hoist t . runWeightRecorder

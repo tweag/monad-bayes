@@ -1,16 +1,16 @@
-module TestParticle where
+module TestSequential where
 
 import Data.AEq
 
 import Control.Monad.Bayes.Class
-import qualified Control.Monad.Bayes.Dist as Dist
-import Control.Monad.Bayes.Particle
+import qualified Control.Monad.Bayes.Enumerator as Dist
+import Control.Monad.Bayes.Sequential
 import Sprinkler
 
 enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
 enumerate = Dist.enumerate
 
-mass :: Ord a => Dist.Dist Double a -> a -> Double 
+mass :: Ord a => Dist.Dist Double a -> a -> Double
 mass = Dist.mass
 
 two_sync :: MonadBayes m => m Int
@@ -31,7 +31,7 @@ check_two_sync 2 = mass (finished_two_sync 2) True  ~== 1
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
 
-check_preserve = enumerate (flatten sprinkler) ~== enumerate sprinkler
+check_preserve = enumerate (finish sprinkler) ~== enumerate sprinkler
 
 p_finished 0 = 0.8267716535433071
 p_finished 1 = 0.9988062077198566
