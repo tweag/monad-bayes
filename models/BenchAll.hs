@@ -24,6 +24,9 @@ import System.IO
 import Control.Arrow (first, second)
 import Control.Monad (unless)
 
+import Statistics.Sample
+import qualified Data.Vector as Vector
+
 ns = [1..10]
 
 -- \ KL divergence between two distributions.
@@ -46,12 +49,23 @@ hmmKL m = do
   let result = sum $ zipWith kl (map categorical marginals) exact
   return result
 
+meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
+meanVar n d = do
+  xs <- Vector.replicateM n d
+  return $ meanVariance xs
+
+smcParams :: [Int]
+smcParams = [10,100,1000]
+
+smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Double, Double)]
+smcResults = map (\p -> meanVar 10 $ hmmKL $ smc (length HMM.values) p HMM.hmm) smcParams
+
 main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
 
-  smcRes <- sampleIO $ hmmKL (smc (length HMM.values) 1000 HMM.hmm)
-  putStrLn $ show $ smcRes
+  smcRes <- sampleIO $ sequence $ smcResults
+  putStrLn $ show smcRes
 
   -- pimhSamples <- pimh 10 100 1000 DPmixture.dpMemClusters
   -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
