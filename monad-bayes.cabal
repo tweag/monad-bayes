@@ -101,6 +101,8 @@ benchmark monad-bayes-bench
                      , hmatrix
                      , statistics
                      , vector
+                     , Chart
+                     , Chart-cairo
   default-language:    Haskell2010
   -- Main benchmark file should import all the modules to be
   -- maintained. Those modules should also be listed in

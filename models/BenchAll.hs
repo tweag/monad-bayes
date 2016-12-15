@@ -26,6 +26,8 @@ import Control.Monad (unless)
 
 import Statistics.Sample
 import qualified Data.Vector as Vector
+import Graphics.Rendering.Chart.Easy
+import Graphics.Rendering.Chart.Backend.Cairo
 
 ns = [1..10]
 
@@ -57,8 +59,14 @@ meanVar n d = do
 smcParams :: [Int]
 smcParams = [10,100,1000]
 
+smcParamsDouble :: [Double]
+smcParamsDouble = map fromIntegral smcParams
+
 smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Double, Double)]
 smcResults = map (\p -> meanVar 10 $ hmmKL $ smc (length HMM.values) p HMM.hmm) smcParams
+
+signal :: [Double] -> [(Double,Double)]
+signal xs = [ (x,(sin (x*3.14159/45) + 1) / 2 * (sin (x*3.14159/5))) | x <- xs ]
 
 main = do
   -- make sure `putStrLn` prints to console immediately
@@ -66,6 +74,10 @@ main = do
 
   smcRes <- sampleIO $ sequence $ smcResults
   putStrLn $ show smcRes
+
+  toFile def "smc.png" $ do
+    layout_title .= "SMC performance on HMM"
+    plot (points "KL" (zip smcParams (map fst smcRes)))
 
   -- pimhSamples <- pimh 10 100 1000 DPmixture.dpMemClusters
   -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
