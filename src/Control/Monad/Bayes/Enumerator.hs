@@ -90,7 +90,7 @@ mass d = f where
   f a = case lookup a m of
              Just p -> p
              Nothing -> 0
-  m = normalize (enumerate d)
+  m = enumerate d
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
@@ -107,8 +107,8 @@ normalize xs = map (second (/ z)) xs where
 --
 -- > enumerate = compact . explicit
 enumerate :: (Real r, NumSpec r, Ord a) => Dist r a -> [(a,r)]
-enumerate = compact . explicit
+enumerate = normalize . compact . explicit
 
--- | Expectation of a given function computed using unnormalized weights.
+-- | Expectation of a given function computed using normalized weights.
 expectation :: (Real r, NumSpec r) => (a -> r) -> Dist r a -> r
-expectation f = ensureDiscrete . Pop.popAvg f . toPopulation
+expectation f = ensureDiscrete . Pop.popAvg f . Pop.normalize . toPopulation

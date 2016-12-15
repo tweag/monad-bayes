@@ -14,14 +14,22 @@ import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Dist
+import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Inference
-import Control.Monad.Bayes.Empirical
+import Control.Monad.Bayes.Population
 
 import System.IO
 import Control.Arrow (second)
 
 ns = [1..10]
+
+-- \ KL divergence between two distributions.
+-- The distributions should be normalized to ensure correct results.
+kl :: (Real r, NumSpec r, Ord a) => Dist r a -> Dist r a -> r
+kl p q = expectation f p where
+  f x = log $ dp x / dq x
+  dp = mass p
+  dq = mass q
 
 main = do
   -- make sure `putStrLn` prints to console immediately
@@ -31,7 +39,7 @@ main = do
   -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
   -- putStrLn $ show $ pimhResults
 
-  smcSamples <- sequence $ replicate 10 $ fmap (map (second fromLogDomain)) $ runPopulation $ smc 16 100 $ fmap head HMM.hmm
+  smcSamples <- sampleIO $ sequence $ replicate 10 $ fmap (map (second fromLogDomain)) $ runPopulation $ smc 16 100 $ fmap head HMM.hmm
   let smcResults = map ((`kl` (head (tail HMM.exactMarginals))) . categorical . concat . (`take` smcSamples)) ns
   putStrLn $ show $ smcResults
 
