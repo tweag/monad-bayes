@@ -59,17 +59,21 @@ main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
 
-  isSamples <- sampleIO $ importance 10000 HMM.hmm
+  isSamples <- sampleIO $ fmap (drop 5000) $ importance 10000 HMM.hmm
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
-  mhSamples <- sampleIO $ traceMH 10000 HMM.hmm
+  mhSamples <- sampleIO $ fmap (drop 5000) $ traceMH 10000 HMM.hmm
   let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
+  mhPriorSamples <- sampleIO $ fmap (drop 5000) $ mhPrior 10000 HMM.hmm
+  let mhPriorRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhPriorSamples) ns
+  pimhSamples <- sampleIO $ pimh (length HMM.values) 100 1000 HMM.hmm
+  let pimhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) pimhSamples) ns
   toFile (fo_format .~ PDF $ def) "anytime.pdf" $ do
     layout_title .= "HMM"
     anytimePlot "#samples" "KL" ns [
       ("IS", isRes),
-      ("MH", mhRes)]
-
-
+      ("MHtrace", mhRes),
+      ("MHprior", mhPriorRes),
+      ("PIMH", pimhRes)]
 
 
   smcRes <- sampleIO $ sequence $ smcResults
@@ -80,19 +84,3 @@ main = do
     layout_title .= "HMM"
     oneShotPlot "#particles" "KL" [
       ("SMC", zip smcParamsDouble (map (errBars 2) smcRes))]
-
-
-  -- pimhSamples <- pimh 10 100 1000 DPmixture.dpMemClusters
-  -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
-  -- putStrLn $ show $ pimhResults
-
-  -- smcSamples <- sampleIO $ sequence $ replicate 10 $ fmap (map (second fromLogDomain)) $ runPopulation $ smc 16 100 $ fmap head HMM.hmm
-  -- let smcResults = map ((`kl` (head (tail HMM.exactMarginals))) . categorical . concat . (`take` smcSamples)) ns
-  -- putStrLn $ show $ smcResults
-
-  --putStrLn $ show $ Dist.explicit $ DPmixture.posteriorClustersDist
-
-  --(xs,w) <- runWeighted HMM.hmm
-  --putStrLn $ show $ xs
-
-  --putStrLn $ show $ map Dist.explicit $ HMM.exactMarginals
