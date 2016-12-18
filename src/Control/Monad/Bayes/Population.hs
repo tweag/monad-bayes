@@ -12,6 +12,7 @@ Portability : GHC
 module Control.Monad.Bayes.Population (
     Population,
     runPopulation,
+    explicitPopulation,
     fromWeightedList,
     spawn,
     resample,
@@ -79,9 +80,13 @@ deriving instance MonadDist m => MonadBayes (Population m)
 instance MonadTrans Population where
   lift = Population . lift . lift
 
--- | Explicit representation of the weighted sample.
+-- | Explicit representation of the weighted sample with weights in log domain.
 runPopulation :: MonadDist m => Population m a -> m [(a,LogDomain (CustomReal m))]
 runPopulation = runEmpirical . runWeighted . unPopulation
+
+-- | Explicit representation of the weighted sample.
+explicitPopulation :: MonadDist m => Population m a -> m [(a, CustomReal m)]
+explicitPopulation = fmap (map (second fromLogDomain)) . runPopulation
 
 -- | Initialise 'Population' with a concrete weighted sample.
 fromWeightedList :: MonadDist m => m [(a,LogDomain (CustomReal m))] -> Population m a

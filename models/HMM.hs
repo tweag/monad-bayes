@@ -6,12 +6,14 @@
 module HMM (
   values,
   hmm,
-  exactMarginals
+  exactMarginals,
+  hmmKL
   ) where
 
 --Hidden Markov Models
 
 import Numeric.LinearAlgebra.HMatrix -- for the exact posterior only
+import Data.Bifunctor (first, second)
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
@@ -55,6 +57,23 @@ hmm = fmap reverse states where
 
 ------------------------------------------------------------
 -- Exact marginal posterior with forward-backward
+
+-- \ KL divergence between two distributions.
+-- The distributions should be normalized to ensure correct results.
+kl :: (Real r, NumSpec r, Ord a) => Dist.Dist r a -> Dist.Dist r a -> r
+kl p q = Dist.expectation f p where
+  f x = log $ dp x / dq x
+  dp = Dist.mass p
+  dq = Dist.mass q
+
+hmmKL :: [([Int], Double)]-> Double
+hmmKL samples = result where
+  -- convert to a list of marginal samples for each time step
+  marginals = map (\i -> map (first (!! i)) samples) [1 .. (length HMM.values)]
+  exact = HMM.exactMarginals
+  result = if (length marginals == length exact)
+             then sum $ zipWith kl (map categorical marginals) exact
+             else error $ "hmmKL: length mismatch " ++ show (length marginals) ++ " and " ++ show (length exact)
 
 exactMarginals :: (MonadDist m, CustomReal m ~ Double) => [m Int]
 exactMarginals = map marginal [0 .. length values - 1] where
