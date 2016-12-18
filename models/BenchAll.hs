@@ -1,6 +1,7 @@
 {-# LANGUAGE
   Rank2Types,
-  TypeFamilies
+  TypeFamilies,
+  TupleSections
  #-}
 
 -- Import all models under maintenance.
@@ -30,8 +31,6 @@ import qualified Data.Vector as Vector
 import Graphics.Rendering.Chart.Easy
 import Graphics.Rendering.Chart.Backend.Cairo
 
-ns = [1..10]
-
 meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
 meanVar n d = do
   xs <- Vector.replicateM n d
@@ -39,6 +38,10 @@ meanVar n d = do
 
 smcParams :: [Int]
 smcParams = [10,20,50,100,200,500,1000]
+
+ns :: [Int]
+--ns = [10,20,50,100,200,500,1000]
+ns = [10,20..1000]
 
 smcParamsDouble :: [Double]
 smcParamsDouble = map fromIntegral smcParams
@@ -55,6 +58,19 @@ signal xs = [ (x,(sin (x*3.14159/45) + 1) / 2 * (sin (x*3.14159/5))) | x <- xs ]
 main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
+
+  isSamples <- sampleIO $ importance 10000 HMM.hmm
+  let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
+  mhSamples <- sampleIO $ traceMH 10000 HMM.hmm
+  let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
+  toFile (fo_format .~ PDF $ def) "anytime.pdf" $ do
+    layout_title .= "HMM"
+    anytimePlot "#samples" "KL" ns [
+      ("IS", isRes),
+      ("MH", mhRes)]
+
+
+
 
   smcRes <- sampleIO $ sequence $ smcResults
   putStrLn $ show smcRes
