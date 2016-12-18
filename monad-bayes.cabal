@@ -111,8 +111,14 @@ benchmark monad-bayes-bench
   -- List all models we want to watch for changes.
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
-  other-modules:       Sprinkler, BetaBin, Dice, Gamma, HMM, DPmixture,
-                       StrictlySmallerSupport
+  other-modules:       Sprinkler,
+                       BetaBin,
+                       Dice,
+                       Gamma,
+                       HMM,
+                       DPmixture,
+                       StrictlySmallerSupport,
+                       Plotting
 
 source-repository head
   type:     git

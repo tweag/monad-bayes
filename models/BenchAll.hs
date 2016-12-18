@@ -11,6 +11,7 @@ import qualified Dice
 import qualified DPmixture
 import qualified Gamma
 import qualified HMM
+import Plotting
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
@@ -57,13 +58,16 @@ meanVar n d = do
   return $ meanVariance xs
 
 smcParams :: [Int]
-smcParams = [10,100,1000]
+smcParams = [10,20,50,100,200,500,1000]
 
 smcParamsDouble :: [Double]
 smcParamsDouble = map fromIntegral smcParams
 
-smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Double, Double)]
-smcResults = map (\p -> meanVar 10 $ hmmKL $ smc (length HMM.values) p HMM.hmm) smcParams
+smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
+smcResults = map (\p -> Vector.replicateM 10 $ hmmKL $ smc (length HMM.values) p HMM.hmm) smcParams
+
+smcrmResults :: (MonadDist m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
+smcrmResults = map (\p -> Vector.replicateM 10 $ hmmKL $ smcrm (length HMM.values) 10 p HMM.hmm) smcParams
 
 signal :: [Double] -> [(Double,Double)]
 signal xs = [ (x,(sin (x*3.14159/45) + 1) / 2 * (sin (x*3.14159/5))) | x <- xs ]
@@ -74,10 +78,14 @@ main = do
 
   smcRes <- sampleIO $ sequence $ smcResults
   putStrLn $ show smcRes
+  smcrmRes <- sampleIO $ sequence $ smcrmResults
 
-  toFile def "smc.png" $ do
-    layout_title .= "SMC performance on HMM"
-    plot (points "KL" (zip smcParams (map fst smcRes)))
+  toFile (fo_format .~ PDF $ def) "smc.pdf" $ do
+    layout_title .= "HMM"
+    oneShotPlot "#particles" "KL" [
+      ("SMC", zip smcParamsDouble (map (errBars 2) smcRes)),
+      ("RM-SMC", zip smcParamsDouble (map (errBars 2) smcrmRes))]
+
 
   -- pimhSamples <- pimh 10 100 1000 DPmixture.dpMemClusters
   -- let pimhResults = map ((`kl` DPmixture.posteriorClustersDist) . uniformD . (`take` pimhSamples) . (*100)) ns
