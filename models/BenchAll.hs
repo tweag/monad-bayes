@@ -13,6 +13,7 @@ import qualified DPmixture
 import qualified Gamma
 import qualified HMM
 import Plotting
+import Nonlinear
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class

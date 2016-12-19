@@ -118,7 +118,8 @@ benchmark monad-bayes-bench
                        HMM,
                        DPmixture,
                        StrictlySmallerSupport,
-                       Plotting
+                       Plotting,
+                       Nonlinear
 
 source-repository head
   type:     git
