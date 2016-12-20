@@ -4,19 +4,88 @@
  #-}
 
 module Nonlinear (
-  model
+  model,
+  generative,
+  synthesizeData,
+  posterior,
+  reference,
+  rmse
   ) where
 
-import Control.Monad.Bayes.Class
+import Prelude hiding (map, length, sum, transpose, zipWith, replicate)
+import qualified Data.List as List
 
-model :: MonadDist m => Int -> m [(CustomReal m, CustomReal m)]
+import Control.Monad.Trans
+import Control.Monad.Trans.Identity
+import Data.Vector hiding (reverse)
+
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Inference
+
+-- | A nonlinear series model from Doucet et al. (2000)
+-- "On sequential Monte Carlo sampling methods" section VI.B
+model :: (MonadDist m, MonadTrans t, MonadDist (t m), r ~ CustomReal (t m),
+          r ~ CustomReal m)
+      => Int -- ^ number of time steps
+      -> t m (Vector (r, r)) -- ^ vector of state-observation pairs from t=1
 model t = do
-  let simulate 0 _ acc = return acc
+  let sq x = x * x
+      simulate 0 _ acc = return acc
       simulate n x acc = do
-        x' <- normal (0.5 * x + 25 * x / (1 + x^2) + 8 * (cos (1.2 * fromIntegral n))) 1
-        y' <- normal (x' ^ 2 / 20) 1
+        let mean = 0.5 * x + 25 * x / (1 + sq x) +
+                   8 * (cos (1.2 * fromIntegral n))
+        x' <- lift $ normal mean 1
+        y' <- normal (sq x' / 20) 1
         simulate (n-1) x' ((x',y'):acc)
 
-  x0 <- normal 0 (sqrt 5)
+  x0 <- lift $ normal 0 (sqrt 5)
   ps <- simulate t x0 []
-  return $ reverse ps
+  return $ fromList $ reverse ps
+
+-- | Generative version of 'model', samples both x and y
+generative :: MonadDist m => Int -> m (Vector (CustomReal m, CustomReal m))
+generative = runIdentityT . model
+
+-- | Generates synthetic data from the prior
+synthesizeData :: MonadDist m => Int -> m (Vector (CustomReal m))
+synthesizeData = fmap (map snd) . generative
+
+-- | Posterior distribution over xs conditional on ys
+posterior :: MonadBayes m
+          => Vector (CustomReal m) -- ^ observations ys
+          -> m (Vector (CustomReal m)) -- ^ latent states xs starting from t=1
+posterior ys = fmap (map fst) $
+  unsafeConditional (model (length ys)) (fromLists (toList ys,[]))
+
+-- | The reference inference algorithm is SMC with 10000 particles.
+reference :: MonadDist m
+          => Vector (CustomReal m) -- ^ ys
+          -> m (Vector (CustomReal m)) -- ^ mean of xs from all particles
+reference ys = fmap averageVec $ explicitPopulation $
+               smc k n (posterior ys) where
+  k = length ys
+  n = 10000
+  averageVec ps = List.foldr (zipWith (+)) zeros $
+                  List.map (\(v,w) -> map (* w) v) ps where
+                    zeros = replicate k 0
+
+-- | Root-mean-square error as given by the first formula in section VI of Doucet et al.
+rmse :: Floating r
+     => Vector r -- ^ reference values representing posterior mean
+     -> Vector (Vector r) -- ^ a collection of vectors of mean values of xs
+                          -- obtained from independent runs of the inference
+                          -- algorithm being tested
+     -> r
+rmse ref xss = average $ map (sqrt . average) $ transpose $
+  map (zipWith sqerr ref) xss where
+
+    average v | length v > 0 = sum v / fromIntegral (length v)
+    average _                = 0
+
+    transpose vss = map (\n -> map (! n) vss) ns where
+      ns = generate (length (vss ! 0)) id
+
+    sqerr x y = (x - y) ^ 2
