@@ -26,7 +26,7 @@ module Control.Monad.Bayes.Weighted (
 
 import Control.Arrow (second)
 import Data.Monoid
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Trans.State
 
 import Control.Monad.Bayes.LogDomain
@@ -48,7 +48,7 @@ unWeight (Weight (Product p)) = p
 
 -- | Executes the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted {toStateT :: StateT (Weight (CustomReal m)) m a}
-    deriving(Functor, Applicative, Monad)
+    deriving(Functor, Applicative, Monad, MonadIO)
 
 type instance CustomReal (Weighted m) = CustomReal m
 
@@ -87,7 +87,7 @@ hoist t = Weighted . mapStateT t . toStateT
 -- Useful for getting the likelihood of samples from the posterior.
 newtype WeightRecorder m a =
   WeightRecorder {runWeightRecorder :: Weighted m a}
-    deriving(Functor, Applicative, Monad, MonadTrans)
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 type instance CustomReal (WeightRecorder m) = CustomReal m
 deriving instance MonadDist m => MonadDist (WeightRecorder m)
 

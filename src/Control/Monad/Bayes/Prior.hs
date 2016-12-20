@@ -15,14 +15,14 @@ module Control.Monad.Bayes.Prior (
     hoist
               ) where
 
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Trans.Identity
 
 import Control.Monad.Bayes.Class
 
 -- | A simple wrapper around 'MonadDist' types that discards conditoning.
 newtype Prior m a = Prior {runPrior :: IdentityT m a}
-    deriving(Functor, Applicative, Monad, MonadTrans)
+    deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 type instance CustomReal (Prior m) = CustomReal m
 

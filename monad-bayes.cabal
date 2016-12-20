@@ -97,6 +97,7 @@ benchmark monad-bayes-bench
   build-depends:       base
                      , monad-bayes
                      , mtl
+                     , transformers
                      , math-functions
                      , hmatrix
                      , statistics

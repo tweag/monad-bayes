@@ -26,7 +26,7 @@ import Control.Monad.Bayes.Trace hiding (hoist)
 
 -- | A transformer that includes all the latent random variables in the output.
 newtype Augmented m a = Augmented (WriterT (Trace (CustomReal m)) m a)
-  deriving(Functor, Applicative, Monad)
+  deriving(Functor, Applicative, Monad, MonadIO)
 
 type instance CustomReal (Augmented m) = CustomReal m
 

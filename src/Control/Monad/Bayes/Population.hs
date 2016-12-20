@@ -21,6 +21,7 @@ module Control.Monad.Bayes.Population (
     collapse,
     mapPopulation,
     normalize,
+    normalizeProper,
     popAvg,
     hoist
                  ) where
@@ -28,7 +29,7 @@ module Control.Monad.Bayes.Population (
 import Prelude hiding (all)
 
 import Control.Arrow (second)
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Trans.List
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
@@ -40,7 +41,7 @@ import Control.Monad.Bayes.Weighted hiding (hoist)
 -- 'Empirical' satisfies monad laws only when the transformed
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
-    deriving (Functor, Applicative, Monad, MonadTrans)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 type instance CustomReal (Empirical m) = CustomReal m
 deriving instance MonadDist m => MonadDist (Empirical m)
 deriving instance MonadBayes m => MonadBayes (Empirical m)
@@ -74,6 +75,7 @@ newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
 type instance CustomReal (Population m) = CustomReal m
 deriving instance MonadDist m => Applicative (Population m)
 deriving instance MonadDist m => Monad (Population m)
+deriving instance (MonadDist m, MonadIO m) => MonadIO (Population m)
 deriving instance MonadDist m => MonadDist (Population m)
 deriving instance MonadDist m => MonadBayes (Population m)
 
@@ -158,6 +160,14 @@ mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 normalize :: MonadDist m => Population m a -> Population m a
 normalize = mapPopulation norm where
     norm xs = pure $ map (second (/ z)) xs where
+      z = sum $ map snd xs
+
+-- | Normalizes the weights in the population so that their sum is 1.
+-- The sum of weights is pushed as a factor to the transformed monad,
+-- so bo bias is introduced.
+normalizeProper :: MonadBayes m => Population m a -> Population m a
+normalizeProper = mapPopulation norm where
+    norm xs = factor z >> pure (map (second (/ z)) xs) where
       z = sum $ map snd xs
 
 -- | Population average of a function, computed using unnormalized weights.

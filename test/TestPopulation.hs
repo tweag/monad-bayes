@@ -37,6 +37,6 @@ resample_check n =
   (enumerate . runIdentityT . collapse . resample) (spawn 2 >> sprinkler) ~==
   sprinkler_exact
 
-popAvg_check = (expectation f Sprinkler.soft) ~== (expectation id (popAvg f Sprinkler.soft)) where
+popAvg_check = (expectation f Sprinkler.soft) ~== (expectation id (popAvg f $ normalizeProper Sprinkler.soft)) where
   f True = 10
   f False = 4

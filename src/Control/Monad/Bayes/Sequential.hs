@@ -19,7 +19,7 @@ module Control.Monad.Bayes.Sequential (
     hoist
                 ) where
 
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Coroutine hiding (suspend)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Either
@@ -32,7 +32,7 @@ import Control.Monad.Bayes.Class
 -- All the probabilistic effects are lifted from the transformed monad,
 -- but also `suspend` is inserted after each `factor`.
 newtype Sequential m a = Sequential {runSequential :: (Coroutine (Await ()) m a)}
-  deriving(Functor,Applicative,Monad,MonadTrans)
+  deriving(Functor,Applicative,Monad,MonadTrans, MonadIO)
 extract :: Await () a -> a
 extract (Await f) = f ()
 

@@ -16,7 +16,7 @@ module Control.Monad.Bayes.Rejection (
   ) where
 
 import Control.Monad
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
 
 import Control.Monad.Bayes.LogDomain
@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Class
 -- | A probability monad that aborts when a condition is violated.
 -- Only accepts factors in [0,1] range.
 newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
-    deriving (Functor, Applicative, Monad, MonadTrans)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 -- | Run the probabilistic computation and produce a result if all conditions
 -- are satisfied.

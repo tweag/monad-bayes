@@ -36,7 +36,7 @@ import Control.Arrow
 import Control.Monad
 import Control.Monad.Coroutine hiding (hoist)
 import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 
 import Data.Maybe
 import Data.List
@@ -226,6 +226,9 @@ instance MonadDist m => Monad (Traced' m) where
 instance MonadTrans Traced' where
   lift m = Traced' $ \w -> fmap (MHState [] w) m
 
+instance (MonadDist m, MonadIO m) => MonadIO (Traced' m) where
+  liftIO = lift . liftIO
+
 instance MonadDist m => MonadDist (Traced' m) where
   primitive d = Traced' $ \w -> do
     x <- primitive d
@@ -262,6 +265,7 @@ newtype Traced m a = Traced { runTraced :: Traced' (WeightRecorder m) a }
 type instance CustomReal (Traced m) = CustomReal m
 deriving instance MonadDist m => Applicative (Traced m)
 deriving instance MonadDist m => Monad (Traced m)
+deriving instance (MonadDist m, MonadIO m) => MonadIO (Traced m)
 deriving instance MonadDist m => MonadDist (Traced m)
 
 type instance CustomReal (Traced m) = CustomReal m

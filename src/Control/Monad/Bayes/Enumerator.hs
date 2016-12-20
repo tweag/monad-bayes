@@ -38,7 +38,7 @@ import Control.Monad.Bayes.Deterministic
 -- | A transformer similar to 'Population', but additionally integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator m a = Enumerator {runEnumerator :: Pop.Population m a}
-  deriving(Functor, Applicative, Monad, MonadTrans)
+  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 type instance CustomReal (Enumerator m) = CustomReal m
 

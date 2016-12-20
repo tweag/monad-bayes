@@ -41,7 +41,7 @@ import Control.Monad.Bayes.Trace hiding (hoist)
 -- | A probability monad that allows conditioning on the latent variables.
 -- The variables which aren't conditioned on should be lifted from the transformed monad.
 newtype Conditional m a = Conditional (StateT ([CustomReal m], [Int]) (MaybeT m) a)
-  deriving (Functor, Applicative, Monad)
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 type instance CustomReal (Conditional m) = CustomReal m
 

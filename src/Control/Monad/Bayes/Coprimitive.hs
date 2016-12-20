@@ -21,7 +21,7 @@ module Control.Monad.Bayes.Coprimitive (
   runCoprimitive
 ) where
 
-import Control.Monad.Trans.Class
+import Control.Monad.Trans
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Maybe
@@ -43,7 +43,7 @@ deriving instance Functor (AwaitSampler r)
 newtype Coprimitive m a = Coprimitive
   { runCoprimitive :: Coroutine (AwaitSampler (CustomReal m)) m a
   }
-  deriving (Functor, Applicative, Monad)
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 type instance CustomReal (Coprimitive m) = CustomReal m
 
