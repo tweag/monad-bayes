@@ -9,7 +9,8 @@ module Nonlinear (
   synthesizeData,
   posterior,
   reference,
-  rmse
+  rmse,
+  averageVec
   ) where
 
 import Prelude hiding (map, length, sum, transpose, zipWith, replicate)
@@ -18,6 +19,7 @@ import qualified Data.List as List
 import Control.Monad.Trans
 import Control.Monad.Trans.Identity
 import Data.Vector hiding (reverse)
+import Control.Exception.Base
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Trace
@@ -60,17 +62,23 @@ posterior :: MonadBayes m
 posterior ys = fmap (map fst) $
   unsafeConditional (model (length ys)) (fromLists (toList ys,[]))
 
+-- | Averages a weighted sample of vectors.
+-- Assumes the weights are normalized.
+averageVec :: Num r => [(Vector r, r)] -> Vector r
+averageVec ps = List.foldr (zipWith (+)) zeros $
+                List.map (\(v,w) -> map (* w) v) ps where
+                  zeros = assert (List.all ((== k) . length . fst) ps) $
+                          replicate k 0
+                  k = length $ fst $ List.head ps
+
 -- | The reference inference algorithm is SMC with 10000 particles.
 reference :: MonadDist m
           => Vector (CustomReal m) -- ^ ys
           -> m (Vector (CustomReal m)) -- ^ mean of xs from all particles
-reference ys = fmap averageVec $ explicitPopulation $
+reference ys = fmap averageVec $ explicitPopulation $ normalize $
                smc k n (posterior ys) where
   k = length ys
   n = 10000
-  averageVec ps = List.foldr (zipWith (+)) zeros $
-                  List.map (\(v,w) -> map (* w) v) ps where
-                    zeros = replicate k 0
 
 -- | Root-mean-square error as given by the first formula in section VI of Doucet et al.
 rmse :: Floating r

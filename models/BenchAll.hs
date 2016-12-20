@@ -37,8 +37,28 @@ main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
 
-  sampleIO hmmBenchmark
+  -- sampleIO hmmBenchmark
 
+  sampleIO nonlinearBenchmark
+
+
+nonlinearBenchmark :: SamplerIO ()
+nonlinearBenchmark = do
+  liftIO $ putStrLn "running Nonlinear benchmark"
+
+  let t = 500
+  let nRuns = 100
+  ys <- Nonlinear.synthesizeData t
+  ref <- Nonlinear.reference ys
+  let run m = fmap (Nonlinear.rmse ref) $ Vector.replicateM nRuns $
+              fmap Nonlinear.averageVec $ explicitPopulation $ normalize m
+  let ns = [10,20,40]
+  scores <- mapM (\n -> run $ smc t n (Nonlinear.posterior ys)) ns
+
+  liftIO $ toFile (fo_format .~ PDF $ def) "nonlinear.pdf" $ do
+    layout_title .= "Nonlinear"
+    anytimePlot "#samples" "RMSE" ns [
+      ("SMC", scores)]
 
 meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
 meanVar n d = do
@@ -60,6 +80,8 @@ smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulati
 
 hmmBenchmark :: SamplerIO ()
 hmmBenchmark = do
+  liftIO $ putStrLn "running HMM benchmark"
+
   isSamples <- fmap (drop 5000) $ importance 10000 HMM.hmm
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
   mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
