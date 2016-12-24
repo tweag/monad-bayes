@@ -50,8 +50,9 @@ nonlinearBenchmark = do
   let nRuns = 100
   ys <- Nonlinear.synthesizeData t
   ref <- Nonlinear.reference ys
-  let run m = fmap (Nonlinear.rmse ref) $ Vector.replicateM nRuns $
-              fmap Nonlinear.averageVec $ explicitPopulation $ normalize m
+  let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
+              fmap (Nonlinear.rmse ref . Nonlinear.averageVec) $
+              explicitPopulation $ normalize m
   let ns = [10,20,40]
   scores <- mapM (\n -> run $ smc t n (Nonlinear.posterior ys)) ns
 
