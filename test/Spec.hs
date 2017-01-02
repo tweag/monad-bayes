@@ -12,12 +12,6 @@ import qualified TestSMCObservations
 import qualified TestGradient
 import qualified TestConditional
 
-import qualified Dice
-import qualified Gamma
-import qualified BetaBin
-import qualified HMM
-import qualified DPmixture
-
 main :: IO ()
 main = hspec $ do
   describe "Weighted" $ do
@@ -112,15 +106,15 @@ main = hspec $ do
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
-  describe "Number of SMC observations sufficient for each models" $ do
-    check_smc_observations 5 "Gamma.model" Gamma.model
-    check_smc_observations 0 "Gamma.exact" Gamma.exact
-    check_smc_observations 0 "Dice.dice" (Dice.dice 4)
-    check_smc_observations 1 "Dice.dice_soft" Dice.dice_soft
-    check_smc_observations 1 "Dice.dice_hard" Dice.dice_hard
-    check_smc_observations 0 "BetaBin.latent" (BetaBin.latent 5)
-    check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
-    check_smc_observations 16 "HMM.hmm" HMM.hmm
+  -- describe "Number of SMC observations sufficient for each models" $ do
+  --   check_smc_observations 5 "Gamma.model" Gamma.model
+  --   check_smc_observations 0 "Gamma.exact" Gamma.exact
+  --   check_smc_observations 0 "Dice.dice" (Dice.dice 4)
+  --   check_smc_observations 1 "Dice.dice_soft" Dice.dice_soft
+  --   check_smc_observations 1 "Dice.dice_hard" Dice.dice_hard
+  --   check_smc_observations 0 "BetaBin.latent" (BetaBin.latent 5)
+  --   check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
+  --   check_smc_observations 16 "HMM.hmm" HMM.hmm
   describe "Density computation" $ do
     it "gives correct value on gamma-normal-beta model" $ do
       TestGradient.check_density `shouldBe` True
