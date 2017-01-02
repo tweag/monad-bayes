@@ -71,28 +71,18 @@ averageVec ps = List.foldr (zipWith (+)) zeros $
                           replicate k 0
                   k = length $ fst $ List.head ps
 
--- | The reference inference algorithm is SMC with 10000 particles.
+-- | The reference inference algorithm is SMC.
 reference :: MonadDist m
           => Vector (CustomReal m) -- ^ ys
+          -> Int -- ^ number of particles used for reference
           -> m (Vector (CustomReal m)) -- ^ mean of xs from all particles
-reference ys = fmap averageVec $ explicitPopulation $ normalize $
+reference ys n = fmap averageVec $ explicitPopulation $ normalize $
                smc k n (posterior ys) where
   k = length ys
-  n = 10000
 
--- | Root-mean-square error as given by the first formula in section VI of Doucet et al.
+-- | Root-mean-square error
 rmse :: Floating r
      => Vector r -- ^ reference values for the posterior mean
      -> Vector r -- ^ estimated posterior mean
      -> r
 rmse ref xs = sum $ map (^ 2) $ zipWith (-) ref xs
-  -- average $ map (sqrt . average) $ transpose $
-  -- map (zipWith sqerr ref) xss where
-  --
-  --   average v | length v > 0 = sum v / fromIntegral (length v)
-  --   average _                = 0
-  --
-  --   transpose vss = map (\n -> map (! n) vss) ns where
-  --     ns = generate (length (vss ! 0)) id
-  --
-  --   sqerr x y = (x - y) ^ 2

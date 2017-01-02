@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Population
 
 import System.IO
 import Control.Arrow (first, second)
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Control.Monad.IO.Class (liftIO)
 
 import Statistics.Sample
@@ -44,25 +44,24 @@ main = do
   hSetBuffering stdout LineBuffering
 
   trial <- execParser opts
-  putStrLn $ show trial
+  when trial $ putStrLn "Trial run"
 
-  -- sampleIO hmmBenchmark
+  if not trial then do
+    sampleIO hmmBenchmark
+    sampleIO $ nonlinearBenchmark 50 10 [10,20,40] 10000
+  else do
+    sampleIO $ nonlinearBenchmark 5 10 [10,20,40] 100
 
-  -- sampleIO nonlinearBenchmark
 
-
-nonlinearBenchmark :: SamplerIO ()
-nonlinearBenchmark = do
+nonlinearBenchmark :: Int -> Int -> [Int] -> Int -> SamplerIO ()
+nonlinearBenchmark t nRuns ns nRef = do
   liftIO $ putStrLn "running Nonlinear benchmark"
 
-  let t = 50
-  let nRuns = 10
   ys <- Nonlinear.synthesizeData t
-  ref <- Nonlinear.reference ys
+  ref <- Nonlinear.reference ys nRef
   let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
               fmap (Nonlinear.rmse ref . Nonlinear.averageVec) $
               explicitPopulation $ normalize m
-  let ns = [10,20,40]
   scores <- mapM (\n -> run $ smc t n (Nonlinear.posterior ys)) ns
 
   liftIO $ toFile (fo_format .~ PDF $ def) "nonlinear.pdf" $ do
