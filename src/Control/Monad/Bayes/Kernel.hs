@@ -9,11 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GADTs
- #-}
-
-
 module Control.Monad.Bayes.Kernel (
   Kernel,
   evalKernel,
