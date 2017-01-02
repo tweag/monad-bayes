@@ -32,22 +32,31 @@ import Statistics.Sample
 import qualified Data.Vector as Vector
 import Graphics.Rendering.Chart.Easy
 import Graphics.Rendering.Chart.Backend.Cairo
+import Options.Applicative
+
+opts :: ParserInfo Bool
+opts = flip info fullDesc $ switch
+  ( long "trial"
+ <> help "Run a quick version of benchmarks to check that all is working correctly")
 
 main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
 
+  trial <- execParser opts
+  putStrLn $ show trial
+
   -- sampleIO hmmBenchmark
 
-  sampleIO nonlinearBenchmark
+  -- sampleIO nonlinearBenchmark
 
 
 nonlinearBenchmark :: SamplerIO ()
 nonlinearBenchmark = do
   liftIO $ putStrLn "running Nonlinear benchmark"
 
-  let t = 500
-  let nRuns = 100
+  let t = 50
+  let nRuns = 10
   ys <- Nonlinear.synthesizeData t
   ref <- Nonlinear.reference ys
   let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $

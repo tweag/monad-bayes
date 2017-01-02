@@ -104,6 +104,7 @@ benchmark monad-bayes-bench
                      , vector
                      , Chart
                      , Chart-cairo
+                     , optparse-applicative
   default-language:    Haskell2010
   -- Main benchmark file should import all the modules to be
   -- maintained. Those modules should also be listed in
