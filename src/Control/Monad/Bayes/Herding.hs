@@ -10,6 +10,7 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Herding (
+  module Control.Monad.Bayes.Kernel,
   EmpiricalEmbedding,
   herding
   ) where
