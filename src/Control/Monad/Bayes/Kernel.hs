@@ -12,6 +12,7 @@ Portability : GHC
 module Control.Monad.Bayes.Kernel (
   Kernel,
   evalKernel,
+  compose,
   unsafeKernel,
   constant,
   gaussian
@@ -25,6 +26,9 @@ newtype Kernel r a = Kernel (a -> a -> r)
 -- Evaluate the kernel at specific points.
 evalKernel :: Kernel r a -> a -> a -> r
 evalKernel (Kernel k) = k
+
+compose :: Kernel r a -> (b -> a) -> Kernel r b
+compose k f = unsafeKernel $ \x y -> evalKernel k (f x) (f y)
 
 -- | Construct a kernel from an arbitrary function.
 -- No checks are performed to ensure that the function has the required properties.
