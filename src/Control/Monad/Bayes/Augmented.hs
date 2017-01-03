@@ -45,7 +45,8 @@ instance MonadBayes m => MonadBayes (Augmented m) where
   factor = lift . factor
 
 -- | Applies a transformation to the inner monad.
-hoist :: CustomReal m ~ CustomReal n => (forall x. m x -> n x) -> Augmented m a -> Augmented n a
+hoist :: (CustomReal m ~ r, CustomReal n ~ r)
+      => (m (a, Trace r) -> n (a, Trace r)) -> Augmented m a -> Augmented n a
 hoist f (Augmented m) = Augmented $ mapWriterT f m
 
 -- | Discard the trace.
