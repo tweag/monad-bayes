@@ -12,8 +12,6 @@ import Control.Monad.Bayes.Inference
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Sampler
 
-import qualified HMM as HMM
-
 smcParticles :: Int -> Int -> Sequential (Population SamplerIO) a -> IO [(a, LogDomain Double)]
 smcParticles observations particles model = sampleIOfixed (runPopulation $ smc observations particles model)
 

@@ -17,7 +17,6 @@ import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Inference
 import Sprinkler
 import qualified StrictlySmallerSupport
-import qualified Gamma
 
 sprinkler :: MonadBayes m => m Bool
 sprinkler = Sprinkler.soft
@@ -67,4 +66,4 @@ check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmalle
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> IO Int
 check_particles observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smc observations particles Gamma.model))
+  sampleIOfixed (fmap length (runPopulation $ smc observations particles Sprinkler.soft))
