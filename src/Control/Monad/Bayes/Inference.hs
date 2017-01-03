@@ -25,12 +25,15 @@ module Control.Monad.Bayes.Inference (
   smh,
   traceMH,
   mhPrior,
-  pimh
+  pimh,
+  smcHerdingResample
 ) where
 
 import Control.Arrow (second)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
+
+import qualified Numeric.LinearAlgebra as LA
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
@@ -41,6 +44,8 @@ import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Augmented as Augmented
+import Control.Monad.Bayes.Herding
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -184,3 +189,32 @@ pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of independent SMC runs
                     -> Sequential (Population (Weighted m)) a -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smc k np d
+
+smcHerdingResample :: (MonadDist m, CustomReal m ~ Double)
+                   => Kernel Double (Trace Double)
+                   -> Int
+                   -> Int
+                   -> Sequential (Augmented (Population m)) a
+                   -> Population m a
+smcHerdingResample kernel k n = marginal . finish . composeCopies k step . start where
+  hoistC  = Sequential.hoistFirst
+  hoistA  = Augmented.hoist
+  start = hoistC (hoistA (spawn n >>))
+  step = advance . hoistC (herdingTraceResample kernel)
+
+herdingTraceResample :: (MonadDist m, CustomReal m ~ Double)
+                     => Kernel Double (Trace Double)
+                     -> Augmented (Population m) a -> Augmented (Population m) a
+herdingTraceResample k m = Augmented.hoist (herdingResample k') m where
+  k' = compose k snd
+
+herdingResample :: (MonadDist m, CustomReal m ~ Double)
+                => Kernel (CustomReal m) a -> Population m a -> Population m a
+herdingResample kernel pop = mapPopulation f pop where
+  f ps = return $ map (, logZ / fromIntegral n) ys where
+    (xs, logWs) = unzip ps
+    logZ = sum logWs
+    ws = LA.vector $ map (fromLogDomain . subtract logZ) logWs
+    emb = (kernel, ws, xs)
+    n = length xs
+    ys = herding emb n
