@@ -12,7 +12,7 @@ import System.IO
 import Control.Monad (when, unless)
 import Control.Monad.Trans
 import Control.Monad.Trans.Identity
-import Data.Vector hiding (reverse, mapM)
+import Data.Vector hiding (reverse, mapM, (++))
 import Control.Exception.Base
 
 import Control.Monad.Bayes.Class
@@ -112,15 +112,18 @@ nonlinearBenchmark :: Int -> Int -> [Int] -> Int -> SamplerIO ()
 nonlinearBenchmark t nRuns ns nRef = do
   liftIO $ putStrLn "running Nonlinear benchmark"
 
-  ys <- tryCache "data.txt" $ synthesizeData t
-  ref <- tryCache "reference.txt" $ reference ys nRef
+  let cachePath = "cache/nonlinear/"
+  liftIO $ createDirectoryIfMissing True cachePath
+
+  ys <- tryCache (cachePath ++ "data.txt") $ synthesizeData t
+  ref <- tryCache (cachePath ++ "reference.txt") $ reference ys nRef
   let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
               fmap (rmse ref . averageVec) $
               explicitPopulation $ normalize m
-  scores <- tryCache "scores.txt" $
+  scores <- tryCache (cachePath ++ "scores.txt") $
             mapM (\n -> run $ smc t n (posterior ys)) ns
 
-  liftIO $ toFile (fo_format .~ PDF $ def) "nonlinear.pdf" $ do
+  liftIO $ toFile (fo_format .~ PDF $ def) (cachePath ++ "nonlinear.pdf") $ do
     layout_title .= "Nonlinear"
     anytimePlot "#samples" "RMSE" ns [
       ("SMC", scores)]
