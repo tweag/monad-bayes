@@ -93,10 +93,15 @@ rmse ref xs = sum $ map (^ 2) $ zipWith (-) ref xs
 -------------------------------------------------
 -- benchmarking
 
-opts :: ParserInfo Bool
-opts = flip info fullDesc $ switch
-  ( long "trial"
- <> help "Run a quick version of benchmarks to check that all is working correctly")
+opts :: ParserInfo (Bool,FilePath)
+opts = flip info fullDesc ((,) <$> trialFlag <*> cacheDir) where
+  trialFlag = switch
+    ( long "trial"
+    <> help "Run a quick version of benchmarks to check that all is working correctly.")
+  cacheDir = strOption
+    ( long "cache-dir"
+    <> value "cache/nonlinear/"
+    <> help "Directory to store temporary data that may be reused accross different runs.")
 
 tryCache :: (MonadIO m, Read a, Show a) => FilePath -> m a -> m a
 tryCache filepath fresh = do
@@ -108,22 +113,25 @@ tryCache filepath fresh = do
     liftIO $ writeFile filepath (show value)
     return value
 
-nonlinearBenchmark :: Int -> Int -> [Int] -> Int -> SamplerIO ()
-nonlinearBenchmark t nRuns ns nRef = do
+nonlinearBenchmark :: FilePath -> Int -> Int -> [Int] -> Int -> SamplerIO ()
+nonlinearBenchmark cachePath t nRuns ns nRef = do
   liftIO $ putStrLn "running Nonlinear benchmark"
 
-  let cachePath = "cache/nonlinear/"
+  let dataPath = cachePath ++ "data.txt"
+  let refPath = cachePath ++ "reference.txt"
+  let scoresPath = cachePath ++ "scores.txt"
+  let plotPath = "nonlinear.pdf"
   liftIO $ createDirectoryIfMissing True cachePath
 
-  ys <- tryCache (cachePath ++ "data.txt") $ synthesizeData t
-  ref <- tryCache (cachePath ++ "reference.txt") $ reference ys nRef
+  ys <- tryCache dataPath $ synthesizeData t
+  ref <- tryCache refPath $ reference ys nRef
   let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
               fmap (rmse ref . averageVec) $
               explicitPopulation $ normalize m
-  scores <- tryCache (cachePath ++ "scores.txt") $
+  scores <- tryCache scoresPath $
             mapM (\n -> run $ smc t n (posterior ys)) ns
 
-  liftIO $ toFile (fo_format .~ PDF $ def) (cachePath ++ "nonlinear.pdf") $ do
+  liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
     layout_title .= "Nonlinear"
     anytimePlot "#samples" "RMSE" ns [
       ("SMC", scores)]
@@ -132,10 +140,10 @@ main = do
   -- make sure `putStrLn` prints to console immediately
   hSetBuffering stdout LineBuffering
 
-  trial <- execParser opts
+  (trial, cachePath) <- execParser opts
   when trial $ putStrLn "Trial run"
 
   if not trial then do
-    sampleIO $ nonlinearBenchmark 50 10 [10,20,40] 10000
+    sampleIO $ nonlinearBenchmark cachePath 50 10 [10,20,40] 10000
   else do
-    sampleIO $ nonlinearBenchmark 5 10 [10,20,40] 100
+    sampleIO $ nonlinearBenchmark cachePath 5 10 [10,20,40] 100
