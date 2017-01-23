@@ -33,7 +33,7 @@ herding :: EmpiricalEmbedding a -- ^ embedding to be approximated
 herding m@(_,originalWeights,_) = f m where
   n = size originalWeights
   z = sum $ toList originalWeights
-  pointEmbedding i = vector $ replicate i 0 ++ (z : replicate (n-i) 0)
+  pointEmbedding i = vector $ replicate i 0 ++ (z : replicate (n-i-1) 0)
   f _ 0 = []
   f m@(kernel, ws, xs) n = (xs !! i) : f (kernel, ws', xs) (n-1) where
     ws' = ws + originalWeights - pointEmbedding i

@@ -21,6 +21,7 @@ import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference
 import Control.Monad.Bayes.Sampler
+import qualified Control.Monad.Bayes.Kernel as Kernel
 
 import qualified Data.Vector as Vector
 import Graphics.Rendering.Chart.Easy hiding (Vector)
@@ -131,10 +132,19 @@ nonlinearBenchmark cachePath t nRuns ns nRef = do
   scores <- tryCache scoresPath $
             mapM (\n -> run $ smc t n (posterior ys)) ns
 
+  let kernel = Kernel.compose (Kernel.gaussian 1) (List.last . fst . toLists)
+  kernelScores <- mapM (\n -> run $ smcHerdingResample kernel t n (posterior ys)) ns
+
+  let gKernel = Kernel.unsafeKernel (\xs ys -> Kernel.evalKernel (Kernel.gaussian (fromIntegral (1 + t - List.length xs))) (List.last xs) (List.last ys))
+  let newKernel = Kernel.compose (gKernel) (fst . toLists)
+  newKernelScores <- mapM (\n -> run $ smcHerdingResample newKernel t n (posterior ys)) ns
+
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
     layout_title .= "Nonlinear"
     anytimePlot "#samples" "RMSE" ns [
-      ("SMC", scores)]
+      ("SMC", scores),
+      ("Herding", kernelScores),
+      ("NewHerding", newKernelScores)]
 
 main = do
   -- make sure `putStrLn` prints to console immediately
