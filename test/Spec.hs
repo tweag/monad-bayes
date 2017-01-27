@@ -11,6 +11,7 @@ import qualified TestInference
 import qualified TestSMCObservations
 import qualified TestGradient
 import qualified TestConditional
+import qualified TestKernel
 
 main :: IO ()
 main = hspec $ do
@@ -120,6 +121,8 @@ main = hspec $ do
       TestGradient.check_density `shouldBe` True
     it "gives correct gradient on gamma-normal-beta model" $ do
       TestGradient.check_gradient `shouldBe` True
+  describe "Kernel methods" $ do
+    it "kernels are symmetric" $ property $ TestKernel.prop_symmetricKernel
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do

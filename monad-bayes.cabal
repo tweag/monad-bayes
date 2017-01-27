@@ -73,6 +73,7 @@ test-suite monad-bayes-test
                      , transformers
                      , ad
                      , reflection
+                     , hmatrix
   ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
   default-language:    Haskell2010
   main-is:             Spec.hs
@@ -86,6 +87,7 @@ test-suite monad-bayes-test
                        TestTrace,
                        TestGradient,
                        TestConditional,
+                       TestKernel,
                        StrictlySmallerSupport
 
 benchmark monad-bayes-bench

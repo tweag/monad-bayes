@@ -32,7 +32,7 @@ check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
 check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
                       enumerate sprinkler
 
-check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+check_preserve_smh = (enumerate . collapse . smh 1 2) sprinkler ~==
                       enumerate sprinkler
 
 check_preserve_smcrm = (enumerate . collapse . smcrm 1 2 1) sprinkler ~==
