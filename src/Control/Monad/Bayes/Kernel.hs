@@ -15,8 +15,14 @@ module Control.Monad.Bayes.Kernel (
   compose,
   unsafeKernel,
   constant,
-  gaussian
+  gaussian,
+  kernelMatrix,
+  rkhsProduct,
+  mmd
   ) where
+
+import Numeric.LinearAlgebra
+import Data.Bifunctor (second)
 
 -- | A positive semidefinite real-valued symmetric function of two arguments.
 -- The first parameter is the type used to represent real numbers,
@@ -43,5 +49,23 @@ constant c = error $ "Attempted to construct a constant kernel of value " ++ sho
 -- | A Gaussian RBF kernel with specified width.
 gaussian :: (Real r, Floating r) => r -> Kernel r r
 gaussian sigma | sigma >= 0 = unsafeKernel $ \x y ->
-                                exp (- (x - y)^2 / (2 * sigma^2))
+                                exp (- sq (x - y) / (2 * sq sigma)) where
+                                  sq = (^ (2 :: Int))
 gaussian sigma = error $ "Attempted to construct gaussian kernel with width " ++ show (toRational sigma)
+
+-- | Constructs a matrix of kernel function applied to all pairs of points
+-- where the first dimension is over the first list
+-- and the second over the second.
+kernelMatrix :: Kernel R a -> [a] -> [a] -> Matrix R
+kernelMatrix k xs ys =
+  (length xs >< length ys) [evalKernel k x y | x <- xs, y <- ys]
+
+-- | Inner product in the RKHS of the two empirical embeddings.
+rkhsProduct :: Kernel R a -> [(a,R)] -> [(a,R)] -> R
+rkhsProduct k p q = (v <# kernelMatrix k xs ys) <.> u where
+  (xs, v) = second vector $ unzip p
+  (ys, u) = second vector $ unzip q
+
+-- | Maximum mean discrepancy of the two weighted samples.
+mmd :: Kernel R a -> [(a,R)] -> [(a,R)] -> R
+mmd k p q = rkhsProduct k p p + rkhsProduct k q q - 2 * rkhsProduct k p q
