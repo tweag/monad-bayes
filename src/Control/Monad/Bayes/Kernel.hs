@@ -29,10 +29,12 @@ import Data.Bifunctor (second)
 -- the second parameter is input domain.
 newtype Kernel r a = Kernel (a -> a -> r)
 
--- Evaluate the kernel at specific points.
+-- | Evaluate the kernel at specific points.
 evalKernel :: Kernel r a -> a -> a -> r
 evalKernel (Kernel k) = k
 
+-- | Compose the kernel with an arbitrary pre-processing function.
+-- The result is always a valid kernel regerdless of the function used.
 compose :: Kernel r a -> (b -> a) -> Kernel r b
 compose k f = unsafeKernel $ \x y -> evalKernel k (f x) (f y)
 
