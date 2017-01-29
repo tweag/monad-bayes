@@ -121,8 +121,7 @@ main = hspec $ do
       TestGradient.check_density `shouldBe` True
     it "gives correct gradient on gamma-normal-beta model" $ do
       TestGradient.check_gradient `shouldBe` True
-  describe "Kernel methods" $ do
-    it "kernels are symmetric" $ property $ TestKernel.prop_symmetricKernel
+  TestKernel.spec
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do
