@@ -22,6 +22,9 @@ import qualified Data.Vector as Vector
 import Control.Monad.Bayes.Kernel
 
 herding :: Kernel R a -> [(a,R)] -> Int -> [a]
+herding _ [] _ = error "Herding: empty input list"
+herding _ _ n | n < 0 =
+  error "Herding: negative number of pseudo-samples requested"
 herding k ps n = evalState (sequence $ replicate n selectNext) start where
   -- the implementation uses a vector of scores updated with each pseudo-sample
   -- at each step the best score is selected to choose the next pseudo-sample

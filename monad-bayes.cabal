@@ -88,6 +88,7 @@ test-suite monad-bayes-test
                        TestGradient,
                        TestConditional,
                        TestKernel,
+                       TestHerding,
                        StrictlySmallerSupport
 
 benchmark monad-bayes-bench
