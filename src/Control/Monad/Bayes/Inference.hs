@@ -33,8 +33,6 @@ import Control.Arrow (second)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
-import qualified Numeric.LinearAlgebra as LA
-
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Rejection
@@ -214,7 +212,6 @@ herdingResample kernel pop = mapPopulation f pop where
   f ps = return $ map (, logZ / fromIntegral n) ys where
     (xs, logWs) = unzip ps
     logZ = sum logWs
-    ws = LA.vector $ map (fromLogDomain . (/ logZ)) logWs
-    emb = (kernel, ws, xs)
+    ws = map (fromLogDomain . (/ logZ)) logWs
     n = length xs
-    ys = herding emb n
+    ys = herding kernel (zip xs ws) n
