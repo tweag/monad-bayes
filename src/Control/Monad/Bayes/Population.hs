@@ -20,6 +20,7 @@ module Control.Monad.Bayes.Population (
     evidence,
     collapse,
     mapPopulation,
+    mapNormalizedPopulation,
     normalize,
     normalizeProper,
     popAvg,
@@ -32,7 +33,7 @@ import Control.Arrow (second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
+import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (hoist)
 
@@ -151,9 +152,33 @@ collapse e = do
   return x
 
 -- | Applies a random transformation to a population.
-mapPopulation :: MonadDist m => ([(a, LogDomain (CustomReal m))] -> m [(a, LogDomain (CustomReal m))]) ->
-  Population m a -> Population m a
+mapPopulation :: MonadDist m
+              => ([(a, LogDomain (CustomReal m))]
+                  -> m [(a, LogDomain (CustomReal m))])
+              -> Population m a -> Population m a
 mapPopulation f m = fromWeightedList $ runPopulation m >>= f
+
+-- | Applies a random transformation to a normalized population.
+-- By itself this operation does not induce normalization, rather
+-- it first normalizes, then applies the transformation,
+-- then inverts normalization.
+-- Therefore if the supplied mapping preserves total weight,
+-- the whole operation does as well.
+-- If the total weight is zero then the transformation is not applied.
+mapNormalizedPopulation :: MonadDist m
+                        => ([(a, CustomReal m)] -> m [(a, CustomReal m)])
+                        -> Population m a -> Population m a
+mapNormalizedPopulation f m = fromWeightedList $ do
+  ps <- runPopulation m
+  let (xs, logWs) = unzip ps
+      logZ = sum logWs
+      ws = map (fromLogDomain . (/ logZ)) logWs
+  if logZ == 0 then
+    return ps
+  else do
+    qs <- f (zip xs ws)
+    return $ map (second ((+ logZ) . toLogDomain)) qs
+
 
 -- | Normalizes the weights in the population so that their sum is 1.
 -- This transformation introduces bias.

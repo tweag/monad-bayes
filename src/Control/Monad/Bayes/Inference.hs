@@ -208,10 +208,7 @@ herdingTraceResample k m = Augmented.hoist (herdingResample k') m where
 
 herdingResample :: (MonadDist m, CustomReal m ~ Double)
                 => Kernel (CustomReal m) a -> Population m a -> Population m a
-herdingResample kernel pop = mapPopulation f pop where
-  f ps = return $ map (, logZ / fromIntegral n) ys where
-    (xs, logWs) = unzip ps
-    logZ = sum logWs
-    ws = map (fromLogDomain . (/ logZ)) logWs
-    n = length xs
-    ys = take n $ herding kernel (zip xs ws)
+herdingResample kernel pop = mapNormalizedPopulation f pop where
+  f ps = return $ take n $ zip (herding kernel ps) $
+         repeat (1 / fromIntegral n) where
+           n = length ps
