@@ -30,17 +30,18 @@ herding k ps n = evalState (sequence $ replicate n selectNext) start where
   -- at each step the best score is selected to choose the next pseudo-sample
 
   -- preprocessing
-  (xs,ws) = second vector $ unzip ps
+  normalize v = map (/ sum v) v
+  (xs,ws) = second (vector . normalize) $ unzip ps
   vectorXs = Vector.fromList xs
   kmat = kernelMatrix k xs xs
 
   -- initial value of scores
-  start = ws - scale 0.5 (takeDiag kmat)
+  start = constUpdate - scale 0.5 (takeDiag kmat)
 
   -- updates to scores at each step depending on the index of the value chosen
   constUpdate = kmat #> ws
   varUpdate i = negate (kmat ! i)
-  update i as = as + constUpdate - varUpdate i
+  update i as = as + constUpdate + varUpdate i
 
   -- selecting next pseudo-sample and updating scores in a state monad
   selectNext = do

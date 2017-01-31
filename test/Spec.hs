@@ -14,8 +14,10 @@ import qualified TestConditional
 import qualified TestKernel
 import qualified TestHerding
 
-main :: IO ()
-main = hspec $ do
+main = hspec spec
+
+spec :: Spec
+spec = do
   describe "Weighted" $ do
     it "accumulates likelihood correctly" $ do
       passed <- TestWeighted.passed
