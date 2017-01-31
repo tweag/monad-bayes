@@ -21,17 +21,21 @@ import qualified Data.Vector as Vector
 
 import Control.Monad.Bayes.Kernel
 
-herding :: Kernel R a -> [(a,R)] -> Int -> [a]
-herding _ [] _ = error "Herding: empty input list"
-herding _ _ n | n < 0 =
-  error "Herding: negative number of pseudo-samples requested"
-herding k ps n = evalState (sequence $ replicate n selectNext) start where
+-- | Kernel herding greedily selects pseudo-samples from a distribution
+-- in a way that minimizes MMD between the original ditribution and one
+-- obtained from pseudo-samples.
+-- The algorithm is a slight modification of the one described by
+-- Chen et al. (2010).
+-- The input distribution should be normalized, otherwise spurious results
+-- may be produced.
+herding :: Kernel R a -> [(a,R)] -> [a]
+herding _ [] = error "Herding: empty input list"
+herding k ps = evalState (sequence $ repeat selectNext) start where
   -- the implementation uses a vector of scores updated with each pseudo-sample
   -- at each step the best score is selected to choose the next pseudo-sample
 
   -- preprocessing
-  normalize v = map (/ sum v) v
-  (xs,ws) = second (vector . normalize) $ unzip ps
+  (xs,ws) = second (vector) $ unzip ps
   vectorXs = Vector.fromList xs
   kmat = kernelMatrix k xs xs
 

@@ -214,4 +214,4 @@ herdingResample kernel pop = mapPopulation f pop where
     logZ = sum logWs
     ws = map (fromLogDomain . (/ logZ)) logWs
     n = length xs
-    ys = herding kernel (zip xs ws) n
+    ys = take n $ herding kernel (zip xs ws)
