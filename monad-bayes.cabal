@@ -139,6 +139,7 @@ benchmark nonlinear-benchmark
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
   other-modules:       Plotting
+                       SSM
 
 source-repository head
   type:     git

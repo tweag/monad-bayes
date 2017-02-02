@@ -29,6 +29,7 @@ import Options.Applicative
 import System.Directory
 
 import Plotting
+import SSM ()
 
 -- | A nonlinear series model from Doucet et al. (2000)
 -- "On sequential Monte Carlo sampling methods" section VI.B
