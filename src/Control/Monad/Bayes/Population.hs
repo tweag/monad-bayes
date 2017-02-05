@@ -196,7 +196,7 @@ normalizeProper = mapPopulation norm where
       z = sum $ map snd xs
 
 -- | Population average of a function, computed using unnormalized weights.
-popAvg :: MonadBayes m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
+popAvg :: MonadDist m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
 popAvg f p = do
   xs <- runPopulation p
   let ys = map (\(x,w) -> f x * fromLogDomain w) xs
