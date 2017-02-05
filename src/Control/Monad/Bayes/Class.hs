@@ -31,7 +31,6 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
-import Numeric.LinearAlgebra (R, Vector, Herm, size, vector, (<#), chol)
 
 import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
@@ -152,14 +151,6 @@ class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal
       gammas = mapM (\w -> gamma w 1)
       normalize xs = map (/ (Prelude.sum xs)) xs
 
--- | Multivariate normal distribution.
-mvNormal :: (MonadDist m, CustomReal m ~ R)
-         => Vector R -- ^ mean vector
-         -> Herm R -- ^ covariance matrix
-         -> m (Vector R)
-mvNormal mu sigma = do
-  us <- sequence $ replicate (size mu) (normal 0 1)
-  return $ (vector us) <# (chol sigma) + mu
 
 -- | Probability monads that allow conditioning.
 -- Both soft and hard conditions are allowed.

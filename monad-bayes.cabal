@@ -43,7 +43,6 @@ library
                      , vector
                      , ad
                      , reflection
-                     , hmatrix
   ghc-options:         -Wall
   default-language:    Haskell2010
   default-extensions:  RankNTypes
