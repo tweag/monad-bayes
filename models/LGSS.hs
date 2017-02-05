@@ -59,7 +59,7 @@ tryCache filepath fresh = do
 
 lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
 lgssBenchmark cachePath t nRuns ns = do
-  liftIO $ putStrLn "running Nonlinear benchmark"
+  liftIO $ putStrLn "running LGSS benchmark"
 
   let dataPath = cachePath ++ "data.txt"
   let refPath = cachePath ++ "reference.txt"
@@ -74,9 +74,6 @@ lgssBenchmark cachePath t nRuns ns = do
         estMean <- popAvg Vector.last (normalize m)
         let trueMean = fst (Vector.last ref)
         return $ abs (trueMean - estMean)
-  -- let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
-  --             fmap (rmse ref . averageVec) $
-  --             explicitPopulation $ normalize m
   scores <- tryCache scoresPath $
             mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
 
