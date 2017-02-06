@@ -5,6 +5,7 @@
 
 module Main where
 
+import Data.List (transpose)
 import Data.Vector (Vector, fromList, foldM, postscanl)
 import qualified Data.Vector as Vector
 import Data.Bifunctor (second)
@@ -33,7 +34,7 @@ main = do
   when trial $ putStrLn "Trial run"
 
   if not trial then do
-    sampleIO $ lgssBenchmark cachePath 50 10 [100,500,1000]
+    sampleIO $ lgssBenchmark cachePath 50 100 (map (2^) [1..10])
   else do
     sampleIO $ lgssBenchmark cachePath 5 10 [10,20,40]
 
@@ -47,40 +48,27 @@ opts = flip info fullDesc ((,) <$> trialFlag <*> cacheDir) where
     <> value "cache/lgss/"
     <> help "Directory to store temporary data that may be reused accross different runs.")
 
-tryCache :: (MonadIO m, Read a, Show a) => FilePath -> m a -> m a
-tryCache filepath fresh = do
-  exists <- liftIO $ doesFileExist filepath
-  if exists then
-    liftIO $ fmap read (readFile filepath)
-  else do
-    value <- fresh
-    liftIO $ writeFile filepath (show value)
-    return value
-
 lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
 lgssBenchmark cachePath t nRuns ns = do
   liftIO $ putStrLn "running LGSS benchmark"
 
-  let dataPath = cachePath ++ "data.txt"
-  let refPath = cachePath ++ "reference.txt"
-  let scoresPath = cachePath ++ "scores.txt"
   let plotPath = "lgss.pdf"
-  liftIO $ createDirectoryIfMissing True cachePath
 
   let param = LGSSParam (0,1) 1 0 1 1 0 1
-  ys <- tryCache dataPath $ synthesizeData param t
-  ref <- tryCache refPath $ return $ kalman param ys
-  let run m = do -- RMSE on the mean of filetering distribution
-        estMean <- popAvg Vector.last (normalize m)
-        let trueMean = fst (Vector.last ref)
-        return $ abs (trueMean - estMean)
-  scores <- tryCache scoresPath $
-            mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+  scores <- sequence $ replicate nRuns $ do
+    ys <- synthesizeData param t
+    ref <- return $ kalman param ys
+    let run m = do -- RMSE on the mean of filetering distribution
+          estMean <- popAvg Vector.last (normalize m)
+          let trueMean = fst (Vector.last ref)
+          return $ abs (trueMean - estMean)
+    mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+  let points = zip (map fromIntegral ns) (transpose scores)
 
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
     layout_title .= "LGSS"
-    anytimePlot "#samples" "RMSE" ns [
-      ("SMC", scores)]
+    errorbarPlot "#samples" "RMSE" [
+      ("SMC", points)]
 
 type Mean = Double
 type StdDev = Double
