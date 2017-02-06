@@ -5,6 +5,7 @@
 
 module Plotting where
 
+import Data.List (sort)
 import qualified Data.Vector as Vector
 import Statistics.Sample
 
@@ -44,6 +45,32 @@ oneShotPlot x_title y_title inputs = do
   let generatePlot (algName, ps) = do {
       plot $ points algName $ map (\(x, (y,_)) -> (LogValue x, LogValue y)) ps;
       plot $ return (def & plot_errbars_values .~ map processPoint ps)}
+
+  sequence $ map generatePlot inputs
+
+  layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
+  layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
+
+  layout_x_axis . laxis_title .= x_title
+  layout_y_axis . laxis_title .= y_title
+
+errorbarPlot :: String -> String -> [(String, [(Double,[Double])])]
+             -> EC (Layout LogValue LogValue) ()
+errorbarPlot x_title y_title inputs = do
+  let xLabelShow = map (show . ceiling)
+  let yLabelShow = map show
+
+  let makeBars (x, ys) = ErrPoint (ErrValue x' x' x') (ErrValue ymin y ymax) where
+        x' = LogValue x
+        y = LogValue $ sum ys / fromIntegral (length ys)
+        sorted = sort ys
+        n = length ys
+        ymin = LogValue $ sorted !! (n `div` 4)
+        ymax = LogValue $ sorted !! (n * 3 `div` 4)
+  let generatePlot (algName, ps) = do
+        plot $ points algName
+             $ map (\(x, ys) -> (LogValue x, LogValue (sum ys / fromIntegral (length ys)))) ps
+        plot $ return (def & plot_errbars_values .~ map makeBars ps)
 
   sequence $ map generatePlot inputs
 
