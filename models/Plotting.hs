@@ -68,9 +68,14 @@ errorbarPlot x_title y_title inputs = do
         ymin = LogValue $ sorted !! (n `div` 4)
         ymax = LogValue $ sorted !! (n * 3 `div` 4)
   let generatePlot (algName, ps) = do
+        plot $ liftEC $ do
+          -- ensure error bars are the same color as the points
+          (color:_) <- liftCState $ use colors
+          plot_errbars_values .= map makeBars ps
+          plot_errbars_line_style . line_color .= color
+
         plot $ points algName
              $ map (\(x, ys) -> (LogValue x, LogValue (sum ys / fromIntegral (length ys)))) ps
-        plot $ return (def & plot_errbars_values .~ map makeBars ps)
 
   sequence $ map generatePlot inputs
 
