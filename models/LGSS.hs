@@ -23,6 +23,8 @@ import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Kernel
+import Control.Monad.Bayes.Trace
 
 import Plotting
 
@@ -55,6 +57,10 @@ lgssBenchmark cachePath t nRuns ns = do
   let plotPath = "lgss.pdf"
 
   let param = LGSSParam (0,1) 1 0 1 1 0 1
+  let kernel = compose (gaussian 1) (last . fst . toLists)
+  let gKernel = unsafeKernel (\xs ys -> evalKernel (gaussian (fromIntegral (1 + t - length xs))) (last xs) (last ys))
+  let newKernel = compose (gKernel) (fst . toLists)
+
   scores <- sequence $ replicate nRuns $ do
     ys <- synthesizeData param t
     ref <- return $ kalman param ys
@@ -62,13 +68,22 @@ lgssBenchmark cachePath t nRuns ns = do
           estMean <- popAvg Vector.last (normalize m)
           let trueMean = fst (Vector.last ref)
           return $ abs (trueMean - estMean)
-    mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
-  let points = zip (map fromIntegral ns) (transpose scores)
+    smcRes <- mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+    kernelRes <- mapM (\n -> run $ smcHerdingResample kernel t n (linearGaussian param ys)) ns
+    newKernelRes <- mapM (\n -> run $ smcHerdingResample newKernel t n (linearGaussian param ys)) ns
+    return (smcRes, kernelRes, newKernelRes)
+
+  let (smcScores, kernelScores, newKernelScores) = unzip3 scores
+  let smcPoints = zip (map fromIntegral ns) (transpose smcScores)
+  let kernelPoints = zip (map fromIntegral ns) (transpose kernelScores)
+  let newKernelPoints = zip (map fromIntegral ns) (transpose newKernelScores)
 
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
     layout_title .= "LGSS"
     errorbarPlot "#samples" "RMSE" [
-      ("SMC", points)]
+      ("SMC", smcPoints),
+      ("Herding", kernelPoints),
+      ("NewHerding", newKernelPoints)]
 
 type Mean = Double
 type StdDev = Double
