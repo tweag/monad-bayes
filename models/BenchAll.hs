@@ -13,7 +13,6 @@ import qualified DPmixture
 import qualified Gamma
 import qualified HMM
 import Plotting
-import qualified Nonlinear
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
@@ -26,18 +25,29 @@ import Control.Monad.Bayes.Population
 import System.IO
 import Control.Arrow (first, second)
 import Control.Monad (unless, when)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import Statistics.Sample
 import qualified Data.Vector as Vector
 import Graphics.Rendering.Chart.Easy
 import Graphics.Rendering.Chart.Backend.Cairo
 import Options.Applicative
+import System.Directory
 
 opts :: ParserInfo Bool
 opts = flip info fullDesc $ switch
   ( long "trial"
  <> help "Run a quick version of benchmarks to check that all is working correctly")
+
+tryCache :: (MonadIO m, Read a, Show a) => FilePath -> m a -> m a
+tryCache filepath fresh = do
+  exists <- liftIO $ doesFileExist filepath
+  if exists then
+    liftIO $ fmap read (readFile filepath)
+  else do
+    value <- fresh
+    liftIO $ writeFile filepath (show value)
+    return value
 
 main = do
   -- make sure `putStrLn` prints to console immediately
@@ -46,28 +56,8 @@ main = do
   trial <- execParser opts
   when trial $ putStrLn "Trial run"
 
-  if not trial then do
-    sampleIO hmmBenchmark
-    sampleIO $ nonlinearBenchmark 50 10 [10,20,40] 10000
-  else do
-    sampleIO $ nonlinearBenchmark 5 10 [10,20,40] 100
+  sampleIO hmmBenchmark
 
-
-nonlinearBenchmark :: Int -> Int -> [Int] -> Int -> SamplerIO ()
-nonlinearBenchmark t nRuns ns nRef = do
-  liftIO $ putStrLn "running Nonlinear benchmark"
-
-  ys <- Nonlinear.synthesizeData t
-  ref <- Nonlinear.reference ys nRef
-  let run m = fmap ((/ fromIntegral nRuns) . sum) $ Vector.replicateM nRuns $
-              fmap (Nonlinear.rmse ref . Nonlinear.averageVec) $
-              explicitPopulation $ normalize m
-  scores <- mapM (\n -> run $ smc t n (Nonlinear.posterior ys)) ns
-
-  liftIO $ toFile (fo_format .~ PDF $ def) "nonlinear.pdf" $ do
-    layout_title .= "Nonlinear"
-    anytimePlot "#samples" "RMSE" ns [
-      ("SMC", scores)]
 
 meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
 meanVar n d = do
