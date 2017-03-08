@@ -25,7 +25,15 @@ module Control.Monad.Bayes.Inference (
   smh,
   traceMH,
   mhPrior,
-  pimh
+  pimh,
+  Kernel (Kernel),
+  proposal,
+  density,
+  mhCustom,
+  gaussianKernel,
+  customDiscreteKernel,
+  singleSiteTraceKernel,
+  randomWalkKernel
 ) where
 
 import Control.Arrow (second)
@@ -41,6 +49,8 @@ import Control.Monad.Bayes.Trace    as Trace
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Primitive
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -183,4 +193,83 @@ pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of particles in SMC
                     -> Int -- ^ number of independent SMC runs
                     -> Sequential (Population (Weighted m)) a -> m [a]
-pimh k np ns d = mhPrior ns $ collapse $ smc k np d
+pimh k np ns d = mhPrior ns $ collapse $ smc k np d-- gaussian_kernel :: Kernel m [Double]
+-- gaussian_kernel
+
+
+
+data Kernel m a =
+  Kernel {proposal :: a -> m a, density :: a -> a -> LogDomain (CustomReal m)}
+
+mhCustom :: MonadDist m => Int -> Conditional (Weighted m) a -> Kernel m (Trace (CustomReal m)) -> Trace (CustomReal m) -> m [a]
+mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhStep) starting where
+  --mhStep :: StateT (Trace (CustomReal m)) m (Trace (CustomReal m))
+  mhStep = do
+    t <- get
+    t' <- lift $ proposal kernel t
+    p <- lift $ unsafeDensity model t
+    let q = density kernel t t'
+    p' <- lift $ unsafeDensity model t'
+    let q' = density kernel t' t
+    let ratio = min 1 (p' * q' / p * q)
+    accept <- bernoulli (fromLogDomain ratio)
+    let tnew = if accept then t' else t
+    put tnew
+    (output,_) <- lift $ runWeighted $ unsafeConditional model tnew
+    return output
+
+gaussianKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m Double
+gaussianKernel sigma =
+  Kernel (\x -> normal x sigma) (\x y -> pdf (Continuous (Normal x sigma)) y)
+
+singleSiteKernel :: (MonadDist m, Eq a) => Kernel m a -> Kernel m [a]
+singleSiteKernel k = Kernel prop den where
+  prop xs = do
+    index <- uniformD [0 .. length xs - 1]
+    let (a, x:b) = splitAt index xs
+    x' <- proposal k x
+    return (a ++ (x':b))
+
+  den xs ys | (length xs == length ys) =
+    let
+      n = length xs
+      diffs = filter (uncurry (==)) $ zip xs ys
+    in
+      case length diffs of
+        0 -> sum (zipWith (density k) xs ys) / fromIntegral n
+        1 -> let [(x,y)] = diffs in density k x y / fromIntegral n
+        _ -> error "Single site kernel was given lists of different length"
+
+productKernel :: (MonadDist m, Eq a, Eq b)
+              => CustomReal m -> Kernel m a -> Kernel m b -> Kernel m (a,b)
+productKernel p k l = Kernel prop den where
+  prop (a,b) = do
+    takeA <- bernoulli p
+    a' <- if takeA then proposal k a else return a
+    b' <- if takeA then return b else proposal l b
+    return (a',b')
+
+  den (a,b) (a',b') = let p' = toLogDomain p in
+    case (a == a', b == b') of
+      (True, True)  -> p' * (density k a a') + (1-p') * (density l b b')
+      (False, True) -> p' * density k a a'
+      (True, False) -> (1-p') * density l b b'
+      (False, False) -> error "Product kernel was given tuples with both elements different"
+
+customDiscreteKernel :: MonadDist m => (Int -> [(CustomReal m)]) -> Kernel m Int
+customDiscreteKernel f = Kernel (discrete . f) (\x y -> toLogDomain (f x !! y))
+
+singleSiteTraceKernel :: (MonadDist m)
+              => CustomReal m -> Kernel m (CustomReal m) -> Kernel m Int
+              -> Kernel m (Trace (CustomReal m))
+singleSiteTraceKernel p k l = Kernel prop den where
+    prop t = do
+      x <- proposal prodKer (toLists t)
+      return (fromLists x)
+
+    den t t' = density prodKer (toLists t) (toLists t')
+
+    prodKer = productKernel p (singleSiteKernel k) (singleSiteKernel l)
+
+randomWalkKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m (Trace Double)
+randomWalkKernel sigma = singleSiteTraceKernel 1 (gaussianKernel sigma) undefined
