@@ -211,7 +211,7 @@ mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhStep) 
     let q = density kernel t t'
     p' <- lift $ unsafeDensity model t'
     let q' = density kernel t' t
-    let ratio = min 1 (p' * q' / p * q)
+    let ratio = min 1 (p' * q' / (p * q))
     accept <- bernoulli (fromLogDomain ratio)
     let tnew = if accept then t' else t
     put tnew
@@ -224,7 +224,7 @@ gaussianKernel sigma =
 
 singleSiteKernel :: (MonadDist m, Eq a) => Kernel m a -> Kernel m [a]
 singleSiteKernel k = Kernel prop den where
-  prop xs = do
+  prop xs = if null xs then return [] else do
     index <- uniformD [0 .. length xs - 1]
     let (a, x:b) = splitAt index xs
     x' <- proposal k x
@@ -233,12 +233,13 @@ singleSiteKernel k = Kernel prop den where
   den xs ys | (length xs == length ys) =
     let
       n = length xs
-      diffs = filter (uncurry (==)) $ zip xs ys
+      diffs = filter (uncurry (/=)) $ zip xs ys
     in
-      case length diffs of
-        0 -> sum (zipWith (density k) xs ys) / fromIntegral n
-        1 -> let [(x,y)] = diffs in density k x y / fromIntegral n
-        _ -> error "Single site kernel was given lists of different length"
+      if n == 0 then 1 else
+        case length diffs of
+          0 -> sum (zipWith (density k) xs ys) / fromIntegral n
+          1 -> let [(x,y)] = diffs in density k x y / fromIntegral n
+          _ -> error "Single site kernel was given lists differing in more than one element"
 
 productKernel :: (MonadDist m, Eq a, Eq b)
               => CustomReal m -> Kernel m a -> Kernel m b -> Kernel m (a,b)
