@@ -96,6 +96,8 @@ main = hspec $ do
       TestInference.check_trace_trans `shouldBe` True
     it "Trace MH leaves posterior invariant when the model has shifting support" $ do
       TestInference.check_trace_support `shouldBe` True
+    it "Custom MH preserves posterior distribution" $ do
+      TestInference.check_custom_mh `shouldBe` True
   describe "Population/Trace/Particle hybrids" $ do
     it "ISMH preserves the posterior on the sprinkler model" $ do
       TestInference.check_preserve_ismh `shouldBe` True
