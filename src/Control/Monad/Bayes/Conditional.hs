@@ -35,7 +35,7 @@ import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Deterministic
-import Control.Monad.Bayes.Trace hiding (hoist)
+import Control.Monad.Bayes.Trace
 
 -- | A probability monad that allows conditioning on the latent variables.
 -- The variables which aren't conditioned on should be lifted from the transformed monad.
