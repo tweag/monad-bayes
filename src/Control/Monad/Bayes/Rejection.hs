@@ -35,8 +35,10 @@ runRejection = runMaybeT . toMaybeT
 
 type instance CustomReal (Rejection m) = CustomReal m
 
-instance MonadDist m => MonadDist (Rejection m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Rejection m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (Rejection m)
 
 instance MonadDist m => MonadBayes (Rejection m) where
   factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w :: Double) ++ " is not in [0,1] range."

@@ -32,8 +32,10 @@ newtype Deterministic r a = Deterministic (Maybe a)
 
 type instance CustomReal (Deterministic r) = r
 
-instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r) where
-  primitive _ = Deterministic Nothing
+instance Sampleable d (Deterministic r) where
+  sample _ = Deterministic Nothing
+
+instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r)
 
 instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r) where
   factor _ = Deterministic Nothing

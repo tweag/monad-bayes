@@ -55,8 +55,10 @@ type instance CustomReal (Weighted m) = CustomReal m
 instance MonadTrans Weighted where
   lift = Weighted . lift
 
-instance MonadDist m => MonadDist (Weighted m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Weighted m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (Weighted m)
 
 instance MonadDist m => MonadBayes (Weighted m) where
   factor w = Weighted $ modify (* weight w)
@@ -89,6 +91,7 @@ newtype WeightRecorder m a =
   WeightRecorder {runWeightRecorder :: Weighted m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 type instance CustomReal (WeightRecorder m) = CustomReal m
+deriving instance (Sampleable d m, Monad m) => Sampleable d (WeightRecorder m)
 deriving instance MonadDist m => MonadDist (WeightRecorder m)
 
 instance MonadBayes m => MonadBayes (WeightRecorder m) where

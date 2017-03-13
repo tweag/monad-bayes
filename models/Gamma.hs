@@ -7,7 +7,6 @@ module Gamma where
 -- | A sequence of i.i.d. normal variables with Gamma prior on precision.
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Primitive
 
 points = [0.8, 0.2, -0.6, 0.45, -0.3]
 
@@ -16,7 +15,7 @@ model :: (MonadBayes m, CustomReal m ~ Double) => m Double
 model = do
   prec <- gamma 1 1
   let stddev = sqrt (1 / prec)
-  let noise = Continuous (Normal 0 stddev)
+  let noise = (Normal 0 stddev)
   mapM_ (observe noise) points
   return prec
 

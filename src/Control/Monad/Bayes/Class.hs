@@ -14,7 +14,26 @@ Portability : GHC
  #-}
 
 
-module Control.Monad.Bayes.Class where
+module Control.Monad.Bayes.Class (
+  module Control.Monad.Bayes.Distribution,
+  MonadDist,
+  categorical,
+  logCategorical,
+  logDiscrete,
+  bernoulli,
+  binomial,
+  multinomial,
+  geometric,
+  poisson,
+  uniformD,
+  exponential,
+  dirichlet,
+  MonadBayes,
+  factor,
+  condition,
+  observe,
+  CustomReal
+) where
 
 import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
@@ -32,46 +51,16 @@ import Control.Monad.Trans.List
 --import Control.Monad.Trans.Except
 import Control.Monad.Trans.Cont
 
-import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Distribution
+--import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
-class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal m)) => MonadDist m where
-
-    {-# MINIMAL primitive | (discrete, normal, gamma, beta, uniform) #-}
-    -- | Discrete distribution over the first n natural numbers (including 0).
-    -- The list should be non-empty, finite, and contain only non-negative values, at least one of them being positive.
-    -- The weights are automatically normalized if they do not sum to 1.
-    discrete :: [CustomReal m] -> m Int
-    -- | Normal distribution.
-    normal   :: CustomReal m -- ^ mean
-             -> CustomReal m -- ^ standard deviation
-             -> m (CustomReal m)
-    -- | Gamma distribution.
-    gamma    :: CustomReal m -- ^ shape
-             -> CustomReal m -- ^ rate
-             -> m (CustomReal m)
-    -- | Beta distribution.
-    beta     :: CustomReal m -> CustomReal m -> m (CustomReal m)
-    -- | Continuous uniform distribution on an interval.
-    -- There is no distinction between open and closed intervals.
-    uniform  :: CustomReal m -> CustomReal m -> m (CustomReal m)
-
-    -- | One of `Primitive` distributions.
-    primitive :: Primitive (CustomReal m) a -> m a
-    primitive (Discrete d)  = discrete d
-    primitive (Continuous (Normal  m s)) = normal m s
-    primitive (Continuous (Gamma   a b)) = gamma  a b
-    primitive (Continuous (Beta    a b)) = beta   a b
-    primitive (Continuous (Uniform a b)) = uniform a b
-
-    -- defaults based on primitive
-    discrete ps   = primitive $ Discrete ps
-    normal m s    = primitive $ Continuous (Normal  m s)
-    gamma  a b    = primitive $ Continuous (Gamma   a b)
-    beta   a b    = primitive $ Continuous (Beta    a b)
-    uniform a b   = primitive $ Continuous (Uniform a b)
+class (Monad m, Ord (CustomReal m), Log.NumSpec (CustomReal m), Real (CustomReal m),
+       Sampleable (Normal (CustomReal m)) m, Sampleable (Gamma (CustomReal m)) m,
+       Sampleable (Beta (CustomReal m)) m, Sampleable (Uniform (CustomReal m)) m,
+       Sampleable (Discrete (CustomReal m) Int) m) => MonadDist m where
 
     -- | Categorical distribution.
     -- The weights should conform to the same rules as for `discrete`.
@@ -170,20 +159,17 @@ class MonadDist m => MonadBayes m where
     -- | Soft conditioning on a noisy value.
     --
     -- > observe d x = factor (pdf d x)
-    observe :: Primitive (CustomReal m) a -> a -> m ()
+    observe :: (Density d, RealNumType d ~ CustomReal m) => d -> DomainType d -> m ()
     observe d x = factor (pdf d x)
-
--- | The type used to represent real numbers in a given monad.
--- In most cases this is just `Double`, but
--- it is abstracted mostly to support Automatic Differentiation.
-type family CustomReal (m :: * -> *) :: *
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 type instance CustomReal (IdentityT m) = CustomReal m
 
-instance MonadDist m => MonadDist (IdentityT m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (IdentityT m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (IdentityT m)
 
 instance MonadBayes m => MonadBayes (IdentityT m) where
   factor = lift . factor
@@ -191,8 +177,10 @@ instance MonadBayes m => MonadBayes (IdentityT m) where
 
 type instance CustomReal (MaybeT m) = CustomReal m
 
-instance MonadDist m => MonadDist (MaybeT m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (MaybeT m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (MaybeT m)
 
 instance MonadBayes m => MonadBayes (MaybeT m) where
   factor = lift . factor
@@ -200,8 +188,10 @@ instance MonadBayes m => MonadBayes (MaybeT m) where
 
 type instance CustomReal (ReaderT r m) = CustomReal m
 
-instance MonadDist m => MonadDist (ReaderT r m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (ReaderT r m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (ReaderT r m)
 
 instance MonadBayes m => MonadBayes (ReaderT r m) where
   factor = lift . factor
@@ -209,8 +199,10 @@ instance MonadBayes m => MonadBayes (ReaderT r m) where
 
 type instance CustomReal (WriterT w m) = CustomReal m
 
-instance (Monoid w, MonadDist m) => MonadDist (WriterT w m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (WriterT w m) where
+  sample = lift . sample
+
+instance (Monoid w, MonadDist m) => MonadDist (WriterT w m)
 
 instance (Monoid w, MonadBayes m) => MonadBayes (WriterT w m) where
   factor = lift . factor
@@ -218,8 +210,10 @@ instance (Monoid w, MonadBayes m) => MonadBayes (WriterT w m) where
 
 type instance CustomReal (StateT s m) = CustomReal m
 
-instance MonadDist m => MonadDist (StateT s m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (StateT s m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (StateT s m)
 
 instance MonadBayes m => MonadBayes (StateT s m) where
   factor = lift . factor
@@ -227,8 +221,10 @@ instance MonadBayes m => MonadBayes (StateT s m) where
 
 type instance CustomReal (RWST r w s m) = CustomReal m
 
-instance (Monoid w, MonadDist m) => MonadDist (RWST r w s m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (RWST r w s m) where
+  sample = lift . sample
+
+instance (Monoid w, MonadDist m) => MonadDist (RWST r w s m)
 
 instance (Monoid w, MonadBayes m) => MonadBayes (RWST r w s m) where
   factor = lift . factor
@@ -236,8 +232,10 @@ instance (Monoid w, MonadBayes m) => MonadBayes (RWST r w s m) where
 
 type instance CustomReal (ListT m) = CustomReal m
 
-instance MonadDist m => MonadDist (ListT m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (ListT m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (ListT m)
 
 instance MonadBayes m => MonadBayes (ListT m) where
   factor = lift . factor
@@ -254,8 +252,10 @@ instance MonadBayes m => MonadBayes (ListT m) where
 
 type instance CustomReal (ContT r m) = CustomReal m
 
-instance MonadDist m => MonadDist (ContT r m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (ContT r m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (ContT r m)
 
 instance MonadBayes m => MonadBayes (ContT r m) where
   factor = lift . factor

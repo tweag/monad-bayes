@@ -28,6 +28,7 @@ import Control.Arrow (second)
 import qualified Data.Map as Map
 import Control.Monad.Trans
 import Data.Maybe (fromMaybe)
+import qualified Data.Vector as V
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
 import Control.Monad.Bayes.Class
@@ -42,12 +43,13 @@ newtype Enumerator m a = Enumerator {runEnumerator :: Pop.Population m a}
 
 type instance CustomReal (Enumerator m) = CustomReal m
 
-instance MonadDist m => MonadDist (Enumerator m) where
-  discrete ps = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] ps
-  normal  m s = lift $ normal  m s
-  gamma   a b = lift $ gamma   a b
-  beta    a b = lift $ beta    a b
-  uniform a b = lift $ uniform a b
+instance {-# OVERLAPPING #-} (CustomReal m ~ r, MonadDist m) =>
+         Sampleable (Discrete r Int) (Enumerator m) where
+  sample (Discrete ps) = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList ps
+
+instance {-# OVERLAPPING #-} (Sampleable d m, Monad m) => Sampleable d (Enumerator m)
+
+instance MonadDist m => MonadDist (Enumerator m)
 
 instance MonadDist m => MonadBayes (Enumerator m) where
   factor w = Enumerator $ factor w

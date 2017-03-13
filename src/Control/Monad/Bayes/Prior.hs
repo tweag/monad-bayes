@@ -26,8 +26,10 @@ newtype Prior m a = Prior {runPrior :: IdentityT m a}
 
 type instance CustomReal (Prior m) = CustomReal m
 
-instance MonadDist m => MonadDist (Prior m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Prior m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (Prior m)
 
 instance MonadDist m => MonadBayes (Prior m) where
     factor _ = return ()

@@ -33,13 +33,19 @@ type instance CustomReal (Augmented m) = CustomReal m
 instance MonadTrans Augmented where
   lift = Augmented . lift
 
-instance MonadDist m => MonadDist (Augmented m) where
-  primitive d = Augmented $ do
-    x <- primitive d
-    tell $ fromLists $ case d of
-      Discrete   _ -> (mempty, [x])
-      Continuous _ -> ([x], mempty)
+instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, Monad m) => Sampleable (Discrete r Int) (Augmented m) where
+  sample d = Augmented $ do
+    x <- sample d
+    tell $ fromLists (mempty, [x])
     return x
+
+instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Monad m) => Sampleable d (Augmented m) where
+  sample d = Augmented $ do
+    x <- sample d
+    tell $ fromLists ([x], mempty)
+    return x
+
+instance MonadDist m => MonadDist (Augmented m)
 
 instance MonadBayes m => MonadBayes (Augmented m) where
   factor = lift . factor

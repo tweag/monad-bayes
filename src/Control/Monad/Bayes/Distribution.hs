@@ -22,21 +22,22 @@ module Control.Monad.Bayes.Distribution (
   pdf,
   Sampleable,
   sample,
-  Normal,
+  Normal(Normal),
   normalDist,
   normal,
-  Gamma,
+  Gamma(Gamma),
   gammaDist,
   gamma,
-  Beta,
+  Beta(Beta),
   betaDist,
   beta,
-  Uniform,
+  Uniform(Uniform),
   uniformDist,
   uniform,
-  Discrete,
+  Discrete(Discrete),
   discreteDist,
-  discrete
+  discrete,
+  CustomReal
 ) where
 
 import qualified Data.Vector as V
@@ -137,7 +138,7 @@ instance (Ord r, NumSpec r) => Density (Beta r) where
 instance Sampleable (Beta r) Beta where
   sample = id
 
-beta :: (Ord r, Floating r, Sampleable (Beta r) m) => r -> r -> m r
+beta :: (Ord r, Floating r, Sampleable (Beta r) m, r ~ CustomReal m) => r -> r -> m r
 beta a b = sample (betaDist a b)
 
 
@@ -192,5 +193,11 @@ instance (Ord r, Floating r, Integral k) => Density (Discrete r k) where
 instance Sampleable (Discrete r k) (Discrete r) where
   sample = id
 
-discrete :: (Sampleable (Discrete r k) m, Foldable f, NumSpec r) => f r -> m k
+discrete :: (Sampleable (Discrete r k) m, Foldable f, NumSpec r, r ~ CustomReal m) => f r -> m k
 discrete ws = sample (discreteDist ws)
+
+
+-- | The type used to represent real numbers in a given monad.
+-- In most cases this is just `Double`, but
+-- it is abstracted mostly to support Automatic Differentiation.
+type family CustomReal (m :: * -> *) :: *

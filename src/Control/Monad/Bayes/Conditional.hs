@@ -34,7 +34,6 @@ import Numeric.AD.Internal.Reverse
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace hiding (hoist)
 
@@ -48,19 +47,27 @@ type instance CustomReal (Conditional m) = CustomReal m
 instance MonadTrans Conditional where
   lift m = Conditional (lift $ lift m)
 
-instance MonadBayes m => MonadDist (Conditional m) where
-  primitive d = Conditional $ do
+instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, r ~ CustomReal m, MonadBayes m) => Sampleable (Discrete r Int) (Conditional m) where
+  sample d = Conditional $ do
     (xs, cs) <- get
-    case d of
-      Discrete _ | c:cs' <- cs -> do
+    case cs of
+      (c:cs') -> do
         factor (pdf d c)
         put (xs, cs')
         return c
-      Continuous _ | x:xs' <- xs -> do
+      _ -> fail ""
+
+instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Density d, MonadBayes m) => Sampleable d (Conditional m) where
+  sample d = Conditional $ do
+    (xs, cs) <- get
+    case xs of
+      (x:xs') -> do
         factor (pdf d x)
         put (xs', cs)
         return x
       _ -> fail ""
+
+instance MonadBayes m => MonadDist (Conditional m)
 
 instance MonadBayes m => MonadBayes (Conditional m) where
   factor = lift . factor

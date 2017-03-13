@@ -24,7 +24,6 @@ import Numeric.SpecFunctions (logGamma, factorial)
 -- import Control.Monad.Trans.Memo.StateCache
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Primitive
 
 
 type NormalInvGamma = (Double,Double,Double,Double)
@@ -78,7 +77,7 @@ dpMixture =
       let mean = means !! cluster
       let var  = vars  !! cluster
       let point = (cluster, var, mean)
-      observe (Continuous (Normal mean (sqrt var))) y
+      observe (Normal mean (sqrt var)) y
       return (clusters, point : rest)
 
   in

@@ -68,8 +68,10 @@ hoist f = Sequential . mapMonad f . runSequential
 
 type instance CustomReal (Sequential m) = CustomReal m
 
-instance MonadDist m => MonadDist (Sequential m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Sequential m) where
+  sample = lift . sample
+
+instance MonadDist m => MonadDist (Sequential m)
 
 instance MonadBayes m => MonadBayes (Sequential m) where
   factor w = lift (factor w) >> suspend

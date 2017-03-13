@@ -43,6 +43,7 @@ import Control.Monad.Bayes.Weighted hiding (hoist)
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
     deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 type instance CustomReal (Empirical m) = CustomReal m
+deriving instance (Sampleable d m, Monad m) => Sampleable d (Empirical m)
 deriving instance MonadDist m => MonadDist (Empirical m)
 deriving instance MonadBayes m => MonadBayes (Empirical m)
 
@@ -76,6 +77,7 @@ type instance CustomReal (Population m) = CustomReal m
 deriving instance MonadDist m => Applicative (Population m)
 deriving instance MonadDist m => Monad (Population m)
 deriving instance (MonadDist m, MonadIO m) => MonadIO (Population m)
+deriving instance (Sampleable d m, Monad m) => Sampleable d (Population m)
 deriving instance MonadDist m => MonadDist (Population m)
 deriving instance MonadDist m => MonadBayes (Population m)
 

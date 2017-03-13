@@ -17,7 +17,6 @@ import Control.Monad.Trans
 import System.IO
 import Control.Monad (when, unless)
 
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
@@ -93,7 +92,7 @@ linearGaussian :: (MonadBayes m, CustomReal m ~ Double)
 linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
   let step xs y = do{
     x' <- normal (a*(head xs) + b) sdX;
-    observe (Continuous (Normal (c*x' + d) sdY)) y;
+    observe (Normal (c*x' + d) sdY) y;
     return (x':xs)}
 
   x0 <- uncurry normal p0
