@@ -26,7 +26,6 @@ library
                        Control.Monad.Bayes.Population,
                        Control.Monad.Bayes.Sequential,
                        Control.Monad.Bayes.Inference,
-                       Control.Monad.Bayes.Coprimitive,
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,

@@ -52,7 +52,6 @@ import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
 import Control.Monad.Bayes.Distribution
---import Control.Monad.Bayes.Primitive
 import qualified Control.Monad.Bayes.LogDomain as Log
 
 -- | Monads for building generative probabilistic models.

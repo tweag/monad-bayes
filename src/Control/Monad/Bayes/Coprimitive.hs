@@ -27,7 +27,6 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Maybe
 
 import Control.Monad.Bayes.LogDomain
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Deterministic
