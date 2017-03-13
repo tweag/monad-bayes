@@ -16,7 +16,6 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Control.Monad.Bayes.LogDomain,
-                       Control.Monad.Bayes.Primitive,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,

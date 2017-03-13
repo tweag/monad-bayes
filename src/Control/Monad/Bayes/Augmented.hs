@@ -20,9 +20,8 @@ module Control.Monad.Bayes.Augmented (
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Trace hiding (hoist)
+import Control.Monad.Bayes.Trace
 
 -- | A transformer that includes all the latent random variables in the output.
 newtype Augmented m a = Augmented (WriterT (Trace (CustomReal m)) m a)
