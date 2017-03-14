@@ -19,20 +19,23 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Identity
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | A simple wrapper around 'MonadDist' types that discards conditoning.
 newtype Prior m a = Prior {runPrior :: IdentityT m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 
-type instance CustomReal (Prior m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Prior m) where
+  type CustomReal (Prior m) = CustomReal m
 
 instance (Sampleable d m, Monad m) => Sampleable d (Prior m) where
   sample = lift . sample
 
-instance MonadDist m => MonadDist (Prior m)
+instance (Applicative m, HasCustomReal m) => Conditionable (Prior m) where
+  factor _ = pure ()
 
-instance MonadDist m => MonadBayes (Prior m) where
-    factor _ = return ()
+instance MonadDist m => MonadDist (Prior m)
+instance MonadDist m => MonadBayes (Prior m)
 
 -- | Discard conditioning and just use the prior.
 prior :: Prior m a -> m a

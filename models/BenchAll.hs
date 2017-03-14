@@ -16,6 +16,7 @@ import Plotting
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Enumerator

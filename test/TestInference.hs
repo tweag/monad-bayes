@@ -9,6 +9,7 @@ import Data.AEq
 import Control.Monad.Trans.Identity
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted

@@ -16,12 +16,6 @@ Portability : GHC
 
 
 module Control.Monad.Bayes.Distribution (
-  DomainType,
-  RealNumType,
-  Density,
-  pdf,
-  Sampleable,
-  sample,
   Normal(Normal),
   normalDist,
   normal,
@@ -44,15 +38,7 @@ import qualified Data.Vector as V
 import qualified Data.Foldable as Fold
 
 import Control.Monad.Bayes.LogDomain hiding (beta, gamma)
-
-type family DomainType d
-type family RealNumType d
-
-class Density d where
-  pdf :: d -> DomainType d -> LogDomain (RealNumType d)
-
-class Sampleable d m where
-  sample :: d -> m (DomainType d)
+import Control.Monad.Bayes.Class
 
 
 data Normal r = Normal {mean :: r, stddev :: r}
@@ -195,9 +181,3 @@ instance Sampleable (Discrete r k) (Discrete r) where
 
 discrete :: (Sampleable (Discrete r k) m, Foldable f, NumSpec r, r ~ CustomReal m) => f r -> m k
 discrete ws = sample (discreteDist ws)
-
-
--- | The type used to represent real numbers in a given monad.
--- In most cases this is just `Double`, but
--- it is abstracted mostly to support Automatic Differentiation.
-type family CustomReal (m :: * -> *) :: *

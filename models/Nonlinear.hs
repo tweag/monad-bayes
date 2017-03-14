@@ -16,6 +16,7 @@ import Data.Vector hiding (reverse, mapM, (++))
 import Control.Exception.Base
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Population

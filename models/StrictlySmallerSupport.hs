@@ -3,7 +3,7 @@
 -- smaller than the other.
 module StrictlySmallerSupport where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 model :: MonadDist m => m Bool
 model = do

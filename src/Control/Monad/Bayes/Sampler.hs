@@ -22,6 +22,8 @@ import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Distribution
+import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -37,7 +39,8 @@ sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
-type instance CustomReal SamplerIO = Double
+instance HasCustomReal SamplerIO where
+  type CustomReal SamplerIO = Double
 
 -- | Helper for converting distributions supplied by MWC-Random
 fromMWC :: (GenIO -> IO a) -> SamplerIO a

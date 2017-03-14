@@ -34,20 +34,23 @@ import Numeric.AD.Internal.Reverse
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Simple
 
 -- | A probability monad that allows conditioning on the latent variables.
 -- The variables which aren't conditioned on should be lifted from the transformed monad.
 newtype Conditional m a = Conditional (StateT ([CustomReal m], [Int]) (MaybeT m) a)
   deriving (Functor, Applicative, Monad, MonadIO)
 
-type instance CustomReal (Conditional m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Conditional m) where
+  type CustomReal (Conditional m) = CustomReal m
 
 instance MonadTrans Conditional where
   lift m = Conditional (lift $ lift m)
 
-instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, r ~ CustomReal m, MonadBayes m) => Sampleable (Discrete r Int) (Conditional m) where
+instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r Int) (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case cs of
@@ -57,7 +60,7 @@ instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, r ~ CustomReal m, M
         return c
       _ -> fail ""
 
-instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Density d, MonadBayes m) => Sampleable d (Conditional m) where
+instance {-# OVERLAPPING #-} (RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case xs of
@@ -67,10 +70,11 @@ instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, Doma
         return x
       _ -> fail ""
 
-instance MonadBayes m => MonadDist (Conditional m)
-
-instance MonadBayes m => MonadBayes (Conditional m) where
+instance (Conditionable m, Monad m) => Conditionable (Conditional m) where
   factor = lift . factor
+
+instance MonadBayes m => MonadDist (Conditional m)
+instance MonadBayes m => MonadBayes (Conditional m)
 
 -- | Applies a transformation to the inner monad.
 hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Conditional m a -> Conditional n a

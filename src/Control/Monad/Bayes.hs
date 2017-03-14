@@ -36,6 +36,7 @@ import Control.Arrow
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import qualified Control.Monad.Bayes.Enumerator as Dist

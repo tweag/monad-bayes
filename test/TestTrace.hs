@@ -11,6 +11,7 @@ import Control.Monad
 
 import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain, toLog)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler

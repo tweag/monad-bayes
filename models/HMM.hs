@@ -17,6 +17,7 @@ import Data.Bifunctor (first, second)
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Enumerator as Dist
 
 -- | States of the HMM

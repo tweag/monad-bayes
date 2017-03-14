@@ -34,6 +34,7 @@ import Control.Monad.Trans.List
 
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted hiding (hoist)
 
 -- | Empirical distribution represented as a list of values.
@@ -42,8 +43,10 @@ import Control.Monad.Bayes.Weighted hiding (hoist)
 -- monad is commutative.
 newtype Empirical m a = Empirical {unEmpirical :: ListT m a}
     deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
-type instance CustomReal (Empirical m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Empirical m) where
+  type CustomReal (Empirical m) = CustomReal m
 deriving instance (Sampleable d m, Monad m) => Sampleable d (Empirical m)
+deriving instance (Conditionable m, Monad m) => Conditionable (Empirical m)
 deriving instance MonadDist m => MonadDist (Empirical m)
 deriving instance MonadBayes m => MonadBayes (Empirical m)
 
@@ -73,11 +76,13 @@ draw n = fromList $ pure $ replicate n ()
 newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
   deriving (Functor)
 
-type instance CustomReal (Population m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Population m) where
+  type CustomReal (Population m) = CustomReal m
 deriving instance MonadDist m => Applicative (Population m)
 deriving instance MonadDist m => Monad (Population m)
 deriving instance (MonadDist m, MonadIO m) => MonadIO (Population m)
 deriving instance (Sampleable d m, Monad m) => Sampleable d (Population m)
+deriving instance (Monad m, HasCustomReal m) => Conditionable (Population m)
 deriving instance MonadDist m => MonadDist (Population m)
 deriving instance MonadDist m => MonadBayes (Population m)
 

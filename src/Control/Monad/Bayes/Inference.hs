@@ -34,6 +34,7 @@ import Control.Monad.Writer.Lazy
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential

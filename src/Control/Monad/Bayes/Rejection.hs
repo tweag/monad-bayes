@@ -21,6 +21,7 @@ import Control.Monad.Trans.Maybe
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | A probability monad that aborts when a condition is violated.
 -- Only accepts factors in [0,1] range.
@@ -33,18 +34,20 @@ newtype Rejection m a = Rejection {toMaybeT :: (MaybeT m a)}
 runRejection :: Rejection m a -> m (Maybe a)
 runRejection = runMaybeT . toMaybeT
 
-type instance CustomReal (Rejection m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Rejection m) where
+  type CustomReal (Rejection m) = CustomReal m
 
 instance (Sampleable d m, Monad m) => Sampleable d (Rejection m) where
   sample = lift . sample
 
-instance MonadDist m => MonadDist (Rejection m)
-
-instance MonadDist m => MonadBayes (Rejection m) where
+instance (MonadDist m) => Conditionable (Rejection m) where
   factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w :: Double) ++ " is not in [0,1] range."
   factor w = do
     accept <- bernoulli (fromLogDomain w)
     unless accept (fail "")
+
+instance MonadDist m => MonadDist (Rejection m)
+instance MonadDist m => MonadBayes (Rejection m)
 
 hoist :: (forall x. m x -> n x) -> Rejection m a -> Rejection n a
 hoist f = Rejection . MaybeT . f . runRejection
