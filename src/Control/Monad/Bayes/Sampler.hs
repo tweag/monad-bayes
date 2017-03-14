@@ -17,11 +17,13 @@ module Control.Monad.Bayes.Sampler (
 
 import System.Random.MWC (GenIO, create, createSystemRandom, uniformR)
 import qualified System.Random.MWC.Distributions as MWC
-import Data.Vector (fromList)
 import Control.Monad.Trans (lift, MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 
+import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Distribution
+import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -37,18 +39,29 @@ sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
-type instance CustomReal SamplerIO = Double
+instance HasCustomReal SamplerIO where
+  type CustomReal SamplerIO = Double
 
 -- | Helper for converting distributions supplied by MWC-Random
 fromMWC :: (GenIO -> IO a) -> SamplerIO a
 fromMWC s = SamplerIO $ ask >>= lift . s
 
+instance Sampleable (Normal Double) SamplerIO where
+  sample (Normal m s) = fromMWC $ MWC.normal m s
+
+instance Sampleable (Gamma Double) SamplerIO where
+  sample (Gamma a b) = fromMWC $ MWC.gamma a (recip b)
+
+instance Sampleable (Beta Double) SamplerIO where
+  sample (Beta a b) = fromMWC $ MWC.beta a b
+
+instance Sampleable (Uniform Double) SamplerIO where
+  sample (Uniform a b) = fromMWC $ uniformR (a,b)
+
+instance Sampleable (Discrete Double Int) SamplerIO where
+  sample (Discrete ps) = fromMWC $ MWC.categorical $ normalize ps
+
 instance MonadDist SamplerIO where
-  discrete ps      = fromMWC $ MWC.categorical $ Data.Vector.fromList $ map (/ sum ps) ps
-  normal m s       = fromMWC $ MWC.normal m s
-  gamma a b        = fromMWC $ MWC.gamma a (recip b)
-  beta a b         = fromMWC $ MWC.beta a b
-  uniform a b      = fromMWC $ uniformR (a,b)
   exponential rate = fromMWC $ MWC.exponential (recip rate)
   geometric p      = fromMWC $ MWC.geometric0 p
   bernoulli p      = fromMWC $ MWC.bernoulli p

@@ -27,14 +27,13 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Maybe
 
 import Control.Monad.Bayes.LogDomain
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Deterministic
 
 -- | Suspension functor: yields primitive distribution, awaits sample.
 data AwaitSampler r y where
-  AwaitSampler :: Primitive r a -> (a -> y) -> AwaitSampler r y
+  AwaitSampler :: d -> (a -> y) -> AwaitSampler r y
 deriving instance Functor (AwaitSampler r)
 
 -- | Pause probabilistic program whenever a primitive distribution is
@@ -50,8 +49,10 @@ type instance CustomReal (Coprimitive m) = CustomReal m
 instance MonadTrans Coprimitive where
   lift = Coprimitive . lift
 
-instance (MonadDist m) => MonadDist (Coprimitive m) where
-  primitive d = Coprimitive (suspend (AwaitSampler d return))
+instance (Sampleable d m, Monad m) => Sampleable d (Coprimitive m) where
+  sample d = Coprimitive (suspend (AwaitSampler d return))
+
+instance (MonadDist m) => MonadDist (Coprimitive m)
 
 instance (MonadBayes m) => MonadBayes (Coprimitive m) where
   factor = lift . factor

@@ -8,6 +8,7 @@ module Dice where
 import Control.Monad (liftM2)
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | A toss of a six-sided die.
 die :: MonadDist d => d Int

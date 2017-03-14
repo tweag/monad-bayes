@@ -3,6 +3,7 @@ module Sprinkler where
 import Control.Monad (when)
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 hard :: MonadBayes m => m Bool
 hard = do

@@ -25,6 +25,7 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Either
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly useful
@@ -66,10 +67,14 @@ hoist :: (Monad m, Monad n) =>
             (forall x. m x -> n x) -> Sequential m a -> Sequential n a
 hoist f = Sequential . mapMonad f . runSequential
 
-type instance CustomReal (Sequential m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Sequential m) where
+  type CustomReal (Sequential m) = CustomReal m
 
-instance MonadDist m => MonadDist (Sequential m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Sequential m) where
+  sample = lift . sample
 
-instance MonadBayes m => MonadBayes (Sequential m) where
+instance (Conditionable m, Monad m) => Conditionable (Sequential m) where
   factor w = lift (factor w) >> suspend
+
+instance MonadDist m => MonadDist (Sequential m)
+instance MonadBayes m => MonadBayes (Sequential m)

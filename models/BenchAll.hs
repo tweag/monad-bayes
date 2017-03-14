@@ -16,6 +16,7 @@ import Plotting
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Enumerator
@@ -83,8 +84,8 @@ hmmBenchmark = do
 
   isSamples <- fmap (drop 5000) $ importance 10000 HMM.hmm
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
-  mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
-  let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
+  -- mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
+  -- let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
   mhPriorSamples <- fmap (drop 5000) $ mhPrior 10000 HMM.hmm
   let mhPriorRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhPriorSamples) ns
   pimhSamples <- pimh (length HMM.values) 100 1000 HMM.hmm
@@ -93,7 +94,7 @@ hmmBenchmark = do
     layout_title .= "HMM"
     anytimePlot "#samples" "KL" ns [
       ("IS", isRes),
-      ("MHtrace", mhRes),
+      -- ("MHtrace", mhRes),
       ("MHprior", mhPriorRes),
       ("PIMH", pimhRes)]
 

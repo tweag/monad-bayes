@@ -5,6 +5,7 @@ import Data.AEq
 import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
 import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Sprinkler
 
 enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]

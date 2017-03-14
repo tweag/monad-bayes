@@ -13,6 +13,9 @@ Portability : GHC
 -- Essentially a polymorphic version of LogFloat to allow for AD
 module Control.Monad.Bayes.LogDomain where
 
+import Prelude hiding (sum)
+import qualified Data.Foldable as Fold
+import qualified Data.Traversable as Traverse
 import qualified Numeric.SpecFunctions as Spec
 import Data.Reflection
 import Numeric.AD.Mode.Reverse
@@ -129,13 +132,44 @@ class Floating a => NumSpec a where
   logBeta :: a -> a -> a
   logBeta a b = log $ beta a b
 
+  -- | Efficient sum.
+  sum :: Foldable f => f a -> a
+  sum = Fold.sum
+
+  -- | Divides all elements by their sum.
+  -- Throws an error if the sum of all elements is zero or undefined.
+  -- May return NaN's if the sum is infinite.
+  normalize :: Traversable f => f a -> f a
+  normalize t = Traverse.fmapDefault (/ z) t where
+    z = sum t
+    -- specific instances may provide extra checks to avoid division by 0 etc.
+    -- we can't do that here without restricting the type of a
+
 instance NumSpec Double where
   logGamma  = Spec.logGamma
   logBeta   = Spec.logBeta
 
+  -- just like default, but with extra checks
+  normalize t = Traverse.fmapDefault (/ z) t where
+    z = let z' = sum t in
+          if isInfinite z' then error "Normalize: infinite sum" else
+            if z' > 0 then z' else error "Normalize: bad weights"
+
 instance (Ord a, NumSpec a) => NumSpec (LogDomain a) where
   gamma     = liftLog (logGamma . exp)
   beta a b  = liftLog2 (\x y -> logBeta (exp x) (exp y)) a b
+
+  -- sum is made more efficient by only converting all elements to linear domain once,
+  -- then summing them in linear domain and taking a logarithm of the result
+  -- to prevent overflow all numbers are first divided by their maximum,
+  -- and the final result is mulitplied by it
+  sum t = z * toLogDomain (Fold.foldl' (\x y -> x + fromLogDomain (y / z)) 0 t) where
+    z = Fold.maximum t
+
+  -- just like default, but with extra checks
+  normalize t = Traverse.fmapDefault (/ z) t where
+    z = let z' = sum t in
+          if z' > 0 then z' else error "Normalize: bad weights"
 
 -------------------------------------------------
 -- Automatic Differentiation instances
