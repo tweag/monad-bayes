@@ -47,8 +47,8 @@ import Control.Monad.Bayes.Prior
 -- The accept/reject decision is made for the whole program rather than
 -- individual variables.
 -- The program must not contain factors larger than 1.
-rejection :: MonadDist m => Int -- ^ number of samples accepted
-                         -> Rejection m a -> m [a]
+rejection :: Monad m => Int -- ^ number of samples accepted
+                     -> Rejection m a -> m [a]
 rejection n d = sequence $ replicate n $ sample where
   sample = do
     m <- runRejection d
