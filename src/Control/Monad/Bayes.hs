@@ -21,23 +21,22 @@ variants.
  #-}
 
 module Control.Monad.Bayes (
-  module Control.Monad.Bayes.Primitive,
   module Control.Monad.Bayes.Class,
   Model,
   enumerate,
   rejection,
   importance,
   smc,
-  smcrm,
-  traceMH,
+  -- smcrm,
+  -- traceMH,
   pimh
 ) where
 
 import Control.Arrow
 
 import Control.Monad.Bayes.LogDomain
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import qualified Control.Monad.Bayes.Enumerator as Dist
@@ -84,21 +83,21 @@ smc :: Int -- ^ number of resampling points
     -> Model a -> IO [(a,Double)]
 smc k n d = sampleIO $ processPopulation $ Infer.smc k n d
 
--- | Resample-move Sequential Monte Carlo using 'traceMH' for rejuvenation.
--- Exactly like 'smc', but additionally after each resampling the population
--- is rejuvanated using a number of MH transitions applied to each point
--- in the sample independently.
-smcrm :: Int -- ^ number of resampling points
-      -> Int -- ^ number of MH transitions used at each resampling point
-      -> Int -- ^ population size
-      -> Model a -> IO [(a,Double)]
-smcrm k s n d = sampleIO $ processPopulation $ Infer.smcrm k s n d
-
--- | Trace MH proposing modification to a single variable from the prior.
--- The first trace is produced from the prior and is not included in the output.
-traceMH :: Int -- ^ number of samples produced
-        -> Model a -> IO [a]
-traceMH n d = sampleIO $ Infer.traceMH n d
+-- -- | Resample-move Sequential Monte Carlo using 'traceMH' for rejuvenation.
+-- -- Exactly like 'smc', but additionally after each resampling the population
+-- -- is rejuvanated using a number of MH transitions applied to each point
+-- -- in the sample independently.
+-- smcrm :: Int -- ^ number of resampling points
+--       -> Int -- ^ number of MH transitions used at each resampling point
+--       -> Int -- ^ population size
+--       -> Model a -> IO [(a,Double)]
+-- smcrm k s n d = sampleIO $ processPopulation $ Infer.smcrm k s n d
+--
+-- -- | Trace MH proposing modification to a single variable from the prior.
+-- -- The first trace is produced from the prior and is not included in the output.
+-- traceMH :: Int -- ^ number of samples produced
+--         -> Model a -> IO [a]
+-- traceMH n d = sampleIO $ Infer.traceMH n d
 
 -- | Particle Indepdendent Metropolis-Hastings based on 'smc'.
 -- One sample is output per each SMC run.

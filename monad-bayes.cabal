@@ -16,7 +16,6 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Control.Monad.Bayes.LogDomain,
-                       Control.Monad.Bayes.Primitive,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,
@@ -27,10 +26,11 @@ library
                        Control.Monad.Bayes.Population,
                        Control.Monad.Bayes.Sequential,
                        Control.Monad.Bayes.Inference,
-                       Control.Monad.Bayes.Coprimitive,
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
-                       Control.Monad.Bayes.Augmented
+                       Control.Monad.Bayes.Augmented,
+                       Control.Monad.Bayes.Distribution,
+                       Control.Monad.Bayes.Simple,
                        Control.Monad.Bayes
   build-depends:       base >= 4.7 && < 5
                      , containers
@@ -52,6 +52,7 @@ library
                      , FlexibleContexts
                      , FlexibleInstances
                      , TupleSections
+                     , MultiParamTypeClasses
   other-extensions:    GADTs
                      , ScopedTypeVariables
                      , DeriveFunctor

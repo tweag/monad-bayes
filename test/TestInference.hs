@@ -9,6 +9,7 @@ import Data.AEq
 import Control.Monad.Trans.Identity
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
@@ -29,14 +30,14 @@ check_terminate_smc = sampleIOfixed (smc' 2 5 sprinkler)
 check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
                       enumerate sprinkler
 
-check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
-                      enumerate sprinkler
-
-check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
-                      enumerate sprinkler
-
-check_preserve_smcrm = (enumerate . collapse . smcrm 1 2 1) sprinkler ~==
-                        enumerate sprinkler
+-- check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
+--                       enumerate sprinkler
+--
+-- check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+--                       enumerate sprinkler
+--
+-- check_preserve_smcrm = (enumerate . collapse . smcrm 1 2 1) sprinkler ~==
+--                         enumerate sprinkler
 
 sprinkler_posterior :: MonadBayes m => Weighted m Bool
 sprinkler_posterior = duplicateWeight sprinkler
@@ -54,14 +55,14 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_pimh_trans = enumerate (fmap (!! 2) (pimh 2 2 2 sprinkler_posterior)) ~==
 --                    enumerate sprinkler
 
-check_trace_mh m m' = enumerate (dropTrace (mhStep (mhStep m))) ~==
-                      enumerate m'
-
-trace_mh_length n = fmap length (sampleIOfixed (traceMH n sprinkler))
-
-check_trace_trans = check_trace_mh sprinkler sprinkler
-
-check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
+-- check_trace_mh m m' = enumerate (dropTrace (mhStep (mhStep m))) ~==
+--                       enumerate m'
+--
+-- trace_mh_length n = fmap length (sampleIOfixed (traceMH n sprinkler))
+--
+-- check_trace_trans = check_trace_mh sprinkler sprinkler
+--
+-- check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> IO Int

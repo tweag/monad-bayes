@@ -7,6 +7,7 @@ module BetaBin where
 import Control.Monad.State.Lazy (get,put,evalStateT)
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | Beta-binomial model as an i.i.d. sequence conditionally on weight.
 latent :: MonadDist m => Int -> m [Bool]

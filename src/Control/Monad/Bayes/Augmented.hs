@@ -20,29 +20,38 @@ module Control.Monad.Bayes.Augmented (
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Trace hiding (hoist)
+import Control.Monad.Bayes.Distribution
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Simple
 
 -- | A transformer that includes all the latent random variables in the output.
 newtype Augmented m a = Augmented (WriterT (Trace (CustomReal m)) m a)
   deriving(Functor, Applicative, Monad, MonadIO)
 
-type instance CustomReal (Augmented m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Augmented m) where
+  type CustomReal (Augmented m) = CustomReal m
 
 instance MonadTrans Augmented where
   lift = Augmented . lift
 
-instance MonadDist m => MonadDist (Augmented m) where
-  primitive d = Augmented $ do
-    x <- primitive d
-    tell $ fromLists $ case d of
-      Discrete   _ -> (mempty, [x])
-      Continuous _ -> ([x], mempty)
+instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, Monad m) => Sampleable (Discrete r Int) (Augmented m) where
+  sample d = Augmented $ do
+    x <- sample d
+    tell $ fromLists (mempty, [x])
     return x
 
-instance MonadBayes m => MonadBayes (Augmented m) where
+instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Monad m) => Sampleable d (Augmented m) where
+  sample d = Augmented $ do
+    x <- sample d
+    tell $ fromLists ([x], mempty)
+    return x
+
+instance (Conditionable m, Monad m) => Conditionable (Augmented m) where
   factor = lift . factor
+
+instance MonadDist m => MonadDist (Augmented m)
+instance MonadBayes m => MonadBayes (Augmented m)
 
 -- | Applies a transformation to the inner monad.
 hoist :: CustomReal m ~ CustomReal n => (forall x. m x -> n x) -> Augmented m a -> Augmented n a
