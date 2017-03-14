@@ -19,10 +19,13 @@ import System.Random.MWC (GenIO, create, createSystemRandom, uniformR)
 import qualified System.Random.MWC.Distributions as MWC
 import Control.Monad.Trans (lift, MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
+import Numeric.LinearAlgebra ((<#), size)
+import Data.Vector.Generic (replicateM)
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
+import Control.Monad.Bayes.Distribution.MVNormal
 import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
@@ -60,6 +63,11 @@ instance Sampleable (Uniform Double) SamplerIO where
 
 instance Sampleable (Discrete Double Int) SamplerIO where
   sample (Discrete ps) = fromMWC $ MWC.categorical $ normalize ps
+
+instance Sampleable MVNormal SamplerIO where
+  sample (MVNormal m u) = do
+    z <- replicateM (size m) $ fromMWC MWC.standard
+    return $ m + (z <# u)
 
 instance MonadDist SamplerIO where
   exponential rate = fromMWC $ MWC.exponential (recip rate)
