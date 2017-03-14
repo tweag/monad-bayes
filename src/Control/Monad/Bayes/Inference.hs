@@ -36,6 +36,8 @@ module Control.Monad.Bayes.Inference (
   randomWalkKernel
 ) where
 
+import Prelude hiding (sum)
+
 import Control.Arrow (second)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
@@ -51,7 +53,6 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Conditional
-import Control.Monad.Bayes.Primitive
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -221,7 +222,7 @@ mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhStep) 
 
 gaussianKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m Double
 gaussianKernel sigma =
-  Kernel (\x -> normal x sigma) (\x y -> pdf (Continuous (Normal x sigma)) y)
+  Kernel (\x -> normal x sigma) (\x y -> pdf (normalDist x sigma) y)
 
 singleSiteKernel :: (MonadDist m, Eq a) => Kernel m a -> Kernel m [a]
 singleSiteKernel k = Kernel prop den where
