@@ -135,12 +135,13 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
       normalize xs = map (/ (Prelude.sum xs)) xs
 
 
+-- | Monads for building probabilistic programs with conditioning.
 class (MonadDist m, Conditionable m) => MonadBayes m
 
 
 
 -------------------------------------------------
--- Instances
+-- Instances for standard transformers.
 
 instance MonadDist m => MonadDist (IdentityT m)
 instance MonadBayes m => MonadBayes (IdentityT m)

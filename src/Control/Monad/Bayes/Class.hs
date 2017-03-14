@@ -41,25 +41,32 @@ import Control.Monad.Trans.Cont
 
 import qualified Control.Monad.Bayes.LogDomain as Log
 
+-------------------------------------------------
+-- Type classes and families for distributions
 
+-- | The type corresponding to a set on which the distribution is defined.
 type family DomainType d
+-- | The custom real number type used by a distribution.
 type family RealNumType d
 
+-- | Probability distributions for which we can compute density.
 class Density d where
+  -- | Probability density function.
+  -- For distributions over real numbers this is density w.r.t. the Lebesgue measure,
+  -- for distributions over integers this is density w.r.t. the counting measure, aka the probability mass function.
   pdf :: d -> DomainType d -> Log.LogDomain (RealNumType d)
 
+-- | Type class asserting that a particular distibution can be sampled in probabilistic programs of a given type.
 class Sampleable d m where
   sample :: d -> m (DomainType d)
 
--- | The type used to represent real numbers in a given monad.
+-- | The type used to represent real numbers in a given probabilistic program.
 -- In most cases this is just `Double`, but
 -- it is abstracted mostly to support Automatic Differentiation.
---type family CustomReal (m :: * -> *) :: *
-
 class (Floating (CustomReal m), Ord (CustomReal m)) => HasCustomReal m where
   type CustomReal (m :: * -> *)
 
--- | Probability monads that allow conditioning.
+-- | Probabilistic program types that allow conditioning.
 -- Both soft and hard conditions are allowed.
 class HasCustomReal m => Conditionable m where
 
@@ -82,6 +89,7 @@ class HasCustomReal m => Conditionable m where
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
+
 instance HasCustomReal m => HasCustomReal (IdentityT m) where
   type CustomReal (IdentityT m) = CustomReal m
 

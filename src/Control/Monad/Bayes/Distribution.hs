@@ -40,9 +40,10 @@ import qualified Data.Foldable as Fold
 import Control.Monad.Bayes.LogDomain hiding (beta, gamma)
 import Control.Monad.Bayes.Class
 
-
+-- | Normal distribution.
 data Normal r = Normal {mean :: r, stddev :: r}
 
+-- | Create a normal distribution checking its parameters.
 normalDist :: (Ord r, Floating r) => r -> r -> Normal r
 normalDist mu sigma
   | sigma <= 0 = error "Normal was given non-positive standard deviation"
@@ -66,13 +67,15 @@ instance (Ord r, Floating r) => Density (Normal r) where
 instance Sampleable (Normal r) Normal where
   sample = id
 
-normal :: (Ord r, Floating r, Sampleable (Normal r) m) => r -> r -> m r
+-- | Sample a normal distribution in a probabilistic program.
+normal :: (Sampleable (Normal r) m, HasCustomReal m, CustomReal m ~ r) => r -> r -> m r
 normal m s = sample (normalDist m s)
 
 
-
+-- | Gamma distribution.
 data Gamma r = Gamma {shape :: r, rate :: r}
 
+-- | Construct a gamma distribution checking its parameters.
 gammaDist :: (Ord r, Floating r) => r -> r -> Gamma r
 gammaDist a b =
   if a > 0 && b > 0
@@ -94,13 +97,15 @@ instance (Ord r, NumSpec r) => Density (Gamma r) where
 instance Sampleable (Gamma r) Gamma where
   sample = id
 
-gamma :: (Ord r, NumSpec r, Sampleable (Gamma r) m) => r -> r -> m r
+-- | Sample from a gamma distribution in a probabilistic program.
+gamma :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Gamma r) m) => r -> r -> m r
 gamma a b = sample (gammaDist a b)
 
 
-
+-- | Beta distribution.
 data Beta r = Beta r r
 
+-- | Construct a beta distribution checking its parameters.
 betaDist :: (Ord r, Floating r) => r -> r -> Beta r
 betaDist a b =
   if a > 0 && b > 0
@@ -124,13 +129,15 @@ instance (Ord r, NumSpec r) => Density (Beta r) where
 instance Sampleable (Beta r) Beta where
   sample = id
 
-beta :: (Ord r, Floating r, Sampleable (Beta r) m, r ~ CustomReal m) => r -> r -> m r
+-- | Sample from a beta distribution in a probabilistic program.
+beta :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Beta r) m) => r -> r -> m r
 beta a b = sample (betaDist a b)
 
 
-
+-- | Uniform continuous distribution.
 data Uniform r = Uniform r r
 
+-- | Construct a uniform distribution checking its parameters.
 uniformDist :: (Ord r) => r -> r -> Uniform r
 uniformDist a b =
   if a < b
@@ -154,16 +161,19 @@ instance (Ord r, NumSpec r) => Density (Uniform r) where
 instance Sampleable (Uniform r) Uniform where
   sample = id
 
-uniform :: (Ord r, Sampleable (Uniform r) m) => r -> r -> m r
+-- | Sample from a uniform distribution in a probabilistic program.
+uniform :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Uniform r) m) => r -> r -> m r
 uniform a b = sample (uniformDist a b)
 
 
-
+-- | Discrete distribution on [0..n-1]
 data Discrete r k = Discrete {weights :: V.Vector r}
 
+-- | Construct a discrete distribution normalizing the weights.
 discreteDist :: (Foldable f, NumSpec r) => f r -> Discrete r k
 discreteDist ws = Discrete $ normalize $ V.fromList $ Fold.toList ws
 
+-- | Probability mass function for a discrete distribution.
 discretePdf :: (Ord r, Floating r, Integral k) => V.Vector r -> k -> LogDomain r
 discretePdf ws k = let i = fromIntegral k in
   if i >= 0 && i < length ws
@@ -179,5 +189,6 @@ instance (Ord r, Floating r, Integral k) => Density (Discrete r k) where
 instance Sampleable (Discrete r k) (Discrete r) where
   sample = id
 
-discrete :: (Sampleable (Discrete r k) m, Foldable f, NumSpec r, r ~ CustomReal m) => f r -> m k
+-- | Sample from a discrete distribution in a probabilistic program.
+discrete :: (Sampleable (Discrete r k) m, Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r) => f r -> m k
 discrete ws = sample (discreteDist ws)
