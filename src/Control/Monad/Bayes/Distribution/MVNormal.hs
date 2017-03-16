@@ -43,6 +43,8 @@ mvnormalDist m variance = seq check d where
 
 -- | PDF of a multivariate normal distribution with a given mean vector
 -- and an upper triangular matrix from Cholesky decomposition of the covariance matrix.
+-- Note that it does not perform any checks on the arguments, so supplying invalid arguments
+-- may result in incomprehensible hmatrix errors.
 mvnormalPdf :: Vector R -> Matrix R -> Vector R -> LogDomain R
 mvnormalPdf m u x =
   fromLog $ (- 0.5) * (v <.> v) + c where
@@ -57,7 +59,8 @@ type instance DomainType MVNormal = Vector R
 type instance RealNumType MVNormal = R
 
 instance Density MVNormal where
-  pdf (MVNormal m u) = mvnormalPdf m u
+  pdf (MVNormal m u) x = if size m == size x then mvnormalPdf m u x
+    else error $ "MVNormal PDF: expected x of lenght " ++ show (size m) ++ "but received x of length " ++ show (size x)
 
 -- | Sample a normal distribution in a probabilistic program.
 mvnormal :: (Sampleable MVNormal m, HasCustomReal m, CustomReal m ~ R)
