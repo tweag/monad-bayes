@@ -30,6 +30,7 @@ module Control.Monad.Bayes.Inference (
   proposal,
   density,
   mhCustom,
+  mhCustomStep,
   gaussianKernel,
   customDiscreteKernel,
   singleSiteTraceKernel,
@@ -204,21 +205,22 @@ data Kernel m a =
   Kernel {proposal :: a -> m a, density :: a -> a -> LogDomain (CustomReal m)}
 
 mhCustom :: MonadDist m => Int -> Conditional (Weighted m) a -> Kernel m (Trace (CustomReal m)) -> Trace (CustomReal m) -> m [a]
-mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhStep) starting where
-  --mhStep :: StateT (Trace (CustomReal m)) m (Trace (CustomReal m))
-  mhStep = do
-    t <- get
-    t' <- lift $ proposal kernel t
-    p <- lift $ unsafeDensity model t
-    let q = density kernel t t'
-    p' <- lift $ unsafeDensity model t'
-    let q' = density kernel t' t
-    let ratio = min 1 (p' * q' / (p * q))
-    accept <- bernoulli (fromLogDomain ratio)
-    let tnew = if accept then t' else t
-    put tnew
-    (output,_) <- lift $ runWeighted $ unsafeConditional model tnew
-    return output
+mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhCustomStep model kernel) starting where
+
+mhCustomStep :: MonadDist m => Conditional (Weighted m) a -> Kernel m (Trace (CustomReal m)) -> StateT (Trace (CustomReal m)) m a
+mhCustomStep model kernel = do
+  t <- get
+  t' <- lift $ proposal kernel t
+  p <- lift $ unsafeDensity model t
+  let q = density kernel t t'
+  p' <- lift $ unsafeDensity model t'
+  let q' = density kernel t' t
+  let ratio = min 1 (p' * q' / (p * q))
+  accept <- bernoulli (fromLogDomain ratio)
+  let tnew = if accept then t' else t
+  put tnew
+  (output,_) <- lift $ runWeighted $ unsafeConditional model tnew
+  return output
 
 gaussianKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m Double
 gaussianKernel sigma =
