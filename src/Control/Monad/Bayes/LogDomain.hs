@@ -163,8 +163,8 @@ instance (Ord a, NumSpec a) => NumSpec (LogDomain a) where
   -- then summing them in linear domain and taking a logarithm of the result
   -- to prevent overflow all numbers are first divided by their maximum,
   -- and the final result is mulitplied by it
-  sum t = z * toLogDomain (Fold.foldl' (\x y -> x + fromLogDomain (y / z)) 0 t) where
-    z = Fold.maximum t
+  sum t = let z = Fold.maximum t in
+    if z == 0 then 0 else  z * toLogDomain (Fold.foldl' (\x y -> x + fromLogDomain (y / z)) 0 t)
 
   -- just like default, but with extra checks
   normalize t = Traverse.fmapDefault (/ z) t where

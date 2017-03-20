@@ -30,11 +30,13 @@ import Data.Reflection
 import Numeric.AD
 import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse
+import qualified Numeric.LinearAlgebra as LA
 
 import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
+import Control.Monad.Bayes.Distribution.MVNormal
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Simple
@@ -69,6 +71,20 @@ instance {-# OVERLAPPING #-} (RealNumType d ~ CustomReal m, DomainType d ~ Custo
         put (xs', cs)
         return x
       _ -> fail ""
+
+instance {-# OVERLAPPING #-} (CustomReal m ~ Double, Conditionable m, Monad m) => Sampleable MVNormal (Conditional m) where
+  sample d@(MVNormal m _) = Conditional $ do
+    (xs, cs) <- get
+    let k = LA.size m
+    let (taken, remaining) = splitAt k xs
+    if length taken == k then
+      do
+        let v = LA.fromList taken
+        factor (pdf d v)
+        put (remaining, cs)
+        return v
+    else
+      fail ""
 
 instance (Conditionable m, Monad m) => Conditionable (Conditional m) where
   factor = lift . factor

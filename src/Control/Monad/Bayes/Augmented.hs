@@ -19,6 +19,7 @@ module Control.Monad.Bayes.Augmented (
 
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
+import qualified Numeric.LinearAlgebra as LA
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
@@ -45,6 +46,12 @@ instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, Doma
   sample d = Augmented $ do
     x <- sample d
     tell $ fromLists ([x], mempty)
+    return x
+
+instance {-# OVERLAPPING #-} (Sampleable MVNormal m, CustomReal m ~ Double, Monad m) => Sampleable MVNormal (Augmented m) where
+  sample d = Augmented $ do
+    x <- sample d
+    tell $ fromLists (LA.toList x, mempty)
     return x
 
 instance (Conditionable m, Monad m) => Conditionable (Augmented m) where

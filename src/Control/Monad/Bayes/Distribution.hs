@@ -10,12 +10,12 @@ Portability : GHC
 -}
 
 {-# LANGUAGE
-  TypeFamilies,
   MultiParamTypeClasses
  #-}
 
 
 module Control.Monad.Bayes.Distribution (
+  module Control.Monad.Bayes.Distribution.MVNormal,
   Normal(Normal),
   normalDist,
   normal,
@@ -39,6 +39,8 @@ import qualified Data.Foldable as Fold
 
 import Control.Monad.Bayes.LogDomain hiding (beta, gamma)
 import Control.Monad.Bayes.Class
+
+import Control.Monad.Bayes.Distribution.MVNormal (MVNormal, mvnormalDist, mvnormal)
 
 -- | Normal distribution.
 data Normal r = Normal {mean :: r, stddev :: r}
