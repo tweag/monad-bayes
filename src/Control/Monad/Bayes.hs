@@ -34,7 +34,7 @@ module Control.Monad.Bayes (
 
 import Control.Arrow
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Population

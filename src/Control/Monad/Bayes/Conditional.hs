@@ -32,7 +32,7 @@ import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse
 import qualified Numeric.LinearAlgebra as LA
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution

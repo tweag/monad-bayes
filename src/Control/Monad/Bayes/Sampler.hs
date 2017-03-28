@@ -22,7 +22,7 @@ import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 import Numeric.LinearAlgebra ((<#), size)
 import Data.Vector.Generic (replicateM)
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Distribution.MVNormal

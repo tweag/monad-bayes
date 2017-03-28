@@ -37,7 +37,7 @@ module Control.Monad.Bayes.Distribution (
 import qualified Data.Vector as V
 import qualified Data.Foldable as Fold
 
-import Control.Monad.Bayes.LogDomain hiding (beta, gamma)
+import Numeric.LogDomain hiding (beta, gamma)
 import Control.Monad.Bayes.Class
 
 import Control.Monad.Bayes.Distribution.MVNormal (MVNormal, mvnormalDist, mvnormal)

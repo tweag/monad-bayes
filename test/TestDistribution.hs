@@ -6,7 +6,7 @@ import Test.QuickCheck
 import Numeric.LinearAlgebra
 import Data.AEq
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
 

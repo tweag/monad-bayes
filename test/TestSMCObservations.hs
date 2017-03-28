@@ -5,7 +5,7 @@ module TestSMCObservations where
 
 import Data.List
 
-import Control.Monad.Bayes.LogDomain (LogDomain)
+import Numeric.LogDomain (LogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference

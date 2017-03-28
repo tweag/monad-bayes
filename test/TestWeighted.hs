@@ -9,7 +9,7 @@ import Data.AEq
 import Control.Monad.State
 import Data.List
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Sampler

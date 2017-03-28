@@ -29,7 +29,7 @@ import Data.Monoid
 import Control.Monad.Trans
 import Control.Monad.Trans.State
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 

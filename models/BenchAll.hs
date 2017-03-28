@@ -14,7 +14,7 @@ import qualified Gamma
 import qualified HMM
 import Plotting
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted

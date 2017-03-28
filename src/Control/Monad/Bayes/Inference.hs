@@ -32,7 +32,7 @@ import Control.Arrow (second)
 import Control.Monad.State.Lazy
 import Control.Monad.Writer.Lazy
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection

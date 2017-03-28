@@ -17,7 +17,7 @@ module Control.Monad.Bayes.Deterministic(
 
 import Data.Maybe (fromMaybe)
 
-import Control.Monad.Bayes.LogDomain (NumSpec)
+import Numeric.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 

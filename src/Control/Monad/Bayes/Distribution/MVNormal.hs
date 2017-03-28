@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Distribution.MVNormal (
 
 import Numeric.LinearAlgebra
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 
 -- | Multivariate normal distribution.

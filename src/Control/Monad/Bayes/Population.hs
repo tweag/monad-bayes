@@ -32,7 +32,7 @@ import Control.Arrow (second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain)
+import Numeric.LogDomain (LogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted hiding (hoist)

@@ -30,7 +30,7 @@ import Control.Monad.Trans
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Simple

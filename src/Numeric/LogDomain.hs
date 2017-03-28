@@ -1,5 +1,5 @@
 {-|
-Module      : Control.Monad.Bayes.LogDomain
+Module      : Numeric.LogDomain
 Description : Numeric types representing numbers using their logarithms
 Copyright   : (c) Adam Scibior, 2016
 License     : MIT
@@ -11,7 +11,23 @@ Portability : GHC
 
 -- Log-domain non-negative real numbers
 -- Essentially a polymorphic version of LogFloat to allow for AD
-module Control.Monad.Bayes.LogDomain where
+module Numeric.LogDomain (
+  LogDomain,
+  toLogDomain,
+  fromLogDomain,
+  mapLog,
+  toLog,
+  fromLog,
+  liftLog,
+  liftLog2,
+  NumSpec,
+  gamma,
+  beta,
+  logGamma,
+  logBeta,
+  sum,
+  normalize
+) where
 
 import Prelude hiding (sum)
 import qualified Data.Foldable as Fold

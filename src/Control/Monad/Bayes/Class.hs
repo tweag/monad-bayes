@@ -39,7 +39,7 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
-import qualified Control.Monad.Bayes.LogDomain as Log
+import qualified Numeric.LogDomain as Log
 
 -------------------------------------------------
 -- Type classes and families for distributions
