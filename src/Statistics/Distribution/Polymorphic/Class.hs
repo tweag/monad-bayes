@@ -1,5 +1,5 @@
 {-|
-Module      : Statistics.Distribution.Polymorphic.Types
+Module      : Statistics.Distribution.Polymorphic.Class
 Description : Type classes and type families for probability distributions
 Copyright   : (c) Adam Scibior, 2017
 License     : MIT
@@ -21,9 +21,7 @@ module Statistics.Distribution.Polymorphic.Class (
   Domain,
   RealNum,
   Density,
-  pdf,
-  Sampleable,
-  sample
+  pdf
 ) where
 
 import Numeric.LogDomain
@@ -45,7 +43,3 @@ class Distribution d => Density d where
   -- For distributions over real numbers this is density w.r.t. the Lebesgue measure,
   -- for distributions over integers this is density w.r.t. the counting measure, aka the probability mass function.
   pdf :: d -> Domain d -> LogDomain (RealNum d)
-
--- | Type class asserting that a particular distibution can be sampled in structures of given type.
-class Sampleable d m where
-  sample :: d -> m (Domain d)

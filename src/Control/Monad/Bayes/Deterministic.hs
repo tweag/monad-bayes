@@ -34,7 +34,7 @@ newtype Deterministic r a = Deterministic (Maybe a)
 instance (Floating r, Ord r) => HasCustomReal (Deterministic r) where
   type CustomReal (Deterministic r) = r
 
-instance Sampleable d (Deterministic r) where
+instance Distribution d => Sampleable d (Deterministic r) where
   sample _ = Deterministic Nothing
 
 instance (Floating r, Ord r) => Conditionable (Deterministic r) where

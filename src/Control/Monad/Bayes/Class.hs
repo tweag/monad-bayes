@@ -48,6 +48,10 @@ import Statistics.Distribution.Polymorphic.Class
 class (Floating (CustomReal m), Ord (CustomReal m)) => HasCustomReal m where
   type CustomReal (m :: * -> *)
 
+-- | Type class asserting that a particular distibution can be sampled in structures of given type.
+class Distribution d => Sampleable d m where
+  sample :: d -> m (Domain d)
+
 -- | Probabilistic program types that allow conditioning.
 -- Both soft and hard conditions are allowed.
 class HasCustomReal m => Conditionable m where
