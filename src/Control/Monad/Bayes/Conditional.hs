@@ -72,9 +72,9 @@ instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m,
       _ -> fail ""
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ Double, Conditionable m, Monad m) => Sampleable MVNormal (Conditional m) where
-  sample d@(MVNormal m _) = Conditional $ do
+  sample d = Conditional $ do
     (xs, cs) <- get
-    let k = LA.size m
+    let k = dim d
     let (taken, remaining) = splitAt k xs
     if length taken == k then
       do

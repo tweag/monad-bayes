@@ -10,9 +10,10 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.Gamma (
-  Gamma(Gamma),
+  Gamma,
   shape,
   rate,
+  scale,
   gammaDist
 ) where
 
@@ -20,7 +21,19 @@ import Numeric.LogDomain hiding (beta, gamma)
 import Statistics.Distribution.Polymorphic.Class
 
 -- | Gamma distribution.
-data Gamma r = Gamma {shape :: r, rate :: r}
+data Gamma r = Gamma r r
+
+-- | Shape.
+shape :: Gamma r -> r
+shape (Gamma s _) = s
+
+-- | Rate.
+rate :: Gamma r -> r
+rate (Gamma _ r) = r
+
+-- | Scale.
+scale :: Fractional r => Gamma r -> r
+scale d = recip (rate d)
 
 -- | Construct a gamma distribution checking its parameters.
 gammaDist :: (Ord r, Floating r) => r -> r -> Gamma r

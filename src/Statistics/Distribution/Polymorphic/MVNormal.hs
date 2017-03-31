@@ -10,9 +10,12 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.MVNormal (
-  MVNormal(MVNormal),
+  MVNormal,
+  dim,
   mean,
   chol_upper,
+  covariance,
+  precision,
   mvnormalDist,
   mvnormalPdf
 ) where
@@ -25,7 +28,29 @@ import Statistics.Distribution.Polymorphic.Class
 -- | Multivariate normal distribution.
 -- Uses vector and matrix types provided by hmatrix.
 -- Currently does not work with AutoDiff, since hmatrix does not.
-data MVNormal = MVNormal {mean :: Vector R, chol_upper :: Matrix R}
+data MVNormal = MVNormal (Vector R) (Matrix R)
+
+-- | Number of dimensions.
+dim :: MVNormal -> Int
+dim d = size (mean d)
+
+-- | Mean vector.
+mean :: MVNormal -> Vector R
+mean (MVNormal m _) = m
+
+-- | Covariance matrix.
+covariance :: MVNormal -> Herm R
+covariance d = mTm (chol_upper d)
+
+-- | Precision matrix.
+precision :: MVNormal -> Herm R
+precision d =
+  let u_inv = inv (chol_upper d) in
+    mTm (tr u_inv)
+
+-- | Upper diagonal Cholesky factor for the covariance matrix.
+chol_upper :: MVNormal -> Matrix R
+chol_upper (MVNormal _ u) = u
 
 -- | Create a normal distribution checking parameters and computing the Cholesky.
 mvnormalDist :: Vector R -> Herm R -> MVNormal
@@ -60,7 +85,7 @@ instance Distribution MVNormal where
 
 instance Parametric MVNormal where
   type Param MVNormal = (Vector R, Herm R)
-  param d = (mean d, mTm (chol_upper d))
+  param d = (mean d, covariance d)
   distFromParam = uncurry mvnormalDist
 
 instance Density MVNormal where

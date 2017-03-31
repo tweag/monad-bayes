@@ -10,7 +10,9 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.Beta (
-  Beta(Beta),
+  Beta,
+  alpha,
+  beta,
   betaDist
 ) where
 
@@ -19,6 +21,14 @@ import Statistics.Distribution.Polymorphic.Class
 
 -- | Beta distribution.
 data Beta r = Beta r r
+
+-- | First parameter.
+alpha :: Beta r -> r
+alpha (Beta a _) = a
+
+-- | Second parameter.
+beta :: Beta r -> r
+beta (Beta _ b) = b
 
 -- | Construct a beta distribution checking its parameters.
 betaDist :: (Ord r, Floating r) => r -> r -> Beta r

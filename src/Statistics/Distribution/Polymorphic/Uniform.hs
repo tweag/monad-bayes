@@ -10,7 +10,9 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.Uniform (
-  Uniform(Uniform),
+  Uniform,
+  lower,
+  upper,
   uniformDist
 ) where
 
@@ -19,6 +21,14 @@ import Statistics.Distribution.Polymorphic.Class
 
 -- | Uniform continuous distribution.
 data Uniform r = Uniform r r
+
+-- | Left end of the interval.
+lower :: Uniform r -> r
+lower (Uniform a _) = a
+
+-- | Right end of the interval.
+upper :: Uniform r -> r
+upper (Uniform _ b) = b
 
 -- | Construct a uniform distribution checking its parameters.
 uniformDist :: (Ord r) => r -> r -> Uniform r

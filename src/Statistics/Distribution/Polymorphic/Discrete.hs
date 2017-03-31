@@ -10,7 +10,8 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.Discrete (
-  Discrete(Discrete),
+  Discrete,
+  weights,
   discreteDist
 ) where
 
@@ -21,7 +22,11 @@ import Numeric.LogDomain hiding (beta, gamma)
 import Statistics.Distribution.Polymorphic.Class
 
 -- | Discrete distribution on [0..n-1]
-data Discrete r k = Discrete {weights :: V.Vector r}
+data Discrete r k = Discrete (V.Vector r)
+
+-- | Vector of probabilities for each value.
+weights :: Discrete r k -> V.Vector r
+weights (Discrete w) = w
 
 -- | Construct a discrete distribution normalizing the weights.
 discreteDist :: (Foldable f, NumSpec r) => f r -> Discrete r k

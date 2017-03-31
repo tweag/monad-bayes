@@ -10,9 +10,11 @@ Portability : GHC
 -}
 
 module Statistics.Distribution.Polymorphic.Normal (
-  Normal(Normal),
+  Normal,
   mean,
   stddev,
+  variance,
+  precision,
   normalDist
 ) where
 
@@ -20,7 +22,23 @@ import Numeric.LogDomain hiding (beta, gamma)
 import Statistics.Distribution.Polymorphic.Class
 
 -- | Normal distribution.
-data Normal r = Normal {mean :: r, stddev :: r}
+data Normal r = Normal r r
+
+-- | Mean value.
+mean :: Normal r -> r
+mean (Normal m _) = m
+
+-- | Standard deviation.
+stddev :: Normal r -> r
+stddev (Normal _ s) = s
+
+-- | Variance.
+variance :: Num r => Normal r -> r
+variance d = let s = stddev d in s * s
+
+-- | Precision.
+precision :: Fractional r => Normal r -> r
+precision d = recip (variance d)
 
 -- | Create a normal distribution checking its parameters.
 normalDist :: (Ord r, Floating r) => r -> r -> Normal r

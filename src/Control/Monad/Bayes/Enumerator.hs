@@ -48,7 +48,8 @@ instance HasCustomReal m => HasCustomReal (Enumerator m) where
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ r, MonadDist m) =>
          Sampleable (Discrete r Int) (Enumerator m) where
-  sample (Discrete ps) = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList ps
+  sample d =
+    Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList $ weights d
 
 instance {-# OVERLAPPING #-} (Sampleable d m, Monad m) => Sampleable d (Enumerator m) where
   sample = lift . sample
