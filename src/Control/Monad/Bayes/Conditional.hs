@@ -61,7 +61,7 @@ instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sam
         return c
       _ -> fail ""
 
-instance {-# OVERLAPPING #-} (RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
+instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case xs of

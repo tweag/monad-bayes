@@ -41,8 +41,9 @@ normalPdf mu sigma x
                   where
                     sq y = y ^ (2 :: Int)
 
-type instance DomainType (Normal r) = r
-type instance RealNumType (Normal r) = r
+instance Distribution (Normal r) where
+  type Domain (Normal r) = r
+  type RealNum (Normal r) = r
 
 instance (Ord r, Floating r) => Density (Normal r) where
   pdf (Normal m s) = normalPdf m s

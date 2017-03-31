@@ -39,8 +39,9 @@ gammaPdf a b x
   | x > 0     = fromLog $ a * log b + (a-1) * log x - b * x - logGamma a
   | otherwise = 0
 
-type instance DomainType (Gamma r) = r
-type instance RealNumType (Gamma r) = r
+instance Distribution (Gamma r) where
+  type Domain (Gamma r) = r
+  type RealNum (Gamma r) = r
 
 instance (Ord r, NumSpec r) => Density (Gamma r) where
   pdf (Gamma a b) = gammaPdf a b

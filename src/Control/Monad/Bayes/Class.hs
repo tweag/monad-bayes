@@ -15,8 +15,8 @@ Portability : GHC
 
 
 module Control.Monad.Bayes.Class (
-  DomainType,
-  RealNumType,
+  Domain,
+  RealNum,
   Density,
   pdf,
   Sampleable,
@@ -66,7 +66,7 @@ class HasCustomReal m => Conditionable m where
     -- | Soft conditioning on a noisy value.
     --
     -- > observe d x = factor (pdf d x)
-    observe :: (Density d, RealNumType d ~ CustomReal m) => d -> DomainType d -> m ()
+    observe :: (Density d, RealNum d ~ CustomReal m) => d -> Domain d -> m ()
     observe d x = factor (pdf d x)
 
 ----------------------------------------------------------------------------

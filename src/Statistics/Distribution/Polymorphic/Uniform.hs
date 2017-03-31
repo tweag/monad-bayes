@@ -39,8 +39,9 @@ uniformPdf a b x =
   else
     0
 
-type instance DomainType (Uniform r) = r
-type instance RealNumType (Uniform r) = r
+instance Distribution (Uniform r) where
+  type Domain (Uniform r) = r
+  type RealNum (Uniform r) = r
 
 instance (Ord r, NumSpec r) => Density (Uniform r) where
   pdf (Uniform a b) = uniformPdf a b

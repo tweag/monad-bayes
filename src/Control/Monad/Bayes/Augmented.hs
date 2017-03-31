@@ -41,7 +41,7 @@ instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, Monad m) => Samplea
     tell $ fromLists (mempty, [x])
     return x
 
-instance {-# OVERLAPPING #-} (Sampleable d m, RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Monad m) => Sampleable d (Augmented m) where
+instance {-# OVERLAPPING #-} (Sampleable d m, RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Monad m) => Sampleable d (Augmented m) where
   sample d = Augmented $ do
     x <- sample d
     tell $ fromLists ([x], mempty)

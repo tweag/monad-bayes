@@ -54,8 +54,9 @@ mvnormalPdf m u x =
     detSigma = let t = takeDiag u in t <.> t
     k = fromIntegral $ size m
 
-type instance DomainType MVNormal = Vector R
-type instance RealNumType MVNormal = R
+instance Distribution MVNormal where
+  type Domain MVNormal = Vector R
+  type RealNum MVNormal = R
 
 instance Density MVNormal where
   pdf (MVNormal m u) x = if size m == size x then mvnormalPdf m u x

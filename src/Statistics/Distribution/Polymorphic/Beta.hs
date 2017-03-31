@@ -39,8 +39,9 @@ betaPdf a b x
    | x >= 1 = 0
    | otherwise = fromLog $ (a-1) * log x + (b-1) * log (1-x) - logBeta a b
 
-type instance DomainType (Beta r) = r
-type instance RealNumType (Beta r) = r
+instance Distribution (Beta r) where
+  type Domain (Beta r) = r
+  type RealNum (Beta r) = r
 
 instance (Ord r, NumSpec r) => Density (Beta r) where
   pdf (Beta a b) = betaPdf a b

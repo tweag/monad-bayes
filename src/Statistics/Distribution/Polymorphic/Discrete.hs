@@ -38,8 +38,9 @@ discretePdf ws k = let i = fromIntegral k in
     then toLogDomain (ws V.! i)
     else 0
 
-type instance DomainType (Discrete r k)  = k
-type instance RealNumType (Discrete r k) = r
+instance Distribution (Discrete r k) where
+  type Domain (Discrete r k)  = k
+  type RealNum (Discrete r k) = r
 
 instance (Ord r, Floating r, Integral k) => Density (Discrete r k) where
   pdf (Discrete ws) = discretePdf ws
