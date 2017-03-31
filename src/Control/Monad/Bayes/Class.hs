@@ -15,14 +15,11 @@ Portability : GHC
 
 
 module Control.Monad.Bayes.Class (
-  Domain,
-  RealNum,
-  Density,
-  pdf,
-  Sampleable,
-  sample,
+  module Statistics.Distribution.Polymorphic.Class,
   HasCustomReal,
   CustomReal,
+  Sampleable,
+  sample,
   Conditionable,
   factor,
   condition,

@@ -49,33 +49,35 @@ import Control.Monad.Bayes.Prior
 -- The program must not contain factors larger than 1.
 rejection :: Monad m => Int -- ^ number of samples accepted
                      -> Rejection m a -> m [a]
-rejection n d = sequence $ replicate n $ sample where
-  sample = do
+rejection n d = sequence $ replicate n s where
+  s = do
     m <- runRejection d
     case m of Just x  -> return x
-              Nothing -> sample
+              Nothing -> s
 
 -- | Simple importance sampling from the prior.
-importance :: MonadDist m
-              => Int -- ^ numer of samples produced
-              -> Population m a -> m [(a, CustomReal m)]
+importance :: (Monad m, HasCustomReal m)
+           => Int -- ^ numer of samples produced
+           -> Population m a -> m [(a, CustomReal m)]
 importance n = fmap (map (second fromLogDomain)) . runPopulation . (spawn n >>)
 
 -- | Multiple importance samples with post-processing that aggregates weights of equal elements.
 -- It does not normalize the weights.
-importance' :: (Ord a, MonadDist m) =>
+importance' :: (Ord a, Monad m, HasCustomReal m) =>
                Int -> Population m a -> m [(a, CustomReal m)]
 importance' n d = fmap compact $ importance n d
 
 -- | Sequential Monte Carlo from the prior.
-smc :: MonadDist m => Int -- ^ number of resampling points
-                   -> Int -- ^ number of particles
-                   -> Sequential (Population m) a -> Population m a
+smc :: (Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+    => Int -- ^ number of resampling points
+    -> Int -- ^ number of particles
+    -> Sequential (Population m) a -> Population m a
 smc k n = smcWithResampler resample k n
 
 -- | `smc` with post-processing like in 'importance''.
-smc' :: (Ord a, MonadDist m) => Int -> Int ->
-        Sequential (Population m) a -> m [(a, CustomReal m)]
+smc' :: (Ord a, Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+     => Int -> Int
+     -> Sequential (Population m) a -> m [(a, CustomReal m)]
 smc' k n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ smc k n d
 
 -- | Asymptotically faster version of 'smc' that resamples using multinomial
@@ -88,7 +90,7 @@ composeCopies :: Int -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (replicate k f)
 
 -- | Like `smc`, but with a custom resampling scheme.
-smcWithResampler :: MonadDist m =>
+smcWithResampler :: (Monad m, HasCustomReal m) =>
   (forall x. Population m x -> Population m x) -- ^ resampling function
   -> Int -- ^ number of resampling points
   -> Int -- ^ number of particles

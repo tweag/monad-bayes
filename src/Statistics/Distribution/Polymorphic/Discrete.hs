@@ -12,7 +12,8 @@ Portability : GHC
 module Statistics.Distribution.Polymorphic.Discrete (
   Discrete,
   weights,
-  discreteDist
+  discreteDist,
+  logDiscreteDist
 ) where
 
 import qualified Data.Vector as V
@@ -31,6 +32,10 @@ weights (Discrete w) = w
 -- | Construct a discrete distribution normalizing the weights.
 discreteDist :: (Foldable f, NumSpec r) => f r -> Discrete r k
 discreteDist ws = Discrete $ normalize $ V.fromList $ Fold.toList ws
+
+-- | Like `discreteDist`, but weights are given in log-domain.
+logDiscreteDist :: (Foldable f, NumSpec r, Ord r) => f (LogDomain r) -> Discrete r k
+logDiscreteDist ws = Discrete $ V.map fromLogDomain $ normalize $ V.fromList $ Fold.toList ws
 
 -- | Probability mass function for a discrete distribution.
 discretePdf :: (Ord r, Floating r, Integral k) => V.Vector r -> k -> LogDomain r

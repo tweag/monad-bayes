@@ -67,20 +67,20 @@ instance MonadDist m => MonadDist (Weighted m)
 instance MonadDist m => MonadBayes (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-runWeighted :: MonadDist m => Weighted m a -> m (a, LogDomain (CustomReal m))
+runWeighted :: (HasCustomReal m, Functor m) => Weighted m a -> m (a, LogDomain (CustomReal m))
 runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
 
 -- | Embed a random variable with explicitly given likelihood.
 --
 -- > runWeighted . withWeight = id
-withWeight :: MonadDist m => m (a, LogDomain (CustomReal m)) -> Weighted m a
+withWeight :: (HasCustomReal m, Monad m) => m (a, LogDomain (CustomReal m)) -> Weighted m a
 withWeight m = Weighted $ do
   (x,w) <- lift m
   modify (* weight w)
   return x
 
 -- | Reset weight to 1.
-resetWeight :: MonadDist m => Weighted m a -> Weighted m a
+resetWeight :: (HasCustomReal m, Monad m) => Weighted m a -> Weighted m a
 resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
 
 -- | Apply a transformation to the transformed monad.
@@ -110,7 +110,7 @@ duplicateWeight :: WeightRecorder m a -> Weighted m a
 duplicateWeight = runWeightRecorder
 
 -- | Reset weight record to 1, not modifying the transformed monad.
-resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
+resetWeightRecorder :: (HasCustomReal m, Monad m) => WeightRecorder m a -> WeightRecorder m a
 resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
 -- | Apply a transformation to the transformed monad.

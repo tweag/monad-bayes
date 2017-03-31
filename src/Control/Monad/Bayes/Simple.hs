@@ -9,12 +9,9 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GADTs
- #-}
-
  module Control.Monad.Bayes.Simple (
    module Statistics.Distribution.Polymorphic,
+   module Control.Monad.Bayes.Class,
    MonadDist,
    normal,
    gamma,
@@ -22,9 +19,9 @@ Portability : GHC
    uniform,
    mvnormal,
    discrete,
+   logDiscrete,
    categorical,
    logCategorical,
-   logDiscrete,
    bernoulli,
    binomial,
    multinomial,
@@ -55,6 +52,7 @@ import Control.Monad.Trans.Cont
 import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Statistics.Distribution.Polymorphic
+import Statistics.Distribution.Polymorphic.Discrete (logDiscreteDist)
 
 -- Helpers to sample from distributions
 
@@ -75,15 +73,20 @@ uniform :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Uniform r) m) => r ->
 uniform a b = sample (uniformDist a b)
 
 -- | Sample a normal distribution in a probabilistic program.
-mvnormal :: (Sampleable MVNormal m, HasCustomReal m, CustomReal m ~ R)
+mvnormal :: (HasCustomReal m, CustomReal m ~ R, Sampleable MVNormal m)
        => Vector R -> Herm R -> m (Vector R)
 -- TODO: is there a way to disable the reduntant constraint warning here and for other distributions?
 mvnormal m s = sample (mvnormalDist m s)
 
-
 -- | Sample from a discrete distribution in a probabilistic program.
-discrete :: (Sampleable (Discrete r k) m, Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r) => f r -> m k
+discrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Sampleable (Discrete r k) m) => f r -> m k
 discrete ws = sample (discreteDist ws)
+
+-- | Like 'discrete', but weights are given in log domain.
+logDiscrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Ord r, Sampleable (Discrete r k) m)
+            => f (Log.LogDomain (CustomReal m)) -> m k
+logDiscrete = sample . logDiscreteDist
+
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
@@ -106,10 +109,6 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
     logCategorical d = do
       i <- logDiscrete (map snd d)
       return (fst (d !! i))
-
-    -- | Like 'discrete', but weights are given in log domain.
-    logDiscrete :: [Log.LogDomain (CustomReal m)] -> m Int
-    logDiscrete ps = discrete $ fmap (Log.fromLogDomain . ( / Fold.maximum ps)) ps
 
     -- | Bernoulli distribution.
     --

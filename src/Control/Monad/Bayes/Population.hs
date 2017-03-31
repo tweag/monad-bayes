@@ -74,13 +74,10 @@ draw n = fromList $ pure $ replicate n ()
 -- Conditioning is done by accumulating weights.
 -- There is no automatic normalization or aggregation of weights.
 newtype Population m a = Population {unPopulation :: Weighted (Empirical m) a}
-  deriving (Functor)
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 instance HasCustomReal m => HasCustomReal (Population m) where
   type CustomReal (Population m) = CustomReal m
-deriving instance MonadDist m => Applicative (Population m)
-deriving instance MonadDist m => Monad (Population m)
-deriving instance (MonadDist m, MonadIO m) => MonadIO (Population m)
 deriving instance (Sampleable d m, Monad m) => Sampleable d (Population m)
 deriving instance (Monad m, HasCustomReal m) => Conditionable (Population m)
 deriving instance MonadDist m => MonadDist (Population m)
@@ -90,19 +87,19 @@ instance MonadTrans Population where
   lift = Population . lift . lift
 
 -- | Explicit representation of the weighted sample with weights in log domain.
-runPopulation :: MonadDist m => Population m a -> m [(a,LogDomain (CustomReal m))]
+runPopulation :: (HasCustomReal m, Monad m) => Population m a -> m [(a,LogDomain (CustomReal m))]
 runPopulation = runEmpirical . runWeighted . unPopulation
 
 -- | Explicit representation of the weighted sample.
-explicitPopulation :: MonadDist m => Population m a -> m [(a, CustomReal m)]
+explicitPopulation :: (HasCustomReal m, Monad m) => Population m a -> m [(a, CustomReal m)]
 explicitPopulation = fmap (map (second fromLogDomain)) . runPopulation
 
 -- | Initialise 'Population' with a concrete weighted sample.
-fromWeightedList :: MonadDist m => m [(a,LogDomain (CustomReal m))] -> Population m a
+fromWeightedList :: (HasCustomReal m, Monad m) => m [(a,LogDomain (CustomReal m))] -> Population m a
 fromWeightedList = Population . withWeight . fromList
 
 -- | Lift unweighted sample by setting all weights equal.
-fromEmpirical :: MonadDist m => Empirical m a -> Population m a
+fromEmpirical :: (HasCustomReal m, Monad m) => Empirical m a -> Population m a
 fromEmpirical = fromWeightedList . fmap setWeights . runEmpirical where
   setWeights xs = map (,w) xs where
     w = 1 / fromIntegral (length xs)
@@ -111,19 +108,21 @@ fromEmpirical = fromWeightedList . fmap setWeights . runEmpirical where
 -- The weights are adjusted such that their sum is preserved.
 -- It is therefore safe to use `spawn` in arbitrary places in the program
 -- without introducing bias.
-spawn :: MonadDist m => Int -> Population m ()
+spawn :: (HasCustomReal m, Monad m) => Int -> Population m ()
 spawn n = fromEmpirical (draw n)
 
 -- | Resample the population using the underlying monad and a simple resampling scheme.
 -- The total weight is preserved.
-resample :: MonadDist m => Population m a -> Population m a
+resample :: (HasCustomReal m, Monad m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+         => Population m a -> Population m a
 resample m = fromWeightedList $ do
   pop <- runPopulation m
   let (xs, ps) = unzip pop
   let n = length xs
   let z = sum ps
   if z > 0 then do
-    offsprings <- sequenceA $ replicate n $ logCategorical pop
+    ancestors <- sequenceA $ replicate n $ logDiscrete ps
+    let offsprings = map (xs !!) ancestors
     return $ map (, z / fromIntegral n) offsprings
   else
     -- if all weights are zero do not resample
@@ -131,7 +130,9 @@ resample m = fromWeightedList $ do
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
-proper :: MonadDist m => Population m a -> m (a,LogDomain (CustomReal m))
+proper :: (HasCustomReal m, Monad m, NumSpec (CustomReal m),
+           Sampleable (Discrete (CustomReal m) Int) m)
+       => Population m a -> m (a,LogDomain (CustomReal m))
 proper m = do
   pop <- runPopulation m
   let (xs, ps) = unzip pop
@@ -139,32 +140,35 @@ proper m = do
   index <- if z > 0 then
       logDiscrete ps
     else
-      uniformD [0..(length xs - 1)]
+      let n = length xs in
+        discrete $ replicate n (1 / fromIntegral n)
   let x = xs !! index
   return (x,z)
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
-evidence :: MonadDist m => Population m a -> m (LogDomain (CustomReal m))
+evidence :: (HasCustomReal m, Monad m) => Population m a -> m (LogDomain (CustomReal m))
 evidence = fmap (sum . map snd) . runPopulation
 
 -- | Picks one point from the population and uses model evidence as a 'factor'
 -- in the transformed monad.
 -- This way a single sample can be selected from a population without
 -- introducing bias.
-collapse :: (MonadBayes m) => Population m a -> m a
+collapse :: (HasCustomReal m, Monad m, NumSpec (CustomReal m), Conditionable m,
+             Sampleable (Discrete (CustomReal m) Int) m)
+         => Population m a -> m a
 collapse e = do
   (x,p) <- proper e
   factor p
   return x
 
 -- | Applies a random transformation to a population.
-mapPopulation :: MonadDist m => ([(a, LogDomain (CustomReal m))] -> m [(a, LogDomain (CustomReal m))]) ->
+mapPopulation :: (HasCustomReal m, Monad m) => ([(a, LogDomain (CustomReal m))] -> m [(a, LogDomain (CustomReal m))]) ->
   Population m a -> Population m a
 mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
 -- | Normalizes the weights in the population so that their sum is 1.
 -- This transformation introduces bias.
-normalize :: MonadDist m => Population m a -> Population m a
+normalize :: (HasCustomReal m, Monad m) => Population m a -> Population m a
 normalize = mapPopulation norm where
     norm xs = pure $ map (second (/ z)) xs where
       z = sum $ map snd xs
@@ -172,18 +176,19 @@ normalize = mapPopulation norm where
 -- | Normalizes the weights in the population so that their sum is 1.
 -- The sum of weights is pushed as a factor to the transformed monad,
 -- so bo bias is introduced.
-normalizeProper :: MonadBayes m => Population m a -> Population m a
+normalizeProper :: (Monad m, Conditionable m) => Population m a -> Population m a
 normalizeProper = mapPopulation norm where
     norm xs = factor z >> pure (map (second (/ z)) xs) where
       z = sum $ map snd xs
 
 -- | Population average of a function, computed using unnormalized weights.
-popAvg :: MonadDist m => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
+popAvg :: (HasCustomReal m, Monad m) => (a -> CustomReal m) -> Population m a -> m (CustomReal m)
 popAvg f p = do
   xs <- runPopulation p
   let ys = map (\(x,w) -> f x * fromLogDomain w) xs
   return (sum ys)
 
 -- | Applies a transformation to the inner monad.
-hoist :: (MonadDist m, MonadDist n, CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Population m a -> Population n a
+hoist :: (Monad m, Monad n, HasCustomReal m, HasCustomReal n, CustomReal m ~ CustomReal n)
+      => (forall x. m x -> n x) -> Population m a -> Population n a
 hoist f = fromWeightedList . f . runPopulation
