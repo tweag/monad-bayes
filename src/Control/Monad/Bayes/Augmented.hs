@@ -22,7 +22,6 @@ import Control.Monad.Trans.Writer
 import qualified Numeric.LinearAlgebra as LA
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Simple
 

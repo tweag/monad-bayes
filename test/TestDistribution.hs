@@ -8,7 +8,7 @@ import Data.AEq
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
+import Statistics.Distribution.Polymorphic
 
 spec :: Spec
 spec = do

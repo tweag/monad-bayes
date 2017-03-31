@@ -35,8 +35,7 @@ import qualified Numeric.LinearAlgebra as LA
 import Numeric.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
-import Control.Monad.Bayes.Distribution.MVNormal
+import Statistics.Distribution.Polymorphic.MVNormal
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Simple

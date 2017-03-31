@@ -1,5 +1,5 @@
 {-|
-Module      : Control.Monad.Bayes.Distribution.MVNormal
+Module      : Statistics.Distribution.Polymorphic.MVNormal
 Description : Multivariate normal distribution
 Copyright   : (c) Adam Scibior, 2017
 License     : MIT
@@ -9,7 +9,7 @@ Portability : GHC
 
 -}
 
-module Control.Monad.Bayes.Distribution.MVNormal (
+module Statistics.Distribution.Polymorphic.MVNormal (
   MVNormal(MVNormal),
   mean,
   chol_upper,
@@ -65,4 +65,5 @@ instance Density MVNormal where
 -- | Sample a normal distribution in a probabilistic program.
 mvnormal :: (Sampleable MVNormal m, HasCustomReal m, CustomReal m ~ R)
        => Vector R -> Herm R -> m (Vector R)
+-- TODO: is there a way to disable the reduntant constraint warning here and for other distributions?
 mvnormal m s = sample (mvnormalDist m s)

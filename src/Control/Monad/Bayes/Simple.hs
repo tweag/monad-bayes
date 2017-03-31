@@ -14,7 +14,7 @@ Portability : GHC
  #-}
 
  module Control.Monad.Bayes.Simple (
-   module Control.Monad.Bayes.Distribution,
+   module Statistics.Distribution.Polymorphic,
    MonadDist,
    categorical,
    logCategorical,
@@ -47,7 +47,7 @@ import Control.Monad.Trans.Cont
 
 import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
+import Statistics.Distribution.Polymorphic
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.

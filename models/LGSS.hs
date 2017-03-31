@@ -93,7 +93,7 @@ linearGaussian :: (MonadBayes m, CustomReal m ~ Double)
 linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
   let step xs y = do{
     x' <- normal (a*(head xs) + b) sdX;
-    observe (Normal (c*x' + d) sdY) y;
+    observe (normalDist (c*x' + d) sdY) y;
     return (x':xs)}
 
   x0 <- uncurry normal p0

@@ -78,7 +78,7 @@ dpMixture =
       let mean = means !! cluster
       let var  = vars  !! cluster
       let point = (cluster, var, mean)
-      observe (Normal mean (sqrt var)) y
+      observe (normalDist mean (sqrt var)) y
       return (clusters, point : rest)
 
   in

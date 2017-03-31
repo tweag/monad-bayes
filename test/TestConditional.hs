@@ -40,7 +40,7 @@ conditional_m mx my = liftM2 (,) px py where
       >> return x
     Nothing -> discrete discreteWeights
   py = case my of
-    Just x -> factor (pdf (Normal 0 1) x) >> return x
+    Just x -> factor (pdf (normalDist 0 1) x) >> return x
     Nothing -> normal 0 1
 
 check_conditional :: Maybe Int -> Maybe Double -> Bool
@@ -62,13 +62,13 @@ check_longer_conditional =
 -- Computes pseudomarginal density correctly
 check_first_density =
   enumerate (fmap toLog (unsafeDensity m' $ Trace.fromLists ([0.6],[]))) ~==
-    [(toLog (pdf (Normal 0 1) (0.6 :: Double)), 1)]
+    [(toLog (pdf (normalDist 0 1) (0.6 :: Double)), 1)]
 
 -- Computes joint density correctly when possible
 check_joint_density_true =
   case maybeJointDensity m $ Trace.fromLists ([0.5],[1]) of
     Just x -> toLog x ~==
-      toLog ((discreteWeights !! 1) * (pdf (Normal 0 1) (0.5 :: Double)))
+      toLog ((discreteWeights !! 1) * (pdf (normalDist 0 1) (0.5 :: Double)))
     Nothing -> False
 
 -- Returns Nothing when not possible to compute joint density,

@@ -31,8 +31,8 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
 import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Statistics.Distribution.Polymorphic.Discrete
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Deterministic

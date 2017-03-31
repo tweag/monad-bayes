@@ -24,8 +24,12 @@ import Data.Vector.Generic (replicateM)
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
-import Control.Monad.Bayes.Distribution.MVNormal
+import Statistics.Distribution.Polymorphic.Normal
+import Statistics.Distribution.Polymorphic.Gamma
+import Statistics.Distribution.Polymorphic.Beta
+import Statistics.Distribution.Polymorphic.Uniform
+import Statistics.Distribution.Polymorphic.Discrete
+import Statistics.Distribution.Polymorphic.MVNormal
 import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
