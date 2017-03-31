@@ -39,5 +39,10 @@ instance Distribution (Beta r) where
   type Domain (Beta r) = r
   type RealNum (Beta r) = r
 
+instance (Ord r, Floating r) => Parametric (Beta r) where
+  type Param (Beta r) = (r,r)
+  param (Beta a b) = (a,b)
+  distFromParam = uncurry betaDist
+
 instance (Ord r, NumSpec r) => Density (Beta r) where
   pdf (Beta a b) = betaPdf a b

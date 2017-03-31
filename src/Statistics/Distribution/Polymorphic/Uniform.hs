@@ -39,5 +39,10 @@ instance Distribution (Uniform r) where
   type Domain (Uniform r) = r
   type RealNum (Uniform r) = r
 
+instance (Ord r, Floating r) => Parametric (Uniform r) where
+  type Param (Uniform r) = (r,r)
+  param (Uniform a b) = (a,b)
+  distFromParam = uncurry uniformDist
+
 instance (Ord r, NumSpec r) => Density (Uniform r) where
   pdf (Uniform a b) = uniformPdf a b

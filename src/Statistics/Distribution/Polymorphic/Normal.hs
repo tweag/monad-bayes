@@ -41,5 +41,10 @@ instance Distribution (Normal r) where
   type Domain (Normal r) = r
   type RealNum (Normal r) = r
 
+instance (Ord r, Floating r) => Parametric (Normal r) where
+  type Param (Normal r) = (r,r)
+  param (Normal m s) = (m,s)
+  distFromParam = uncurry normalDist
+
 instance (Ord r, Floating r) => Density (Normal r) where
   pdf (Normal m s) = normalPdf m s

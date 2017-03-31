@@ -58,6 +58,11 @@ instance Distribution MVNormal where
   type Domain MVNormal = Vector R
   type RealNum MVNormal = R
 
+instance Parametric MVNormal where
+  type Param MVNormal = (Vector R, Herm R)
+  param d = (mean d, mTm (chol_upper d))
+  distFromParam = uncurry mvnormalDist
+
 instance Density MVNormal where
   pdf (MVNormal m u) x = if size m == size x then mvnormalPdf m u x
     else error $ "MVNormal PDF: expected x of lenght " ++ show (size m) ++ "but received x of length " ++ show (size x)

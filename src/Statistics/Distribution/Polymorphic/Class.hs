@@ -17,6 +17,10 @@ module Statistics.Distribution.Polymorphic.Class (
   Distribution,
   Domain,
   RealNum,
+  Parametric,
+  Param,
+  param,
+  distFromParam,
   Density,
   pdf
 ) where
@@ -30,6 +34,16 @@ class Distribution d where
   type Domain d
   -- | The custom real number type used by a distribution.
   type RealNum d
+
+-- | Types that correspond to a parametric family rather than a sinle distribution.
+-- A concrete distribution is obtained by setting the parameter.
+class Distribution d => Parametric d where
+  -- | Parameter type.
+  type Param d
+  -- | Getter for parameters.
+  param :: d -> Param d
+  -- | Creates distribution from parameters.
+  distFromParam :: Param d -> d
 
 -- | Probability distributions for which we can compute density.
 class Distribution d => Density d where
