@@ -9,10 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  MultiParamTypeClasses
- #-}
-
 module Statistics.Distribution.Polymorphic.Uniform (
   Uniform(Uniform),
   uniformDist

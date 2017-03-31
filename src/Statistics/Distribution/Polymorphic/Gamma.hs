@@ -9,10 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  MultiParamTypeClasses
- #-}
-
 module Statistics.Distribution.Polymorphic.Gamma (
   Gamma(Gamma),
   shape,

@@ -1,6 +1,6 @@
 {-|
 Module      : Statistics.Distribution.Polymorphic
-Description : Common probability distributions
+Description : Common probability distributions polymorphic in numeric types
 Copyright   : (c) Adam Scibior, 2017
 License     : MIT
 Maintainer  : ams240@cam.ac.uk
@@ -9,12 +9,8 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  MultiParamTypeClasses
- #-}
-
 -- Probability distributions defined polymorphically over arbitrary numeric types.
--- This module reexports for each distribution its type, a safe constructor, and a sampling helper.
+-- This module reexports for each distribution its type and a safe constructor.
 -- For additional functions import specific distribution modules.
 module Statistics.Distribution.Polymorphic (
   module Numeric.LogDomain,

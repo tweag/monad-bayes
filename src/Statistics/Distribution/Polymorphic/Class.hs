@@ -13,9 +13,6 @@ Portability : GHC
   MultiParamTypeClasses
  #-}
 
--- Probability distributions defined polymorphically over arbitrary numeric types.
--- This module reexports for each distribution its type, a safe constructor, and a sampling helper.
--- For additional functions import specific distribution modules.
 module Statistics.Distribution.Polymorphic.Class (
   Distribution,
   Domain,
@@ -25,9 +22,6 @@ module Statistics.Distribution.Polymorphic.Class (
 ) where
 
 import Numeric.LogDomain
-
--------------------------------------------------
--- Type classes and families for distributions
 
 -- | Distribution type class.
 -- It does not specify any functions, only types.
