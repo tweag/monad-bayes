@@ -17,12 +17,11 @@ module Statistics.Distribution.Polymorphic.Normal (
   Normal(Normal),
   mean,
   stddev,
-  normalDist,
-  normal
+  normalDist
 ) where
 
 import Numeric.LogDomain hiding (beta, gamma)
-import Control.Monad.Bayes.Class
+import Statistics.Distribution.Polymorphic.Class
 
 -- | Normal distribution.
 data Normal r = Normal {mean :: r, stddev :: r}
@@ -47,10 +46,3 @@ type instance RealNumType (Normal r) = r
 
 instance (Ord r, Floating r) => Density (Normal r) where
   pdf (Normal m s) = normalPdf m s
-
-instance Sampleable (Normal r) Normal where
-  sample = id
-
--- | Sample a normal distribution in a probabilistic program.
-normal :: (Sampleable (Normal r) m, HasCustomReal m, CustomReal m ~ r) => r -> r -> m r
-normal m s = sample (normalDist m s)

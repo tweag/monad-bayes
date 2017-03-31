@@ -15,12 +15,11 @@ Portability : GHC
 
 module Statistics.Distribution.Polymorphic.Uniform (
   Uniform(Uniform),
-  uniformDist,
-  uniform
+  uniformDist
 ) where
 
 import Numeric.LogDomain hiding (beta, gamma)
-import Control.Monad.Bayes.Class
+import Statistics.Distribution.Polymorphic.Class
 
 -- | Uniform continuous distribution.
 data Uniform r = Uniform r r
@@ -45,10 +44,3 @@ type instance RealNumType (Uniform r) = r
 
 instance (Ord r, NumSpec r) => Density (Uniform r) where
   pdf (Uniform a b) = uniformPdf a b
-
-instance Sampleable (Uniform r) Uniform where
-  sample = id
-
--- | Sample from a uniform distribution in a probabilistic program.
-uniform :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Uniform r) m) => r -> r -> m r
-uniform a b = sample (uniformDist a b)

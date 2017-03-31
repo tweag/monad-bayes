@@ -15,12 +15,11 @@ Portability : GHC
 
 module Statistics.Distribution.Polymorphic.Beta (
   Beta(Beta),
-  betaDist,
-  beta
+  betaDist
 ) where
 
 import Numeric.LogDomain hiding (beta, gamma)
-import Control.Monad.Bayes.Class
+import Statistics.Distribution.Polymorphic.Class
 
 -- | Beta distribution.
 data Beta r = Beta r r
@@ -45,10 +44,3 @@ type instance RealNumType (Beta r) = r
 
 instance (Ord r, NumSpec r) => Density (Beta r) where
   pdf (Beta a b) = betaPdf a b
-
-instance Sampleable (Beta r) Beta where
-  sample = id
-
--- | Sample from a beta distribution in a probabilistic program.
-beta :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Beta r) m) => r -> r -> m r
-beta a b = sample (betaDist a b)

@@ -14,14 +14,13 @@ module Statistics.Distribution.Polymorphic.MVNormal (
   mean,
   chol_upper,
   mvnormalDist,
-  mvnormalPdf,
-  mvnormal
+  mvnormalPdf
 ) where
 
 import Numeric.LinearAlgebra
 
 import Numeric.LogDomain
-import Control.Monad.Bayes.Class
+import Statistics.Distribution.Polymorphic.Class
 
 -- | Multivariate normal distribution.
 -- Uses vector and matrix types provided by hmatrix.
@@ -61,9 +60,3 @@ type instance RealNumType MVNormal = R
 instance Density MVNormal where
   pdf (MVNormal m u) x = if size m == size x then mvnormalPdf m u x
     else error $ "MVNormal PDF: expected x of lenght " ++ show (size m) ++ "but received x of length " ++ show (size x)
-
--- | Sample a normal distribution in a probabilistic program.
-mvnormal :: (Sampleable MVNormal m, HasCustomReal m, CustomReal m ~ R)
-       => Vector R -> Herm R -> m (Vector R)
--- TODO: is there a way to disable the reduntant constraint warning here and for other distributions?
-mvnormal m s = sample (mvnormalDist m s)

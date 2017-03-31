@@ -17,6 +17,8 @@ Portability : GHC
 -- This module reexports for each distribution its type, a safe constructor, and a sampling helper.
 -- For additional functions import specific distribution modules.
 module Statistics.Distribution.Polymorphic (
+  module Numeric.LogDomain,
+  module Statistics.Distribution.Polymorphic.Class,
   module Statistics.Distribution.Polymorphic.Normal,
   module Statistics.Distribution.Polymorphic.Gamma,
   module Statistics.Distribution.Polymorphic.Beta,
@@ -25,9 +27,11 @@ module Statistics.Distribution.Polymorphic (
   module Statistics.Distribution.Polymorphic.MVNormal
 ) where
 
-import Statistics.Distribution.Polymorphic.Normal (Normal, normalDist, normal)
-import Statistics.Distribution.Polymorphic.Gamma (Gamma, gammaDist, gamma)
-import Statistics.Distribution.Polymorphic.Beta (Beta, betaDist, beta)
-import Statistics.Distribution.Polymorphic.Uniform (Uniform, uniformDist, uniform)
-import Statistics.Distribution.Polymorphic.Discrete (Discrete, discreteDist, discrete)
-import Statistics.Distribution.Polymorphic.MVNormal (MVNormal, mvnormalDist, mvnormal)
+import Numeric.LogDomain (LogDomain, NumSpec)
+import Statistics.Distribution.Polymorphic.Class
+import Statistics.Distribution.Polymorphic.Normal (Normal, normalDist)
+import Statistics.Distribution.Polymorphic.Gamma (Gamma, gammaDist)
+import Statistics.Distribution.Polymorphic.Beta (Beta, betaDist)
+import Statistics.Distribution.Polymorphic.Uniform (Uniform, uniformDist)
+import Statistics.Distribution.Polymorphic.Discrete (Discrete, discreteDist)
+import Statistics.Distribution.Polymorphic.MVNormal (MVNormal, mvnormalDist)

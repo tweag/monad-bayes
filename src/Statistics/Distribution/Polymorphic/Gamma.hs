@@ -17,12 +17,11 @@ module Statistics.Distribution.Polymorphic.Gamma (
   Gamma(Gamma),
   shape,
   rate,
-  gammaDist,
-  gamma
+  gammaDist
 ) where
 
 import Numeric.LogDomain hiding (beta, gamma)
-import Control.Monad.Bayes.Class
+import Statistics.Distribution.Polymorphic.Class
 
 -- | Gamma distribution.
 data Gamma r = Gamma {shape :: r, rate :: r}
@@ -45,10 +44,3 @@ type instance RealNumType (Gamma r) = r
 
 instance (Ord r, NumSpec r) => Density (Gamma r) where
   pdf (Gamma a b) = gammaPdf a b
-
-instance Sampleable (Gamma r) Gamma where
-  sample = id
-
--- | Sample from a gamma distribution in a probabilistic program.
-gamma :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Gamma r) m) => r -> r -> m r
-gamma a b = sample (gammaDist a b)

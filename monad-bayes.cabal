@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Numeric.LogDomain,
                        Statistics.Distribution.Polymorphic,
+                       Statistics.Distribution.Polymorphic.Class,
                        Statistics.Distribution.Polymorphic.Normal,
                        Statistics.Distribution.Polymorphic.Gamma,
                        Statistics.Distribution.Polymorphic.Beta,

@@ -16,6 +16,12 @@ Portability : GHC
  module Control.Monad.Bayes.Simple (
    module Statistics.Distribution.Polymorphic,
    MonadDist,
+   normal,
+   gamma,
+   beta,
+   uniform,
+   mvnormal,
+   discrete,
    categorical,
    logCategorical,
    logDiscrete,
@@ -34,6 +40,7 @@ import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
 import Control.Arrow (first)
+import Numeric.LinearAlgebra
 
 import Control.Monad
 import Control.Monad.Trans.Identity
@@ -48,6 +55,35 @@ import Control.Monad.Trans.Cont
 import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Statistics.Distribution.Polymorphic
+
+-- Helpers to sample from distributions
+
+-- | Sample a normal distribution in a probabilistic program.
+normal :: (Sampleable (Normal r) m, HasCustomReal m, CustomReal m ~ r) => r -> r -> m r
+normal m s = sample (normalDist m s)
+
+-- | Sample from a gamma distribution in a probabilistic program.
+gamma :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Gamma r) m) => r -> r -> m r
+gamma a b = sample (gammaDist a b)
+
+-- | Sample from a beta distribution in a probabilistic program.
+beta :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Beta r) m) => r -> r -> m r
+beta a b = sample (betaDist a b)
+
+-- | Sample from a uniform distribution in a probabilistic program.
+uniform :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Uniform r) m) => r -> r -> m r
+uniform a b = sample (uniformDist a b)
+
+-- | Sample a normal distribution in a probabilistic program.
+mvnormal :: (Sampleable MVNormal m, HasCustomReal m, CustomReal m ~ R)
+       => Vector R -> Herm R -> m (Vector R)
+-- TODO: is there a way to disable the reduntant constraint warning here and for other distributions?
+mvnormal m s = sample (mvnormalDist m s)
+
+
+-- | Sample from a discrete distribution in a probabilistic program.
+discrete :: (Sampleable (Discrete r k) m, Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r) => f r -> m k
+discrete ws = sample (discreteDist ws)
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
