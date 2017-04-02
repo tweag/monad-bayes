@@ -24,7 +24,6 @@ module Control.Monad.Bayes.Inference (
   pimh
 ) where
 
-import Control.Arrow (second)
 import Control.Monad.State.Lazy
 
 import Numeric.LogDomain
@@ -51,14 +50,14 @@ rejection n d = sequence $ replicate n s where
 -- | Simple importance sampling from the prior.
 importance :: (Monad m, HasCustomReal m)
            => Int -- ^ numer of samples produced
-           -> Population m a -> m [(a, CustomReal m)]
-importance n = fmap (map (second fromLogDomain)) . runPopulation . (spawn n >>)
+           -> Population m a -> Population m a
+importance n = (spawn n >>)
 
 -- | Multiple importance samples with post-processing that aggregates weights of equal elements.
 -- It does not normalize the weights.
 importance' :: (Ord a, Monad m, HasCustomReal m) =>
                Int -> Population m a -> m [(a, CustomReal m)]
-importance' n d = fmap compact $ importance n d
+importance' n d = fmap compact $ explicitPopulation $ importance n d
 
 -- | Sequential Monte Carlo from the prior with multinomial resampling.
 smcMultinomial :: (Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
@@ -71,7 +70,7 @@ smcMultinomial k n = smcWithResampler resample k n
 smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
      => Int -> Int
      -> Sequential (Population m) a -> m [(a, CustomReal m)]
-smcMultinomial' k n d = fmap (compact . map (second fromLogDomain)) $ runPopulation $ smcMultinomial k n d
+smcMultinomial' k n d = fmap compact $ explicitPopulation $ smcMultinomial k n d
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)

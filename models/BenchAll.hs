@@ -82,7 +82,7 @@ hmmBenchmark :: SamplerIO ()
 hmmBenchmark = do
   liftIO $ putStrLn "running HMM benchmark"
 
-  isSamples <- fmap (drop 5000) $ importance 10000 HMM.hmm
+  isSamples <- fmap (drop 5000) $ explicitPopulation $ importance 10000 HMM.hmm
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
   -- mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
   -- let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
