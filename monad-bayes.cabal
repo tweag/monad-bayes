@@ -15,7 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Control.Monad.Bayes.LogDomain,
+  exposed-modules:     Numeric.LogDomain,
+                       Statistics.Distribution.Polymorphic,
+                       Statistics.Distribution.Polymorphic.Class,
+                       Statistics.Distribution.Polymorphic.Normal,
+                       Statistics.Distribution.Polymorphic.Gamma,
+                       Statistics.Distribution.Polymorphic.Beta,
+                       Statistics.Distribution.Polymorphic.Uniform,
+                       Statistics.Distribution.Polymorphic.Discrete,
+                       Statistics.Distribution.Polymorphic.MVNormal,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,
@@ -29,10 +37,7 @@ library
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
-                       Control.Monad.Bayes.Distribution,
-                       Control.Monad.Bayes.Distribution.MVNormal,
-                       Control.Monad.Bayes.Simple,
-                       Control.Monad.Bayes
+                       Control.Monad.Bayes.Simple
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl

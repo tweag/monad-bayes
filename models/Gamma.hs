@@ -16,7 +16,7 @@ model :: (MonadBayes m, CustomReal m ~ Double) => m Double
 model = do
   prec <- gamma 1 1
   let stddev = sqrt (1 / prec)
-  let noise = (Normal 0 stddev)
+  let noise = (normalDist 0 stddev)
   mapM_ (observe noise) points
   return prec
 

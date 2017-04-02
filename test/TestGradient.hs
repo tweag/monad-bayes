@@ -9,7 +9,7 @@ module TestGradient where
 import Data.AEq
 import Control.Arrow (first)
 
-import qualified Control.Monad.Bayes.LogDomain as Log
+import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Deterministic

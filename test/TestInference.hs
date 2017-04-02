@@ -25,9 +25,9 @@ sprinkler = Sprinkler.soft
 enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
 enumerate = Dist.enumerate
 
-check_terminate_smc = sampleIOfixed (smc' 2 5 sprinkler)
+check_terminate_smc = sampleIOfixed (smcMultinomial' 2 5 sprinkler)
 
-check_preserve_smc = (enumerate . collapse . smc 2 2) sprinkler ~==
+check_preserve_smc = (enumerate . collapse . smcMultinomial 2 2) sprinkler ~==
                       enumerate sprinkler
 
 -- check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
@@ -67,4 +67,4 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> IO Int
 check_particles observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smc observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (runPopulation $ smcMultinomial observations particles Sprinkler.soft))

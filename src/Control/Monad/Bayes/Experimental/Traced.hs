@@ -24,7 +24,7 @@ module Control.Monad.Bayes.Traced (
   dropTrace
 ) where
 
-import Control.Monad.Bayes.LogDomain (LogDomain, toLogDomain, fromLogDomain)
+import Numeric.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (hoist)

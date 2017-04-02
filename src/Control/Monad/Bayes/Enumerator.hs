@@ -31,9 +31,9 @@ import Control.Monad.Trans
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Statistics.Distribution.Polymorphic.Discrete
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Deterministic
@@ -49,7 +49,8 @@ instance HasCustomReal m => HasCustomReal (Enumerator m) where
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ r, MonadDist m) =>
          Sampleable (Discrete r Int) (Enumerator m) where
-  sample (Discrete ps) = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList ps
+  sample d =
+    Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList $ weights d
 
 instance {-# OVERLAPPING #-} (Sampleable d m, Monad m) => Sampleable d (Enumerator m) where
   sample = lift . sample

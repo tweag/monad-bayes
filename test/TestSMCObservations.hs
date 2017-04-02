@@ -5,7 +5,7 @@ module TestSMCObservations where
 
 import Data.List
 
-import Control.Monad.Bayes.LogDomain (LogDomain)
+import Numeric.LogDomain (LogDomain)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference
@@ -13,7 +13,7 @@ import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Sampler
 
 smcParticles :: Int -> Int -> Sequential (Population SamplerIO) a -> IO [(a, LogDomain Double)]
-smcParticles observations particles model = sampleIOfixed (runPopulation $ smc observations particles model)
+smcParticles observations particles model = sampleIOfixed (runPopulation $ smcMultinomial observations particles model)
 
 sameWeights :: [(a, LogDomain Double)] -> Bool
 sameWeights xs = length (nub $ map snd xs) == 1
