@@ -24,7 +24,7 @@ module Control.Monad.Bayes.Primitive (
 --import Numeric.SpecFunctions
 import Data.List
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 
 -- | Continuous 'Primitive' distributions.
 -- Parameterization as in the 'MonadDist' class.

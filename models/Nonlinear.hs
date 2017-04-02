@@ -81,7 +81,7 @@ reference :: MonadDist m
           -> Int -- ^ number of particles used for reference
           -> m (Vector (CustomReal m)) -- ^ mean of xs from all particles
 reference ys n = fmap averageVec $ explicitPopulation $ normalize $
-               smc k n (posterior ys) where
+               smcMultinomial k n (posterior ys) where
   k = length ys
 
 -- | Root-mean-square error
@@ -130,7 +130,7 @@ nonlinearBenchmark cachePath t nRuns ns nRef = do
               fmap (rmse ref . averageVec) $
               explicitPopulation $ normalize m
   scores <- tryCache scoresPath $
-            mapM (\n -> run $ smc t n (posterior ys)) ns
+            mapM (\n -> run $ smcMultinomial t n (posterior ys)) ns
 
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
     layout_title .= "Nonlinear"

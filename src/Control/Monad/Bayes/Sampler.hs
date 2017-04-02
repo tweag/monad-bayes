@@ -22,10 +22,13 @@ import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 import Numeric.LinearAlgebra ((<#), size)
 import Data.Vector.Generic (replicateM)
 
-import Control.Monad.Bayes.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
-import Control.Monad.Bayes.Distribution.MVNormal
+import Statistics.Distribution.Polymorphic.Normal as Normal
+import Statistics.Distribution.Polymorphic.Gamma
+import Statistics.Distribution.Polymorphic.Beta as Beta
+import Statistics.Distribution.Polymorphic.Uniform
+import Statistics.Distribution.Polymorphic.Discrete
+import Statistics.Distribution.Polymorphic.MVNormal as MVNormal
 import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
@@ -50,27 +53,29 @@ fromMWC :: (GenIO -> IO a) -> SamplerIO a
 fromMWC s = SamplerIO $ ask >>= lift . s
 
 instance Sampleable (Normal Double) SamplerIO where
-  sample (Normal m s) = fromMWC $ MWC.normal m s
+  sample d = fromMWC $ MWC.normal (Normal.mean d) (stddev d)
 
 instance Sampleable (Gamma Double) SamplerIO where
-  sample (Gamma a b) = fromMWC $ MWC.gamma a (recip b)
+  sample d = fromMWC $ MWC.gamma (shape d) (scale d)
 
 instance Sampleable (Beta Double) SamplerIO where
-  sample (Beta a b) = fromMWC $ MWC.beta a b
+  sample d = fromMWC $ MWC.beta (Beta.alpha d) (Beta.beta d)
 
 instance Sampleable (Uniform Double) SamplerIO where
-  sample (Uniform a b) = fromMWC $ uniformR (a,b)
+  sample d = fromMWC $ uniformR (lower d, upper d)
 
 instance Sampleable (Discrete Double Int) SamplerIO where
-  sample (Discrete ps) = fromMWC $ MWC.categorical $ normalize ps
+  sample d = fromMWC $ MWC.categorical $ weights d
 
 instance Sampleable MVNormal SamplerIO where
-  sample (MVNormal m u) = do
+  sample d = do
+    let m = MVNormal.mean d
+    let u = chol_upper d
     z <- replicateM (size m) $ fromMWC MWC.standard
     return $ m + (z <# u)
 
 instance MonadDist SamplerIO where
-  exponential rate = fromMWC $ MWC.exponential (recip rate)
+  exponential r    = fromMWC $ MWC.exponential (recip r)
   geometric p      = fromMWC $ MWC.geometric0 p
   bernoulli p      = fromMWC $ MWC.bernoulli p
   dirichlet ws     = fromMWC $ MWC.dirichlet ws

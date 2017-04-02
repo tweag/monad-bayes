@@ -62,7 +62,7 @@ lgssBenchmark cachePath t nRuns ns = do
           estMean <- popAvg Vector.last (normalize m)
           let trueMean = fst (Vector.last ref)
           return $ abs (trueMean - estMean)
-    mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+    mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
   let points = zip (map fromIntegral ns) (transpose scores)
 
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
@@ -93,7 +93,7 @@ linearGaussian :: (MonadBayes m, CustomReal m ~ Double)
 linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
   let step xs y = do{
     x' <- normal (a*(head xs) + b) sdX;
-    observe (Normal (c*x' + d) sdY) y;
+    observe (normalDist (c*x' + d) sdY) y;
     return (x':xs)}
 
   x0 <- uncurry normal p0

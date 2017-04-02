@@ -9,16 +9,19 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GADTs
- #-}
-
  module Control.Monad.Bayes.Simple (
-   module Control.Monad.Bayes.Distribution,
+   module Statistics.Distribution.Polymorphic,
+   module Control.Monad.Bayes.Class,
    MonadDist,
+   normal,
+   gamma,
+   beta,
+   uniform,
+   mvnormal,
+   discrete,
+   logDiscrete,
    categorical,
    logCategorical,
-   logDiscrete,
    bernoulli,
    binomial,
    multinomial,
@@ -34,6 +37,7 @@ import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
 import Control.Arrow (first)
+import Numeric.LinearAlgebra
 
 import Control.Monad
 import Control.Monad.Trans.Identity
@@ -45,9 +49,44 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
-import qualified Control.Monad.Bayes.LogDomain as Log
+import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
+import Statistics.Distribution.Polymorphic
+import Statistics.Distribution.Polymorphic.Discrete (logDiscreteDist)
+
+-- Helpers to sample from distributions
+
+-- | Sample a normal distribution in a probabilistic program.
+normal :: (Sampleable (Normal r) m, HasCustomReal m, CustomReal m ~ r) => r -> r -> m r
+normal m s = sample (normalDist m s)
+
+-- | Sample from a gamma distribution in a probabilistic program.
+gamma :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Gamma r) m) => r -> r -> m r
+gamma a b = sample (gammaDist a b)
+
+-- | Sample from a beta distribution in a probabilistic program.
+beta :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Beta r) m) => r -> r -> m r
+beta a b = sample (betaDist a b)
+
+-- | Sample from a uniform distribution in a probabilistic program.
+uniform :: (HasCustomReal m, r ~ CustomReal m, Sampleable (Uniform r) m) => r -> r -> m r
+uniform a b = sample (uniformDist a b)
+
+-- | Sample a normal distribution in a probabilistic program.
+mvnormal :: (HasCustomReal m, CustomReal m ~ R, Sampleable MVNormal m)
+       => Vector R -> Herm R -> m (Vector R)
+-- TODO: is there a way to disable the reduntant constraint warning here and for other distributions?
+mvnormal m s = sample (mvnormalDist m s)
+
+-- | Sample from a discrete distribution in a probabilistic program.
+discrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Sampleable (Discrete r k) m) => f r -> m k
+discrete ws = sample (discreteDist ws)
+
+-- | Like 'discrete', but weights are given in log domain.
+logDiscrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Ord r, Sampleable (Discrete r k) m)
+            => f (Log.LogDomain (CustomReal m)) -> m k
+logDiscrete = sample . logDiscreteDist
+
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
@@ -70,10 +109,6 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
     logCategorical d = do
       i <- logDiscrete (map snd d)
       return (fst (d !! i))
-
-    -- | Like 'discrete', but weights are given in log domain.
-    logDiscrete :: [Log.LogDomain (CustomReal m)] -> m Int
-    logDiscrete ps = discrete $ fmap (Log.fromLogDomain . ( / Fold.maximum ps)) ps
 
     -- | Bernoulli distribution.
     --

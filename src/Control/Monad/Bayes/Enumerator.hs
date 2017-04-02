@@ -23,16 +23,17 @@ module Control.Monad.Bayes.Enumerator (
     expectation
             ) where
 
-import Control.Applicative (Applicative, pure)
+import Control.Applicative (Applicative, pure, Alternative)
+import Control.Monad (MonadPlus)
 import Control.Arrow (second)
 import qualified Data.Map as Map
 import Control.Monad.Trans
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Statistics.Distribution.Polymorphic.Discrete
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
 import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Deterministic
@@ -41,14 +42,15 @@ import Control.Monad.Bayes.Deterministic
 -- | A transformer similar to 'Population', but additionally integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator m a = Enumerator {runEnumerator :: Pop.Population m a}
-  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
+  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO, Alternative, MonadPlus)
 
 instance HasCustomReal m => HasCustomReal (Enumerator m) where
   type CustomReal (Enumerator m) = CustomReal m
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ r, MonadDist m) =>
          Sampleable (Discrete r Int) (Enumerator m) where
-  sample (Discrete ps) = Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList ps
+  sample d =
+    Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList $ weights d
 
 instance {-# OVERLAPPING #-} (Sampleable d m, Monad m) => Sampleable d (Enumerator m) where
   sample = lift . sample

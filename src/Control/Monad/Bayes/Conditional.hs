@@ -32,11 +32,10 @@ import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse
 import qualified Numeric.LinearAlgebra as LA
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Distribution
-import Control.Monad.Bayes.Distribution.MVNormal
+import Statistics.Distribution.Polymorphic.MVNormal
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Simple
@@ -62,7 +61,7 @@ instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sam
         return c
       _ -> fail ""
 
-instance {-# OVERLAPPING #-} (RealNumType d ~ CustomReal m, DomainType d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
+instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case xs of
@@ -73,9 +72,9 @@ instance {-# OVERLAPPING #-} (RealNumType d ~ CustomReal m, DomainType d ~ Custo
       _ -> fail ""
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ Double, Conditionable m, Monad m) => Sampleable MVNormal (Conditional m) where
-  sample d@(MVNormal m _) = Conditional $ do
+  sample d = Conditional $ do
     (xs, cs) <- get
-    let k = LA.size m
+    let k = dim d
     let (taken, remaining) = splitAt k xs
     if length taken == k then
       do

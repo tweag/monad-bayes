@@ -4,7 +4,7 @@ import Control.Arrow (second)
 import Data.List (sort)
 import Data.Maybe
 
-import Control.Monad.Bayes.LogDomain (NumSpec)
+import Numeric.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Dist
 import Control.Monad.Bayes.Primitive
