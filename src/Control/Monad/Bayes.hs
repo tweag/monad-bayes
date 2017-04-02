@@ -81,7 +81,7 @@ importance n m = sampleIO $ Infer.importance n m
 smc :: Int -- ^ number of resampling points
     -> Int -- ^ population size
     -> Model a -> IO [(a,Double)]
-smc k n d = sampleIO $ processPopulation $ Infer.smc k n d
+smc k n d = sampleIO $ processPopulation $ Infer.smcMultinomial k n d
 
 -- -- | Resample-move Sequential Monte Carlo using 'traceMH' for rejuvenation.
 -- -- Exactly like 'smc', but additionally after each resampling the population

@@ -62,7 +62,7 @@ lgssBenchmark cachePath t nRuns ns = do
           estMean <- popAvg Vector.last (normalize m)
           let trueMean = fst (Vector.last ref)
           return $ abs (trueMean - estMean)
-    mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+    mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
   let points = zip (map fromIntegral ns) (transpose scores)
 
   liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do

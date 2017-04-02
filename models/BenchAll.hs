@@ -76,7 +76,7 @@ smcParamsDouble :: [Double]
 smcParamsDouble = map fromIntegral smcParams
 
 smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
-smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulation $ smc (length HMM.values) p HMM.hmm) smcParams
+smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulation $ smcMultinomial (length HMM.values) p HMM.hmm) smcParams
 
 hmmBenchmark :: SamplerIO ()
 hmmBenchmark = do
