@@ -23,7 +23,8 @@ module Control.Monad.Bayes.Enumerator (
     expectation
             ) where
 
-import Control.Applicative (Applicative, pure)
+import Control.Applicative (Applicative, pure, Alternative)
+import Control.Monad (MonadPlus)
 import Control.Arrow (second)
 import qualified Data.Map as Map
 import Control.Monad.Trans
@@ -41,7 +42,7 @@ import Control.Monad.Bayes.Deterministic
 -- | A transformer similar to 'Population', but additionally integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator m a = Enumerator {runEnumerator :: Pop.Population m a}
-  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
+  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO, Alternative, MonadPlus)
 
 instance HasCustomReal m => HasCustomReal (Enumerator m) where
   type CustomReal (Enumerator m) = CustomReal m

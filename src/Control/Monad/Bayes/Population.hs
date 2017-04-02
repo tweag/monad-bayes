@@ -31,6 +31,8 @@ import Prelude hiding (all)
 import Control.Arrow (second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
+import Control.Monad
+import Control.Applicative
 
 import Numeric.LogDomain (LogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
@@ -85,6 +87,15 @@ deriving instance MonadDist m => MonadBayes (Population m)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
+
+instance MonadDist m => Alternative (Population m) where
+  empty = Population $ lift $ fmap undefined $ draw 0
+  p1 <|> p2 = Population $ withWeight $ fromList $ do
+    xs <- runPopulation p1
+    ys <- runPopulation p2
+    return $ xs ++ ys
+
+instance MonadDist m => MonadPlus (Population m)
 
 -- | Explicit representation of the weighted sample with weights in log domain.
 runPopulation :: (HasCustomReal m, Monad m) => Population m a -> m [(a,LogDomain (CustomReal m))]
