@@ -37,8 +37,7 @@ library
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
-                       Control.Monad.Bayes.Simple,
-                       Control.Monad.Bayes
+                       Control.Monad.Bayes.Simple
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
