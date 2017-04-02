@@ -16,6 +16,7 @@ import Data.Vector hiding (reverse, mapM, (++))
 import Control.Exception.Base
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Population
@@ -81,7 +82,7 @@ reference :: MonadDist m
           -> Int -- ^ number of particles used for reference
           -> m (Vector (CustomReal m)) -- ^ mean of xs from all particles
 reference ys n = fmap averageVec $ explicitPopulation $ normalize $
-               smc k n (posterior ys) where
+               smcMultinomial k n (posterior ys) where
   k = length ys
 
 -- | Root-mean-square error
@@ -130,7 +131,7 @@ nonlinearBenchmark cachePath t nRuns ns nRef = do
               fmap (rmse ref . averageVec) $
               explicitPopulation $ normalize m
   scores <- tryCache scoresPath $
-            mapM (\n -> run $ smc t n (posterior ys)) ns
+            mapM (\n -> run $ smcMultinomial t n (posterior ys)) ns
 
   let kernel = Kernel.compose (Kernel.gaussian 1) (List.last . fst . toLists)
   kernelScores <- mapM (\n -> run $ smcHerdingResample kernel t n (posterior ys)) ns

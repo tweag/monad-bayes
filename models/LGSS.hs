@@ -17,8 +17,8 @@ import Control.Monad.Trans
 import System.IO
 import Control.Monad (when, unless)
 
-import Control.Monad.Bayes.Primitive
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Population
@@ -68,7 +68,7 @@ lgssBenchmark cachePath t nRuns ns = do
           estMean <- popAvg Vector.last (normalize m)
           let trueMean = fst (Vector.last ref)
           return $ abs (trueMean - estMean)
-    smcRes <- mapM (\n -> run $ smc t n (linearGaussian param ys)) ns
+    smcRes <- mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
     kernelRes <- mapM (\n -> run $ smcHerdingResample kernel t n (linearGaussian param ys)) ns
     newKernelRes <- mapM (\n -> run $ smcHerdingResample newKernel t n (linearGaussian param ys)) ns
     return (smcRes, kernelRes, newKernelRes)
@@ -108,7 +108,7 @@ linearGaussian :: (MonadBayes m, CustomReal m ~ Double)
 linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
   let step xs y = do{
     x' <- normal (a*(head xs) + b) sdX;
-    observe (Continuous (Normal (c*x' + d) sdY)) y;
+    observe (normalDist (c*x' + d) sdY) y;
     return (x':xs)}
 
   x0 <- uncurry normal p0

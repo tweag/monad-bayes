@@ -8,10 +8,13 @@ import Test.Hspec
 import Data.AEq
 import Control.Monad.State
 import Data.List
+import Data.Bifunctor (second)
 
-import Control.Monad.Bayes.LogDomain (LogDomain, fromLogDomain, toLogDomain)
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Inference
 
 model :: (MonadBayes m, CustomReal m ~ Double) => m (Int,Double)
@@ -23,7 +26,7 @@ model = do
   return (n,x)
 
 result :: (MonadDist m, CustomReal m ~ Double) => m ((Int,Double), Double)
-result = fmap head $ importance 1 model
+result = fmap (second fromLogDomain) $ runWeighted model
 
 passed = fmap check (sampleIOfixed result)
 

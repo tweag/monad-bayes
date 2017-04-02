@@ -15,9 +15,9 @@ module HMM (
 import Numeric.LinearAlgebra.HMatrix -- for the exact posterior only
 import Data.Bifunctor (first, second)
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Primitive
+import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Enumerator as Dist
 
 -- | States of the HMM
@@ -36,8 +36,8 @@ trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
 trans 1    = categorical $ zip states [0.15,0.7,0.15]
 
 -- | The emission model.
-emission :: Int -> Primitive Double Double
-emission x = Continuous (Normal (fromIntegral x) 1)
+emission :: Int -> Normal Double
+emission x = (normalDist (fromIntegral x) 1)
 
 -- | Initial state distribution
 start :: MonadDist m => m [Int]
@@ -72,7 +72,7 @@ hmmKL samples = result where
   marginals = map (\i -> map (first (!! i)) samples) [1 .. (length HMM.values)]
   exact = HMM.exactMarginals
   result = if (length marginals == length exact)
-             then sum $ zipWith kl (map categorical marginals) exact
+             then Prelude.sum $ zipWith kl (map categorical marginals) exact
              else error $ "hmmKL: length mismatch " ++ show (length marginals) ++ " and " ++ show (length exact)
 
 exactMarginals :: (MonadDist m, CustomReal m ~ Double) => [m Int]

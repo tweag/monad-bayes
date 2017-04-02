@@ -29,8 +29,9 @@ import Data.Monoid
 import Control.Monad.Trans
 import Control.Monad.Trans.State
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 
 -- | Representation of a weight in importance sampling algorithms.
 -- Internally represented in log-domain, but semantically a non-negative real number.
@@ -50,32 +51,36 @@ unWeight (Weight (Product p)) = p
 newtype Weighted m a = Weighted {toStateT :: StateT (Weight (CustomReal m)) m a}
     deriving(Functor, Applicative, Monad, MonadIO)
 
-type instance CustomReal (Weighted m) = CustomReal m
+instance HasCustomReal m => HasCustomReal (Weighted m) where
+  type CustomReal (Weighted m) = CustomReal m
 
 instance MonadTrans Weighted where
   lift = Weighted . lift
 
-instance MonadDist m => MonadDist (Weighted m) where
-  primitive = lift . primitive
+instance (Sampleable d m, Monad m) => Sampleable d (Weighted m) where
+  sample = lift . sample
 
-instance MonadDist m => MonadBayes (Weighted m) where
+instance (Monad m, HasCustomReal m) => Conditionable (Weighted m) where
   factor w = Weighted $ modify (* weight w)
 
+instance MonadDist m => MonadDist (Weighted m)
+instance MonadDist m => MonadBayes (Weighted m)
+
 -- | Obtain an explicit value of the likelihood for a given value.
-runWeighted :: MonadDist m => Weighted m a -> m (a, LogDomain (CustomReal m))
+runWeighted :: (HasCustomReal m, Functor m) => Weighted m a -> m (a, LogDomain (CustomReal m))
 runWeighted = fmap (second unWeight) . (`runStateT` 1) . toStateT
 
 -- | Embed a random variable with explicitly given likelihood.
 --
 -- > runWeighted . withWeight = id
-withWeight :: MonadDist m => m (a, LogDomain (CustomReal m)) -> Weighted m a
+withWeight :: (HasCustomReal m, Monad m) => m (a, LogDomain (CustomReal m)) -> Weighted m a
 withWeight m = Weighted $ do
   (x,w) <- lift m
   modify (* weight w)
   return x
 
 -- | Reset weight to 1.
-resetWeight :: MonadDist m => Weighted m a -> Weighted m a
+resetWeight :: (HasCustomReal m, Monad m) => Weighted m a -> Weighted m a
 resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
 
 -- | Apply a transformation to the transformed monad.
@@ -88,18 +93,24 @@ hoist t = Weighted . mapStateT t . toStateT
 newtype WeightRecorder m a =
   WeightRecorder {runWeightRecorder :: Weighted m a}
     deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
-type instance CustomReal (WeightRecorder m) = CustomReal m
+
+instance HasCustomReal m => HasCustomReal (WeightRecorder m) where
+  type CustomReal (WeightRecorder m) = CustomReal m
+
+deriving instance (Sampleable d m, Monad m) => Sampleable d (WeightRecorder m)
 deriving instance MonadDist m => MonadDist (WeightRecorder m)
 
-instance MonadBayes m => MonadBayes (WeightRecorder m) where
+instance (Conditionable m, Monad m) => Conditionable (WeightRecorder m) where
   factor w = WeightRecorder (factor w >> lift (factor w))
+
+deriving instance MonadBayes m => MonadBayes (WeightRecorder m)
 
 -- | Stop passing factors to the transformed monad.
 duplicateWeight :: WeightRecorder m a -> Weighted m a
 duplicateWeight = runWeightRecorder
 
 -- | Reset weight record to 1, not modifying the transformed monad.
-resetWeightRecorder :: MonadDist m => WeightRecorder m a -> WeightRecorder m a
+resetWeightRecorder :: (HasCustomReal m, Monad m) => WeightRecorder m a -> WeightRecorder m a
 resetWeightRecorder = WeightRecorder . resetWeight . runWeightRecorder
 
 -- | Apply a transformation to the transformed monad.

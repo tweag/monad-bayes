@@ -15,8 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Control.Monad.Bayes.LogDomain,
-                       Control.Monad.Bayes.Primitive,
+  exposed-modules:     Numeric.LogDomain,
+                       Statistics.Distribution.Polymorphic,
+                       Statistics.Distribution.Polymorphic.Class,
+                       Statistics.Distribution.Polymorphic.Normal,
+                       Statistics.Distribution.Polymorphic.Gamma,
+                       Statistics.Distribution.Polymorphic.Beta,
+                       Statistics.Distribution.Polymorphic.Uniform,
+                       Statistics.Distribution.Polymorphic.Discrete,
+                       Statistics.Distribution.Polymorphic.MVNormal,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,
@@ -27,13 +34,12 @@ library
                        Control.Monad.Bayes.Population,
                        Control.Monad.Bayes.Sequential,
                        Control.Monad.Bayes.Inference,
-                       Control.Monad.Bayes.Coprimitive,
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
                        Control.Monad.Bayes.Kernel,
-                       Control.Monad.Bayes.Herding,
-                       Control.Monad.Bayes
+                       Control.Monad.Bayes.Herding
+                       Control.Monad.Bayes.Simple
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
@@ -55,6 +61,7 @@ library
                      , FlexibleContexts
                      , FlexibleInstances
                      , TupleSections
+                     , MultiParamTypeClasses
   other-extensions:    GADTs
                      , ScopedTypeVariables
                      , DeriveFunctor
@@ -89,6 +96,7 @@ test-suite monad-bayes-test
                        TestConditional,
                        TestKernel,
                        TestHerding,
+                       TestDistribution,
                        StrictlySmallerSupport
 
 benchmark monad-bayes-bench

@@ -13,6 +13,7 @@ import qualified TestGradient
 import qualified TestConditional
 import qualified TestKernel
 import qualified TestHerding
+import qualified TestDistribution
 
 main = hspec spec
 
@@ -90,23 +91,23 @@ spec = do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           check_particles <- TestInference.check_particles observations particles
           return $ check_particles == particles
-  describe "MH" $ do
-    -- it "MH from prior leaves posterior invariant" $ do
-    --   TestInference.check_prior_trans `shouldBe` True
-    it "Trace MH produces correct number of samples" $ do
-      trace_mh_length <- TestInference.trace_mh_length 11
-      trace_mh_length `shouldBe` 11
-    it "Trace MH leaves posterior invariant" $ do
-      TestInference.check_trace_trans `shouldBe` True
-    it "Trace MH leaves posterior invariant when the model has shifting support" $ do
-      TestInference.check_trace_support `shouldBe` True
-  describe "Population/Trace/Particle hybrids" $ do
-    it "ISMH preserves the posterior on the sprinkler model" $ do
-      TestInference.check_preserve_ismh `shouldBe` True
-    it "SMH preserves the posterior on the sprinkler model" $ do
-      TestInference.check_preserve_smh `shouldBe` True
-    it "Resample-move SMC preserves the posterior on the sprinkler model" $ do
-      TestInference.check_preserve_smcrm `shouldBe` True
+  -- describe "MH" $ do
+  --   -- it "MH from prior leaves posterior invariant" $ do
+  --   --   TestInference.check_prior_trans `shouldBe` True
+  --   it "Trace MH produces correct number of samples" $ do
+  --     trace_mh_length <- TestInference.trace_mh_length 11
+  --     trace_mh_length `shouldBe` 11
+  --   it "Trace MH leaves posterior invariant" $ do
+  --     TestInference.check_trace_trans `shouldBe` True
+  --   it "Trace MH leaves posterior invariant when the model has shifting support" $ do
+  --     TestInference.check_trace_support `shouldBe` True
+  -- describe "Population/Trace/Particle hybrids" $ do
+  --   it "ISMH preserves the posterior on the sprinkler model" $ do
+  --     TestInference.check_preserve_ismh `shouldBe` True
+  --   it "SMH preserves the posterior on the sprinkler model" $ do
+  --     TestInference.check_preserve_smh `shouldBe` True
+  --   it "Resample-move SMC preserves the posterior on the sprinkler model" $ do
+  --     TestInference.check_preserve_smcrm `shouldBe` True
     -- too large to execute
     -- it "PIMH leaves posterior invariant" $ do
     --   TestInference.check_pimh_trans `shouldBe` True
@@ -126,6 +127,7 @@ spec = do
       TestGradient.check_gradient `shouldBe` True
   TestKernel.spec
   TestHerding.spec
+  TestDistribution.spec
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do

@@ -14,8 +14,9 @@ import qualified Gamma
 import qualified HMM
 import Plotting
 
-import Control.Monad.Bayes.LogDomain
+import Numeric.LogDomain
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Enumerator
@@ -75,16 +76,16 @@ smcParamsDouble :: [Double]
 smcParamsDouble = map fromIntegral smcParams
 
 smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
-smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulation $ smc (length HMM.values) p HMM.hmm) smcParams
+smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulation $ smcMultinomial (length HMM.values) p HMM.hmm) smcParams
 
 hmmBenchmark :: SamplerIO ()
 hmmBenchmark = do
   liftIO $ putStrLn "running HMM benchmark"
 
-  isSamples <- fmap (drop 5000) $ importance 10000 HMM.hmm
+  isSamples <- fmap (drop 5000) $ explicitPopulation $ importance 10000 HMM.hmm
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
-  mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
-  let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
+  -- mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
+  -- let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
   mhPriorSamples <- fmap (drop 5000) $ mhPrior 10000 HMM.hmm
   let mhPriorRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhPriorSamples) ns
   pimhSamples <- pimh (length HMM.values) 100 1000 HMM.hmm
@@ -93,7 +94,7 @@ hmmBenchmark = do
     layout_title .= "HMM"
     anytimePlot "#samples" "KL" ns [
       ("IS", isRes),
-      ("MHtrace", mhRes),
+      -- ("MHtrace", mhRes),
       ("MHprior", mhPriorRes),
       ("PIMH", pimhRes)]
 
