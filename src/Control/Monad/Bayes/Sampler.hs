@@ -11,6 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Sampler (
     SamplerIO,
+    customSamplerIO,
     sampleIO,
     sampleIOfixed
                ) where
@@ -18,7 +19,7 @@ module Control.Monad.Bayes.Sampler (
 import System.Random.MWC (GenIO, create, createSystemRandom, uniformR)
 import qualified System.Random.MWC.Distributions as MWC
 import Control.Monad.Trans (lift, MonadIO)
-import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
+import Control.Monad.Trans.Reader (ReaderT(ReaderT), runReaderT, ask)
 import Numeric.LinearAlgebra ((<#), size)
 import Data.Vector.Generic (replicateM)
 
@@ -34,6 +35,10 @@ import Control.Monad.Bayes.Simple
 -- | An `IO` based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
   deriving(Functor, Applicative, Monad, MonadIO)
+
+-- | Embed arbitrary sampling operation in 'SamplerIO'.
+customSamplerIO :: (GenIO -> IO a) -> SamplerIO a
+customSamplerIO = SamplerIO . ReaderT
 
 -- | Initialize PRNG using OS-supplied randomness.
 -- For efficiency this operation should be applied at the very end, ideally once per program.
