@@ -20,9 +20,11 @@ module Control.Monad.Bayes.Enumerator (
     mass,
     compact,
     enumerate,
-    expectation
+    expectation,
+    normalForm
             ) where
 
+import Data.AEq (AEq, (===), (~==))
 import Control.Applicative (Applicative, pure, Alternative)
 import Control.Monad (MonadPlus)
 import Control.Arrow (second)
@@ -82,19 +84,19 @@ ensureDiscrete =
 
 -- | Returns the posterior as a list of weight-value pairs without any post-processing,
 -- such as normalization or aggregation
-logExplicit :: (Real r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
+logExplicit :: (Ord r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
 logExplicit = ensureDiscrete . Pop.runPopulation . toPopulation
 
 -- | Same as `toList`, only weights are converted from log-domain.
-explicit :: (Real r, NumSpec r) => Dist r a -> [(a,r)]
+explicit :: (Ord r, NumSpec r) => Dist r a -> [(a,r)]
 explicit = map (second fromLogDomain) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
-evidence :: (Real r, NumSpec r) => Dist r a -> LogDomain r
+evidence :: (Ord r, NumSpec r) => Dist r a -> LogDomain r
 evidence = ensureDiscrete . Pop.evidence . toPopulation
 
 -- | Normalized probability mass of a specific value.
-mass :: (Real r, NumSpec r, Ord a) => Dist r a -> a -> r
+mass :: (Ord r, NumSpec r, Ord a) => Dist r a -> a -> r
 mass d = f where
   f a = case lookup a m of
              Just p -> p
@@ -115,9 +117,24 @@ normalize xs = map (second (/ z)) xs where
 -- The resulting list is sorted ascendingly according to values.
 --
 -- > enumerate = compact . explicit
-enumerate :: (Real r, NumSpec r, Ord a) => Dist r a -> [(a,r)]
+enumerate :: (Ord r, NumSpec r, Ord a) => Dist r a -> [(a,r)]
 enumerate = normalize . compact . explicit
 
 -- | Expectation of a given function computed using normalized weights.
-expectation :: (Real r, NumSpec r) => (a -> r) -> Dist r a -> r
+expectation :: (Ord r, NumSpec r) => (a -> r) -> Dist r a -> r
 expectation f = ensureDiscrete . Pop.popAvg f . Pop.normalize . toPopulation
+
+-- | 'compact' followed by removing values with zero weight.
+normalForm :: (Ord a, Ord r, NumSpec r) => Dist r a -> [(a,r)]
+normalForm = filter ((/= 0) . snd) . compact . explicit
+
+instance (Ord a, Ord r, NumSpec r) => Eq (Dist r a) where
+  p == q = normalForm p == normalForm q
+
+instance (Ord a, Ord r, NumSpec r, AEq r) => AEq (Dist r a) where
+  p === q = xs == ys && ps === qs where
+    (xs,ps) = unzip (normalForm p)
+    (ys,qs) = unzip (normalForm q)
+  p ~== q = xs == ys && ps ~== qs where
+    (xs,ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
+    (ys,qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q

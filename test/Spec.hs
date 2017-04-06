@@ -12,6 +12,7 @@ import qualified TestSMCObservations
 import qualified TestGradient
 import qualified TestConditional
 import qualified TestDistribution
+import qualified TestProposal
 
 main :: IO ()
 main = hspec $ do
@@ -122,6 +123,7 @@ main = hspec $ do
     it "gives correct gradient on gamma-normal-beta model" $ do
       TestGradient.check_gradient `shouldBe` True
   TestDistribution.spec
+  TestProposal.spec
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do
