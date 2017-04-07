@@ -13,7 +13,8 @@ module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
     sampleIOfixed,
-    SamplerST,
+    SamplerST(SamplerST),
+    runSamplerST,
     sampleST,
     sampleSTfixed
                ) where

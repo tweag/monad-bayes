@@ -10,18 +10,25 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Reparametrized (
-  Reparametrized
+  Reparametrized,
+  reparametrize,
+  sg
 ) where
 
 import Data.Vector
 import Numeric.AD
-import Control.Monad.Trans (MonadTrans, MonadIO)
+import Numeric.AD.Mode.Reverse
+import Control.Monad.Trans (MonadTrans, MonadIO, lift)
 import Control.Monad.Trans.Identity (IdentityT(IdentityT))
+import Control.Monad.Reader (ask)
+import Control.Monad.Trans.State (runState)
+import System.Random.MWC (save)
 
 import qualified Statistics.Distribution.Polymorphic.Discrete as D
 import qualified Statistics.Distribution.Polymorphic.Normal as N
 import qualified Statistics.Distribution.Polymorphic.Uniform as U
 import Control.Monad.Bayes.Simple
+import Control.Monad.Bayes.Sampler
 
 newtype Reparametrized t m a = Reparametrized (IdentityT m a)
   deriving(Read, Show, Eq, Functor, Applicative, Monad, MonadTrans, MonadIO)
@@ -45,3 +52,12 @@ instance (Functor m, Floating t, Ord t, Mode t, HasCustomReal m, Scalar t ~ Cust
     select x = case findIndex (>= x) (scanl1' (+) (D.weights d)) of
                   Just i -> i
                   Nothing -> error "Reparametrized: bad weights in Discrete"
+
+-- | Reparametrize model to sample only from distributions with fixed parameters.
+reparametrize :: Reparametrized t m a -> m a
+reparametrize (Reparametrized (IdentityT m)) = m
+
+-- | Stochastic gradient using a single sample
+sg :: (forall s. [Reverse s Double] -> Reparametrized (Reverse s Double) SamplerST (Reverse s Double))
+   -> [Double] -> SamplerST [Double]
+sg model = gradM (reparametrize . model)
