@@ -13,7 +13,8 @@ module Control.Monad.Bayes.Parametric (
   Parametric,
   parametric,
   getParam,
-  withParam
+  withParam,
+  hoist
 ) where
 
 import Control.Monad.Trans.Reader
@@ -22,6 +23,7 @@ import Control.Monad.Trans
 import Control.Monad.Bayes.Class hiding (Parametric)
 import Control.Monad.Bayes.Simple hiding (Parametric)
 
+-- | A transformer keeping track of the (hyper)parameters for the model.
 newtype Parametric p m a = Parametric (ReaderT p m a)
   deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
 
@@ -37,11 +39,18 @@ instance Conditionable m => Conditionable (Parametric p m) where
 instance MonadDist m => MonadDist (Parametric p m)
 instance MonadBayes m => MonadBayes (Parametric p m)
 
+-- | Construct a computation with global parameters.
 parametric :: (p -> m a) -> Parametric p m a
 parametric = Parametric . ReaderT
 
+-- | Get the value of parameters.
 getParam :: Monad m => Parametric p m p
 getParam = Parametric ask
 
+-- | Run with specified parameters.
 withParam :: Parametric p m a -> p -> m a
 withParam (Parametric m) = runReaderT m
+
+-- | Modify the transformed monad.
+hoist :: (m a -> n a) -> Parametric p m a -> Parametric p n a
+hoist f (Parametric m) = Parametric $ mapReaderT f m
