@@ -11,8 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Reparametrized (
   Reparametrized,
-  reparametrize,
-  sg
+  reparametrize
 ) where
 
 import Data.Vector
@@ -59,8 +58,3 @@ instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleab
 -- | Reparametrize model to sample only from distributions with fixed parameters.
 reparametrize :: Reparametrized s m a -> m a
 reparametrize (Reparametrized (IdentityT m)) = m
-
--- | Stochastic gradient using a single sample
-sg :: (Num r, Functor m, Traversable t) => (forall s. t (Reverse s r) -> Reparametrized s m (Reverse s r))
-   -> t r -> m (t r)
-sg model = gradM (reparametrize . model)
