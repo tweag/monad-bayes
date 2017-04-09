@@ -42,6 +42,7 @@ library
                        Control.Monad.Bayes.Simple,
                        Control.Monad.Bayes.Reparametrized,
                        Control.Monad.Bayes.Parametric,
+                       Control.Monad.Bayes.Constraint,
                        Control.Monad.Bayes.Inference.Proposal,
                        Control.Monad.Bayes.Inference.Variational
   build-depends:       base >= 4.7 && < 5
