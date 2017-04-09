@@ -25,6 +25,7 @@ library
                        Statistics.Distribution.Polymorphic.Uniform,
                        Statistics.Distribution.Polymorphic.Discrete,
                        Statistics.Distribution.Polymorphic.MVNormal,
+                       Statistics.Distribution.Polymorphic.Unconstrained,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,
