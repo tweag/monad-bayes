@@ -14,13 +14,20 @@ module Numeric.Optimization.SGD (
   sga
 ) where
 
+-- | Parameters for stochastic gradient descent.
 data SGDParam r = SGDParam {learningRate :: r, decayRate :: r, steps :: Int}
 
+-- | Checks SGD parameters, throws an error if any of them are invalid.
 validateSGDParam :: SGDParam r -> SGDParam r
 validateSGDParam p@(SGDParam _ _ s) = check `seq` p where
   check = if s < 0 then error "SGDParam: number of steps was negative" else ()
 
-sga :: (Monad m, Traversable t, Num r) => SGDParam r -> (t r -> m (t (r,r))) -> t r -> m (t r)
+-- | Stochastic gradient ascent - finds a maximum of the given function.
+sga :: (Monad m, Traversable t, Num r)
+    => SGDParam r
+    -> (t r -> m (t (r,r))) -- ^ stochastic function augmenting arguments with the gradient of the target
+    -> t r -- ^ initial value of arguments
+    -> m (t r)
 sga param f xs0 = go (steps param) (learningRate param) xs0 where
   go 0 _ xs = return xs
   go n r xs = do

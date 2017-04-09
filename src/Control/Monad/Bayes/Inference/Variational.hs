@@ -30,17 +30,12 @@ elbo :: (HasCustomReal m, Functor m) => Weighted m a -> m (CustomReal m)
 elbo = fmap (toLog . snd) . runWeighted
 
 -- | Stochastic gradient of 'elbo' using the reparametrization trick.
--- | Returns a traversable structure where each element is a tuple containing the argument the the gradient with respect to it.
+-- Returns a tuple where the first element is the value of ELBO and the second
+-- is a traversable structure where each element is a tuple containing the argument the the gradient with respect to it.
 elboGrad :: (Traversable t, HasCustomReal m, Functor m)
          => (forall s. Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
-         -> t (CustomReal m) -> m (t (CustomReal m, CustomReal m))
-elboGrad model = gradFWith (,) $ reparametrize . elbo . withParam model
-
--- -- | Like 'elboGrad', but also returns the ELBO estimator.
--- elboWithGrad :: (Traversable t, HasCustomReal m, Functor m)
---              => (forall s. Weighted (Parametric (t (Reverse s (CustomReal m))) (Reparametrized s m)) a)
---              -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m))
--- elboWithGrad model = gradM' $ reparametrize . (withParam $ elbo model)
+         -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m, CustomReal m))
+elboGrad model = gradFWith' (,) $ reparametrize . elbo . withParam model
 
 -- \ Find parameters that optimize ELBO using stochastic gradient descent.
 optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
@@ -48,4 +43,4 @@ optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
              -> SGDParam (CustomReal m) -- ^ optimization parameters
              -> t (CustomReal m) -- ^ initial values of parameters
              -> m (t (CustomReal m))
-optimizeELBO model optParam initial = sga optParam (elboGrad model) initial
+optimizeELBO model optParam initial = sga optParam (fmap snd . elboGrad model) initial
