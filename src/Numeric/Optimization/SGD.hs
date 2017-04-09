@@ -10,7 +10,10 @@ Portability : GHC
 -}
 
 module Numeric.Optimization.SGD (
-  SGDParam,
+  SGDParam(SGDParam),
+  learningRate,
+  decayRate,
+  steps,
   sga,
   sgd
 ) where
