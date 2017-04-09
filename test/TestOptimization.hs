@@ -30,10 +30,10 @@ xs0 :: [Double]
 xs0 = [1, -20]
 
 sgd_param :: SGDParam Double
-sgd_param = SGDParam {learningRate = 0.1, decayRate = 1, steps = 1000}
+sgd_param = SGDParam {learningRate = 0.1, decayRate = 1, steps = 10000}
 
 min_quad :: Bool
 min_quad = runIdentity (sgd sgd_param (return . gradf) xs0) ~== [0,0]
 
 min_s_quad :: Bool
-min_s_quad = sampleSTfixed (sgd sgd_param{decayRate=0.999} (return . gradf) xs0) ~== [0,0]
+min_s_quad = all ((< 0.1) . abs) $ sampleSTfixed (sgd sgd_param{decayRate=0.999} noisyGradf xs0)
