@@ -35,6 +35,7 @@ import Statistics.Distribution.Polymorphic.Beta as Beta
 import Statistics.Distribution.Polymorphic.Uniform
 import Statistics.Distribution.Polymorphic.Discrete
 import Statistics.Distribution.Polymorphic.MVNormal as MVNormal
+import Statistics.Distribution.Polymorphic.Unconstrained
 import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
@@ -79,6 +80,10 @@ instance Sampleable MVNormal SamplerIO where
     let u = chol_upper d
     z <- replicateM (size m) $ fromMWC MWC.standard
     return $ m + (z <# u)
+
+instance (KnownSupport d, Sampleable d SamplerIO) => Sampleable (Unconstrained d) SamplerIO where
+  sample d = fmap (transformConstraints d') $ sample d' where
+    d' = getConstrained d
 
 instance MonadDist SamplerIO where
   exponential r    = fromMWC $ MWC.exponential (recip r)

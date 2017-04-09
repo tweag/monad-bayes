@@ -20,7 +20,8 @@ module Statistics.Distribution.Polymorphic (
   module Statistics.Distribution.Polymorphic.Beta,
   module Statistics.Distribution.Polymorphic.Uniform,
   module Statistics.Distribution.Polymorphic.Discrete,
-  module Statistics.Distribution.Polymorphic.MVNormal
+  module Statistics.Distribution.Polymorphic.MVNormal,
+  module Statistics.Distribution.Polymorphic.Unconstrained
 ) where
 
 import Numeric.LogDomain (LogDomain, NumSpec)
@@ -31,3 +32,4 @@ import Statistics.Distribution.Polymorphic.Beta (Beta, betaDist)
 import Statistics.Distribution.Polymorphic.Uniform (Uniform, uniformDist)
 import Statistics.Distribution.Polymorphic.Discrete (Discrete, discreteDist)
 import Statistics.Distribution.Polymorphic.MVNormal (MVNormal, mvnormalDist)
+import Statistics.Distribution.Polymorphic.Unconstrained (Unconstrained, removeConstraints)

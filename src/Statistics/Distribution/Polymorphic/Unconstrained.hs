@@ -11,7 +11,12 @@ Portability : GHC
 
 module Statistics.Distribution.Polymorphic.Unconstrained (
   Unconstrained,
-  removeConstraints
+  removeConstraints,
+  getConstrained,
+  transformConstraints,
+  inverseTransformConstraints,
+  transformConstraintsGrad,
+  inverseTransformConstraintsGrad
 ) where
 
 import Numeric.AD
@@ -19,6 +24,7 @@ import Numeric.AD
 import Numeric.LogDomain
 import Statistics.Distribution.Polymorphic.Class
 
+-- | Wrapper for univariate continuous distributions that transforms them onto the real line.
 newtype Unconstrained d = Unconstrained d
 
 instance KnownSupport d => Distribution (Unconstrained d) where
@@ -36,9 +42,15 @@ instance (KnownSupport d, Parametric d) => Parametric (Unconstrained d) where
   param (Unconstrained d) = param d
   distFromParam = Unconstrained . distFromParam
 
+-- | Transform a distribution to one that has support on the entire real line.
 removeConstraints :: KnownSupport d => d -> Unconstrained d
 removeConstraints = Unconstrained
 
+-- | Retrieve the original constrained distribution.
+getConstrained :: Unconstrained d -> d
+getConstrained (Unconstrained d) = d
+
+-- Transformations onto the real line and their inverses.
 realLineTrans :: Floating a => a -> a
 realLineTrans = id
 realLineInvTrans :: Floating a => a -> a

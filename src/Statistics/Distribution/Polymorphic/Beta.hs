@@ -49,6 +49,9 @@ instance (Ord r, Floating r) => Distribution (Beta r) where
   type Domain (Beta r) = r
   type RealNum (Beta r) = r
 
+instance (Ord r, Floating r) => KnownSupport (Beta r) where
+  support _ = Interval 0 1
+
 instance (Ord r, Floating r) => Parametric (Beta r) where
   type Param (Beta r) = (r,r)
   param (Beta a b) = (a,b)

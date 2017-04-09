@@ -59,6 +59,9 @@ instance (Ord r, Floating r) => Distribution (Normal r) where
   type Domain (Normal r) = r
   type RealNum (Normal r) = r
 
+instance (Ord r, Floating r) => KnownSupport (Normal r) where
+  support _ = RealLine
+
 instance (Ord r, Floating r) => Parametric (Normal r) where
   type Param (Normal r) = (r,r)
   param (Normal m s) = (m,s)

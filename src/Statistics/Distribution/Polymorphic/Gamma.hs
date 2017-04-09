@@ -52,6 +52,9 @@ instance (Ord r, Floating r) => Distribution (Gamma r) where
   type Domain (Gamma r) = r
   type RealNum (Gamma r) = r
 
+instance (Ord r, Floating r) => KnownSupport (Gamma r) where
+  support _ = LowerBounded 0
+
 instance (Ord r, Floating r) => Parametric (Gamma r) where
   type Param (Gamma r) = (r,r)
   param (Gamma s r) = (s,r)

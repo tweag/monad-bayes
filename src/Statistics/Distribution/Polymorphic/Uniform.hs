@@ -49,6 +49,9 @@ instance (Ord r, Floating r) => Distribution (Uniform r) where
   type Domain (Uniform r) = r
   type RealNum (Uniform r) = r
 
+instance (Ord r, Floating r) => KnownSupport (Uniform r) where
+  support (Uniform a b) = Interval a b
+
 instance (Ord r, Floating r) => Parametric (Uniform r) where
   type Param (Uniform r) = (r,r)
   param (Uniform a b) = (a,b)
