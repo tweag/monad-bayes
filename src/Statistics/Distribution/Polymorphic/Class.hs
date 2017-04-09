@@ -22,7 +22,10 @@ module Statistics.Distribution.Polymorphic.Class (
   param,
   distFromParam,
   Density,
-  pdf
+  pdf,
+  KnownSupport,
+  transformConstraints,
+  inverseTransformConstraints
 ) where
 
 import Numeric.LogDomain
@@ -51,3 +54,32 @@ class Distribution d => Density d where
   -- For distributions over real numbers this is density w.r.t. the Lebesgue measure,
   -- for distributions over integers this is density w.r.t. the counting measure, aka the probability mass function.
   pdf :: d -> Domain d -> LogDomain (RealNum d)
+
+-- | Data type representing support of univariate continuous distributions.
+-- We only consider single intervals, which can extend to infinity on either end.
+-- There is no distinction between open and closed intervals.
+data Support r = RealLine
+               | LowerBounded r
+               | UpperBounded r
+               | Interval r r
+
+-- | Distributions with known support expressible as 'Support'.
+class (Distribution d, Domain d ~ RealNum d) => KnownSupport d where
+  -- | Support of the distribution.
+  support :: d -> Support (Domain d)
+
+-- | Transform the support of a distribution onto the real line.
+transformConstraints :: (KnownSupport d,Floating (RealNum d)) => d -> RealNum d -> RealNum d
+transformConstraints d = case support d of
+  RealLine       -> id
+  LowerBounded a -> \x -> log (x - a)
+  UpperBounded b -> \x -> log (b - x)
+  Interval a b   -> \x -> atanh ((x - a) / (b - a))
+
+-- | Inverse of 'transformConstraints'.
+inverseTransformConstraints :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
+inverseTransformConstraints d = case support d of
+  RealLine       -> id
+  LowerBounded a -> \y -> a + exp y
+  UpperBounded b -> \y -> b - exp y
+  Interval a b   -> \y -> tanh y * (b - a) + a
