@@ -11,8 +11,11 @@ Portability : GHC
 
 module Numeric.Optimization.SGD (
   SGDParam,
-  sga
+  sga,
+  sgd
 ) where
+
+import Data.Bifunctor (second)
 
 -- | Parameters for stochastic gradient descent.
 data SGDParam r = SGDParam {learningRate :: r, decayRate :: r, steps :: Int}
@@ -37,3 +40,11 @@ sga param f xs0 = go (steps param) (learningRate param) xs0 where
   step rate xs = do
     ys <- f xs
     return $ fmap (\(x, gx) -> x + rate * gx) ys
+
+-- | Stochastic gradient descent - finds a minimum by running 'sga' on a function with negated output.
+sgd :: (Monad m, Traversable t, Num r)
+    => SGDParam r
+    -> (t r -> m (t (r,r))) -- ^ stochastic function augmenting arguments with the gradient of the target
+    -> t r -- ^ initial value of arguments
+    -> m (t r)
+sgd param f = sga param (fmap (fmap (second negate)) . f)
