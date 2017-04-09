@@ -23,16 +23,16 @@ module Statistics.Distribution.Polymorphic.Class (
   distFromParam,
   Density,
   pdf,
+  Support(RealLine,LowerBounded,UpperBounded,Interval),
   KnownSupport,
-  transformConstraints,
-  inverseTransformConstraints
+  support
 ) where
 
 import Numeric.LogDomain
 
 -- | Distribution type class.
 -- It does not specify any functions, only types.
-class Distribution d where
+class (Floating (RealNum d), Ord (RealNum d)) => Distribution d where
   -- | The type corresponding to a set on which the distribution is defined.
   type Domain d
   -- | The custom real number type used by a distribution.
@@ -67,19 +67,3 @@ data Support r = RealLine
 class (Distribution d, Domain d ~ RealNum d) => KnownSupport d where
   -- | Support of the distribution.
   support :: d -> Support (Domain d)
-
--- | Transform the support of a distribution onto the real line.
-transformConstraints :: (KnownSupport d,Floating (RealNum d)) => d -> RealNum d -> RealNum d
-transformConstraints d = case support d of
-  RealLine       -> id
-  LowerBounded a -> \x -> log (x - a)
-  UpperBounded b -> \x -> log (b - x)
-  Interval a b   -> \x -> atanh ((x - a) / (b - a))
-
--- | Inverse of 'transformConstraints'.
-inverseTransformConstraints :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
-inverseTransformConstraints d = case support d of
-  RealLine       -> id
-  LowerBounded a -> \y -> a + exp y
-  UpperBounded b -> \y -> b - exp y
-  Interval a b   -> \y -> tanh y * (b - a) + a

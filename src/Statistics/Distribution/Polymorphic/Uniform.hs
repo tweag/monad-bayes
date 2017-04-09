@@ -45,7 +45,7 @@ uniformPdf a b x =
   else
     0
 
-instance Distribution (Uniform r) where
+instance (Ord r, Floating r) => Distribution (Uniform r) where
   type Domain (Uniform r) = r
   type RealNum (Uniform r) = r
 

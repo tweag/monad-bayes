@@ -44,11 +44,11 @@ discretePdf ws k = let i = fromIntegral k in
     then toLogDomain (ws V.! i)
     else 0
 
-instance Distribution (Discrete r k) where
+instance (Ord r, Floating r, Integral k) => Distribution (Discrete r k) where
   type Domain (Discrete r k)  = k
   type RealNum (Discrete r k) = r
 
-instance NumSpec r => Parametric (Discrete r k) where
+instance (Ord r, NumSpec r, Integral k) => Parametric (Discrete r k) where
   type Param (Discrete r k) = V.Vector r
   param = weights
   distFromParam = discreteDist

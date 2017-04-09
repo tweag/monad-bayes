@@ -48,7 +48,7 @@ gammaPdf a b x
   | x > 0     = fromLog $ a * log b + (a-1) * log x - b * x - logGamma a
   | otherwise = 0
 
-instance Distribution (Gamma r) where
+instance (Ord r, Floating r) => Distribution (Gamma r) where
   type Domain (Gamma r) = r
   type RealNum (Gamma r) = r
 

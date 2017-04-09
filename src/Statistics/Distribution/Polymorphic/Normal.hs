@@ -55,7 +55,7 @@ normalPdf mu sigma x
                   where
                     sq y = y ^ (2 :: Int)
 
-instance Distribution (Normal r) where
+instance (Ord r, Floating r) => Distribution (Normal r) where
   type Domain (Normal r) = r
   type RealNum (Normal r) = r
 
