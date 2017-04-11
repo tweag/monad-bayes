@@ -20,9 +20,10 @@ module Control.Monad.Bayes.MeanField (
   meanFieldNormal
 ) where
 
-import Prelude hiding (map, unzip)
+import Prelude hiding (map, unzip, length)
 
-import Data.Vector
+import Data.Vector hiding ((!), (++), slice)
+import qualified Data.Vector as V
 import Numeric.LinearAlgebra hiding (Vector, (!))
 import Control.Monad.Trans
 import Control.Monad.State
@@ -34,6 +35,42 @@ import Control.Monad.Bayes.Simple hiding (Parametric)
 import Control.Monad.Bayes.Parametric
 import Control.Monad.Bayes.Inference.Proposal
 
+-- | Safely extract the parameters.
+(!) :: (Num r, Ord r) => Vector (r,r) -> Int -> (r,r)
+v ! i = checkIndex v i `seq` checkParam (v V.! i)
+
+-- | Safely extract many pairs of parameters.
+slice :: (Num r, Ord r) => Int -> Int -> Vector (r,r) -> Vector (r,r)
+slice i n v = checkIndex v (i+n) `seq` map checkParam (V.slice i n v)
+
+-- | Check if the vector is long enough, generating a custom error message if not.
+checkIndex :: Vector (r,r) -> Int -> ()
+checkIndex v i =
+  if i < length v then
+    ()
+  else
+    error $ "MeanFieldNormal: parameter vector was too short - required at least " ++ show i ++ " elements but only " ++ show (length v) ++ " were supplied."
+
+-- | Check if standard deviation parameter is positive, generating a custom error message if not.
+checkParam :: (Num r, Ord r) => (r,r) -> (r,r)
+checkParam (m,s) =
+  if s <= 0 then
+    error "MeanFieldNormal: standard deviation parameter was not positive"
+  else
+    (m,s)
+
+-- | Check if all parameters in the vector were used, generating a custom error message if not.
+checkIndexingFinal :: Monad m => StateT Int (ReaderT (Vector (CustomReal m, CustomReal m)) m) a -> ReaderT (Vector (CustomReal m, CustomReal m)) m a
+checkIndexingFinal m = do
+  (x,i) <- runStateT m 0
+  params <- ask
+  if i == length params then
+    return x
+  else
+    error $ "MeanFieldNormal: parameter vector was too long - required " ++ show i ++ " elements but " ++ show (length params) ++ " were supplied."
+
+-- | Transformer proposing from independent normal distributions for all continuous random variables.
+-- The number of such random variables in the program should be fixed.
 newtype MeanFieldNormal m a = MeanFieldNormal (StateT Int (ReaderT (Vector (CustomReal m, CustomReal m)) m) a)
   deriving(Functor,Applicative,Monad,MonadIO)
 
@@ -69,5 +106,8 @@ instance (Conditionable m, Monad m) => Conditionable (MeanFieldNormal m) where
 instance MonadBayes m => MonadDist (MeanFieldNormal m)
 instance MonadBayes m => MonadBayes (MeanFieldNormal m)
 
+-- | Propose each random variable from a normal distribution with given parameters.
+-- Leave the discrete distributions unchanged.
+-- Parameters for the variational distributions are given in the same order as random variables appear in the program.
 meanFieldNormal :: Monad m => MeanFieldNormal m a -> Parametric (Vector (CustomReal m, CustomReal m)) m a
-meanFieldNormal (MeanFieldNormal m) = parametric $ runReaderT $ evalStateT m 0
+meanFieldNormal (MeanFieldNormal m) = parametric $ runReaderT $ checkIndexingFinal m
