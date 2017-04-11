@@ -17,7 +17,8 @@ Portability : GHC
 
 module Control.Monad.Bayes.MeanField (
   MeanFieldNormal,
-  meanFieldNormal
+  meanFieldNormal,
+  hoist
 ) where
 
 import Prelude hiding (map, unzip, length)
@@ -32,7 +33,7 @@ import Control.Monad.Reader
 import Statistics.Distribution.Polymorphic.MVNormal
 
 import Control.Monad.Bayes.Simple hiding (Parametric)
-import Control.Monad.Bayes.Parametric
+import Control.Monad.Bayes.Parametric hiding (hoist)
 import Control.Monad.Bayes.Inference.Proposal
 
 -- | Safely extract the parameters.
@@ -111,3 +112,7 @@ instance MonadBayes m => MonadBayes (MeanFieldNormal m)
 -- Parameters for the variational distributions are given in the same order as random variables appear in the program.
 meanFieldNormal :: Monad m => MeanFieldNormal m a -> Parametric (Vector (CustomReal m, CustomReal m)) m a
 meanFieldNormal (MeanFieldNormal m) = parametric $ runReaderT $ checkIndexingFinal m
+
+-- | Apply a transformation to the transformed monad.
+hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> MeanFieldNormal m a -> MeanFieldNormal n a
+hoist f (MeanFieldNormal m) = MeanFieldNormal $ mapStateT (mapReaderT f) m
