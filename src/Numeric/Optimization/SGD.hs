@@ -34,7 +34,7 @@ sga :: (Monad m, Traversable t, Num r)
     -> (t r -> m (t (r,r))) -- ^ stochastic function augmenting arguments with the gradient of the target
     -> t r -- ^ initial value of arguments
     -> m (t r)
-sga param f xs0 = go (steps param) (learningRate param) xs0 where
+sga param f xs0 = go (steps $ validateSGDParam param) (learningRate param) xs0 where
   go 0 _ xs = return xs
   go n r xs = do
     xs' <- step r xs
@@ -50,4 +50,4 @@ sgd :: (Monad m, Traversable t, Num r)
     -> (t r -> m (t (r,r))) -- ^ stochastic function augmenting arguments with the gradient of the target
     -> t r -- ^ initial value of arguments
     -> m (t r)
-sgd param f = sga param (fmap (fmap (second negate)) . f)
+sgd param f = sga (validateSGDParam param) (fmap (fmap (second negate)) . f)

@@ -33,7 +33,6 @@ Portability : GHC
    MonadBayes
  ) where
 
-import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
 import Control.Arrow (first)

@@ -19,11 +19,8 @@ import Data.Reflection (Reifies)
 import Numeric.AD
 import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse (Tape)
-import Control.Monad.Trans (MonadTrans, MonadIO, lift)
+import Control.Monad.Trans (MonadTrans, MonadIO)
 import Control.Monad.Trans.Identity (IdentityT(IdentityT))
-import Control.Monad.Reader (ask)
-import Control.Monad.Trans.State (runState)
-import System.Random.MWC (save)
 
 import qualified Statistics.Distribution.Polymorphic.Discrete as D
 import qualified Statistics.Distribution.Polymorphic.Normal as N
