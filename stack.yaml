@@ -7,13 +7,6 @@ packages:
 #   subdirs:
 #     - chart
 #   extra-dep: true
-# - location:
-#     git: https://github.com/adscib/ad
-#     commit: 658ee6968c15c55ae607d51e6fc2ac70e3e07920
-#   extra-dep: true
-- location:
-    '../ad'
-  extra-dep: true
 
 extra-deps: []
 resolver: lts-7.7

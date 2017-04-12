@@ -18,8 +18,10 @@ module Control.Monad.Bayes.Inference.Variational (
 
 import Prelude hiding (zip, splitAt, length, (++))
 
+import Data.Reflection (Reifies)
 import Data.Vector
 import Numeric.AD.Mode.Reverse
+import Numeric.AD.Internal.Reverse (Tape)
 
 import Numeric.LogDomain
 import Numeric.Optimization.SGD
@@ -29,6 +31,16 @@ import Control.Monad.Bayes.Reparametrized
 import Control.Monad.Bayes.Parametric
 import Control.Monad.Bayes.MeanField as MF
 import Control.Monad.Bayes.Constraint
+
+-- | Return a value and a gradient in an arbitrary functor and combine the gradient with input using the given function.
+-- This function is exposed by AD library as 'jacobianWith'' since it corresponds to the Jacobian if the functor
+-- used is a collection.
+-- Here a random sampling functor is used to obtain stochastic gradient, so we introduce this alias to avoid confusion.
+gradFWith' :: (Traversable f, Functor g, Num a)
+           => (a -> a -> b)
+           -> (forall s. Reifies s Tape => f (Reverse s a) -> g (Reverse s a))
+           -> f a -> g (a, f b)
+gradFWith' = jacobianWith'
 
 -- | Estimator for evidence lower bound.
 elbo :: (HasCustomReal m, Functor m) => Weighted m a -> m (CustomReal m)
