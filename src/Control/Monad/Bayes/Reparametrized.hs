@@ -26,7 +26,6 @@ import qualified Statistics.Distribution.Polymorphic.Discrete as D
 import qualified Statistics.Distribution.Polymorphic.Normal as N
 import qualified Statistics.Distribution.Polymorphic.Uniform as U
 import Control.Monad.Bayes.Simple
-import Control.Monad.Bayes.Sampler
 
 -- | A transformer that uses the reparametrization trick to automatically propagate gradients through sampling functions.
 newtype Reparametrized s m a = Reparametrized (IdentityT m a)
