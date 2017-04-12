@@ -59,7 +59,7 @@ library
                      , reflection
                      , hmatrix
                      , ieee754
-  ghc-options:         -Wall
+  ghc-options:         -Wall -fno-warn-redundant-constraints
   default-language:    Haskell2010
   default-extensions:  RankNTypes
                      , GeneralizedNewtypeDeriving
