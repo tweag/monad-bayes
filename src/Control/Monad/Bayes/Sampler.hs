@@ -12,11 +12,16 @@ Portability : GHC
 module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
-    sampleIOfixed
+    sampleIOfixed,
+    SamplerST,
+    sampleST,
+    sampleSTfixed
                ) where
 
-import System.Random.MWC (GenIO, create, createSystemRandom, uniformR)
+import Control.Monad.ST (ST, runST)
+import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
+import Control.Monad.State (State, state)
 import Control.Monad.Trans (lift, MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 import Numeric.LinearAlgebra ((<#), size)
@@ -79,3 +84,73 @@ instance MonadDist SamplerIO where
   geometric p      = fromMWC $ MWC.geometric0 p
   bernoulli p      = fromMWC $ MWC.bernoulli p
   dirichlet ws     = fromMWC $ MWC.dirichlet ws
+
+
+
+
+-- | An `ST` based random sampler using the MWC-Random package.
+newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
+
+runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a
+runSamplerST (SamplerST s) = s
+
+instance Functor SamplerST where
+  fmap f (SamplerST s) = SamplerST $ fmap f s
+
+instance Applicative SamplerST where
+  pure x = SamplerST $ pure x
+  (SamplerST f) <*> (SamplerST x) = SamplerST $ f <*> x
+
+instance Monad SamplerST where
+  (SamplerST x) >>= f = SamplerST $ x >>= runSamplerST . f
+
+-- | Run the sampler with a supplied seed.
+-- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
+sampleST :: SamplerST a -> State Seed a
+sampleST (SamplerST s) =
+  state $ \seed -> runST $ do
+    gen <- restore seed
+    y <- runReaderT s gen
+    finalSeed <- save gen
+    return (y, finalSeed)
+
+-- | Run the sampler with a fixed random seed.
+sampleSTfixed :: SamplerST a -> a
+sampleSTfixed (SamplerST s) = runST $ do
+  gen <- create
+  runReaderT s gen
+
+instance HasCustomReal SamplerST where
+  type CustomReal SamplerST = Double
+
+-- | Helper for converting distributions supplied by MWC-Random
+fromMWC' :: (forall s. GenST s -> ST s a) -> SamplerST a
+fromMWC' s = SamplerST $ ask >>= lift . s
+
+instance Sampleable (Normal Double) SamplerST where
+  sample d = fromMWC' $ MWC.normal (Normal.mean d) (stddev d)
+
+instance Sampleable (Gamma Double) SamplerST where
+  sample d = fromMWC' $ MWC.gamma (shape d) (scale d)
+
+instance Sampleable (Beta Double) SamplerST where
+  sample d = fromMWC' $ MWC.beta (Beta.alpha d) (Beta.beta d)
+
+instance Sampleable (Uniform Double) SamplerST where
+  sample d = fromMWC' $ uniformR (lower d, upper d)
+
+instance Sampleable (Discrete Double Int) SamplerST where
+  sample d = fromMWC' $ MWC.categorical $ weights d
+
+instance Sampleable MVNormal SamplerST where
+  sample d = do
+    let m = MVNormal.mean d
+    let u = chol_upper d
+    z <- replicateM (size m) $ fromMWC' MWC.standard
+    return $ m + (z <# u)
+
+instance MonadDist SamplerST where
+  exponential r    = fromMWC' $ MWC.exponential (recip r)
+  geometric p      = fromMWC' $ MWC.geometric0 p
+  bernoulli p      = fromMWC' $ MWC.bernoulli p
+  dirichlet ws     = fromMWC' $ MWC.dirichlet ws
