@@ -16,6 +16,7 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Augmented
 import Sprinkler
 import qualified StrictlySmallerSupport
 
@@ -33,7 +34,7 @@ check_preserve_smc = (enumerate . collapse . smcMultinomial 2 2) sprinkler ~==
 -- check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
 --                       enumerate sprinkler
 --
--- check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+-- check_preserve_smh = (enumerate . collapse . smh 1 2) sprinkler ~==
 --                       enumerate sprinkler
 --
 -- check_preserve_smcrm = (enumerate . collapse . smcrm 1 2 1) sprinkler ~==
@@ -63,6 +64,15 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_trace_trans = check_trace_mh sprinkler sprinkler
 --
 -- check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
+
+custom_mh_test = enumerate (s >>= \x -> (fmap (!! 0) (mhCustom 1 sprinkler k x)))  where
+  k = singleSiteTraceKernel 0 undefined (customDiscreteKernel (const [0.5,0.5]))
+  s = marginal $ joint sprinkler
+
+custom_mh_target = enumerate sprinkler
+
+check_custom_mh =
+  enumerate sprinkler ~== custom_mh_test
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> IO Int
