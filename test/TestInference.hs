@@ -66,7 +66,7 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
 
 custom_mh_test = enumerate (s >>= \x -> (fmap (!! 0) (mhCustom 1 sprinkler k x)))  where
-  k = singleSiteTraceKernel 0 undefined (customDiscreteKernel (const [0.5,0.5]))
+  k = singleSiteTraceKernel 0 identityKernel (discreteKernel (replicate 2 [0.5,0.5]))
   s = marginal $ joint sprinkler
 
 custom_mh_target = enumerate sprinkler

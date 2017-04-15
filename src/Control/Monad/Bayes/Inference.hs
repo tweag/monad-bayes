@@ -93,11 +93,8 @@ smcWithResampler resampler k n =
 
 
 
--- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
-newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
-
 -- | Generic Metropolis-Hastings algorithm.
-mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
+mh :: MonadDist m => Int ->  Weighted m a -> (a -> Weighted m (a, LogDomain (CustomReal m))) -> m [a]
 mh n initial trans = evalStateT (start >>= chain n) 1 where
   -- start :: StateT LogFloat m a
   start = do
@@ -111,7 +108,7 @@ mh n initial trans = evalStateT (start >>= chain n) 1 where
   chain 0 _ = return []
   chain k x = do
     p <- get
-    ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
+    ((y,w), q) <- lift $ runWeighted $ trans x
     accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
     let next = if accept then y else x
     when accept (put q)
@@ -121,7 +118,7 @@ mh n initial trans = evalStateT (start >>= chain n) 1 where
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
 mhPrior n d = mh n d kernel where
-    kernel = MHKernel $ const $ fmap (,1) d
+    kernel = const $ fmap (,1) d
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
