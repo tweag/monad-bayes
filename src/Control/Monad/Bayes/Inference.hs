@@ -21,21 +21,24 @@ module Control.Monad.Bayes.Inference (
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  mhPriorKernel,
   mhPrior,
   pimh
 ) where
 
 import Prelude hiding (sum)
-import Control.Monad.State.Lazy
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
-import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Augmented
+import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Inference.MCMC
 
 -- | Rejection sampling that proposes from the prior.
@@ -91,39 +94,23 @@ smcWithResampler resampler k n =
   where
     hoist' = Sequential.hoistFirst
 
-
-
--- | Generic Metropolis-Hastings algorithm.
-mh :: MonadDist m => Int ->  Weighted m a -> (a -> Weighted m (a, LogDomain (CustomReal m))) -> m [a]
-mh n initial trans = evalStateT (start >>= chain n) 1 where
-  -- start :: StateT LogFloat m a
-  start = do
-    (x, p) <- lift $ runWeighted initial
-    if p == 0 then
-      start
-    else
-      put p >> return x
-
-  --chain :: Int -> a -> StateT LogFloat m [a]
-  chain 0 _ = return []
-  chain k x = do
-    p <- get
-    ((y,w), q) <- lift $ runWeighted $ trans x
-    accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
-    let next = if accept then y else x
-    when accept (put q)
-    rest <- chain (k-1) next
-    return (x:rest)
+-- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
+-- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.
+mhPriorKernel :: MonadDist m
+              => (forall n. (MonadDist n, CustomReal n ~ CustomReal m) => n ()) -- ^ model
+              -> CustomKernel m (Trace (CustomReal m))
+mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ unsafeJointDensity model)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
-mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
-mhPrior n d = mh n d kernel where
-    kernel = const $ fmap (,1) d
+-- Current implementation is wasteful in that it computes the density of a trace twice.
+mhPrior :: MonadDist m => Int -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> m [a]
+mhPrior n d = prior (marginal (joint d)) >>= mhCustom n d (mhPriorKernel (prior d >> return ()))
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
 pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of particles in SMC
                     -> Int -- ^ number of independent SMC runs
-                    -> Sequential (Population (Weighted m)) a -> m [a]
+                    -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => Sequential (Population n) a) -- ^ model
+                    -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d

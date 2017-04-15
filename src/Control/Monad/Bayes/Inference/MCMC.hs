@@ -36,7 +36,9 @@ module Control.Monad.Bayes.Inference.MCMC (
   TraceKernel,
   traceKernel,
   singleSiteTraceKernel,
-  randomWalkKernel
+  randomWalkKernel,
+  CustomKernel,
+  customKernel
 ) where
 
 import Prelude hiding (sum)
@@ -315,3 +317,18 @@ randomWalkKernel :: (MonadDist m)
                  -> TraceKernel (ProductKernel (SingleSiteKernel (GaussianKernel m))
                                                (SingleSiteKernel (IdentityKernel m Int)))
 randomWalkKernel sigma = singleSiteTraceKernel 1 (gaussianKernel sigma) identityKernel
+
+
+-- | A custom transition kernel specified as a pair of functions.
+data CustomKernel m a = CustomKernel {customProposal :: a -> m a, customDensity :: a -> a -> LogDomain (CustomReal m)}
+
+instance HasCustomReal m => MHKernel (CustomKernel m a) where
+  type KernelDomain (CustomKernel m a) = a
+  type MHSampler (CustomKernel m a) = m
+  proposeFrom k x = customProposal k x
+  density k x y = customDensity k x y
+
+-- | Construct a custom kernel using the supplied sampler and its density.
+-- It is up to the user to ensure that the density matches the sampler and that it does not return spurious values.
+customKernel :: (a -> m a) -> (a -> a -> LogDomain (CustomReal m)) -> CustomKernel m a
+customKernel = CustomKernel
