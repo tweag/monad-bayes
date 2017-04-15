@@ -103,6 +103,7 @@ mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ uns
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 -- Current implementation is wasteful in that it computes the density of a trace twice.
+-- This could be fixed by providing a specialized implementation instead.
 mhPrior :: MonadDist m => Int -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> m [a]
 mhPrior n d = prior (marginal (joint d)) >>= mhCustom n d (mhPriorKernel (prior d >> return ()))
 
