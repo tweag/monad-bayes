@@ -38,6 +38,7 @@ library
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
                        Control.Monad.Bayes.Simple,
+                       Control.Monad.Bayes.Inference.MCMC,
                        Control.Monad.Bayes.Inference.HMC
   build-depends:       base >= 4.7 && < 5
                      , containers
