@@ -155,6 +155,10 @@ instance Sampleable MVNormal SamplerST where
     z <- replicateM (size m) $ fromMWC' MWC.standard
     return $ m + (z <# u)
 
+instance (KnownSupport d, Sampleable d SamplerST) => Sampleable (Unconstrained d) SamplerST where
+  sample d = fmap (transformConstraints d') $ sample d' where
+    d' = getConstrained d
+
 instance MonadDist SamplerST where
   exponential r    = fromMWC' $ MWC.exponential (recip r)
   geometric p      = fromMWC' $ MWC.geometric0 p

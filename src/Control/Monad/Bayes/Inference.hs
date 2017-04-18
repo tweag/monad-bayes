@@ -25,10 +25,14 @@ module Control.Monad.Bayes.Inference (
   mhPrior,
   pimh,
   randomWalk,
-  hmc
+  hmc,
+  advi
 ) where
 
 import Prelude hiding (sum)
+
+import Numeric.AD.Internal.Reverse (Tape)
+import Data.Reflection (Reifies)
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
@@ -42,7 +46,11 @@ import Control.Monad.Bayes.Augmented
 import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Constraint
+import Control.Monad.Bayes.Weighted hiding (prior)
+import Control.Monad.Bayes.MeanField
+import Control.Monad.Bayes.Reparametrized
 import Control.Monad.Bayes.Inference.MCMC
+import qualified Control.Monad.Bayes.Inference.Variational as VI
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -140,3 +148,18 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
 hmc model epsilon l mass n = mhInitPrior n (unconstrain model) kernel where
   kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
   gradU = snd . unsafeJointDensityGradient (unconstrain model)
+
+advi :: forall m a. (MonadDist m)
+     => Int -- ^ number of random variables in the model
+     -> (forall n. (Monad n, Sampleable (Normal (CustomReal n)) n, Conditionable n) => Constraint (MeanFieldNormal n) a) -- ^ model
+     -> CustomReal m -- ^ learning rate
+     -> CustomReal m -- ^ decay rate
+     -> Int -- ^ number of optimization steps
+     -> m (m a) -- ^ optimized variational model
+advi size model lr dr n = traceSize >>= \t -> VI.advi t modelFirst modelSecond (VI.SGDParam lr dr n) where
+  modelFirst :: (forall s. Reifies s Tape => MeanFieldNormal (Weighted (Reparametrized s m)) a)
+  modelFirst = unconstrain model
+  modelSecond :: (MeanFieldNormal (Weighted m) a)
+  modelSecond = unconstrain model
+  --traceSize = fmap (length . fst . toLists) $ marginal $ joint $ prior $ unconstrain model
+  traceSize = return size

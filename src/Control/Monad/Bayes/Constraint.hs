@@ -41,6 +41,9 @@ instance {-# OVERLAPPING #-} Sampleable (Discrete r k) m => Sampleable (Discrete
 instance {-# OVERLAPPING #-} Sampleable MVNormal m => Sampleable MVNormal (Constraint m) where
   sample = Constraint . IdentityT . sample
 
+instance {-# OVERLAPPING #-} (Sampleable (Unconstrained d) m) => Sampleable (Unconstrained d) (Constraint m) where
+  sample = Constraint . IdentityT . sample
+
 instance Conditionable m => Conditionable (Constraint m) where
   factor = Constraint . IdentityT . factor
 

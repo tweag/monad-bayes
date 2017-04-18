@@ -10,6 +10,7 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Inference.Variational (
+  module Numeric.Optimization.SGD,
   elbo,
   elboGrad,
   optimizeELBO,
@@ -30,7 +31,6 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Reparametrized
 import Control.Monad.Bayes.Parametric
 import Control.Monad.Bayes.MeanField as MF
-import Control.Monad.Bayes.Constraint
 
 -- | Return a value and a gradient in an arbitrary functor and combine the gradient with input using the given function.
 -- This function is exposed by AD library as 'jacobianWith'' since it corresponds to the Jacobian if the functor
@@ -50,13 +50,13 @@ elbo = fmap (toLog . snd) . runWeighted
 -- Returns a tuple where the first element is the value of ELBO and the second
 -- is a traversable structure where each element is a tuple containing the argument the the gradient with respect to it.
 elboGrad :: (Traversable t, HasCustomReal m, Functor m)
-         => (forall s. Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
+         => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
          -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m, CustomReal m))
 elboGrad model = gradFWith' (,) $ reparametrize . elbo . withParam model
 
 -- \ Find parameters that optimize ELBO using stochastic gradient descent.
 optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
-             => (forall s. Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a) -- ^ model
+             => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a) -- ^ model
              -> SGDParam (CustomReal m) -- ^ optimization parameters
              -> t (CustomReal m) -- ^ initial values of parameters
              -> m (t (CustomReal m))
@@ -68,13 +68,13 @@ reshapeParam m = parametric (withParam m . split) where
 
 advi :: (MonadDist m', MonadDist m'', CustomReal m' ~ CustomReal m'')
      => Int -- ^ number of random variables in the model
-     -> (forall s. MeanFieldNormal (Constraint (Weighted (Reparametrized s m'))) a) -- ^ model
-     -> MeanFieldNormal (Constraint (Weighted m'')) a -- ^ same model in a different monad
+     -> (forall s. (Reifies s Tape) => MeanFieldNormal (Weighted (Reparametrized s m')) a) -- ^ model
+     -> MeanFieldNormal (Weighted m'') a -- ^ same model in a different monad
      -> SGDParam (CustomReal m'')
      -> m' (m'' a)
 advi n m m' sgdParam = do
   initialMeans <- replicateM n (uniform (-1) 1)
   initialStdDevs <- replicateM n (uniform 0.01 1)
   let initialParam = initialMeans ++ initialStdDevs
-  bestParam <- optimizeELBO (reshapeParam $ meanFieldNormal $ MF.hoist unconstrain m) sgdParam initialParam
-  return $ prior $ (withParam $ reshapeParam $ meanFieldNormal $ MF.hoist unconstrain m') bestParam
+  bestParam <- optimizeELBO (reshapeParam $ meanFieldNormal m) sgdParam initialParam
+  return $ prior $ (withParam $ reshapeParam $ meanFieldNormal m') bestParam

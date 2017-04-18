@@ -13,7 +13,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import qualified Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Weighted hiding (prior)
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Inference

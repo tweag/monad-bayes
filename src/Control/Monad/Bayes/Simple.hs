@@ -92,7 +92,10 @@ logDiscrete = sample . logDiscreteDist
 class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m),
        Sampleable (Normal (CustomReal m)) m, Sampleable (Gamma (CustomReal m)) m,
        Sampleable (Beta (CustomReal m)) m, Sampleable (Uniform (CustomReal m)) m,
-       Sampleable (Discrete (CustomReal m) Int) m) => MonadDist m where
+       Sampleable (Discrete (CustomReal m) Int) m,
+       Sampleable (Unconstrained (Normal (CustomReal m))) m, Sampleable (Unconstrained (Gamma (CustomReal m))) m,
+       Sampleable (Unconstrained (Beta (CustomReal m))) m, Sampleable (Unconstrained (Uniform (CustomReal m))) m
+       ) => MonadDist m where
 
     -- | Categorical distribution.
     -- The weights should conform to the same rules as for `discrete`.

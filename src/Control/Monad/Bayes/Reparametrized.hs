@@ -22,6 +22,7 @@ import Numeric.AD.Internal.Reverse (Tape)
 import Control.Monad.Trans (MonadTrans, MonadIO)
 import Control.Monad.Trans.Identity (IdentityT(IdentityT))
 
+import Statistics.Distribution.Polymorphic.Unconstrained
 import qualified Statistics.Distribution.Polymorphic.Discrete as D
 import qualified Statistics.Distribution.Polymorphic.Normal as N
 import qualified Statistics.Distribution.Polymorphic.Uniform as U
@@ -50,6 +51,10 @@ instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleab
     select x = case findIndex (>= x) (scanl1' (+) (D.weights d)) of
                   Just i -> i
                   Nothing -> error "Reparametrized: bad weights in Discrete"
+
+instance (Functor m, KnownSupport d, Sampleable d (Reparametrized s m)) => Sampleable (Unconstrained d) (Reparametrized s m) where
+  sample d = fmap (transformConstraints d') (sample d') where
+    d' = getConstrained d
 
 -- | Reparametrize model to sample only from distributions with fixed parameters.
 reparametrize :: Reparametrized s m a -> m a
