@@ -14,26 +14,33 @@ Portability : GHC
  #-}
 
 module Control.Monad.Bayes.Inference (
+  module Control.Monad.Bayes.Inference.MCMC,
   rejection,
   importance,
   importance',
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  mhPriorKernel,
   mhPrior,
-  pimh
+  pimh,
+  hmc
 ) where
 
-import Control.Monad.State.Lazy
+import Prelude hiding (sum)
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
-import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Augmented
+import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Inference.MCMC
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -88,42 +95,38 @@ smcWithResampler resampler k n =
   where
     hoist' = Sequential.hoistFirst
 
-
-
--- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
-newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
-
--- | Generic Metropolis-Hastings algorithm.
-mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
-mh n initial trans = evalStateT (start >>= chain n) 1 where
-  -- start :: StateT LogFloat m a
-  start = do
-    (x, p) <- lift $ runWeighted initial
-    if p == 0 then
-      start
-    else
-      put p >> return x
-
-  --chain :: Int -> a -> StateT LogFloat m [a]
-  chain 0 _ = return []
-  chain k x = do
-    p <- get
-    ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
-    accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
-    let next = if accept then y else x
-    when accept (put q)
-    rest <- chain (k-1) next
-    return (x:rest)
+-- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
+-- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.
+mhPriorKernel :: MonadDist m
+              => (forall n. (MonadDist n, CustomReal n ~ CustomReal m) => n ()) -- ^ model
+              -> CustomKernel m (Trace (CustomReal m))
+mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ unsafeJointDensity model)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
-mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
-mhPrior n d = mh n d kernel where
-    kernel = MHKernel $ const $ fmap (,1) d
+-- Current implementation is wasteful in that it computes the density of a trace twice.
+-- This could be fixed by providing a specialized implementation instead.
+mhPrior :: MonadDist m => Int -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> m [a]
+mhPrior n d = prior (marginal (joint d)) >>= mh n d (mhPriorKernel (prior d >> return ()))
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
 pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of particles in SMC
                     -> Int -- ^ number of independent SMC runs
-                    -> Sequential (Population (Weighted m)) a -> m [a]
+                    -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => Sequential (Population n) a) -- ^ model
+                    -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
+
+-- | Hamitlonian Monte Carlo.
+-- Only works for models with a fixed number of continuous random variables and no discrete random variables.
+hmc :: (MonadDist m, CustomReal m ~ Double)
+    => (forall n. (MonadBayes n) => n a) -- ^ model
+    -> CustomReal m -- ^ step size @epsilon@
+    -> Int -- ^ number of steps @L@ taken at each transition
+    -> [CustomReal m] -- ^ list of masses
+    -> Int -- ^ number of transitions, equal to the number of samples returned
+    -> Trace (CustomReal m) -- ^ initial trace
+    -> m [a]
+hmc model epsilon l mass n starting = mh n model kernel starting where
+  kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
+  gradU = snd . unsafeJointDensityGradient model

@@ -1,6 +1,7 @@
 {-# LANGUAGE
   TupleSections,
-  Rank2Types
+  Rank2Types,
+  TypeFamilies
  #-}
 
 module TestInference where
@@ -16,6 +17,9 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Augmented
+import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Deterministic
 import Sprinkler
 import qualified StrictlySmallerSupport
 
@@ -33,7 +37,7 @@ check_preserve_smc = (enumerate . collapse . smcMultinomial 2 2) sprinkler ~==
 -- check_preserve_ismh = (enumerate . collapse . ismh 1 2) sprinkler ~==
 --                       enumerate sprinkler
 --
--- check_preserve_smh = (enumerate . collapse . smh 2 2) sprinkler ~==
+-- check_preserve_smh = (enumerate . collapse . smh 1 2) sprinkler ~==
 --                       enumerate sprinkler
 --
 -- check_preserve_smcrm = (enumerate . collapse . smcrm 1 2 1) sprinkler ~==
@@ -63,6 +67,20 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_trace_trans = check_trace_mh sprinkler sprinkler
 --
 -- check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
+
+custom_mh_test :: (MHKernel k, KernelDomain k ~ Trace Double, MHSampler k ~ Dist.Enumerator (Deterministic Double)) => k -> [(Bool, Double)]
+custom_mh_test k = enumerate (s >>= \x -> (fmap (!! 0) (mh 1 sprinkler k x)))  where
+  s = marginal $ joint sprinkler
+
+custom_mh_target = enumerate sprinkler
+
+check_custom_mh =
+  enumerate sprinkler ~==
+    custom_mh_test (singleSiteTraceKernel 0 identityKernel (discreteKernel (replicate 2 [0.5,0.5])))
+
+check_prior_mh =
+  enumerate sprinkler ~==
+    custom_mh_test (mhPriorKernel $ prior $ sprinkler >> return ())
 
 -- | Count the number of particles produced by SMC
 check_particles :: Int -> Int -> IO Int

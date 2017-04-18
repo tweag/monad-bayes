@@ -46,6 +46,7 @@ library
                        Control.Monad.Bayes.MeanField,
                        Control.Monad.Bayes.Inference.Proposal,
                        Control.Monad.Bayes.Inference.Variational
+                       Control.Monad.Bayes.Inference.MCMC
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
