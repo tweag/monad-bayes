@@ -353,6 +353,8 @@ instance (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m) => MHK
   type KernelDomain (HamiltonianKernel m) = [CustomReal m]
   type MHSampler (HamiltonianKernel m) = m
   proposeFrom (HamiltonianKernel e l ms dU) xs = do
+    unless (length xs == length ms) $ error $ "HMC: position list has wrong length - expected "
+                                              ++ show (length xs) ++ " but got " ++ show (length ms)
     ps <- mapM (normal 0 . sqrt) ms
     let (ys,_) = leapfrog l e dU ms xs ps
     return ys
