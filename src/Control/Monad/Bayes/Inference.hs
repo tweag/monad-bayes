@@ -40,6 +40,7 @@ import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Augmented
 import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Constraint
 import Control.Monad.Bayes.Inference.MCMC
 
 -- | Rejection sampling that proposes from the prior.
@@ -120,13 +121,13 @@ pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
 -- | Hamitlonian Monte Carlo.
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
-    => (forall n. (MonadBayes n) => n a) -- ^ model
+    => (forall n. (MonadBayes n) => Constraint n a) -- ^ model
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
     -> [CustomReal m] -- ^ list of masses
     -> Int -- ^ number of transitions, equal to the number of samples returned
     -> Trace (CustomReal m) -- ^ initial trace
     -> m [a]
-hmc model epsilon l mass n starting = mh n model kernel starting where
+hmc model epsilon l mass n starting = mh n (unconstrain model) kernel starting where
   kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
-  gradU = snd . unsafeJointDensityGradient model
+  gradU = snd . unsafeJointDensityGradient (unconstrain model)
