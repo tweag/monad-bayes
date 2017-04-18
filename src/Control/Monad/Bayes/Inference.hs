@@ -23,7 +23,8 @@ module Control.Monad.Bayes.Inference (
   smcWithResampler,
   mhPriorKernel,
   mhPrior,
-  pimh
+  pimh,
+  hmc
 ) where
 
 import Prelude hiding (sum)
@@ -115,3 +116,17 @@ pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => Sequential (Population n) a) -- ^ model
                     -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
+
+-- | Hamitlonian Monte Carlo.
+-- Only works for models with a fixed number of continuous random variables and no discrete random variables.
+hmc :: (MonadDist m, CustomReal m ~ Double)
+    => (forall n. (MonadBayes n) => n a) -- ^ model
+    -> CustomReal m -- ^ step size @epsilon@
+    -> Int -- ^ number of steps @L@ taken at each transition
+    -> [CustomReal m] -- ^ list of masses
+    -> Int -- ^ number of transitions, equal to the number of samples returned
+    -> Trace (CustomReal m) -- ^ initial trace
+    -> m [a]
+hmc model epsilon l mass n starting = mh n model kernel starting where
+  kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
+  gradU = snd . unsafeJointDensityGradient model
