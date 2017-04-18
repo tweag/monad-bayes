@@ -149,6 +149,8 @@ hmc model epsilon l mass n = mhInitPrior n (unconstrain model) kernel where
   kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
   gradU = snd . unsafeJointDensityGradient (unconstrain model)
 
+-- | Automatic Differentiation Variational Inference.
+-- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.
 advi :: forall m a. (MonadDist m)
      => Int -- ^ number of random variables in the model
      -> (forall n. (Monad n, Sampleable (Normal (CustomReal n)) n, Conditionable n) => Constraint (MeanFieldNormal n) a) -- ^ model
@@ -156,10 +158,8 @@ advi :: forall m a. (MonadDist m)
      -> CustomReal m -- ^ decay rate
      -> Int -- ^ number of optimization steps
      -> m (m a) -- ^ optimized variational model
-advi size model lr dr n = traceSize >>= \t -> VI.advi t modelFirst modelSecond (VI.SGDParam lr dr n) where
+advi size model lr dr n = VI.advi size modelFirst modelSecond (VI.SGDParam lr dr n) where
   modelFirst :: (forall s. Reifies s Tape => MeanFieldNormal (Weighted (Reparametrized s m)) a)
   modelFirst = unconstrain model
   modelSecond :: (MeanFieldNormal (Weighted m) a)
   modelSecond = unconstrain model
-  --traceSize = fmap (length . fst . toLists) $ marginal $ joint $ prior $ unconstrain model
-  traceSize = return size
