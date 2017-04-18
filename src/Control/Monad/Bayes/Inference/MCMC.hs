@@ -19,6 +19,7 @@ module Control.Monad.Bayes.Inference.MCMC (
   density,
   densityRatio,
   proposeWithDensityRatio,
+  mhInitPrior,
   mh,
   mhStep,
   IdentityKernel,
@@ -53,6 +54,7 @@ import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Augmented
 
 -- | Interface for transition kernels used in Metropolis-Hastings algorithms.
 -- A kernel is a stochastic function @a -> D a@.
@@ -78,6 +80,21 @@ class (HasCustomReal (MHSampler k)) => MHKernel k where
   -- > proposeWithDensityRatio k x = fmap (\y -> (y, densityRatio k x y)) (proposeFrom k x)
   proposeWithDensityRatio :: Functor (MHSampler k) => k -> KernelDomain k -> (MHSampler k) (KernelDomain k, LogDomain (CustomReal (MHSampler k)))
   proposeWithDensityRatio k x = fmap (\y -> (y, densityRatio k x y)) (proposeFrom k x)
+
+-- | Metropolis-Hastings that samples the initial state from the prior.
+-- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
+mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+            => Int -- ^ number of steps
+            -> (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
+            -> k -- ^ transition kernel
+            -> m [a] -- ^ resulting Markov chain truncated to output space
+mhInitPrior n model kernel = starting >>= mh n model kernel where
+  starting = do
+    (x,w) <- runWeighted $ marginal $ joint model
+    if w > 0 then
+      return x
+    else
+      starting
 
 -- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
 mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)

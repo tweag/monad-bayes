@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Inference (
   mhPriorKernel,
   mhPrior,
   pimh,
+  randomWalk,
   hmc
 ) where
 
@@ -118,6 +119,15 @@ pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> m [a]
 pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
 
+-- | Random walk Metropolis-Hastings proposing single-site updates from a normal distribution with a fixed width.
+randomWalk :: (MonadDist m)
+    => (forall n. (MonadBayes n) => Constraint n a) -- ^ model
+    -> CustomReal m -- ^ width of the Gaussian kernel @sigma@
+    -> Int -- ^ number of transitions, equal to the number of samples returned
+    -> m [a]
+randomWalk model sigma n = mhInitPrior n (unconstrain model) kernel where
+  kernel = randomWalkKernel sigma
+
 -- | Hamitlonian Monte Carlo.
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
@@ -126,8 +136,7 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
     -> Int -- ^ number of steps @L@ taken at each transition
     -> [CustomReal m] -- ^ list of masses
     -> Int -- ^ number of transitions, equal to the number of samples returned
-    -> Trace (CustomReal m) -- ^ initial trace
     -> m [a]
-hmc model epsilon l mass n starting = mh n (unconstrain model) kernel starting where
+hmc model epsilon l mass n = mhInitPrior n (unconstrain model) kernel where
   kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
   gradU = snd . unsafeJointDensityGradient (unconstrain model)
