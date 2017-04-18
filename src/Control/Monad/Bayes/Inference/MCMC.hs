@@ -19,8 +19,8 @@ module Control.Monad.Bayes.Inference.MCMC (
   density,
   densityRatio,
   proposeWithDensityRatio,
-  mhCustom,
-  mhCustomStep,
+  mh,
+  mhStep,
   IdentityKernel,
   identityKernel,
   SymmetricKernel,
@@ -78,25 +78,25 @@ class (HasCustomReal (MHSampler k)) => MHKernel k where
   proposeWithDensityRatio k x = fmap (\y -> (y, densityRatio k x y)) (proposeFrom k x)
 
 -- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
-mhCustom :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
          => Int -- ^ number of steps
          -> Conditional (Weighted m) a -- ^ model
          -> k -- ^ transition kernel
          -> Trace (CustomReal m) -- ^ starting trace not included in the output
          -> m [a] -- ^ resulting Markov chain truncated to output space
-mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhCustomStep model kernel) starting where
+mh n model kernel starting = evalStateT (sequence $ replicate n $ mhStep model kernel) starting where
 
--- | One step of 'mhCustom'.
-mhCustomStep :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+-- | One step of 'mh'.
+mhStep :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
              => Conditional (Weighted m) a -- ^ model
              -> k -- ^ transition kernel
              -> StateT (Trace (CustomReal m)) m a -- ^ state carries the current trace
-mhCustomStep model kernel = do
+mhStep model kernel = do
   t <- get
-  t' <- lift $ proposeFrom kernel t
+  (t',r) <- lift $ proposeWithDensityRatio kernel t
   p <- lift $ unsafeDensity model t
   p' <- lift $ unsafeDensity model t'
-  let ratio = min 1 (densityRatio kernel t t' * p' / p)
+  let ratio = min 1 (r * p' / p)
   accept <- bernoulli (fromLogDomain ratio)
   let tnew = if accept then t' else t
   put tnew

@@ -105,7 +105,7 @@ mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ uns
 -- Current implementation is wasteful in that it computes the density of a trace twice.
 -- This could be fixed by providing a specialized implementation instead.
 mhPrior :: MonadDist m => Int -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> m [a]
-mhPrior n d = prior (marginal (joint d)) >>= mhCustom n d (mhPriorKernel (prior d >> return ()))
+mhPrior n d = prior (marginal (joint d)) >>= mh n d (mhPriorKernel (prior d >> return ()))
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
