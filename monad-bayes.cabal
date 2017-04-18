@@ -38,8 +38,7 @@ library
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
                        Control.Monad.Bayes.Simple,
-                       Control.Monad.Bayes.Inference.MCMC,
-                       Control.Monad.Bayes.Inference.HMC
+                       Control.Monad.Bayes.Inference.MCMC
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
@@ -52,7 +51,6 @@ library
                      , ad
                      , reflection
                      , hmatrix
-                     , hnuts
   ghc-options:         -Wall
   default-language:    Haskell2010
   default-extensions:  RankNTypes

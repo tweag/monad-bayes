@@ -7,9 +7,5 @@ packages:
 #   subdirs:
 #     - chart
 #   extra-dep: true
-- location:
-    git: https://github.com/jtobin/hnuts
-    commit: 5fa71a62057073bfdb32bf1d0264a1da3c32f247
-  extra-dep: true
 extra-deps: []
 resolver: lts-7.7
