@@ -40,7 +40,7 @@ import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
 import Control.Monad.Bayes.Sequential as Sequential
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Enumerator hiding (mass)
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Augmented
 import Control.Monad.Bayes.Conditional

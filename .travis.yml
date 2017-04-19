@@ -63,9 +63,9 @@ matrix:
     compiler: ": #stack default osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-5"
-    compiler: ": #stack 7.10.3 osx"
-    os: osx
+  # - env: BUILD=stack ARGS="--resolver lts-5"
+  #   compiler: ": #stack 7.10.3 osx"
+  #   os: osx
 
   - env: BUILD=stack ARGS="--resolver nightly"
     compiler: ": #stack nightly osx"
