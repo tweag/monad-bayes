@@ -37,6 +37,7 @@ module Control.Monad.Bayes.Inference.MCMC (
   TraceKernel,
   traceKernel,
   singleSiteTraceKernel,
+  RandomWalkKernel,
   randomWalkKernel,
   CustomKernel,
   customKernel,
@@ -330,11 +331,13 @@ singleSiteTraceKernel :: (MHKernel k, MHKernel l, KernelDomain k ~ CustomReal (M
                       -> TraceKernel (ProductKernel (SingleSiteKernel k) (SingleSiteKernel l))
 singleSiteTraceKernel ratio k l = TraceKernel $ productKernel ratio (singleSiteKernel k) (singleSiteKernel l)
 
+type RandomWalkKernel m = TraceKernel (ProductKernel (SingleSiteKernel (GaussianKernel m))
+                                                     (SingleSiteKernel (IdentityKernel m Int)))
+
 -- | Random walk kernel updating only continuous variables.
 randomWalkKernel :: (MonadDist m)
                  => CustomReal m -- ^ Width (standard deviation) of the Gaussian distribution.
-                 -> TraceKernel (ProductKernel (SingleSiteKernel (GaussianKernel m))
-                                               (SingleSiteKernel (IdentityKernel m Int)))
+                 -> RandomWalkKernel m
 randomWalkKernel sigma = singleSiteTraceKernel 1 (gaussianKernel sigma) identityKernel
 
 
