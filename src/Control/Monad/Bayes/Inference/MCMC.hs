@@ -363,17 +363,15 @@ customKernel = CustomKernel
 -- There exists a density w.r.t. the counting measure on reals but that is probably not very useful
 -- and potentially confusing to implement.
 data HamiltonianKernel m =
-  HamiltonianKernel {stepSize :: CustomReal m, steps :: Int, mass :: [CustomReal m],
+  HamiltonianKernel {stepSize :: CustomReal m, steps :: Int, mass :: CustomReal m,
                      potentialGrad :: ([CustomReal m] -> [CustomReal m])}
 
 instance (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m) => MHKernel (HamiltonianKernel m) where
   type KernelDomain (HamiltonianKernel m) = [CustomReal m]
   type MHSampler (HamiltonianKernel m) = m
-  proposeFrom (HamiltonianKernel e l ms dU) xs = do
-    unless (length xs == length ms) $ error $ "HMC: position list has wrong length - expected "
-                                              ++ show (length xs) ++ " but got " ++ show (length ms)
-    ps <- mapM (normal 0 . sqrt) ms
-    let (ys,_) = leapfrog l e dU ms xs ps
+  proposeFrom (HamiltonianKernel e l m dU) xs = do
+    ps <- sequence $ replicate (length xs) (normal 0 (sqrt (recip m)))
+    let (ys,_) = leapfrog l e dU m xs ps
     return ys
   density _ _ _ = error $ "Hamiltonian kernel does not have density"
   densityRatio _ _ _ = error $ "Hamiltonian kernel does not have density ratio"
@@ -383,11 +381,11 @@ instance (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m) => MHK
 hamiltonianKernel :: (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m)
                   => CustomReal m -- ^ step size @epsilon@ for discretizing Hamilton equations
                   -> Int -- ^ number of discrete steps @L@ taken at each transition
-                  -> [CustomReal m] -- ^ list of masses representing a diagonal mass matrix @M@
+                  -> CustomReal m -- ^ mass multiplying the identity mass matrix @M@
                   -> ([CustomReal m] -> [CustomReal m]) -- gradient of the potential function w.r.t. positions
                   -> HamiltonianKernel m
-hamiltonianKernel e l ms dU =
-  checkE `seq` checkL `seq` checkM `seq` HamiltonianKernel e l ms dU where
+hamiltonianKernel e l m dU =
+  checkE `seq` checkL `seq` checkM `seq` HamiltonianKernel e l m dU where
     checkE =
       if e <= 0 then
         error $ "Hamiltonian kernel: step size was not positive"
@@ -399,19 +397,19 @@ hamiltonianKernel e l ms dU =
       else
         ()
     checkM =
-      if any (<= 0) ms then
-        error $ "Hamiltonian kernel: some of the masses were not positive"
+      if m <= 0 then
+        error $ "Hamiltonian kernel: mass was not positive"
       else
         ()
 
 -- | Leapfrog integration of Hamilton equations.
-leapfrog :: Fractional r => Int -> r -> ([r] -> [r]) -> [r] -> [r] -> [r] -> ([r],[r])
-leapfrog l e dU ms qs ps = applyN l (uncurry (leapfrogStep e dU ms)) (qs,ps) where
+leapfrog :: Fractional r => Int -> r -> ([r] -> [r]) -> r -> [r] -> [r] -> ([r],[r])
+leapfrog l e dU m qs ps = applyN l (uncurry (leapfrogStep e dU m)) (qs,ps) where
   applyN 0 _ x = x
   applyN n f x = applyN (n-1) f (f x)
 
 -- | One step of 'leapfrog'.
-leapfrogStep :: Fractional r => r -> ([r] -> [r]) -> [r] -> [r] -> [r] -> ([r],[r])
-leapfrogStep e dU ms qs ps = moveP $ moveQ $ moveP (qs,ps) where
+leapfrogStep :: Fractional r => r -> ([r] -> [r]) -> r -> [r] -> [r] -> ([r],[r])
+leapfrogStep e dU m qs ps = moveP $ moveQ $ moveP (qs,ps) where
   moveP (xs,vs) = (xs, zipWith (-) vs (map (* (e/2)) (dU xs)))
-  moveQ (xs,vs) = (zipWith (+) xs (map (* e) (zipWith (/) vs ms)), vs)
+  moveQ (xs,vs) = (zipWith (+) xs (map (\v -> v * e / m) vs), vs)

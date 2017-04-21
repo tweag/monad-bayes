@@ -142,7 +142,7 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
     => (forall n. (MonadBayes n) => Constraint n a) -- ^ model
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
-    -> [CustomReal m] -- ^ list of masses
+    -> CustomReal m -- ^ mass
     -> Int -- ^ number of transitions, equal to the number of samples returned
     -> m [a]
 hmc model epsilon l mass n = mhInitPrior n (unconstrain model) kernel where
