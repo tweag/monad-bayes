@@ -145,8 +145,8 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
     -> CustomReal m -- ^ mass
     -> Int -- ^ number of transitions, equal to the number of samples returned
     -> m [a]
-hmc model epsilon l mass n = mhInitPrior n (unconstrain model) kernel where
-  kernel = traceKernel $ productKernel 1 (hamiltonianKernel epsilon l mass gradU) identityKernel
+hmc model epsilon l m n = mhInitPrior n (unconstrain model) kernel where
+  kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
   gradU = snd . unsafeJointDensityGradient (unconstrain model)
 
 -- | Automatic Differentiation Variational Inference.

@@ -41,6 +41,11 @@ module Control.Monad.Bayes.Inference.MCMC (
   randomWalkKernel,
   CustomKernel,
   customKernel,
+  HMCParam,
+  hmcParam,
+  stepSize,
+  steps,
+  mass,
   HamiltonianKernel,
   hamiltonianKernel
 ) where
@@ -355,6 +360,7 @@ instance HasCustomReal m => MHKernel (CustomKernel m a) where
 customKernel :: (a -> m a) -> (a -> a -> LogDomain (CustomReal m)) -> CustomKernel m a
 customKernel = CustomKernel
 
+data HMCParam r = HMCParam {stepSize :: r, steps :: Int, mass :: r}
 
 -- | Kernel proposing new values for a collection of random variables using Hamiltonian dynamics.
 -- Momenta are sampled from a normal distribution at each transition.
@@ -366,13 +372,12 @@ customKernel = CustomKernel
 -- There exists a density w.r.t. the counting measure on reals but that is probably not very useful
 -- and potentially confusing to implement.
 data HamiltonianKernel m =
-  HamiltonianKernel {stepSize :: CustomReal m, steps :: Int, mass :: CustomReal m,
-                     potentialGrad :: ([CustomReal m] -> [CustomReal m])}
+  HamiltonianKernel (HMCParam (CustomReal m)) ([CustomReal m] -> [CustomReal m])
 
 instance (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m) => MHKernel (HamiltonianKernel m) where
   type KernelDomain (HamiltonianKernel m) = [CustomReal m]
   type MHSampler (HamiltonianKernel m) = m
-  proposeFrom (HamiltonianKernel e l m dU) xs = do
+  proposeFrom (HamiltonianKernel (HMCParam e l m) dU) xs = do
     ps <- sequence $ replicate (length xs) (normal 0 (sqrt (recip m)))
     let (ys,_) = leapfrog l e dU m xs ps
     return ys
@@ -382,13 +387,19 @@ instance (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m) => MHK
 
 -- | Construct a Hamiltonian transition kernel.
 hamiltonianKernel :: (HasCustomReal m, Sampleable (Normal (CustomReal m)) m, Monad m)
-                  => CustomReal m -- ^ step size @epsilon@ for discretizing Hamilton equations
-                  -> Int -- ^ number of discrete steps @L@ taken at each transition
-                  -> CustomReal m -- ^ mass multiplying the identity mass matrix @M@
+                  => HMCParam (CustomReal m)
                   -> ([CustomReal m] -> [CustomReal m]) -- gradient of the potential function w.r.t. positions
                   -> HamiltonianKernel m
-hamiltonianKernel e l m dU =
-  checkE `seq` checkL `seq` checkM `seq` HamiltonianKernel e l m dU where
+hamiltonianKernel = HamiltonianKernel
+
+-- | Package HMC parameters validating their values.
+hmcParam :: (Ord r, Floating r)
+         => r -- ^ step size @epsilon@ for discretizing Hamilton equations
+         -> Int -- ^ number of discrete steps @L@ taken at each transition
+         -> r -- ^ mass multiplying the identity mass matrix @M@
+         -> HMCParam r
+hmcParam e l m =
+  checkE `seq` checkL `seq` checkM `seq` HMCParam e l m where
     checkE =
       if e <= 0 then
         error $ "Hamiltonian kernel: step size was not positive"
