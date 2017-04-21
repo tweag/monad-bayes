@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
     sampleIOfixed,
+    Seed,
     SamplerST(SamplerST),
     runSamplerST,
     sampleST,
