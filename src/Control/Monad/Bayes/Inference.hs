@@ -109,6 +109,17 @@ smcWithResampler resampler k n =
   where
     hoist' = Sequential.hoistFirst
 
+-- | Obtain a valid trace by sampling from the prior.
+-- To ensure that the trace has non-zero posterior density,
+-- we additionally perform rejection sampling when the likelihood is zero.
+traceFromPrior :: (HasCustomReal m, Monad m) => Augmented (Weighted m) a -> m (Trace (CustomReal m))
+traceFromPrior model = do
+  (t,w) <- runWeighted $ marginal $ joint model
+  if w > 0 then
+    return t
+  else
+    traceFromPrior model
+
 -- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
 mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
          => Int -- ^ number of steps
@@ -126,13 +137,7 @@ mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), 
             -> (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
             -> k -- ^ transition kernel
             -> m [a] -- ^ resulting Markov chain truncated to output space
-mhInitPrior n model kernel = starting >>= mh n model kernel where
-  starting = do
-    (x,w) <- runWeighted $ marginal $ joint model
-    if w > 0 then
-      return x
-    else
-      starting
+mhInitPrior n model kernel = traceFromPrior model >>= mh n model kernel
 
 -- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
 -- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.
@@ -158,25 +163,35 @@ pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
 
 -- | Random walk Metropolis-Hastings proposing single-site updates from a normal distribution with a fixed width.
 randomWalk :: (MonadDist m)
-    => (forall n. (MonadBayes n) => Constraint n a) -- ^ model
+    => Constraint (Conditional (Weighted (Deterministic (CustomReal m)))) a -- ^ model
     -> CustomReal m -- ^ width of the Gaussian kernel @sigma@
     -> Int -- ^ number of transitions, equal to the number of samples returned
+    -> Trace (CustomReal m) -- ^ starting trace not included in the output
     -> m [a]
-randomWalk model sigma n = mhInitPrior n (unconstrain model) kernel where
+randomWalk model sigma n start = mh n (unconstrain model) kernel start where
   kernel = randomWalkKernel sigma
 
 -- | Hamitlonian Monte Carlo.
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
-    => (forall n. (MonadBayes n) => Constraint n a) -- ^ model
+    => (forall r. (Ord r, Real r, NumSpec r) =>  Constraint (Conditional (Weighted (Deterministic r))) a)
+       -- ^ model
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
     -> CustomReal m -- ^ mass
     -> Int -- ^ number of transitions, equal to the number of samples returned
+    -> Trace (CustomReal m) -- ^ starting trace not included in the output
     -> m [a]
-hmc model epsilon l m n = mhInitPrior n (unconstrain model) kernel where
-  kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
-  gradU = snd . unsafeJointDensityGradient (unconstrain model)
+hmc model epsilon l m n start =
+  fmap (map (unsafeDeterministic . prior . unsafeConditional  (unconstrain model)) . snd) $ -- map traces to outputs
+    evalRWST (MCMC.mh n kernel) p (start, p start) where
+      -- kernel only updates continouos variables
+      kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
+      -- to compute density first extract continous variables from the trace
+      p = fst . pWithGrad . fst . toLists
+      -- density gradient
+      gradU = snd . pWithGrad
+      pWithGrad = unsafeJointDensityGradient (unconstrain model)
 
 -- | Automatic Differentiation Variational Inference.
 -- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.
