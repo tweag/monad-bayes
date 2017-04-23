@@ -21,6 +21,8 @@ module Control.Monad.Bayes.Inference (
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  mh,
+  mhInitPrior,
   mhPriorKernel,
   mhPrior,
   pimh,
@@ -33,6 +35,7 @@ import Prelude hiding (sum)
 
 import Numeric.AD.Internal.Reverse (Tape)
 import Data.Reflection (Reifies)
+import Control.Monad.RWS
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
@@ -44,12 +47,13 @@ import Control.Monad.Bayes.Enumerator hiding (mass)
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Augmented
 import Control.Monad.Bayes.Conditional
-import Control.Monad.Bayes.Prior
+import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Constraint
-import Control.Monad.Bayes.Weighted hiding (prior)
+import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.MeanField
 import Control.Monad.Bayes.Reparametrized
-import Control.Monad.Bayes.Inference.MCMC
+import Control.Monad.Bayes.Inference.MCMC hiding (mh)
+import qualified Control.Monad.Bayes.Inference.MCMC as MCMC
 import qualified Control.Monad.Bayes.Inference.Variational as VI
 
 -- | Rejection sampling that proposes from the prior.
@@ -104,6 +108,32 @@ smcWithResampler resampler k n =
   finish . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
   where
     hoist' = Sequential.hoistFirst
+
+-- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
+mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+         => Int -- ^ number of steps
+         -> Conditional (Weighted (Deterministic (CustomReal m))) a -- ^ model
+         -> k -- ^ transition kernel
+         -> Trace (CustomReal m) -- ^ starting trace not included in the output
+         -> m [a] -- ^ resulting Markov chain truncated to output space
+mh n model kernel start =
+  evalRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start) >>=
+    return . (map (unsafeDeterministic . prior . unsafeConditional model) . snd)
+
+-- | Metropolis-Hastings that samples the initial state from the prior.
+-- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
+mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+            => Int -- ^ number of steps
+            -> (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
+            -> k -- ^ transition kernel
+            -> m [a] -- ^ resulting Markov chain truncated to output space
+mhInitPrior n model kernel = starting >>= mh n model kernel where
+  starting = do
+    (x,w) <- runWeighted $ marginal $ joint model
+    if w > 0 then
+      return x
+    else
+      starting
 
 -- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
 -- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.

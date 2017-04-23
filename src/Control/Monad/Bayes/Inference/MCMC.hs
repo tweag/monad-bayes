@@ -19,7 +19,6 @@ module Control.Monad.Bayes.Inference.MCMC (
   density,
   densityRatio,
   proposeWithDensityRatio,
-  mhInitPrior,
   mh,
   mhStep,
   IdentityKernel,
@@ -54,13 +53,11 @@ import Prelude hiding (sum)
 
 import Data.Bifunctor (first)
 import Control.Monad.State
+import Control.Monad.RWS
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Trace
-import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Conditional
-import Control.Monad.Bayes.Augmented
 
 -- | Interface for transition kernels used in Metropolis-Hastings algorithms.
 -- A kernel is a stochastic function @a -> D a@.
@@ -87,46 +84,32 @@ class (HasCustomReal (MHSampler k)) => MHKernel k where
   proposeWithDensityRatio :: Functor (MHSampler k) => k -> KernelDomain k -> (MHSampler k) (KernelDomain k, LogDomain (CustomReal (MHSampler k)))
   proposeWithDensityRatio k x = fmap (\y -> (y, densityRatio k x y)) (proposeFrom k x)
 
--- | Metropolis-Hastings that samples the initial state from the prior.
--- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
-mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
-            => Int -- ^ number of steps
-            -> (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
-            -> k -- ^ transition kernel
-            -> m [a] -- ^ resulting Markov chain truncated to output space
-mhInitPrior n model kernel = starting >>= mh n model kernel where
-  starting = do
-    (x,w) <- runWeighted $ marginal $ joint model
-    if w > 0 then
-      return x
-    else
-      starting
-
--- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
-mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
-         => Int -- ^ number of steps
-         -> Conditional (Weighted m) a -- ^ model
-         -> k -- ^ transition kernel
-         -> Trace (CustomReal m) -- ^ starting trace not included in the output
-         -> m [a] -- ^ resulting Markov chain truncated to output space
-mh n model kernel starting = evalStateT (sequence $ replicate n $ mhStep model kernel) starting where
+-- | Metropolis-Hastings. Result is returned in 'RWST' monad, where reader holds the density function,
+-- writer produces samples, and state carries the current MH state and its density.
+mh :: (MonadDist m, MHKernel k, KernelDomain k ~ a, MHSampler k ~ m, CustomReal m ~ r)
+   => Int -- ^ number of transitions equal to number of samples produced
+   -> k -- ^ transition kernel
+   -> RWST (a -> LogDomain r) [a] (a, LogDomain r) m ()
+mh n kernel = do
+  p <- ask
+  zs <- sequence $ replicate n $ get >>= lift . mhStep kernel p >>= \a -> put a >> return (fst a)
+  tell zs
 
 -- | One step of 'mh'.
-mhStep :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
-             => Conditional (Weighted m) a -- ^ model
-             -> k -- ^ transition kernel
-             -> StateT (Trace (CustomReal m)) m a -- ^ state carries the current trace
-mhStep model kernel = do
-  t <- get
-  (t',r) <- lift $ proposeWithDensityRatio kernel t
-  p <- lift $ unsafeDensity model t
-  p' <- lift $ unsafeDensity model t'
-  let ratio = min 1 (r * p' / p)
-  accept <- bernoulli (fromLogDomain ratio)
-  let tnew = if accept then t' else t
-  put tnew
-  (output,_) <- lift $ runWeighted $ unsafeConditional model tnew
-  return output
+mhStep :: (MonadDist m, MHKernel k, KernelDomain k ~ a, MHSampler k ~ m, CustomReal m ~ r)
+       => k -- ^ transition kernel
+       -> (a -> LogDomain r) -- ^ density function
+       -> (a, LogDomain r) -- ^ current state and its density
+       -> m (a, LogDomain r)
+mhStep kernel p (x,px) = do
+  (y, qr) <- proposeWithDensityRatio kernel x
+  let py = p y
+  let ratio = fromLogDomain $ min 1 (qr * py / px)
+  accept <- bernoulli ratio
+  if accept then
+    return (y, py)
+  else
+    return (x, px)
 
 
 -------------------------------------------------
