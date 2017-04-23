@@ -17,6 +17,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Constraint (
   Constraint,
+  hoist,
   unconstrain
 ) where
 
@@ -53,6 +54,10 @@ instance (MonadDist m, Sampleable (Unconstrained (Normal (CustomReal m))) m,
 instance (MonadBayes m, Sampleable (Unconstrained (Normal (CustomReal m))) m,
           Sampleable (Unconstrained (Gamma (CustomReal m))) m, Sampleable (Unconstrained (Beta (CustomReal m))) m,
           Sampleable (Unconstrained (Uniform (CustomReal m))) m) => MonadBayes (Constraint m)
+
+-- | Apply a transformation to the unconstrained monad.
+hoist :: (m a -> n a) -> Constraint m a -> Constraint n a
+hoist f (Constraint m) = Constraint (mapIdentityT f m)
 
 -- | Convert sampling from univariate continuous distributions to sampling from corresponding 'Unconstrained'
 -- distributions.

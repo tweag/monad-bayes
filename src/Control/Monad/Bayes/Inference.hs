@@ -123,7 +123,7 @@ traceFromPrior model = do
 -- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
 mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
          => Int -- ^ number of steps
-         -> Conditional (Weighted (Deterministic (CustomReal m))) a -- ^ model
+         -> JointDensity (CustomReal m) a -- ^ model
          -> k -- ^ transition kernel
          -> Trace (CustomReal m) -- ^ starting trace not included in the output
          -> m [a] -- ^ resulting Markov chain truncated to output space
@@ -163,7 +163,7 @@ pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
 
 -- | Random walk Metropolis-Hastings proposing single-site updates from a normal distribution with a fixed width.
 randomWalk :: (MonadDist m)
-    => Constraint (Conditional (Weighted (Deterministic (CustomReal m)))) a -- ^ model
+    => Constraint (JointDensity (CustomReal m)) a -- ^ model
     -> CustomReal m -- ^ width of the Gaussian kernel @sigma@
     -> Int -- ^ number of transitions, equal to the number of samples returned
     -> Trace (CustomReal m) -- ^ starting trace not included in the output
@@ -174,8 +174,7 @@ randomWalk model sigma n start = mh n (unconstrain model) kernel start where
 -- | Hamitlonian Monte Carlo.
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
-    => (forall r. (Ord r, Real r, NumSpec r) =>  Constraint (Conditional (Weighted (Deterministic r))) a)
-       -- ^ model
+    => Constraint (JointDensityGradient (CustomReal m)) a -- ^ model
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
     -> CustomReal m -- ^ mass
@@ -183,7 +182,7 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
     -> Trace (CustomReal m) -- ^ starting trace not included in the output
     -> m [a]
 hmc model epsilon l m n start =
-  fmap (map (unsafeDeterministic . prior . unsafeConditional  (unconstrain model)) . snd) $ -- map traces to outputs
+  fmap (map (traceToOutput (unconstrain model)) . snd) $ -- map traces to outputs
     evalRWST (MCMC.mh n kernel) p (start, p start) where
       -- kernel only updates continouos variables
       kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
