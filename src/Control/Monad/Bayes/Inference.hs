@@ -116,9 +116,8 @@ mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler
          -> k -- ^ transition kernel
          -> Trace (CustomReal m) -- ^ starting trace not included in the output
          -> m [a] -- ^ resulting Markov chain truncated to output space
-mh n model kernel start =
-  evalRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start) >>=
-    return . (map (unsafeDeterministic . prior . unsafeConditional model) . snd)
+mh n model kernel start = fmap (map (unsafeDeterministic . prior . unsafeConditional model) . snd) $
+  evalRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
 
 -- | Metropolis-Hastings that samples the initial state from the prior.
 -- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
