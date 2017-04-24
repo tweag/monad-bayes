@@ -24,7 +24,7 @@ model = do
   factor $ Log.toLogDomain (x + y * y)
   return ()
 
-(logDensity, gradLogDensity) = first Log.toLog $ unsafeJointDensityGradient (asJointDensityGradient model) [1,1,0.5::Double]
+(logDensity, gradLogDensity) = first Log.toLog $ unsafeJointDensityGradient model [1,1,0.5::Double]
 
 check_density = logDensity ~== -1 -0.5*log(2*pi) -0.5 + log 2
 check_gradient = gradLogDensity ~== [-0.5, 0, 0]

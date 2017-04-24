@@ -21,6 +21,8 @@ module Control.Monad.Bayes.Inference (
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  MCMC,
+  runMCMC,
   mh,
   mhInitPrior,
   mhPriorKernel,
@@ -120,24 +122,33 @@ traceFromPrior model = do
   else
     traceFromPrior model
 
+type MCMC m a = Int -- ^ number of steps
+                -> Trace (CustomReal m) -- ^ starting trace not included in the output
+                -> m ([a], Trace (CustomReal m)) -- ^ resulting Markov chain in output space and the final trace
+
+runMCMC :: Functor m => MCMC m a -> Int -> Trace (CustomReal m) -> m [a]
+runMCMC m n t = fmap fst (m n t)
+
 -- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
 mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
-         => Int -- ^ number of steps
-         -> JointDensity (CustomReal m) a -- ^ model
+         => JointDensity (CustomReal m) a -- ^ model
          -> k -- ^ transition kernel
-         -> Trace (CustomReal m) -- ^ starting trace not included in the output
-         -> m [a] -- ^ resulting Markov chain truncated to output space
-mh n model kernel start = fmap (map (unsafeDeterministic . prior . unsafeConditional model) . snd) $
-  evalRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
+         -> MCMC m a
+mh model kernel n start = do
+  ((t,_), ts) <- execRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
+  let xs = map (unsafeDeterministic . prior . unsafeConditional model) ts
+  return (xs, t)
+  -- fmap (first (map (unsafeDeterministic . prior . unsafeConditional model)) . flip . first fst) $
+  --   execRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
 
 -- | Metropolis-Hastings that samples the initial state from the prior.
 -- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
 mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
-            => Int -- ^ number of steps
-            -> (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
+            => (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
             -> k -- ^ transition kernel
+            -> Int -- ^ number of steps
             -> m [a] -- ^ resulting Markov chain truncated to output space
-mhInitPrior n model kernel = traceFromPrior model >>= mh n model kernel
+mhInitPrior model kernel n = traceFromPrior model >>= runMCMC (mh model kernel) n
 
 -- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
 -- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.
@@ -149,8 +160,8 @@ mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ uns
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
 -- Current implementation is wasteful in that it computes the density of a trace twice.
 -- This could be fixed by providing a specialized implementation instead.
-mhPrior :: MonadDist m => Int -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> m [a]
-mhPrior n d = prior (marginal (joint d)) >>= mh n d (mhPriorKernel (prior d >> return ()))
+mhPrior :: MonadDist m => (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> Int -> m [a]
+mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (prior d >> return ()))) n
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
@@ -159,16 +170,14 @@ pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of independent SMC runs
                     -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => Sequential (Population n) a) -- ^ model
                     -> m [a]
-pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
+pimh k np ns d = mhPrior (collapse $ smcMultinomial k np d) ns
 
 -- | Random walk Metropolis-Hastings proposing single-site updates from a normal distribution with a fixed width.
 randomWalk :: (MonadDist m)
     => Constraint (JointDensity (CustomReal m)) a -- ^ model
     -> CustomReal m -- ^ width of the Gaussian kernel @sigma@
-    -> Int -- ^ number of transitions, equal to the number of samples returned
-    -> Trace (CustomReal m) -- ^ starting trace not included in the output
-    -> m [a]
-randomWalk model sigma n start = mh n (unconstrain model) kernel start where
+    -> MCMC m a
+randomWalk model sigma = mh (unconstrain model) kernel where
   kernel = randomWalkKernel sigma
 
 -- | Hamitlonian Monte Carlo.
@@ -178,19 +187,18 @@ hmc :: (MonadDist m, CustomReal m ~ Double)
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
     -> CustomReal m -- ^ mass
-    -> Int -- ^ number of transitions, equal to the number of samples returned
-    -> Trace (CustomReal m) -- ^ starting trace not included in the output
-    -> m [a]
-hmc model epsilon l m n start =
-  fmap (map (traceToOutput (unconstrain model)) . snd) $ -- map traces to outputs
-    evalRWST (MCMC.mh n kernel) p (start, p start) where
-      -- kernel only updates continouos variables
+    -> MCMC m a
+hmc model epsilon l m n start = do
+  let -- kernel only updates continouos variables
       kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
       -- to compute density first extract continous variables from the trace
       p = fst . pWithGrad . fst . toLists
       -- density gradient
       gradU = snd . pWithGrad
       pWithGrad = unsafeJointDensityGradient (unconstrain model)
+  ((t,_), ts) <- execRWST (MCMC.mh n kernel) p (start, p start)
+  let xs = map (traceToOutput (unconstrain model)) ts
+  return (xs, t)
 
 -- | Automatic Differentiation Variational Inference.
 -- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.

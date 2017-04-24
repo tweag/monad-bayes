@@ -69,7 +69,7 @@ sprinkler_posterior = duplicateWeight sprinkler
 -- check_trace_support = check_trace_mh StrictlySmallerSupport.model StrictlySmallerSupport.model
 
 custom_mh_test :: (MHKernel k, KernelDomain k ~ Trace Double, MHSampler k ~ Dist.Enumerator (Deterministic Double)) => k -> [(Bool, Double)]
-custom_mh_test k = enumerate (s >>= \x -> (fmap (!! 0) (mh 1 sprinkler k x)))  where
+custom_mh_test k = enumerate (s >>= \x -> (fmap (!! 0) (runMCMC (mh sprinkler k) 1 x)))  where
   s = marginal $ joint sprinkler
 
 custom_mh_target = enumerate sprinkler
