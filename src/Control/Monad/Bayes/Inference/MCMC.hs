@@ -246,6 +246,16 @@ instance (MHKernel k, MHKernel l, MHSampler k ~ MHSampler l, MonadDist (MHSample
       (False, True) -> densityRatio k x x'
       (True, False) -> densityRatio l y y'
       (False, False) -> 0 / 0
+  proposeWithDensityRatio (ProductKernel ratio k l) (x,y) = do
+    -- this version is not Rao-Blackwellized, so may differ from true density ratio when a move that doesn't
+    -- change the value is proposed
+    useFirst <- bernoulli ratio
+    if useFirst then do
+      (x', q) <- proposeWithDensityRatio k x
+      return ((x', y), q)
+    else do
+      (y', q) <- proposeWithDensityRatio l y
+      return ((x, y'), q)
 
 -- | Construct a product kernel that randomly proposes a change for one of the variables.
 productKernel :: (MHKernel k, MHKernel l, MHSampler k ~ MHSampler l, MonadDist (MHSampler k),
@@ -344,6 +354,7 @@ customKernel :: (a -> m a) -> (a -> a -> LogDomain (CustomReal m)) -> CustomKern
 customKernel = CustomKernel
 
 data HMCParam r = HMCParam {stepSize :: r, steps :: Int, mass :: r}
+  deriving(Show,Read)
 
 -- | Kernel proposing new values for a collection of random variables using Hamiltonian dynamics.
 -- Momenta are sampled from a normal distribution at each transition.
