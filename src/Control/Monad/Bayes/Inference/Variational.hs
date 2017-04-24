@@ -17,8 +17,9 @@ module Control.Monad.Bayes.Inference.Variational (
   advi
 ) where
 
-import Prelude hiding (zip, splitAt, length, (++))
+import Prelude hiding (zip, splitAt, length, (++), map)
 
+import Data.Bifunctor (second)
 import Data.Reflection (Reifies)
 import Data.Vector
 import Numeric.AD.Mode.Reverse
@@ -26,6 +27,7 @@ import Numeric.AD.Internal.Reverse (Tape)
 
 import Numeric.LogDomain
 import Numeric.Optimization.SGD
+import Statistics.Distribution.Polymorphic.Unconstrained
 import Control.Monad.Bayes.Simple hiding (Parametric)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Reparametrized
@@ -44,7 +46,9 @@ gradFWith' = jacobianWith'
 
 -- | Estimator for evidence lower bound.
 elbo :: (HasCustomReal m, Functor m) => Weighted m a -> m (CustomReal m)
-elbo = fmap (toLog . snd) . runWeighted
+elbo = fmap (toLog . snd) . runWeighted  -- initialMeans <- replicateM n (uniform (-1) 1)
+  -- initialStdDevs <- replicateM n (uniform 0.01 1)
+  -- let initialParam = initialMeans ++ initialStdDevs
 
 -- | Stochastic gradient of 'elbo' using the reparametrization trick.
 -- Returns a tuple where the first element is the value of ELBO and the second
@@ -62,9 +66,10 @@ optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
              -> m (t (CustomReal m))
 optimizeELBO model optParam initial = sga optParam (fmap snd . elboGrad model) initial
 
-reshapeParam :: Parametric (Vector (a, a)) m b -> Parametric (Vector a) m b
+-- | Reparametrize from a vector of (mean, stddev) to twice as long vector of unconstrained real numbers.
+reshapeParam :: (Ord a, Floating a) => Parametric (Vector (a, a)) m b -> Parametric (Vector a) m b
 reshapeParam m = parametric (withParam m . split) where
-  split v = uncurry zip $ splitAt (length v `div` 2) v
+  split v = uncurry zip $ second (map (inverseTransformConstraints (gammaDist 1 1))) $ splitAt (length v `div` 2) v
 
 advi :: (MonadDist m', MonadDist m'', CustomReal m' ~ CustomReal m'')
      => Int -- ^ number of random variables in the model
@@ -73,8 +78,6 @@ advi :: (MonadDist m', MonadDist m'', CustomReal m' ~ CustomReal m'')
      -> SGDParam (CustomReal m'')
      -> m' (m'' a)
 advi n m m' sgdParam = do
-  initialMeans <- replicateM n (uniform (-1) 1)
-  initialStdDevs <- replicateM n (uniform 0.01 1)
-  let initialParam = initialMeans ++ initialStdDevs
+  initialParam <- replicateM (2*n) (uniform (-1) 1)
   bestParam <- optimizeELBO (reshapeParam $ meanFieldNormal m) sgdParam initialParam
   return $ prior $ (withParam $ reshapeParam $ meanFieldNormal m') bestParam
