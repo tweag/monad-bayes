@@ -25,7 +25,6 @@ module Control.Monad.Bayes.Conditional (
   maybeJointDensity,
   unsafeJointDensity,
   JointDensityGradient,
-  asJointDensityGradient,
   maybeJointDensityGradient,
   unsafeJointDensityGradient,
   traceToOutput
@@ -163,32 +162,34 @@ outputWithJointDensity m t = unsafeDeterministic $ outputWithDensity m t
 -- | A monad that computes joint density and its gradient over all variables in the model using
 -- reverse mode automatic differentiation.
 -- The newtype is used to hide a forall over scope type variables from AD.
-newtype JointDensityGradient r a = JointDensityGradient (forall s. Reifies s Tape => JointDensity (Reverse s r) a)
-
--- | Interpret a model as a calculator of joint density and its gradient.
--- Ideally this would just be a type coercion, but restrictions in Haskell's type system prevent us from
--- making 'JointDensityGradient' instances of the 'MonadBayes' class.
-asJointDensityGradient :: (forall s. Reifies s Tape => JointDensity (Reverse s r) a) -> JointDensityGradient r a
-asJointDensityGradient m = JointDensityGradient m
+type JointDensityGradient s r = JointDensity (Reverse s r)
 
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- 'Nothing' is returned under the same conditions as for 'maybeJointDensity'.
-maybeJointDensityGradient :: (Ord r, Floating r) => JointDensityGradient r a -> [r] -> Maybe (LogDomain r, [r])
-maybeJointDensityGradient (JointDensityGradient m) xs =
+maybeJointDensityGradient :: (Ord r, Floating r)
+                          => (forall s. Reifies s Tape => JointDensityGradient s r a)
+                          -> [r] -> Maybe (LogDomain r, [r])
+maybeJointDensityGradient m xs =
   fmap (first fromLog) $ jacobian' (fmap toLog . maybeJointDensity m . fromLists . (,[])) xs
 
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- Throws an error under the same conditions as 'unsafeJointDensity'.
-unsafeJointDensityGradient :: (Ord r, Floating r) => JointDensityGradient r a -> [r] -> (LogDomain r, [r])
-unsafeJointDensityGradient (JointDensityGradient m) xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
+unsafeJointDensityGradient :: (Ord r, Floating r)
+                           => (forall s. Reifies s Tape => JointDensityGradient s r a)
+                           -> [r] -> (LogDomain r, [r])
+unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
 
 -- | Like 'unsafeJointDensityGradient' but additionally returns the output from the model.
-outputWithJointDensityGradient :: (Ord r, Floating r) => JointDensityGradient r a -> [r] -> (a, (LogDomain r, [r]))
-outputWithJointDensityGradient (JointDensityGradient m) xs =
+outputWithJointDensityGradient :: (Ord r, Floating r)
+                               => (forall s. Reifies s Tape => JointDensityGradient s r a)
+                               -> [r] -> (a, (LogDomain r, [r]))
+outputWithJointDensityGradient m xs =
   fmap (first fromLog) $ jacobian' (fmap toLog . outputWithJointDensity m . fromLists . (,[])) xs
 
 -- | Convert a trace to output from the model.
-traceToOutput :: forall a r. (Ord r, Floating r) => JointDensityGradient r a -> Trace r -> a
+traceToOutput :: forall a r. (Ord r, Floating r)
+              => (forall s. Reifies s Tape => JointDensityGradient s r a)
+              -> Trace r -> a
 traceToOutput m t = fst $ outputWithJointDensityGradient m (fst $ toLists t)

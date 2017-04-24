@@ -174,7 +174,7 @@ randomWalk model sigma n start = mh n (unconstrain model) kernel start where
 -- | Hamitlonian Monte Carlo.
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
-    => Constraint (JointDensityGradient (CustomReal m)) a -- ^ model
+    => (forall s. Reifies s Tape => Constraint (JointDensityGradient s (CustomReal m)) a) -- ^ model
     -> CustomReal m -- ^ step size @epsilon@
     -> Int -- ^ number of steps @L@ taken at each transition
     -> CustomReal m -- ^ mass
