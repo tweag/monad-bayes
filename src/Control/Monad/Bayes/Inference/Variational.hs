@@ -14,7 +14,8 @@ module Control.Monad.Bayes.Inference.Variational (
   elbo,
   elboGrad,
   optimizeELBO,
-  advi
+  advi,
+  adviSet
 ) where
 
 import Prelude hiding (zip, splitAt, length, (++), map)
@@ -71,13 +72,15 @@ reshapeParam :: (Ord a, Floating a) => Parametric (Vector (a, a)) m b -> Paramet
 reshapeParam m = parametric (withParam m . split) where
   split v = uncurry zip $ second (map (inverseTransformConstraints (gammaDist 1 1))) $ splitAt (length v `div` 2) v
 
-advi :: (MonadDist m', MonadDist m'', CustomReal m' ~ CustomReal m'')
-     => Int -- ^ number of random variables in the model
-     -> (forall s. (Reifies s Tape) => MeanFieldNormal (Weighted (Reparametrized s m')) a) -- ^ model
-     -> MeanFieldNormal (Weighted m'') a -- ^ same model in a different monad
-     -> SGDParam (CustomReal m'')
-     -> m' (m'' a)
-advi n m m' sgdParam = do
-  initialParam <- replicateM (2*n) (uniform (-1) 1)
-  bestParam <- optimizeELBO (reshapeParam $ meanFieldNormal m) sgdParam initialParam
-  return $ prior $ (withParam $ reshapeParam $ meanFieldNormal m') bestParam
+advi :: (MonadDist m)
+     => (forall s. (Reifies s Tape) => MeanFieldNormal (Weighted (Reparametrized s m)) a) -- ^ model
+     -> SGDParam (CustomReal m)
+     -> Vector (CustomReal m)
+     -> m (Vector (CustomReal m))
+advi m sgdParam initParam = optimizeELBO (reshapeParam $ meanFieldNormal m) sgdParam initParam
+
+adviSet :: MonadDist m
+        => MeanFieldNormal (Weighted m) a
+        -> Vector (CustomReal m)
+        -> m a
+adviSet model bestParam = prior $ (withParam $ reshapeParam $ meanFieldNormal model) bestParam

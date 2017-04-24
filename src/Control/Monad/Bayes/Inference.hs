@@ -38,6 +38,7 @@ import Prelude hiding (sum)
 import Numeric.AD.Internal.Reverse (Tape)
 import Data.Reflection (Reifies)
 import Control.Monad.RWS
+import qualified Data.Vector as V
 
 import Numeric.LogDomain
 import Control.Monad.Bayes.Class
@@ -198,6 +199,9 @@ hmc model params n start = do
   let xs = map (traceToOutput (unconstrain model)) ts
   return (xs, t)
 
+randInitParam :: MonadDist m => Int -> m (V.Vector (CustomReal m))
+randInitParam n = V.replicateM n (uniform (-1) 1)
+
 -- | Automatic Differentiation Variational Inference.
 -- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.
 advi :: forall m a. (MonadDist m)
@@ -207,8 +211,9 @@ advi :: forall m a. (MonadDist m)
      -> CustomReal m -- ^ decay rate
      -> Int -- ^ number of optimization steps
      -> m (m a) -- ^ optimized variational model
-advi size model lr dr n = VI.advi size modelFirst modelSecond (VI.SGDParam lr dr n) where
+advi size model lr dr n = fmap (VI.adviSet modelSecond) (initParam >>= VI.advi modelFirst (VI.SGDParam lr dr n)) where
   modelFirst :: (forall s. Reifies s Tape => MeanFieldNormal (Weighted (Reparametrized s m)) a)
   modelFirst = unconstrain model
   modelSecond :: (MeanFieldNormal (Weighted m) a)
   modelSecond = unconstrain model
+  initParam = randInitParam size
