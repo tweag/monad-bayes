@@ -184,13 +184,11 @@ randomWalk model sigma = mh (unconstrain model) kernel where
 -- Only works for models with a fixed number of continuous random variables and no discrete random variables.
 hmc :: (MonadDist m, CustomReal m ~ Double)
     => (forall s. Reifies s Tape => Constraint (JointDensityGradient s (CustomReal m)) a) -- ^ model
-    -> CustomReal m -- ^ step size @epsilon@
-    -> Int -- ^ number of steps @L@ taken at each transition
-    -> CustomReal m -- ^ mass
+    -> HMCParam (CustomReal m)
     -> MCMC m a
-hmc model epsilon l m n start = do
+hmc model params n start = do
   let -- kernel only updates continouos variables
-      kernel = traceKernel $ productKernel 1 (hamiltonianKernel (hmcParam epsilon l m) gradU) identityKernel
+      kernel = traceKernel $ productKernel 1 (hamiltonianKernel params gradU) identityKernel
       -- to compute density first extract continous variables from the trace
       p = fst . pWithGrad . fst . toLists
       -- density gradient
