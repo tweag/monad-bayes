@@ -37,11 +37,11 @@ import Control.Monad.Bayes.Parametric hiding (hoist)
 import Control.Monad.Bayes.Inference.Proposal
 
 -- | Safely extract the parameters.
-(!) :: (Num r, Ord r) => Vector (r,r) -> Int -> (r,r)
+(!) :: IsCustomReal r => Vector (r,r) -> Int -> (r,r)
 v ! i = checkIndex v i `seq` checkParam (v V.! i)
 
 -- | Safely extract many pairs of parameters.
-slice :: (Num r, Ord r) => Int -> Int -> Vector (r,r) -> Vector (r,r)
+slice :: IsCustomReal r => Int -> Int -> Vector (r,r) -> Vector (r,r)
 slice i n v = checkIndex v (i+n) `seq` map checkParam (V.slice i n v)
 
 -- | Check if the vector is long enough, generating a custom error message if not.
@@ -53,10 +53,10 @@ checkIndex v i =
     error $ "MeanFieldNormal: parameter vector was too short - required at least " ++ show i ++ " elements but only " ++ show (length v) ++ " were supplied."
 
 -- | Check if standard deviation parameter is positive, generating a custom error message if not.
-checkParam :: (Num r, Ord r) => (r,r) -> (r,r)
+checkParam :: IsCustomReal r => (r,r) -> (r,r)
 checkParam (m,s) =
   if s <= 0 then
-    error "MeanFieldNormal: standard deviation parameter was not positive"
+    error $ "MeanFieldNormal: standard deviation parameter was " ++ show (fromCustomReal s)
   else
     (m,s)
 
