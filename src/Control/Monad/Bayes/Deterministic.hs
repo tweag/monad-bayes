@@ -31,17 +31,17 @@ import Control.Monad.Bayes.Simple
 newtype Deterministic r a = Deterministic (Maybe a)
   deriving(Functor, Applicative, Monad)
 
-instance (Floating r, Ord r) => HasCustomReal (Deterministic r) where
+instance IsCustomReal r => HasCustomReal (Deterministic r) where
   type CustomReal (Deterministic r) = r
 
 instance Distribution d => Sampleable d (Deterministic r) where
   sample _ = Deterministic Nothing
 
-instance (Floating r, Ord r) => Conditionable (Deterministic r) where
+instance IsCustomReal r => Conditionable (Deterministic r) where
   factor _ = Deterministic Nothing
 
-instance (Ord r, Real r, NumSpec r) => MonadDist (Deterministic r)
-instance (Ord r, Real r, NumSpec r) => MonadBayes (Deterministic r)
+instance (IsCustomReal r, Real r, NumSpec r) => MonadDist (Deterministic r)
+instance (IsCustomReal r, Real r, NumSpec r) => MonadBayes (Deterministic r)
 
 -- | Converts a probabilistic type into a deterministic one,
 -- provided that no probabilistic effects are actually used.

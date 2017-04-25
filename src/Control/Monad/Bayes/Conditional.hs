@@ -148,15 +148,15 @@ type JointDensity r = Conditional (Weighted (Deterministic r))
 
 -- | Computes the joint density of all random variables in the model.
 -- 'Nothing' is returned on trace shape mismatch or if not all of the random variables were used for conditioning.
-maybeJointDensity :: (Ord r, Floating r) => JointDensity r a -> Trace r -> Maybe (LogDomain r)
+maybeJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> Maybe (LogDomain r)
 maybeJointDensity m t = join $ maybeDeterministic $ runMaybeT $ maybeDensity m t
 
 -- | Like 'maybeJointDensity', but throws an error instead of returning 'Nothing'.
-unsafeJointDensity :: (Ord r, Floating r) => JointDensity r a -> Trace r -> LogDomain r
+unsafeJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> LogDomain r
 unsafeJointDensity m t = unsafeDeterministic $ unsafeDensity m t
 
 -- | Like 'unsafeJointDensity' but additionally returns the output from the model.
-outputWithJointDensity :: (Ord r, Floating r) => JointDensity r a -> Trace r -> (a, LogDomain r)
+outputWithJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> (a, LogDomain r)
 outputWithJointDensity m t = unsafeDeterministic $ outputWithDensity m t
 
 -- | A monad that computes joint density and its gradient over all variables in the model using
@@ -167,7 +167,7 @@ type JointDensityGradient s r = JointDensity (Reverse s r)
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- 'Nothing' is returned under the same conditions as for 'maybeJointDensity'.
-maybeJointDensityGradient :: (Ord r, Floating r)
+maybeJointDensityGradient :: IsCustomReal r
                           => (forall s. Reifies s Tape => JointDensityGradient s r a)
                           -> [r] -> Maybe (LogDomain r, [r])
 maybeJointDensityGradient m xs =
@@ -176,20 +176,20 @@ maybeJointDensityGradient m xs =
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- Throws an error under the same conditions as 'unsafeJointDensity'.
-unsafeJointDensityGradient :: (Ord r, Floating r)
+unsafeJointDensityGradient :: IsCustomReal r
                            => (forall s. Reifies s Tape => JointDensityGradient s r a)
                            -> [r] -> (LogDomain r, [r])
 unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
 
 -- | Like 'unsafeJointDensityGradient' but additionally returns the output from the model.
-outputWithJointDensityGradient :: (Ord r, Floating r)
+outputWithJointDensityGradient :: IsCustomReal r
                                => (forall s. Reifies s Tape => JointDensityGradient s r a)
                                -> [r] -> (a, (LogDomain r, [r]))
 outputWithJointDensityGradient m xs =
   fmap (first fromLog) $ jacobian' (fmap toLog . outputWithJointDensity m . fromLists . (,[])) xs
 
 -- | Convert a trace to output from the model.
-traceToOutput :: forall a r. (Ord r, Floating r)
+traceToOutput :: forall a r. IsCustomReal r
               => (forall s. Reifies s Tape => JointDensityGradient s r a)
               -> Trace r -> a
 traceToOutput m t = fst $ outputWithJointDensityGradient m (fst $ toLists t)
