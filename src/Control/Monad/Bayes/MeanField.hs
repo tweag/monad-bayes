@@ -104,8 +104,12 @@ instance {-# OVERLAPPING #-} (Sampleable (Discrete r k) m, Monad m) => Sampleabl
 instance (Conditionable m, Monad m) => Conditionable (MeanFieldNormal m) where
   factor = lift . factor
 
-instance MonadBayes m => MonadDist (MeanFieldNormal m)
-instance MonadBayes m => MonadBayes (MeanFieldNormal m)
+instance (Monad m, Conditionable m, Real (CustomReal m), NumSpec (CustomReal m), Sampleable (Normal (CustomReal m)) m,
+          Sampleable (Discrete (CustomReal m) Int) m, Real (CustomReal m), NumSpec (CustomReal m))
+          => MonadDist (MeanFieldNormal m)
+instance (Monad m, Conditionable m, Real (CustomReal m), NumSpec (CustomReal m), Sampleable (Normal (CustomReal m)) m,
+          Sampleable (Discrete (CustomReal m) Int) m, Real (CustomReal m), NumSpec (CustomReal m))
+          => MonadBayes (MeanFieldNormal m)
 
 -- | Propose each random variable from a normal distribution with given parameters.
 -- Leave the discrete distributions unchanged.
