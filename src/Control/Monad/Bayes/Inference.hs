@@ -30,6 +30,7 @@ module Control.Monad.Bayes.Inference (
   pimh,
   randomWalk,
   hmc,
+  randInitParam,
   advi
 ) where
 
