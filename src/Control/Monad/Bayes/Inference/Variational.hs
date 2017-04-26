@@ -20,12 +20,12 @@ module Control.Monad.Bayes.Inference.Variational (
 
 import Prelude hiding (zip, splitAt, length, map)
 
-import Debug.Trace (traceM)
+-- import Debug.Trace (traceM)
+-- import qualified Data.Foldable as Fold
 
 import Data.Bifunctor (second)
 import Data.Reflection (Reifies)
 import Data.Vector hiding ((++))
-import qualified Data.Foldable as Fold
 import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse (Tape)
 
@@ -59,10 +59,10 @@ elboGrad :: (Traversable t, HasCustomReal m, Monad m)
          => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
          -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m, CustomReal m))
 elboGrad model xs = do
-  traceM $ "input: " ++ show (Fold.toList $ fmap fromCustomReal xs)
+  -- traceM $ "input: " ++ show (Fold.toList $ fmap fromCustomReal xs)
   (target , xsGrad) <- (gradFWith' (,) $ reparametrize . elbo . withParam model) xs
-  traceM $ "elbo: " ++ show (fromCustomReal target)
-  traceM $ "gradient: " ++ show (Fold.toList $ fmap (fromCustomReal . snd) xsGrad)
+  -- traceM $ "elbo: " ++ show (fromCustomReal target)
+  -- traceM $ "gradient: " ++ show (Fold.toList $ fmap (fromCustomReal . snd) xsGrad)
   return (target, xsGrad)
 
 -- \ Find parameters that optimize ELBO using stochastic gradient descent.
