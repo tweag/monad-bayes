@@ -37,7 +37,7 @@ instance (HasCustomReal m, Reifies s Tape) => HasCustomReal (Reparametrized s m)
 
 instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleable (Normal r) m)
         => Sampleable (Normal (Reverse s r)) (Reparametrized s m) where
-  sample d = Reparametrized $ IdentityT $ fmap (\x -> (auto x + N.mean d) * N.stddev d) $ normal 0 1
+  sample d = Reparametrized $ IdentityT $ fmap (\x -> auto x * N.stddev d + N.mean d) $ normal 0 1
 
 instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleable (Uniform r) m)
         => Sampleable (Uniform (Reverse s r)) (Reparametrized s m) where
