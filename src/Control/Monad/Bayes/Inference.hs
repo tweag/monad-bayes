@@ -36,6 +36,8 @@ module Control.Monad.Bayes.Inference (
 
 import Prelude hiding (sum)
 
+--import Debug.Trace (trace, traceM)
+
 import Numeric.AD.Internal.Reverse (Tape)
 import Data.Reflection (Reifies)
 import Control.Monad.RWS
@@ -195,7 +197,13 @@ hmc model params n start = do
       p = fst . pWithGrad . fst . toLists
       -- density gradient
       gradU = snd . pWithGrad
-      pWithGrad = unsafeJointDensityGradient (unconstrain model)
+      pWithGrad xs =
+        --trace ("inputs: " ++ show (map fromCustomReal xs)) $
+        let (target, target_grads) = unsafeJointDensityGradient (unconstrain model) xs
+            ugrads = map negate target_grads in
+          --trace ("log-target: " ++ show (fromCustomReal $ toLog target)) $
+          --trace ("Ugradient: " ++ show (map fromCustomReal ugrads)) $
+          (target, ugrads)
   ((t,_), ts) <- execRWST (MCMC.mh n kernel) p (start, p start)
   let xs = map (traceToOutput (unconstrain model)) ts
   return (xs, t)

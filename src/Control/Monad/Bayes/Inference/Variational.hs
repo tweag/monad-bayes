@@ -18,11 +18,14 @@ module Control.Monad.Bayes.Inference.Variational (
   adviSet
 ) where
 
-import Prelude hiding (zip, splitAt, length, (++), map)
+import Prelude hiding (zip, splitAt, length, map)
+
+import Debug.Trace (traceM)
 
 import Data.Bifunctor (second)
 import Data.Reflection (Reifies)
-import Data.Vector
+import Data.Vector hiding ((++))
+import qualified Data.Foldable as Fold
 import Numeric.AD.Mode.Reverse
 import Numeric.AD.Internal.Reverse (Tape)
 
@@ -47,17 +50,20 @@ gradFWith' = jacobianWith'
 
 -- | Estimator for evidence lower bound.
 elbo :: (HasCustomReal m, Functor m) => Weighted m a -> m (CustomReal m)
-elbo = fmap (toLog . snd) . runWeighted  -- initialMeans <- replicateM n (uniform (-1) 1)
-  -- initialStdDevs <- replicateM n (uniform 0.01 1)
-  -- let initialParam = initialMeans ++ initialStdDevs
+elbo = fmap (toLog . snd) . runWeighted
 
 -- | Stochastic gradient of 'elbo' using the reparametrization trick.
 -- Returns a tuple where the first element is the value of ELBO and the second
 -- is a traversable structure where each element is a tuple containing the argument the the gradient with respect to it.
-elboGrad :: (Traversable t, HasCustomReal m, Functor m)
+elboGrad :: (Traversable t, HasCustomReal m, Monad m)
          => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
          -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m, CustomReal m))
-elboGrad model = gradFWith' (,) $ reparametrize . elbo . withParam model
+elboGrad model xs = do
+  traceM $ "input: " ++ show (Fold.toList $ fmap fromCustomReal xs)
+  (target , xsGrad) <- (gradFWith' (,) $ reparametrize . elbo . withParam model) xs
+  traceM $ "elbo: " ++ show (fromCustomReal target)
+  traceM $ "gradient: " ++ show (Fold.toList $ fmap (fromCustomReal . snd) xsGrad)
+  return (target, xsGrad)
 
 -- \ Find parameters that optimize ELBO using stochastic gradient descent.
 optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
