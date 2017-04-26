@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Constraint (
 import Control.Monad.Trans
 import Control.Monad.Trans.Identity
 
+import Statistics.Distribution.Polymorphic.Unconstrained (inverseTransformConstraints)
 import Control.Monad.Bayes.Simple
 
 -- | Transformer mapping continuous random variables onto the unconstrained real line.
@@ -33,8 +34,8 @@ newtype Constraint m a = Constraint (IdentityT m a)
 instance HasCustomReal m => HasCustomReal (Constraint m) where
   type CustomReal (Constraint m) = CustomReal m
 
-instance {-# OVERLAPPING #-} (KnownSupport d, Sampleable (Unconstrained d) m) => Sampleable d (Constraint m) where
-  sample = Constraint . IdentityT . sample . removeConstraints
+instance {-# OVERLAPPING #-} (Functor m, KnownSupport d, RealNum d ~ Domain d, Sampleable (Unconstrained d) m) => Sampleable d (Constraint m) where
+  sample d = Constraint $ IdentityT $ fmap (inverseTransformConstraints d) $ sample $ removeConstraints d
 
 instance {-# OVERLAPPING #-} Sampleable (Discrete r k) m => Sampleable (Discrete r k) (Constraint m) where
   sample = Constraint . IdentityT . sample
