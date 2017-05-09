@@ -60,22 +60,27 @@ instance HasCustomReal m => HasCustomReal (Conditional m) where
 instance MonadTrans Conditional where
   lift m = Conditional (lift $ lift m)
 
+safePdf :: (Density d, Parametric d) => d -> Domain d -> LogDomain (RealNum d)
+safePdf d x = case checkParam d of
+  Just _ -> 0
+  Nothing -> pdf d x
+
 instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r) (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case cs of
       (c:cs') -> do
-        factor (pdf d c)
+        factor $ safePdf d c
         put (xs, cs')
         return c
       _ -> fail ""
 
-instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
+instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Parametric d, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case xs of
       (x:xs') -> do
-        factor (pdf d x)
+        factor $ safePdf d x
         put (xs', cs)
         return x
       _ -> fail ""
@@ -88,7 +93,7 @@ instance {-# OVERLAPPING #-} (CustomReal m ~ Double, Conditionable m, Monad m) =
     if length taken == k then
       do
         let v = LA.fromList taken
-        factor (pdf d v)
+        factor $ safePdf d v
         put (remaining, cs)
         return v
     else
