@@ -35,7 +35,7 @@ instance HasCustomReal m => HasCustomReal (Augmented m) where
 instance MonadTrans Augmented where
   lift = Augmented . lift
 
-instance {-# OVERLAPPING #-} (Sampleable (Discrete r Int) m, Monad m) => Sampleable (Discrete r Int) (Augmented m) where
+instance {-# OVERLAPPING #-} (Sampleable (Discrete r) m, Monad m) => Sampleable (Discrete r) (Augmented m) where
   sample d = Augmented $ do
     x <- sample d
     tell $ fromLists (mempty, [x])

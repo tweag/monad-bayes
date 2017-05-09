@@ -55,7 +55,7 @@ elbo = fmap (toLog . snd) . runWeighted
 -- | Stochastic gradient of 'elbo' using the reparametrization trick.
 -- Returns a tuple where the first element is the value of ELBO and the second
 -- is a traversable structure where each element is a tuple containing the argument the the gradient with respect to it.
-elboGrad :: (Traversable t, HasCustomReal m, Monad m)
+elboGrad :: (Traversable t, HasCustomReal m, CustomReal m ~ Double, Monad m)
          => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a)
          -> t (CustomReal m) -> m (CustomReal m, t (CustomReal m, CustomReal m))
 elboGrad model xs = do
@@ -66,27 +66,27 @@ elboGrad model xs = do
   return (target, xsGrad)
 
 -- \ Find parameters that optimize ELBO using stochastic gradient descent.
-optimizeELBO :: (Traversable t, HasCustomReal m, Monad m)
-             => (forall s. Reifies s Tape => Parametric (t (Reverse s (CustomReal m))) (Weighted (Reparametrized s m)) a) -- ^ model
-             -> SGDParam (CustomReal m) -- ^ optimization parameters
-             -> t (CustomReal m) -- ^ initial values of parameters
-             -> m (t (CustomReal m))
+optimizeELBO :: (Traversable t, HasCustomReal m, CustomReal m ~ Double, Monad m)
+             => (forall s. Reifies s Tape => Parametric (t (Reverse s Double)) (Weighted (Reparametrized s m)) a) -- ^ model
+             -> SGDParam Double -- ^ optimization parameters
+             -> t Double -- ^ initial values of parameters
+             -> m (t Double)
 optimizeELBO model optParam initial = sga optParam (fmap snd . elboGrad model) initial
 
 -- | Reparametrize from a vector of (mean, stddev) to twice as long vector of unconstrained real numbers.
-reshapeParam :: (Ord a, Floating a) => Parametric (Vector (a, a)) m b -> Parametric (Vector a) m b
+reshapeParam :: IsCustomReal a => Parametric (Vector (a, a)) m b -> Parametric (Vector a) m b
 reshapeParam m = parametric (withParam m . split) where
   split v = uncurry zip $ second (map (inverseTransformConstraints (gammaDist 1 1))) $ splitAt (length v `div` 2) v
 
-advi :: (MonadDist m)
+advi :: (MonadDist m, CustomReal m ~ Double)
      => (forall s. (Reifies s Tape) => MeanFieldNormal (Weighted (Reparametrized s m)) a) -- ^ model
-     -> SGDParam (CustomReal m)
-     -> Vector (CustomReal m)
-     -> m (Vector (CustomReal m))
+     -> SGDParam Double
+     -> Vector Double
+     -> m (Vector Double)
 advi m sgdParam initParam = optimizeELBO (reshapeParam $ meanFieldNormal m) sgdParam initParam
 
-adviSet :: MonadDist m
+adviSet :: (MonadDist m, CustomReal m ~ Double)
         => MeanFieldNormal (Weighted m) a
-        -> Vector (CustomReal m)
+        -> Vector Double
         -> m a
 adviSet model bestParam = prior $ (withParam $ reshapeParam $ meanFieldNormal model) bestParam

@@ -48,6 +48,7 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
+import Numeric.CustomReal (fromCustomReal)
 import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Statistics.Distribution.Polymorphic
@@ -78,21 +79,21 @@ mvnormal :: (HasCustomReal m, CustomReal m ~ R, Sampleable MVNormal m)
 mvnormal m s = sample (mvnormalDist m s)
 
 -- | Sample from a discrete distribution in a probabilistic program.
-discrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Sampleable (Discrete r k) m) => f r -> m k
+discrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, Sampleable (Discrete r) m) => f r -> m Int
 discrete ws = sample (discreteDist ws)
 
 -- | Like 'discrete', but weights are given in log domain.
-logDiscrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, NumSpec r, Ord r, Sampleable (Discrete r k) m)
-            => f (Log.LogDomain (CustomReal m)) -> m k
+logDiscrete :: (Foldable f, HasCustomReal m, r ~ CustomReal m, Sampleable (Discrete r) m)
+            => f (Log.LogDomain (CustomReal m)) -> m Int
 logDiscrete = sample . logDiscreteDist
 
 
 -- | Monads for building generative probabilistic models.
 -- The class does not specify any conditioning primitives.
-class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m),
+class (Monad m, HasCustomReal m,
        Sampleable (Normal (CustomReal m)) m, Sampleable (Gamma (CustomReal m)) m,
        Sampleable (Beta (CustomReal m)) m, Sampleable (Uniform (CustomReal m)) m,
-       Sampleable (Discrete (CustomReal m) Int) m,
+       Sampleable (Discrete (CustomReal m)) m,
        Sampleable (Unconstrained (Normal (CustomReal m))) m, Sampleable (Unconstrained (Gamma (CustomReal m))) m,
        Sampleable (Unconstrained (Beta (CustomReal m))) m, Sampleable (Unconstrained (Uniform (CustomReal m))) m
        ) => MonadDist m where
@@ -117,12 +118,12 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
     -- > bernoulli p = categorical [(True,p), (False,1-p)]
     bernoulli :: CustomReal m -> m Bool
     bernoulli p | p >= 0 && p <= 1 = categorical [(True,p), (False,1-p)]
-    bernoulli p = error $ "Bernoulli: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
+    bernoulli p = error $ "Bernoulli: argument " ++ show (fromCustomReal p) ++ " is out of range [0,1]."
 
     -- | Binomial distribution. Returns the number of successes.
     binomial :: Int -> CustomReal m -> m Int
     binomial n _ | n < 0 = error $ "Binomial: the number of trials " ++ show n ++ " is negative"
-    binomial _ p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
+    binomial _ p | p < 0 || p > 1 = error $ "Binomial: argument " ++ show (fromCustomReal p) ++ " is out of range [0,1]."
     binomial n p = categorical $ map (\k -> (k, mass k)) [0..n] where
                      mass k = realToFrac (n `choose` k) * (p ^ k) *
                               ((1-p) ^ (n-k))
@@ -139,13 +140,13 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
 
     -- | Geometric distribution starting at 0.
     geometric :: CustomReal m -> m Int
-    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (realToFrac p :: Double) ++ " is out of range [0,1]."
+    geometric p | p <= 0 || p > 1 = error $ "Geometric: argument " ++ show (fromCustomReal p) ++ " is out of range [0,1]."
     geometric p = discrete $ map ((p *) . (q ^)) ([0..] :: [Int]) where
                              q = 1 - p
 
     -- | Poisson distribution.
     poisson :: CustomReal m -> m Int
-    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (realToFrac p :: Double) ++ " is not positive."
+    poisson p | p <= 0 = error $ "Poisson: argument " ++ show (fromCustomReal p) ++ " is not positive."
     poisson p = discrete $ map mass [0..] where
                              mass k = c * (p ^ k) /
                                 realToFrac (factorial k)
@@ -169,7 +170,6 @@ class (Monad m, HasCustomReal m, Log.NumSpec (CustomReal m), Real (CustomReal m)
     dirichlet :: [CustomReal m] -> m [CustomReal m]
     dirichlet ws = liftM normalize $ gammas ws where
       gammas = mapM (\w -> gamma w 1)
-      normalize xs = map (/ (Prelude.sum xs)) xs
 
 
 -- | Monads for building probabilistic programs with conditioning.

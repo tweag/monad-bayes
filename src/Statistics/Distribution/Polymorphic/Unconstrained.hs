@@ -9,6 +9,10 @@ Portability : GHC
 
 -}
 
+-- Constraint transforms use safe but incomplete matches.
+-- GHC is unable to infer that only those constructor can produce 'Support r' with 'IsCustomReal r'.
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+
 module Statistics.Distribution.Polymorphic.Unconstrained (
   Unconstrained,
   removeConstraints,
@@ -27,23 +31,25 @@ import Statistics.Distribution.Polymorphic.Class
 -- | Wrapper for univariate continuous distributions that transforms them onto the real line.
 newtype Unconstrained d = Unconstrained d
 
-instance KnownSupport d => Distribution (Unconstrained d) where
+instance (KnownSupport d, RealNum d ~ Domain d) => Distribution (Unconstrained d) where
   type RealNum (Unconstrained d) = RealNum d
   type Domain (Unconstrained d) = Domain d
 
-instance KnownSupport d => KnownSupport (Unconstrained d) where
+instance (KnownSupport d, RealNum d ~ Domain d) => KnownSupport (Unconstrained d) where
   support _ = RealLine
 
-instance (KnownSupport d, Density d) => Density (Unconstrained d) where
-  pdf (Unconstrained d) x = pdf d (inverseTransformConstraints d x) * toLogDomain (inverseTransformConstraintsGrad d x)
+instance (KnownSupport d, RealNum d ~ Domain d, Density d) => Density (Unconstrained d) where
+  unsafePdf (Unconstrained d) x =
+    pdf d (inverseTransformConstraints d x) * toLogDomain (inverseTransformConstraintsGrad d x)
 
-instance (KnownSupport d, Parametric d) => Parametric (Unconstrained d) where
+instance (KnownSupport d, RealNum d ~ Domain d, Parametric d) => Parametric (Unconstrained d) where
   type Param (Unconstrained d) = Param d
   param (Unconstrained d) = param d
   distFromParam = Unconstrained . distFromParam
+  checkParam (Unconstrained d) = checkParam d
 
 -- | Transform a distribution to one that has support on the entire real line.
-removeConstraints :: KnownSupport d => d -> Unconstrained d
+removeConstraints :: (KnownSupport d, RealNum d ~ Domain d) => d -> Unconstrained d
 removeConstraints = Unconstrained
 
 -- | Retrieve the original constrained distribution.
@@ -69,7 +75,7 @@ intervalInvTrans :: Floating a => a -> a -> a -> a
 intervalInvTrans a b y = tanh y * (b - a) + a
 
 -- | Transform the support of a distribution onto the real line.
-transformConstraints :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
+transformConstraints :: (KnownSupport d, RealNum d ~ Domain d) => d -> RealNum d -> RealNum d
 transformConstraints d = case support d of
   RealLine       -> realLineTrans
   LowerBounded a -> lowerTrans a
@@ -77,7 +83,7 @@ transformConstraints d = case support d of
   Interval a b   -> intervalTrans a b
 
 -- | Inverse of 'transformConstraints'.
-inverseTransformConstraints :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
+inverseTransformConstraints :: (KnownSupport d, RealNum d ~ Domain d) => d -> RealNum d -> RealNum d
 inverseTransformConstraints d = case support d of
   RealLine       -> realLineInvTrans
   LowerBounded a -> lowerInvTrans a
@@ -85,7 +91,7 @@ inverseTransformConstraints d = case support d of
   Interval a b   -> intervalInvTrans a b
 
 -- | First derivative of 'transformConstraints'.
-transformConstraintsGrad :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
+transformConstraintsGrad :: (KnownSupport d, RealNum d ~ Domain d) => d -> RealNum d -> RealNum d
 transformConstraintsGrad d = case support d of
   RealLine       -> diff $ realLineTrans
   LowerBounded a -> diff $ lowerTrans (auto a)
@@ -93,7 +99,8 @@ transformConstraintsGrad d = case support d of
   Interval a b   -> diff $ intervalTrans (auto a) (auto b)
 
 -- | First derivative of 'inverseTransformConstraintsGrad'.
-inverseTransformConstraintsGrad :: (KnownSupport d, Floating (RealNum d)) => d -> RealNum d -> RealNum d
+inverseTransformConstraintsGrad :: (KnownSupport d, RealNum d ~ Domain d)
+                                => d -> RealNum d -> RealNum d
 inverseTransformConstraintsGrad d = case support d of
   RealLine       -> diff $ realLineInvTrans
   LowerBounded a -> diff $ lowerInvTrans (auto a)

@@ -60,7 +60,7 @@ instance HasCustomReal m => HasCustomReal (Conditional m) where
 instance MonadTrans Conditional where
   lift m = Conditional (lift $ lift m)
 
-instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r Int) (Conditional m) where
+instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r) (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case cs of
@@ -167,29 +167,25 @@ type JointDensityGradient s r = JointDensity (Reverse s r)
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- 'Nothing' is returned under the same conditions as for 'maybeJointDensity'.
-maybeJointDensityGradient :: IsCustomReal r
-                          => (forall s. Reifies s Tape => JointDensityGradient s r a)
-                          -> [r] -> Maybe (LogDomain r, [r])
+maybeJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                          -> [Double] -> Maybe (LogDomain Double, [Double])
 maybeJointDensityGradient m xs =
   fmap (first fromLog) $ jacobian' (fmap toLog . maybeJointDensity m . fromLists . (,[])) xs
 
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- Throws an error under the same conditions as 'unsafeJointDensity'.
-unsafeJointDensityGradient :: IsCustomReal r
-                           => (forall s. Reifies s Tape => JointDensityGradient s r a)
-                           -> [r] -> (LogDomain r, [r])
+unsafeJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                           -> [Double] -> (LogDomain Double, [Double])
 unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
 
 -- | Like 'unsafeJointDensityGradient' but additionally returns the output from the model.
-outputWithJointDensityGradient :: IsCustomReal r
-                               => (forall s. Reifies s Tape => JointDensityGradient s r a)
-                               -> [r] -> (a, (LogDomain r, [r]))
+outputWithJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                               -> [Double] -> (a, (LogDomain Double, [Double]))
 outputWithJointDensityGradient m xs =
   fmap (first fromLog) $ jacobian' (fmap toLog . outputWithJointDensity m . fromLists . (,[])) xs
 
 -- | Convert a trace to output from the model.
-traceToOutput :: forall a r. IsCustomReal r
-              => (forall s. Reifies s Tape => JointDensityGradient s r a)
-              -> Trace r -> a
+traceToOutput :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+              -> Trace Double -> a
 traceToOutput m t = fst $ outputWithJointDensityGradient m (fst $ toLists t)

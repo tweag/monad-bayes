@@ -24,6 +24,8 @@ module Control.Monad.Bayes.Enumerator (
     normalForm
             ) where
 
+import Prelude hiding (sum)
+
 import Data.AEq (AEq, (===), (~==))
 import Control.Applicative (Applicative, pure, Alternative)
 import Control.Monad (MonadPlus)
@@ -33,7 +35,8 @@ import Control.Monad.Trans
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as V
 
-import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain, NumSpec)
+import Numeric.CustomReal
+import Numeric.LogDomain (LogDomain, fromLogDomain, toLogDomain)
 import Statistics.Distribution.Polymorphic.Discrete
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
@@ -50,9 +53,9 @@ instance HasCustomReal m => HasCustomReal (Enumerator m) where
   type CustomReal (Enumerator m) = CustomReal m
 
 instance {-# OVERLAPPING #-} (CustomReal m ~ r, MonadDist m) =>
-         Sampleable (Discrete r Int) (Enumerator m) where
+         Sampleable (Discrete r) (Enumerator m) where
   sample d =
-    Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ normalize $ zip [0..] $ V.toList $ weights d
+    Enumerator $ Pop.fromWeightedList $ pure $ map (second toLogDomain) $ zip [0..] $ V.toList $ normalize $ weights d
 
 instance {-# OVERLAPPING #-} (Sampleable d m, Monad m) => Sampleable d (Enumerator m) where
   sample = lift . sample
@@ -84,19 +87,19 @@ ensureDiscrete =
 
 -- | Returns the posterior as a list of weight-value pairs without any post-processing,
 -- such as normalization or aggregation
-logExplicit :: (IsCustomReal r, NumSpec r) => Dist r a -> [(a, LogDomain r)]
+logExplicit :: IsCustomReal r => Dist r a -> [(a, LogDomain r)]
 logExplicit = ensureDiscrete . Pop.runPopulation . toPopulation
 
 -- | Same as `toList`, only weights are converted from log-domain.
-explicit :: (IsCustomReal r, NumSpec r) => Dist r a -> [(a,r)]
+explicit :: (IsCustomReal r) => Dist r a -> [(a,r)]
 explicit = map (second fromLogDomain) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
-evidence :: (IsCustomReal r, NumSpec r) => Dist r a -> LogDomain r
+evidence :: (IsCustomReal r) => Dist r a -> LogDomain r
 evidence = ensureDiscrete . Pop.evidence . toPopulation
 
 -- | Normalized probability mass of a specific value.
-mass :: (IsCustomReal r, NumSpec r, Ord a) => Dist r a -> a -> r
+mass :: (IsCustomReal r, Ord a) => Dist r a -> a -> r
 mass d = f where
   f a = case lookup a m of
              Just p -> p
@@ -108,30 +111,26 @@ mass d = f where
 compact :: (Num r, Ord a) => [(a,r)] -> [(a,r)]
 compact = Map.toAscList . Map.fromListWith (+)
 
--- | Normalize the weights to sum to 1.
-normalize :: Fractional p => [(a,p)] -> [(a,p)]
-normalize xs = map (second (/ z)) xs where
-  z = sum $ map snd xs
-
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
 --
 -- > enumerate = compact . explicit
-enumerate :: (IsCustomReal r, NumSpec r, Ord a) => Dist r a -> [(a,r)]
-enumerate = normalize . compact . explicit
+enumerate :: (IsCustomReal r, Ord a) => Dist r a -> [(a,r)]
+enumerate d = compact (zip xs ws) where
+  (xs, ws) = second (map fromLogDomain . normalize) $ unzip (logExplicit d)
 
 -- | Expectation of a given function computed using normalized weights.
-expectation :: (IsCustomReal r, NumSpec r) => (a -> r) -> Dist r a -> r
+expectation :: (IsCustomReal r) => (a -> r) -> Dist r a -> r
 expectation f = ensureDiscrete . Pop.popAvg f . Pop.normalize . toPopulation
 
 -- | 'compact' followed by removing values with zero weight.
-normalForm :: (Ord a, IsCustomReal r, NumSpec r) => Dist r a -> [(a,r)]
+normalForm :: (Ord a, IsCustomReal r) => Dist r a -> [(a,r)]
 normalForm = filter ((/= 0) . snd) . compact . explicit
 
-instance (Ord a, IsCustomReal r, NumSpec r) => Eq (Dist r a) where
+instance (Ord a, IsCustomReal r) => Eq (Dist r a) where
   p == q = normalForm p == normalForm q
 
-instance (Ord a, IsCustomReal r, NumSpec r, AEq r) => AEq (Dist r a) where
+instance (Ord a, IsCustomReal r, AEq r) => AEq (Dist r a) where
   p === q = xs == ys && ps === qs where
     (xs,ps) = unzip (normalForm p)
     (ys,qs) = unzip (normalForm q)

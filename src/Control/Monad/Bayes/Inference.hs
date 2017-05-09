@@ -43,7 +43,6 @@ import Data.Reflection (Reifies)
 import Control.Monad.RWS
 import qualified Data.Vector as V
 
-import Numeric.LogDomain
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
@@ -87,14 +86,14 @@ importance' :: (Ord a, Monad m, HasCustomReal m) =>
 importance' n d = fmap compact $ explicitPopulation $ importance n d
 
 -- | Sequential Monte Carlo from the prior with multinomial resampling.
-smcMultinomial :: (Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+smcMultinomial :: (Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
     => Int -- ^ number of resampling points
     -> Int -- ^ number of particles
     -> Sequential (Population m) a -> Population m a
 smcMultinomial k n = smcWithResampler resample k n
 
 -- | `smcMultinomial` with post-processing like in 'importance''.
-smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
      => Int -> Int
      -> Sequential (Population m) a -> m [(a, CustomReal m)]
 smcMultinomial' k n d = fmap compact $ explicitPopulation $ smcMultinomial k n d
@@ -213,11 +212,11 @@ randInitParam n = V.replicateM n (uniform (-1) 1)
 
 -- | Automatic Differentiation Variational Inference.
 -- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.
-advi :: forall m a. (MonadDist m)
+advi :: forall m a. (MonadDist m, CustomReal m ~ Double)
      => Int -- ^ number of random variables in the model
      -> (forall n. (Monad n, Sampleable (Normal (CustomReal n)) n, Conditionable n) => Constraint (MeanFieldNormal n) a) -- ^ model
-     -> CustomReal m -- ^ learning rate
-     -> CustomReal m -- ^ decay rate
+     -> Double -- ^ learning rate
+     -> Double -- ^ decay rate
      -> Int -- ^ number of optimization steps
      -> m (m a) -- ^ optimized variational model
 advi size model lr dr n = fmap (VI.adviSet modelSecond) (initParam >>= VI.advi modelFirst (VI.SGDParam lr dr n)) where

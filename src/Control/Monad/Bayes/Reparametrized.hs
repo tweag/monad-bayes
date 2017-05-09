@@ -32,27 +32,27 @@ import Control.Monad.Bayes.Simple
 newtype Reparametrized s m a = Reparametrized (IdentityT m a)
   deriving(Read, Show, Eq, Functor, Applicative, Monad, MonadTrans, MonadIO)
 
-instance (HasCustomReal m, Reifies s Tape) => HasCustomReal (Reparametrized s m) where
-  type CustomReal (Reparametrized s m) = Reverse s (CustomReal m)
+instance (HasCustomReal m, CustomReal m ~ Double, Reifies s Tape) => HasCustomReal (Reparametrized s m) where
+  type CustomReal (Reparametrized s m) = Reverse s Double
 
-instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleable (Normal r) m)
-        => Sampleable (Normal (Reverse s r)) (Reparametrized s m) where
+instance (Functor m, HasCustomReal m, CustomReal m ~ Double, Reifies s Tape, Sampleable (Normal Double) m)
+        => Sampleable (Normal (Reverse s Double)) (Reparametrized s m) where
   sample d = Reparametrized $ IdentityT $ fmap (\x -> auto x * N.stddev d + N.mean d) $ normal 0 1
 
-instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleable (Uniform r) m)
-        => Sampleable (Uniform (Reverse s r)) (Reparametrized s m) where
+instance (Functor m, HasCustomReal m, CustomReal m ~ Double, Reifies s Tape, Sampleable (Uniform Double) m)
+        => Sampleable (Uniform (Reverse s Double)) (Reparametrized s m) where
   sample d = Reparametrized $ IdentityT $ fmap (\x -> a + (b - a) * (auto x)) $ uniform 0 1 where
     a = U.lower d
     b = U.upper d
 
-instance (Functor m, HasCustomReal m, r ~ CustomReal m, Reifies s Tape, Sampleable (Uniform r) m)
-        => Sampleable (Discrete (Reverse s r) Int) (Reparametrized s m) where
+instance (Functor m, HasCustomReal m, CustomReal m ~ Double, Reifies s Tape, Sampleable (Uniform Double) m)
+        => Sampleable (Discrete (Reverse s Double)) (Reparametrized s m) where
   sample d = Reparametrized $ IdentityT $ fmap (select . auto) $ uniform 0 1 where
     select x = case findIndex (>= x) (scanl1' (+) (D.weights d)) of
                   Just i -> i
                   Nothing -> error "Reparametrized: bad weights in Discrete"
 
-instance (Functor m, KnownSupport d, Sampleable d (Reparametrized s m)) => Sampleable (Unconstrained d) (Reparametrized s m) where
+instance (Functor m, KnownSupport d, Domain d ~ RealNum d, Sampleable d (Reparametrized s m)) => Sampleable (Unconstrained d) (Reparametrized s m) where
   sample d = fmap (transformConstraints d') (sample d') where
     d' = getConstrained d
 

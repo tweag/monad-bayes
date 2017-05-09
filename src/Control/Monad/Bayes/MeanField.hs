@@ -38,11 +38,11 @@ import Control.Monad.Bayes.Inference.Proposal
 
 -- | Safely extract the parameters.
 (!) :: IsCustomReal r => Vector (r,r) -> Int -> (r,r)
-v ! i = checkIndex v i `seq` checkParam (v V.! i)
+v ! i = checkIndex v i `seq` checkMFParam (v V.! i)
 
 -- | Safely extract many pairs of parameters.
 slice :: IsCustomReal r => Int -> Int -> Vector (r,r) -> Vector (r,r)
-slice i n v = checkIndex v (i+n) `seq` map checkParam (V.slice i n v)
+slice i n v = checkIndex v (i+n) `seq` map checkMFParam (V.slice i n v)
 
 -- | Check if the vector is long enough, generating a custom error message if not.
 checkIndex :: Vector (r,r) -> Int -> ()
@@ -53,8 +53,8 @@ checkIndex v i =
     error $ "MeanFieldNormal: parameter vector was too short - required at least " ++ show i ++ " elements but only " ++ show (length v) ++ " were supplied."
 
 -- | Check if standard deviation parameter is positive, generating a custom error message if not.
-checkParam :: IsCustomReal r => (r,r) -> (r,r)
-checkParam (m,s) =
+checkMFParam :: IsCustomReal r => (r,r) -> (r,r)
+checkMFParam (m,s) =
   if s <= 0 then
     error $ "MeanFieldNormal: standard deviation parameter was " ++ show (fromCustomReal s)
   else
@@ -98,17 +98,17 @@ instance {-# OVERLAPPING #-} (Sampleable MVNormal m, Conditionable m, CustomReal
     put (index + n)
     d `proposingFrom` mvnormalDist (convert ms) (trustSym $ diag $ convert $ map (^ (2 :: Int)) ss)
 
-instance {-# OVERLAPPING #-} (Sampleable (Discrete r k) m, Monad m) => Sampleable (Discrete r k) (MeanFieldNormal m) where
+instance {-# OVERLAPPING #-} (Sampleable (Discrete r) m, Monad m) => Sampleable (Discrete r) (MeanFieldNormal m) where
   sample = lift . sample
 
 instance (Conditionable m, Monad m) => Conditionable (MeanFieldNormal m) where
   factor = lift . factor
 
-instance (Monad m, Conditionable m, Real (CustomReal m), NumSpec (CustomReal m), Sampleable (Normal (CustomReal m)) m,
-          Sampleable (Discrete (CustomReal m) Int) m, Real (CustomReal m), NumSpec (CustomReal m))
+instance (Monad m, Conditionable m, Sampleable (Normal (CustomReal m)) m,
+          Sampleable (Discrete (CustomReal m)) m)
           => MonadDist (MeanFieldNormal m)
-instance (Monad m, Conditionable m, Real (CustomReal m), NumSpec (CustomReal m), Sampleable (Normal (CustomReal m)) m,
-          Sampleable (Discrete (CustomReal m) Int) m, Real (CustomReal m), NumSpec (CustomReal m))
+instance (Monad m, Conditionable m, Sampleable (Normal (CustomReal m)) m,
+          Sampleable (Discrete (CustomReal m)) m)
           => MonadBayes (MeanFieldNormal m)
 
 -- | Propose each random variable from a normal distribution with given parameters.

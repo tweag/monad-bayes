@@ -16,9 +16,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Class (
   module Statistics.Distribution.Polymorphic.Class,
-  IsCustomReal,
-  toCustomReal,
-  fromCustomReal,
+  module Numeric.CustomReal,
   HasCustomReal,
   CustomReal,
   Sampleable,
@@ -28,10 +26,6 @@ module Control.Monad.Bayes.Class (
   condition,
   observe
 ) where
-
-import Data.Reflection (Reifies)
-import Numeric.AD.Internal.Reverse (Tape, primal)
-import Numeric.AD.Mode.Reverse (Reverse, auto)
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
@@ -43,21 +37,9 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
+import Numeric.CustomReal (IsCustomReal, toCustomReal, fromCustomReal, sum, normalize)
 import qualified Numeric.LogDomain as Log
 import Statistics.Distribution.Polymorphic.Class
-
--- | Numeric types that can be treated as real numbers.
-class (Floating r, Ord r) => IsCustomReal r where
-  toCustomReal :: Double -> r
-  fromCustomReal :: r -> Double
-
-instance IsCustomReal Double where
-  toCustomReal = id
-  fromCustomReal = id
-
-instance (IsCustomReal r, Reifies s Tape) => IsCustomReal (Reverse s r) where
-  toCustomReal = auto . toCustomReal
-  fromCustomReal = fromCustomReal . primal
 
 -- | The type used to represent real numbers in a given probabilistic program.
 -- In most cases this is just `Double`, but

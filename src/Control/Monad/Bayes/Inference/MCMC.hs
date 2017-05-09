@@ -281,14 +281,14 @@ checkRange (DiscreteKernel t) x a =
   else
     error $ "Discrete kernel: was given value " ++ (show x) ++ " which is out of range 0.." ++ show (length t)
 
-instance (HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m) => MHKernel (DiscreteKernel m) where
+instance (HasCustomReal m, Sampleable (Discrete (CustomReal m)) m) => MHKernel (DiscreteKernel m) where
   type KernelDomain (DiscreteKernel m) = Int
   type MHSampler (DiscreteKernel m) = m
   proposeFrom k@(DiscreteKernel t) x = checkRange k x `seq` discrete (t !! x)
   density k@(DiscreteKernel t) x y = checkRange k x `seq` checkRange k y `seq` toLogDomain (t !! x !! y)
 
 -- | Construct a discrete kernel using the specified transition matrix.
-discreteKernel :: (HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+discreteKernel :: (HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
                => [[CustomReal m]] -- ^ matrix of transition probabilities - outer list indexes inputs, inner outputs
                                    -- must have shape NxN, the rows are automatically normalized
                -> DiscreteKernel m

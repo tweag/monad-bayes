@@ -16,14 +16,15 @@ module DPmixture (
 
 -- Dirichlet Process mixture of Gaussians
 
-import Data.List
+import Prelude hiding (sum)
+
+import Data.List hiding (sum)
 import Data.Maybe
 import Data.Ix (range)
 import Numeric.SpecFunctions (logGamma, factorial)
 -- import Control.Monad.Memo (memo, startEvalMemoT)
 -- import Control.Monad.Trans.Memo.StateCache
 
-import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 
 

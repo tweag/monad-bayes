@@ -26,7 +26,7 @@ module Control.Monad.Bayes.Population (
     hoist
                  ) where
 
-import Prelude hiding (all)
+import Prelude hiding (sum, all)
 
 import Control.Arrow (second)
 import Control.Monad.Trans
@@ -35,8 +35,7 @@ import Control.Monad
 import Control.Applicative
 
 import Numeric.LogDomain (LogDomain, fromLogDomain)
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
+import Control.Monad.Bayes.Simple hiding (normalize)
 import Control.Monad.Bayes.Weighted hiding (hoist)
 
 -- | Empirical distribution represented as a list of values.
@@ -124,7 +123,7 @@ spawn n = fromEmpirical (draw n)
 
 -- | Resample the population using the underlying monad and a simple resampling scheme.
 -- The total weight is preserved.
-resample :: (HasCustomReal m, Monad m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+resample :: (HasCustomReal m, Monad m, Sampleable (Discrete (CustomReal m)) m)
          => Population m a -> Population m a
 resample m = fromWeightedList $ do
   pop <- runPopulation m
@@ -141,8 +140,8 @@ resample m = fromWeightedList $ do
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
-proper :: (HasCustomReal m, Monad m, NumSpec (CustomReal m),
-           Sampleable (Discrete (CustomReal m) Int) m)
+proper :: (HasCustomReal m, Monad m,
+           Sampleable (Discrete (CustomReal m)) m)
        => Population m a -> m (a,LogDomain (CustomReal m))
 proper m = do
   pop <- runPopulation m
@@ -164,8 +163,8 @@ evidence = fmap (sum . map snd) . runPopulation
 -- in the transformed monad.
 -- This way a single sample can be selected from a population without
 -- introducing bias.
-collapse :: (HasCustomReal m, Monad m, NumSpec (CustomReal m), Conditionable m,
-             Sampleable (Discrete (CustomReal m) Int) m)
+collapse :: (HasCustomReal m, Monad m, Conditionable m,
+             Sampleable (Discrete (CustomReal m)) m)
          => Population m a -> m a
 collapse e = do
   (x,p) <- proper e

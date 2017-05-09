@@ -14,6 +14,7 @@ Portability : GHC
 -- For additional functions import specific distribution modules.
 module Statistics.Distribution.Polymorphic (
   module Numeric.LogDomain,
+  module Numeric.CustomReal,
   module Statistics.Distribution.Polymorphic.Class,
   module Statistics.Distribution.Polymorphic.Normal,
   module Statistics.Distribution.Polymorphic.Gamma,
@@ -24,7 +25,8 @@ module Statistics.Distribution.Polymorphic (
   module Statistics.Distribution.Polymorphic.Unconstrained
 ) where
 
-import Numeric.LogDomain (LogDomain, NumSpec)
+import Numeric.LogDomain (LogDomain)
+import Numeric.CustomReal (IsCustomReal)
 import Statistics.Distribution.Polymorphic.Class
 import Statistics.Distribution.Polymorphic.Normal (Normal, normalDist)
 import Statistics.Distribution.Polymorphic.Gamma (Gamma, gammaDist)

@@ -1,5 +1,7 @@
 module TestOptimization where
 
+import Prelude hiding (sum)
+
 import Test.Hspec
 import Data.AEq
 import Data.Functor.Identity
@@ -17,7 +19,7 @@ spec = do
       it "finds minimum of a quadratic function with the full gradient" $ min_quad
       it "finds minimum of a quadratic function with stochastic gradient" $ min_s_quad
 
-f :: Num a => [a] -> a
+f :: IsCustomReal a => [a] -> a
 f xs = sum $ zipWith (*) xs xs
 
 gradf :: [Double] -> [(Double,Double)]

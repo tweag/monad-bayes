@@ -17,7 +17,6 @@ module Control.Monad.Bayes.Deterministic(
 
 import Data.Maybe (fromMaybe)
 
-import Numeric.LogDomain (NumSpec)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 
@@ -40,8 +39,8 @@ instance Distribution d => Sampleable d (Deterministic r) where
 instance IsCustomReal r => Conditionable (Deterministic r) where
   factor _ = Deterministic Nothing
 
-instance (IsCustomReal r, Real r, NumSpec r) => MonadDist (Deterministic r)
-instance (IsCustomReal r, Real r, NumSpec r) => MonadBayes (Deterministic r)
+instance (IsCustomReal r) => MonadDist (Deterministic r)
+instance (IsCustomReal r) => MonadBayes (Deterministic r)
 
 -- | Converts a probabilistic type into a deterministic one,
 -- provided that no probabilistic effects are actually used.

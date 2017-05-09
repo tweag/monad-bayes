@@ -72,7 +72,7 @@ instance Sampleable (Beta Double) SamplerIO where
 instance Sampleable (Uniform Double) SamplerIO where
   sample d = fromMWC $ uniformR (lower d, upper d)
 
-instance Sampleable (Discrete Double Int) SamplerIO where
+instance Sampleable (Discrete Double) SamplerIO where
   sample d = fromMWC $ MWC.categorical $ weights d
 
 instance Sampleable MVNormal SamplerIO where
@@ -82,7 +82,7 @@ instance Sampleable MVNormal SamplerIO where
     z <- replicateM (size m) $ fromMWC MWC.standard
     return $ m + (z <# u)
 
-instance (KnownSupport d, Sampleable d SamplerIO) => Sampleable (Unconstrained d) SamplerIO where
+instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerIO) => Sampleable (Unconstrained d) SamplerIO where
   sample d = fmap (transformConstraints d') $ sample d' where
     d' = getConstrained d
 
@@ -146,7 +146,7 @@ instance Sampleable (Beta Double) SamplerST where
 instance Sampleable (Uniform Double) SamplerST where
   sample d = fromMWC' $ uniformR (lower d, upper d)
 
-instance Sampleable (Discrete Double Int) SamplerST where
+instance Sampleable (Discrete Double) SamplerST where
   sample d = fromMWC' $ MWC.categorical $ weights d
 
 instance Sampleable MVNormal SamplerST where
@@ -156,7 +156,7 @@ instance Sampleable MVNormal SamplerST where
     z <- replicateM (size m) $ fromMWC' MWC.standard
     return $ m + (z <# u)
 
-instance (KnownSupport d, Sampleable d SamplerST) => Sampleable (Unconstrained d) SamplerST where
+instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerST) => Sampleable (Unconstrained d) SamplerST where
   sample d = fmap (transformConstraints d') $ sample d' where
     d' = getConstrained d
 

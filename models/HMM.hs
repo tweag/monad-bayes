@@ -60,7 +60,7 @@ hmm = fmap reverse states where
 
 -- \ KL divergence between two distributions.
 -- The distributions should be normalized to ensure correct results.
-kl :: (IsCustomReal r, Real r, NumSpec r, Ord a) => Dist.Dist r a -> Dist.Dist r a -> r
+kl :: (IsCustomReal r, Ord a) => Dist.Dist r a -> Dist.Dist r a -> r
 kl p q = Dist.expectation f p where
   f x = log $ dp x / dq x
   dp = Dist.mass p

@@ -37,7 +37,7 @@ instance HasCustomReal m => HasCustomReal (Constraint m) where
 instance {-# OVERLAPPING #-} (Functor m, KnownSupport d, RealNum d ~ Domain d, Sampleable (Unconstrained d) m) => Sampleable d (Constraint m) where
   sample d = Constraint $ IdentityT $ fmap (inverseTransformConstraints d) $ sample $ removeConstraints d
 
-instance {-# OVERLAPPING #-} Sampleable (Discrete r k) m => Sampleable (Discrete r k) (Constraint m) where
+instance {-# OVERLAPPING #-} Sampleable (Discrete r) m => Sampleable (Discrete r) (Constraint m) where
   sample = Constraint . IdentityT . sample
 
 instance {-# OVERLAPPING #-} Sampleable MVNormal m => Sampleable MVNormal (Constraint m) where
