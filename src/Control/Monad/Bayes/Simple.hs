@@ -36,7 +36,7 @@ Portability : GHC
 import qualified Data.Map as Map
 import Numeric.SpecFunctions
 import Control.Arrow (first)
-import Numeric.LinearAlgebra
+import Numeric.LinearAlgebra (R, Vector, Herm)
 
 import Control.Monad
 import Control.Monad.Trans.Identity
