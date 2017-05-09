@@ -37,7 +37,7 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
-import Numeric.CustomReal (IsCustomReal, toCustomReal, fromCustomReal, sum, normalize)
+import Numeric.CustomReal (IsCustomReal, toCustomReal, fromCustomReal, sum)
 import qualified Numeric.LogDomain as Log
 import Statistics.Distribution.Polymorphic.Class
 

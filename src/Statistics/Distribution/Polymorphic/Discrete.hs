@@ -55,7 +55,7 @@ instance IsCustomReal r => Parametric (Discrete r) where
   distFromParam = discreteDist
   -- since we don't export 'Discrete' constructor, it is not possible to construct an instance
   -- with invalid parameters from outside this module
-  checkParam d = Nothing
+  checkParam _ = Nothing
 
 instance IsCustomReal r => Density (Discrete r) where
   unsafePdf (Discrete ws) = unsafeDiscretePdf ws

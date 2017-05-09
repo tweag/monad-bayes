@@ -55,6 +55,7 @@ import Data.Bifunctor (first)
 import Control.Monad.State
 import Control.Monad.RWS
 
+import Numeric.CustomReal (normalize)
 import Numeric.LogDomain
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Trace

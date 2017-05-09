@@ -40,7 +40,7 @@ uniformDist a b =
 
 -- | PDF of a continuous uniform distribution on an interval assuming the argument is in the interval.
 unsafeUniformPdf :: IsCustomReal r => r -> r -> r -> LogDomain r
-unsafeUniformPdf a b x = recip $ toLogDomain (b - a)
+unsafeUniformPdf a b _ = recip $ toLogDomain (b - a)
 
 instance IsCustomReal r => Distribution (Uniform r) where
   type Domain (Uniform r) = r

@@ -48,7 +48,7 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
-import Numeric.CustomReal (fromCustomReal)
+import Numeric.CustomReal (fromCustomReal, normalize)
 import qualified Numeric.LogDomain as Log
 import Control.Monad.Bayes.Class
 import Statistics.Distribution.Polymorphic

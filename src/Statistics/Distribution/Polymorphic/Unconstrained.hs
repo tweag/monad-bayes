@@ -9,10 +9,6 @@ Portability : GHC
 
 -}
 
--- Constraint transforms use safe but incomplete matches.
--- GHC is unable to infer that only those constructor can produce 'Support r' with 'IsCustomReal r'.
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
-
 module Statistics.Distribution.Polymorphic.Unconstrained (
   Unconstrained,
   removeConstraints,
@@ -81,6 +77,7 @@ transformConstraints d = case support d of
   LowerBounded a -> lowerTrans a
   UpperBounded b -> upperTrans b
   Interval a b   -> intervalTrans a b
+  _              -> error "Unconstrained: unexpected support"
 
 -- | Inverse of 'transformConstraints'.
 inverseTransformConstraints :: (KnownSupport d, RealNum d ~ Domain d) => d -> RealNum d -> RealNum d
@@ -89,6 +86,7 @@ inverseTransformConstraints d = case support d of
   LowerBounded a -> lowerInvTrans a
   UpperBounded b -> upperInvTrans b
   Interval a b   -> intervalInvTrans a b
+  _              -> error "Unconstrained: unexpected support"
 
 -- | First derivative of 'transformConstraints'.
 transformConstraintsGrad :: (KnownSupport d, RealNum d ~ Domain d) => d -> RealNum d -> RealNum d
@@ -97,6 +95,7 @@ transformConstraintsGrad d = case support d of
   LowerBounded a -> diff $ lowerTrans (auto a)
   UpperBounded b -> diff $ upperTrans (auto b)
   Interval a b   -> diff $ intervalTrans (auto a) (auto b)
+  _              -> error "Unconstrained: unexpected support"
 
 -- | First derivative of 'inverseTransformConstraintsGrad'.
 inverseTransformConstraintsGrad :: (KnownSupport d, RealNum d ~ Domain d)
@@ -106,3 +105,4 @@ inverseTransformConstraintsGrad d = case support d of
   LowerBounded a -> diff $ lowerInvTrans (auto a)
   UpperBounded b -> diff $ upperInvTrans (auto b)
   Interval a b   -> diff $ intervalInvTrans (auto a) (auto b)
+  _              -> error "Unconstrained: unexpected support"

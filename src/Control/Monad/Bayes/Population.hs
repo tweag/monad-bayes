@@ -35,7 +35,7 @@ import Control.Monad
 import Control.Applicative
 
 import Numeric.LogDomain (LogDomain, fromLogDomain)
-import Control.Monad.Bayes.Simple hiding (normalize)
+import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Weighted hiding (hoist)
 
 -- | Empirical distribution represented as a list of values.
