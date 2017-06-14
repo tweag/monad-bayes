@@ -17,8 +17,7 @@ import Control.Monad.Trans
 import System.IO
 import Control.Monad (when, unless)
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
+import Control.Monad.Bayes.Simple hiding (normalize)
 import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Population

@@ -17,6 +17,7 @@ module Control.Monad.Bayes.Weighted (
     withWeight,
     runWeighted,
     resetWeight,
+    prior,
     hoist,
     WeightRecorder,
     duplicateWeight,
@@ -82,6 +83,10 @@ withWeight m = Weighted $ do
 -- | Reset weight to 1.
 resetWeight :: (HasCustomReal m, Monad m) => Weighted m a -> Weighted m a
 resetWeight (Weighted m) = Weighted $ m >>= \x -> put 1 >> return x
+
+-- | Discard the weight.
+prior :: (HasCustomReal m, Functor m) => Weighted m a -> m a
+prior = fmap fst . runWeighted
 
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> m x) -> Weighted m a -> Weighted m a

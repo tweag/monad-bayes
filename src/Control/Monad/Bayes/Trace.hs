@@ -19,6 +19,7 @@ module Control.Monad.Bayes.Trace (
   Trace,
   fromLists,
   toLists,
+  mapTraceReal
 ) where
 
 -- | Trace of a probabilistic program is a collection of values for all the
@@ -33,3 +34,6 @@ fromLists = Trace
 -- | Extract values from a trace.
 toLists :: Trace r -> ([r],[Int])
 toLists (Trace t) = t
+
+mapTraceReal :: (r -> r') -> Trace r -> Trace r'
+mapTraceReal f (Trace (rs, ds)) = Trace ((map f rs), ds)

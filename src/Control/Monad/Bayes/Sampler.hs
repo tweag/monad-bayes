@@ -13,7 +13,9 @@ module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
     sampleIOfixed,
-    SamplerST,
+    Seed,
+    SamplerST(SamplerST),
+    runSamplerST,
     sampleST,
     sampleSTfixed
                ) where
@@ -34,6 +36,7 @@ import Statistics.Distribution.Polymorphic.Beta as Beta
 import Statistics.Distribution.Polymorphic.Uniform
 import Statistics.Distribution.Polymorphic.Discrete
 import Statistics.Distribution.Polymorphic.MVNormal as MVNormal
+import Statistics.Distribution.Polymorphic.Unconstrained
 import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
@@ -69,7 +72,7 @@ instance Sampleable (Beta Double) SamplerIO where
 instance Sampleable (Uniform Double) SamplerIO where
   sample d = fromMWC $ uniformR (lower d, upper d)
 
-instance Sampleable (Discrete Double Int) SamplerIO where
+instance Sampleable (Discrete Double) SamplerIO where
   sample d = fromMWC $ MWC.categorical $ weights d
 
 instance Sampleable MVNormal SamplerIO where
@@ -78,6 +81,10 @@ instance Sampleable MVNormal SamplerIO where
     let u = chol_upper d
     z <- replicateM (size m) $ fromMWC MWC.standard
     return $ m + (z <# u)
+
+instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerIO) => Sampleable (Unconstrained d) SamplerIO where
+  sample d = fmap (transformConstraints d') $ sample d' where
+    d' = getConstrained d
 
 instance MonadDist SamplerIO where
   exponential r    = fromMWC $ MWC.exponential (recip r)
@@ -139,7 +146,7 @@ instance Sampleable (Beta Double) SamplerST where
 instance Sampleable (Uniform Double) SamplerST where
   sample d = fromMWC' $ uniformR (lower d, upper d)
 
-instance Sampleable (Discrete Double Int) SamplerST where
+instance Sampleable (Discrete Double) SamplerST where
   sample d = fromMWC' $ MWC.categorical $ weights d
 
 instance Sampleable MVNormal SamplerST where
@@ -148,6 +155,10 @@ instance Sampleable MVNormal SamplerST where
     let u = chol_upper d
     z <- replicateM (size m) $ fromMWC' MWC.standard
     return $ m + (z <# u)
+
+instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerST) => Sampleable (Unconstrained d) SamplerST where
+  sample d = fmap (transformConstraints d') $ sample d' where
+    d' = getConstrained d
 
 instance MonadDist SamplerST where
   exponential r    = fromMWC' $ MWC.exponential (recip r)

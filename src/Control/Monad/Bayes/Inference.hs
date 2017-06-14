@@ -14,38 +14,52 @@ Portability : GHC
  #-}
 
 module Control.Monad.Bayes.Inference (
+  module Control.Monad.Bayes.Inference.MCMC,
   rejection,
   importance,
   importance',
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  MCMC,
+  runMCMC,
+  mh,
+  mhInitPrior,
+  mhPriorKernel,
   mhPrior,
   pimh,
-  Kernel (Kernel),
-  proposal,
-  density,
-  mhCustom,
-  mhCustomStep,
-  gaussianKernel,
-  customDiscreteKernel,
-  singleSiteTraceKernel,
-  randomWalkKernel
+  randomWalk,
+  hmc,
+  randInitParam,
+  advi
 ) where
 
 import Prelude hiding (sum)
-import Control.Monad.State.Lazy
 
-import Numeric.LogDomain
+--import Debug.Trace (trace, traceM)
+
+import Numeric.AD.Internal.Reverse (Tape)
+import Data.Reflection (Reifies)
+import Control.Monad.RWS
+import qualified Data.Vector as V
+
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Rejection
-import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential as Sequential
-import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Enumerator hiding (mass)
+import Control.Monad.Bayes.Trace
+import Control.Monad.Bayes.Augmented
 import Control.Monad.Bayes.Conditional
+import Control.Monad.Bayes.Deterministic
+import Control.Monad.Bayes.Constraint
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.MeanField
+import Control.Monad.Bayes.Reparametrized
+import Control.Monad.Bayes.Inference.MCMC hiding (mh)
+import qualified Control.Monad.Bayes.Inference.MCMC as MCMC
+import qualified Control.Monad.Bayes.Inference.Variational as VI
 
 -- | Rejection sampling that proposes from the prior.
 -- The accept/reject decision is made for the whole program rather than
@@ -72,14 +86,14 @@ importance' :: (Ord a, Monad m, HasCustomReal m) =>
 importance' n d = fmap compact $ explicitPopulation $ importance n d
 
 -- | Sequential Monte Carlo from the prior with multinomial resampling.
-smcMultinomial :: (Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+smcMultinomial :: (Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
     => Int -- ^ number of resampling points
     -> Int -- ^ number of particles
     -> Sequential (Population m) a -> Population m a
 smcMultinomial k n = smcWithResampler resample k n
 
 -- | `smcMultinomial` with post-processing like in 'importance''.
-smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, NumSpec (CustomReal m), Sampleable (Discrete (CustomReal m) Int) m)
+smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
      => Int -> Int
      -> Sequential (Population m) a -> m [(a, CustomReal m)]
 smcMultinomial' k n d = fmap compact $ explicitPopulation $ smcMultinomial k n d
@@ -100,122 +114,114 @@ smcWithResampler resampler k n =
   where
     hoist' = Sequential.hoistFirst
 
+-- | Obtain a valid trace by sampling from the prior.
+-- To ensure that the trace has non-zero posterior density,
+-- we additionally perform rejection sampling when the likelihood is zero.
+traceFromPrior :: (HasCustomReal m, Monad m) => Augmented (Weighted m) a -> m (Trace (CustomReal m))
+traceFromPrior model = do
+  (t,w) <- runWeighted $ marginal $ joint model
+  if w > 0 then
+    return t
+  else
+    traceFromPrior model
 
+type MCMC m a = Int -- ^ number of steps
+                -> Trace (CustomReal m) -- ^ starting trace not included in the output
+                -> m ([a], Trace (CustomReal m)) -- ^ resulting Markov chain in output space and the final trace
 
--- | Metropolis-Hastings kernel. Generates a new value and the MH ratio.
-newtype MHKernel m a = MHKernel {runMHKernel :: a -> m (a, LogDomain (CustomReal m))}
+runMCMC :: Functor m => MCMC m a -> Int -> Trace (CustomReal m) -> m [a]
+runMCMC m n t = fmap fst (m n t)
 
--- | Generic Metropolis-Hastings algorithm.
-mh :: MonadDist m => Int ->  Weighted m a -> MHKernel (Weighted m) a -> m [a]
-mh n initial trans = evalStateT (start >>= chain n) 1 where
-  -- start :: StateT LogFloat m a
-  start = do
-    (x, p) <- lift $ runWeighted initial
-    if p == 0 then
-      start
-    else
-      put p >> return x
+-- | Metropolis-Hastings algorithm with a custom transition kernel operating on traces of programs.
+mh :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+         => JointDensity (CustomReal m) a -- ^ model
+         -> k -- ^ transition kernel
+         -> MCMC m a
+mh model kernel n start = do
+  ((t,_), ts) <- execRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
+  let xs = map (unsafeDeterministic . prior . unsafeConditional model) ts
+  return (xs, t)
+  -- fmap (first (map (unsafeDeterministic . prior . unsafeConditional model)) . flip . first fst) $
+  --   execRWST (MCMC.mh n kernel) (unsafeJointDensity model) (start, unsafeJointDensity model start)
 
-  --chain :: Int -> a -> StateT LogFloat m [a]
-  chain 0 _ = return []
-  chain k x = do
-    p <- get
-    ((y,w), q) <- lift $ runWeighted $ runMHKernel trans x
-    accept <- bernoulli $ if p == 0 then 1 else min 1 $ fromLogDomain (q * w / p)
-    let next = if accept then y else x
-    when accept (put q)
-    rest <- chain (k-1) next
-    return (x:rest)
+-- | Metropolis-Hastings that samples the initial state from the prior.
+-- To ensure that the initial state has non-zero density, rejection sampling is used with rejection on zero likelihood.
+mhInitPrior :: (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m)
+            => (forall n. (MonadBayes n, CustomReal m ~ CustomReal n) => n a) -- ^ model
+            -> k -- ^ transition kernel
+            -> Int -- ^ number of steps
+            -> m [a] -- ^ resulting Markov chain truncated to output space
+mhInitPrior model kernel n = traceFromPrior model >>= runMCMC (mh model kernel) n
+
+-- | Construct a Metropolis-Hastings kernel that ignores the input and samples a trace from the prior.
+-- We need to constrain the output type of the program to '()' since otherwise GHC type inference fails.
+mhPriorKernel :: MonadDist m
+              => (forall n. (MonadDist n, CustomReal n ~ CustomReal m) => n ()) -- ^ model
+              -> CustomKernel m (Trace (CustomReal m))
+mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ unsafeJointDensity model)
 
 -- | Metropolis-Hastings version that uses the prior as proposal distribution.
-mhPrior :: MonadDist m => Int -> Weighted m a -> m [a]
-mhPrior n d = mh n d kernel where
-    kernel = MHKernel $ const $ fmap (,1) d
+-- Current implementation is wasteful in that it computes the density of a trace twice.
+-- This could be fixed by providing a specialized implementation instead.
+mhPrior :: MonadDist m => (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> Int -> m [a]
+mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (prior d >> return ()))) n
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
 pimh :: MonadDist m => Int -- ^ number of resampling points in SMC
                     -> Int -- ^ number of particles in SMC
                     -> Int -- ^ number of independent SMC runs
-                    -> Sequential (Population (Weighted m)) a -> m [a]
-pimh k np ns d = mhPrior ns $ collapse $ smcMultinomial k np d
+                    -> (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => Sequential (Population n) a) -- ^ model
+                    -> m [a]
+pimh k np ns d = mhPrior (collapse $ smcMultinomial k np d) ns
 
+-- | Random walk Metropolis-Hastings proposing single-site updates from a normal distribution with a fixed width.
+randomWalk :: (MonadDist m)
+    => Constraint (JointDensity (CustomReal m)) a -- ^ model
+    -> CustomReal m -- ^ width of the Gaussian kernel @sigma@
+    -> MCMC m a
+randomWalk model sigma = mh (unconstrain model) kernel where
+  kernel = randomWalkKernel sigma
 
+-- | Hamitlonian Monte Carlo.
+-- Only works for models with a fixed number of continuous random variables and no discrete random variables.
+hmc :: (MonadDist m, CustomReal m ~ Double)
+    => (forall s. Reifies s Tape => Constraint (JointDensityGradient s (CustomReal m)) a) -- ^ model
+    -> HMCParam (CustomReal m)
+    -> MCMC m a
+hmc model params n start = do
+  let -- kernel only updates continouos variables
+      kernel = traceKernel $ productKernel 1 (hamiltonianKernel params gradU) identityKernel
+      -- to compute density first extract continous variables from the trace
+      p = fst . pWithGrad . fst . toLists
+      -- density gradient
+      gradU = snd . pWithGrad
+      pWithGrad xs =
+        --trace ("inputs: " ++ show (map fromCustomReal xs)) $
+        let (target, target_grads) = unsafeJointDensityGradient (unconstrain model) xs
+            ugrads = map negate target_grads in
+          --trace ("log-target: " ++ show (fromCustomReal $ toLog target)) $
+          --trace ("Ugradient: " ++ show (map fromCustomReal ugrads)) $
+          (target, ugrads)
+  ((t,_), ts) <- execRWST (MCMC.mh n kernel) p (start, p start)
+  let xs = map (traceToOutput (unconstrain model)) ts
+  return (xs, t)
 
-data Kernel m a =
-  Kernel {proposal :: a -> m a, density :: a -> a -> LogDomain (CustomReal m)}
+randInitParam :: MonadDist m => Int -> m (V.Vector (CustomReal m))
+randInitParam n = V.replicateM n (uniform (-1) 1)
 
-mhCustom :: MonadDist m => Int -> Conditional (Weighted m) a -> Kernel m (Trace (CustomReal m)) -> Trace (CustomReal m) -> m [a]
-mhCustom n model kernel starting = evalStateT (sequence $ replicate n $ mhCustomStep model kernel) starting where
-
-mhCustomStep :: MonadDist m => Conditional (Weighted m) a -> Kernel m (Trace (CustomReal m)) -> StateT (Trace (CustomReal m)) m a
-mhCustomStep model kernel = do
-  t <- get
-  t' <- lift $ proposal kernel t
-  p <- lift $ unsafeDensity model t
-  let q = density kernel t t'
-  p' <- lift $ unsafeDensity model t'
-  let q' = density kernel t' t
-  let ratio = min 1 (p' * q' / (p * q))
-  accept <- bernoulli (fromLogDomain ratio)
-  let tnew = if accept then t' else t
-  put tnew
-  (output,_) <- lift $ runWeighted $ unsafeConditional model tnew
-  return output
-
-gaussianKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m Double
-gaussianKernel sigma =
-  Kernel (\x -> normal x sigma) (\x y -> pdf (normalDist x sigma) y)
-
-singleSiteKernel :: (MonadDist m, Eq a) => Kernel m a -> Kernel m [a]
-singleSiteKernel k = Kernel prop den where
-  prop xs = if null xs then return [] else do
-    index <- uniformD [0 .. length xs - 1]
-    let (a, x:b) = splitAt index xs
-    x' <- proposal k x
-    return (a ++ (x':b))
-
-  den xs ys | (length xs == length ys) =
-    let
-      n = length xs
-      diffs = filter (uncurry (/=)) $ zip xs ys
-    in
-      if n == 0 then 1 else
-        case length diffs of
-          0 -> sum (zipWith (density k) xs ys) / fromIntegral n
-          1 -> let [(x,y)] = diffs in density k x y / fromIntegral n
-          _ -> error "Single site kernel was given lists differing in more than one element"
-
-productKernel :: (MonadDist m, Eq a, Eq b)
-              => CustomReal m -> Kernel m a -> Kernel m b -> Kernel m (a,b)
-productKernel p k l = Kernel prop den where
-  prop (a,b) = do
-    takeA <- bernoulli p
-    a' <- if takeA then proposal k a else return a
-    b' <- if takeA then return b else proposal l b
-    return (a',b')
-
-  den (a,b) (a',b') = let p' = toLogDomain p in
-    case (a == a', b == b') of
-      (True, True)  -> p' * (density k a a') + (1-p') * (density l b b')
-      (False, True) -> p' * density k a a'
-      (True, False) -> (1-p') * density l b b'
-      (False, False) -> error "Product kernel was given tuples with both elements different"
-
-customDiscreteKernel :: MonadDist m => (Int -> [(CustomReal m)]) -> Kernel m Int
-customDiscreteKernel f = Kernel (discrete . f) (\x y -> toLogDomain (f x !! y))
-
-singleSiteTraceKernel :: (MonadDist m)
-              => CustomReal m -> Kernel m (CustomReal m) -> Kernel m Int
-              -> Kernel m (Trace (CustomReal m))
-singleSiteTraceKernel p k l = Kernel prop den where
-    prop t = do
-      x <- proposal prodKer (toLists t)
-      return (fromLists x)
-
-    den t t' = density prodKer (toLists t) (toLists t')
-
-    prodKer = productKernel p (singleSiteKernel k) (singleSiteKernel l)
-
-randomWalkKernel :: (MonadDist m, CustomReal m ~ Double) => Double -> Kernel m (Trace Double)
-randomWalkKernel sigma = singleSiteTraceKernel 1 (gaussianKernel sigma) undefined
+-- | Automatic Differentiation Variational Inference.
+-- Fits a mean field normal variational family in the unconstrained space using stochastic gradient descent.
+advi :: forall m a. (MonadDist m, CustomReal m ~ Double)
+     => Int -- ^ number of random variables in the model
+     -> (forall n. (Monad n, Sampleable (Normal (CustomReal n)) n, Conditionable n) => Constraint (MeanFieldNormal n) a) -- ^ model
+     -> Double -- ^ learning rate
+     -> Double -- ^ decay rate
+     -> Int -- ^ number of optimization steps
+     -> m (m a) -- ^ optimized variational model
+advi size model lr dr n = fmap (VI.adviSet modelSecond) (initParam >>= VI.advi modelFirst (VI.SGDParam lr dr n)) where
+  modelFirst :: (forall s. Reifies s Tape => MeanFieldNormal (Weighted (Reparametrized s m)) a)
+  modelFirst = unconstrain model
+  modelSecond :: (MeanFieldNormal (Weighted m) a)
+  modelSecond = unconstrain model
+  initParam = randInitParam size

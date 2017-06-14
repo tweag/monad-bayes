@@ -12,11 +12,10 @@ import System.IO
 import Control.Monad (when, unless)
 import Control.Monad.Trans
 import Control.Monad.Trans.Identity
-import Data.Vector hiding (reverse, mapM, (++))
+import Data.Vector hiding (sum, reverse, mapM, (++))
 import Control.Exception.Base
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
+import Control.Monad.Bayes.Simple hiding (normalize)
 import Control.Monad.Bayes.Trace
 import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Population
@@ -85,7 +84,7 @@ reference ys n = fmap averageVec $ explicitPopulation $ normalize $
   k = length ys
 
 -- | Root-mean-square error
-rmse :: Floating r
+rmse :: IsCustomReal r
      => Vector r -- ^ reference values for the posterior mean
      -> Vector r -- ^ estimated posterior mean
      -> r

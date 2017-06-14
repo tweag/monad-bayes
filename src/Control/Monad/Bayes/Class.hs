@@ -16,6 +16,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Class (
   module Statistics.Distribution.Polymorphic.Class,
+  module Numeric.CustomReal,
   HasCustomReal,
   CustomReal,
   Sampleable,
@@ -36,13 +37,14 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Cont
 
+import Numeric.CustomReal (IsCustomReal, toCustomReal, fromCustomReal, sum)
 import qualified Numeric.LogDomain as Log
 import Statistics.Distribution.Polymorphic.Class
 
 -- | The type used to represent real numbers in a given probabilistic program.
 -- In most cases this is just `Double`, but
 -- it is abstracted mostly to support Automatic Differentiation.
-class (Floating (CustomReal m), Ord (CustomReal m)) => HasCustomReal m where
+class (IsCustomReal (CustomReal m)) => HasCustomReal m where
   type CustomReal (m :: * -> *)
 
 -- | Type class asserting that a particular distibution can be sampled in structures of given type.

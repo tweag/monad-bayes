@@ -9,16 +9,25 @@ Portability : GHC
 
 -}
 
+{-# LANGUAGE
+  ScopedTypeVariables
+ #-}
+
 module Control.Monad.Bayes.Conditional (
   Conditional,
   hoist,
   maybeConditional,
   unsafeConditional,
+  PseudoDensity,
   maybeDensity,
   unsafeDensity,
+  JointDensity,
   maybeJointDensity,
   unsafeJointDensity,
-  unsafeJointDensityGradient
+  JointDensityGradient,
+  maybeJointDensityGradient,
+  unsafeJointDensityGradient,
+  traceToOutput
 ) where
 
 import Control.Monad.State
@@ -51,22 +60,27 @@ instance HasCustomReal m => HasCustomReal (Conditional m) where
 instance MonadTrans Conditional where
   lift m = Conditional (lift $ lift m)
 
-instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r Int) (Conditional m) where
+safePdf :: (Density d, Parametric d) => d -> Domain d -> LogDomain (RealNum d)
+safePdf d x = case checkParam d of
+  Just _ -> 0
+  Nothing -> pdf d x
+
+instance {-# OVERLAPPING #-} (r ~ CustomReal m, Conditionable m, Monad m) => Sampleable (Discrete r) (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case cs of
       (c:cs') -> do
-        factor (pdf d c)
+        factor $ safePdf d c
         put (xs, cs')
         return c
       _ -> fail ""
 
-instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
+instance {-# OVERLAPPING #-} (RealNum d ~ CustomReal m, Domain d ~ CustomReal m, Parametric d, Density d, Conditionable m, Monad m) => Sampleable d (Conditional m) where
   sample d = Conditional $ do
     (xs, cs) <- get
     case xs of
       (x:xs') -> do
-        factor (pdf d x)
+        factor $ safePdf d x
         put (xs', cs)
         return x
       _ -> fail ""
@@ -79,7 +93,7 @@ instance {-# OVERLAPPING #-} (CustomReal m ~ Double, Conditionable m, Monad m) =
     if length taken == k then
       do
         let v = LA.fromList taken
-        factor (pdf d v)
+        factor $ safePdf d v
         put (remaining, cs)
         return v
     else
@@ -114,29 +128,69 @@ maybeConditional (Conditional m) t = do
 unsafeConditional :: Monad m => Conditional m a -> Trace (CustomReal m) -> m a
 unsafeConditional m t = unsafeTraceShape $ maybeConditional m t
 
+-- | A monad that computes psuedo-marginal density over a subset of variables in the model.
+type PseudoDensity m = Conditional (Weighted m)
+
 -- | Computes the joint (pseudo-) density of the random variables in the model.
 -- The variables lifted from the transformed monad are not affected.
 -- 'Nothing' is returned on trace shape mismatch only.
-maybeDensity :: MonadDist m => Conditional (Weighted m) a -> Trace (CustomReal m) -> MaybeT m (LogDomain (CustomReal m))
+maybeDensity :: (HasCustomReal m, Monad m) => PseudoDensity m a -> Trace (CustomReal m) -> MaybeT m (LogDomain (CustomReal m))
 maybeDensity m t = MaybeT $ do
   (mx, w) <- runWeighted $ runMaybeT $ maybeConditional m t
   return (mx $> w)
 
 -- | Like 'maybeDensity', but throws an error on trace shape mismatch.
-unsafeDensity :: MonadDist m => Conditional (Weighted m) a -> Trace (CustomReal m) -> m (LogDomain (CustomReal m))
+unsafeDensity :: (HasCustomReal m, Monad m) => PseudoDensity m a -> Trace (CustomReal m) -> m (LogDomain (CustomReal m))
 unsafeDensity m t = unsafeTraceShape $ maybeDensity m t
+
+-- | Like 'unsafeDensity' but additionally returns the output from the model.
+outputWithDensity :: (HasCustomReal m, Monad m)
+                  => PseudoDensity m a -> Trace (CustomReal m) -> m (a, LogDomain (CustomReal m))
+outputWithDensity m t = runWeighted $ unsafeConditional m t
+
+-- | A monad that computes joint density over all variables in the model.
+type JointDensity r = Conditional (Weighted (Deterministic r))
 
 -- | Computes the joint density of all random variables in the model.
 -- 'Nothing' is returned on trace shape mismatch or if not all of the random variables were used for conditioning.
-maybeJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> Trace r -> Maybe (LogDomain r)
+maybeJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> Maybe (LogDomain r)
 maybeJointDensity m t = join $ maybeDeterministic $ runMaybeT $ maybeDensity m t
 
 -- | Like 'maybeJointDensity', but throws an error instead of returning 'Nothing'.
-unsafeJointDensity :: MonadDist (Deterministic r) => Conditional (Weighted (Deterministic r)) a -> Trace r -> LogDomain r
+unsafeJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> LogDomain r
 unsafeJointDensity m t = unsafeDeterministic $ unsafeDensity m t
+
+-- | Like 'unsafeJointDensity' but additionally returns the output from the model.
+outputWithJointDensity :: IsCustomReal r => JointDensity r a -> Trace r -> (a, LogDomain r)
+outputWithJointDensity m t = unsafeDeterministic $ outputWithDensity m t
+
+-- | A monad that computes joint density and its gradient over all variables in the model using
+-- reverse mode automatic differentiation.
+-- The newtype is used to hide a forall over scope type variables from AD.
+type JointDensityGradient s r = JointDensity (Reverse s r)
+
+-- | Joint density of all random variables and its gradient.
+-- Only continuous random variables are allowed.
+-- 'Nothing' is returned under the same conditions as for 'maybeJointDensity'.
+maybeJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                          -> [Double] -> Maybe (LogDomain Double, [Double])
+maybeJointDensityGradient m xs =
+  fmap (first fromLog) $ jacobian' (fmap toLog . maybeJointDensity m . fromLists . (,[])) xs
 
 -- | Joint density of all random variables and its gradient.
 -- Only continuous random variables are allowed.
 -- Throws an error under the same conditions as 'unsafeJointDensity'.
-unsafeJointDensityGradient :: (forall s. Reifies s Tape =>  Conditional (Weighted (Deterministic (Reverse s Double))) a) -> [Double] -> (LogDomain Double, [Double])
+unsafeJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                           -> [Double] -> (LogDomain Double, [Double])
 unsafeJointDensityGradient m xs = first fromLog $ grad' (toLog . unsafeJointDensity m . fromLists . (,[])) xs
+
+-- | Like 'unsafeJointDensityGradient' but additionally returns the output from the model.
+outputWithJointDensityGradient :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+                               -> [Double] -> (a, (LogDomain Double, [Double]))
+outputWithJointDensityGradient m xs =
+  fmap (first fromLog) $ jacobian' (fmap toLog . outputWithJointDensity m . fromLists . (,[])) xs
+
+-- | Convert a trace to output from the model.
+traceToOutput :: (forall s. Reifies s Tape => JointDensityGradient s Double a)
+              -> Trace Double -> a
+traceToOutput m t = fst $ outputWithJointDensityGradient m (fst $ toLists t)

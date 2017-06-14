@@ -41,7 +41,7 @@ instance (Sampleable d m, Monad m) => Sampleable d (Rejection m) where
   sample = lift . sample
 
 instance (MonadDist m) => Conditionable (Rejection m) where
-  factor w | w > 1 = error $ "Rejection: factor " ++ show (realToFrac w :: Double) ++ " is not in [0,1] range."
+  factor w | w > 1 = error $ "Rejection: factor " ++ show (fromCustomReal w) ++ " is not in [0,1] range."
   factor w = do
     accept <- bernoulli (fromLogDomain w)
     unless accept (fail "")

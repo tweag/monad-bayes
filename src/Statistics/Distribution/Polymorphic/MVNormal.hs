@@ -16,8 +16,7 @@ module Statistics.Distribution.Polymorphic.MVNormal (
   chol_upper,
   covariance,
   precision,
-  mvnormalDist,
-  mvnormalPdf
+  mvnormalDist
 ) where
 
 import Numeric.LinearAlgebra
@@ -69,8 +68,8 @@ mvnormalDist m variance = seq check d where
 -- and an upper triangular matrix from Cholesky decomposition of the covariance matrix.
 -- Note that it does not perform any checks on the arguments, so supplying invalid arguments
 -- may result in incomprehensible hmatrix errors.
-mvnormalPdf :: Vector R -> Matrix R -> Vector R -> LogDomain R
-mvnormalPdf m u x =
+unsafeMvnormalPdf :: Vector R -> Matrix R -> Vector R -> LogDomain R
+unsafeMvnormalPdf m u x =
   fromLog $ (- 0.5) * (v <.> v) + c where
     -- this is probably not the fastest way to invert a triangular matrix,
     -- but I haven't found anything better in hmatrix
@@ -83,11 +82,16 @@ instance Distribution MVNormal where
   type Domain MVNormal = Vector R
   type RealNum MVNormal = R
 
+instance KnownSupport MVNormal where
+  support d = Euclidean (dim d)
+
 instance Parametric MVNormal where
   type Param MVNormal = (Vector R, Herm R)
   param d = (mean d, covariance d)
   distFromParam = uncurry mvnormalDist
+  -- Since we don't expose the 'MVNormal' constructor there is no way to construct a distribution
+  -- with invalid parameters from outside this module
+  checkParam _ = Nothing
 
 instance Density MVNormal where
-  pdf (MVNormal m u) x = if size m == size x then mvnormalPdf m u x
-    else error $ "MVNormal PDF: expected x of lenght " ++ show (size m) ++ "but received x of length " ++ show (size x)
+  unsafePdf (MVNormal m u) x = unsafeMvnormalPdf m u x

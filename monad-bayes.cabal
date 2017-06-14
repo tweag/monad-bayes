@@ -16,6 +16,8 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Numeric.LogDomain,
+                       Numeric.CustomReal,
+                       Numeric.Optimization.SGD,
                        Statistics.Distribution.Polymorphic,
                        Statistics.Distribution.Polymorphic.Class,
                        Statistics.Distribution.Polymorphic.Normal,
@@ -24,6 +26,7 @@ library
                        Statistics.Distribution.Polymorphic.Uniform,
                        Statistics.Distribution.Polymorphic.Discrete,
                        Statistics.Distribution.Polymorphic.MVNormal,
+                       Statistics.Distribution.Polymorphic.Unconstrained,
                        Control.Monad.Bayes.Class,
                        Control.Monad.Bayes.Enumerator,
                        Control.Monad.Bayes.Sampler,
@@ -37,7 +40,14 @@ library
                        Control.Monad.Bayes.Trace,
                        Control.Monad.Bayes.Conditional,
                        Control.Monad.Bayes.Augmented,
-                       Control.Monad.Bayes.Simple
+                       Control.Monad.Bayes.Simple,
+                       Control.Monad.Bayes.Reparametrized,
+                       Control.Monad.Bayes.Parametric,
+                       Control.Monad.Bayes.Constraint,
+                       Control.Monad.Bayes.MeanField,
+                       Control.Monad.Bayes.Inference.Proposal,
+                       Control.Monad.Bayes.Inference.Variational
+                       Control.Monad.Bayes.Inference.MCMC
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
@@ -50,7 +60,8 @@ library
                      , ad
                      , reflection
                      , hmatrix
-  ghc-options:         -Wall
+                     , ieee754
+  ghc-options:         -Wall -fno-warn-redundant-constraints
   default-language:    Haskell2010
   default-extensions:  RankNTypes
                      , GeneralizedNewtypeDeriving
@@ -60,8 +71,8 @@ library
                      , FlexibleInstances
                      , TupleSections
                      , MultiParamTypeClasses
-  other-extensions:    GADTs
-                     , ScopedTypeVariables
+                     , GADTs
+  other-extensions:    ScopedTypeVariables
                      , DeriveFunctor
 
 test-suite monad-bayes-test
@@ -93,6 +104,8 @@ test-suite monad-bayes-test
                        TestGradient,
                        TestConditional,
                        TestDistribution,
+                       TestProposal,
+                       TestOptimization,
                        StrictlySmallerSupport
 
 benchmark monad-bayes-bench

@@ -12,6 +12,8 @@ import qualified TestSMCObservations
 import qualified TestGradient
 import qualified TestConditional
 import qualified TestDistribution
+import qualified TestProposal
+import qualified TestOptimization
 
 main :: IO ()
 main = hspec $ do
@@ -99,6 +101,8 @@ main = hspec $ do
     --   TestInference.check_trace_support `shouldBe` True
     it "Custom MH preserves posterior distribution" $ do
       TestInference.check_custom_mh `shouldBe` True
+    it "proposing from prior preserves posterior distribution" $ do
+      TestInference.check_prior_mh `shouldBe` True
   -- describe "Population/Trace/Particle hybrids" $ do
   --   it "ISMH preserves the posterior on the sprinkler model" $ do
   --     TestInference.check_preserve_ismh `shouldBe` True
@@ -125,6 +129,8 @@ main = hspec $ do
     it "gives correct gradient on gamma-normal-beta model" $ do
       TestGradient.check_gradient `shouldBe` True
   TestDistribution.spec
+  TestProposal.spec
+  TestOptimization.spec
 
 check_smc_observations n modelName model =
     it (show n ++ " observations for " ++ modelName) $ do
