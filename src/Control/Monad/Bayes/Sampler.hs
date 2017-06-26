@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Sampler (
     SamplerIO,
     sampleIO,
     sampleIOfixed,
+    sampleIOwith,
     Seed,
     SamplerST(SamplerST),
     runSamplerST,
@@ -52,6 +53,10 @@ sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 -- Useful for reproducibility.
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
+
+-- | Like 'sampleIO' but with a custom PRNG.
+sampleIOwith :: SamplerIO a -> GenIO -> IO a
+sampleIOwith (SamplerIO m) = runReaderT m
 
 instance HasCustomReal SamplerIO where
   type CustomReal SamplerIO = Double
