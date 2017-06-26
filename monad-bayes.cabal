@@ -195,6 +195,7 @@ benchmark performance
                      , mtl
                      , criterion
                      , ad
+                     , mwc-random
   default-language:    Haskell2010
   -- Main benchmark file should import all the modules to be
   -- maintained. Those modules should also be listed in
