@@ -7,10 +7,9 @@ module Plotting where
 
 import Data.List (sort)
 import qualified Data.Vector as Vector
-import Statistics.Sample
+import Statistics.Sample (meanVariance)
 
 import Graphics.Rendering.Chart.Easy
-import Graphics.Rendering.Chart.Backend.Cairo
 
 errBars :: Double -> Vector.Vector Double -> (Double, Double)
 errBars k xs = (mean, k * stdDev) where
@@ -26,9 +25,9 @@ anytimePlot x_title y_title ns inputs = do
   let xLabelShow = map (show . ceiling)
   let yLabelShow = map show
 
-  let generatePlot (algName, ys) = plot $ line algName $ [zip (map fromIntegral ns) (map LogValue ys)]
+  let generatePlot (algName, ys) = plot $ line algName [zip (map fromIntegral ns) (map LogValue ys)]
 
-  sequence $ map generatePlot inputs
+  sequence_ $ map generatePlot inputs
 
   layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
   layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
@@ -46,7 +45,7 @@ oneShotPlot x_title y_title inputs = do
       plot $ points algName $ map (\(x, (y,_)) -> (LogValue x, LogValue y)) ps;
       plot $ return (def & plot_errbars_values .~ map processPoint ps)}
 
-  sequence $ map generatePlot inputs
+  sequence_ $ map generatePlot inputs
 
   layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
   layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
@@ -77,7 +76,7 @@ errorbarPlot x_title y_title inputs = do
         plot $ points algName
              $ map (\(x, ys) -> (LogValue x, LogValue (sum ys / fromIntegral (length ys)))) ps
 
-  sequence $ map generatePlot inputs
+  sequence_ $ map generatePlot inputs
 
   layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
   layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)

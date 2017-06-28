@@ -7,6 +7,8 @@ import Statistics.Distribution.Polymorphic
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Sampler
 
+import NonlinearSSM
+
 pdfBenchmarkable :: (Density d) => d -> Domain d -> Benchmarkable
 pdfBenchmarkable d = whnf (toLog . pdf d)
 

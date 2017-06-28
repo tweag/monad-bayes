@@ -3,7 +3,7 @@
  TypeFamilies
  #-}
 
-module Main where
+module NonlinearSSM where
 
 import Prelude hiding (map, length, sum, transpose, zipWith, replicate)
 import qualified Data.List as List
@@ -135,15 +135,3 @@ nonlinearBenchmark cachePath t nRuns ns nRef = do
     layout_title .= "Nonlinear"
     anytimePlot "#samples" "RMSE" ns [
       ("SMC", scores)]
-
-main = do
-  -- make sure `putStrLn` prints to console immediately
-  hSetBuffering stdout LineBuffering
-
-  (trial, cachePath) <- execParser opts
-  when trial $ putStrLn "Trial run"
-
-  if not trial then do
-    sampleIO $ nonlinearBenchmark cachePath 50 10 [10,20,40] 10000
-  else do
-    sampleIO $ nonlinearBenchmark cachePath 5 10 [10,20,40] 100
