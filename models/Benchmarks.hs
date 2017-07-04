@@ -1,8 +1,6 @@
 import Criterion.Main
 import Numeric.AD
 import System.Random.MWC (createSystemRandom, GenIO)
-import Data.Vector (Vector)
-import qualified Data.Vector as V
 import Control.Monad.Par.Class (NFData)
 import Data.Bifunctor (second)
 
@@ -11,9 +9,11 @@ import Statistics.Distribution.Polymorphic
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference hiding (mhStep)
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential
+import Control.Monad.Bayes.Traced
+import Control.Monad.Bayes.Inference.MCMC (randomWalkKernel)
 
 import NonlinearSSM
 
@@ -69,20 +69,23 @@ benchSMC :: NFData a => Int -> [Int] -> GenIO -> Sequential (Population SamplerI
 benchSMC k ns g m =
   benchN "SMC" ns $ \n -> bench "" $ nfIO $ fmap (map fst) $ sampleIOwith (runPopulation $ smcMultinomial k n m) g
 
-benchMH :: [Int] -> GenIO -> (forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark
+benchMH :: NFData a => [Int] -> GenIO -> Traced (Weighted SamplerIO) a -> Benchmark
 benchMH ns g m =
-  benchN "MH" ns $ \n -> bench "" $ nfIO $ sampleIOwith (alg m n) g where
-    alg :: (forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Int -> SamplerIO [Vector Double]
-    alg = mhPrior
+  benchN "MH" ns $ \n -> bench "" $ nfIO $ sampleIOwith (prior $ marginal $ composeN n (mhStep k) m) g where
+    k = randomWalkKernel 1
+
+    composeN :: Int -> (a -> a) -> a -> a
+    composeN 0 _ x = x
+    composeN n f x = composeN (n-1) f (f x)
 
 -- benchSSM :: [Int] -> GenIO -> ((forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark)
 --          -> Benchmark
 -- benchSSM ns g benchF =
 --   benchN "SSM" ns $ \n -> env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchF . NonlinearSSM.posterior)
 
--- ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
--- ssmMHbenchmarks ls g ns = benchN "SSM" ns f where
---   f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchMH ls g . NonlinearSSM.posterior)
+ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
+ssmMHbenchmarks ls g ns = benchN "SSM" ns f where
+  f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchMH ls g . NonlinearSSM.posterior)
 
 ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
 ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
@@ -98,10 +101,11 @@ main = do
   g <- createSystemRandom
 
   let benchmarks = [
-        pdfBenchmarks,
-        samplingBenchmarks g,
+        --pdfBenchmarks,
+        --samplingBenchmarks g,
         ssmISbenchmarks g defNs,
-        ssmSMCbenchmarks defNs g defNs
+        ssmSMCbenchmarks defNs g defNs,
+        ssmMHbenchmarks defNs g defNs
         ]
 
   defaultMain benchmarks
