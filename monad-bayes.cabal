@@ -190,6 +190,9 @@ benchmark performance
   -- They make it impossible to run `stack ghci`.
   other-modules:       Plotting,
                        NonlinearSSM
+  default-extensions:  RankNTypes
+                     , TypeFamilies
+                     , AllowAmbiguousTypes
 
 source-repository head
   type:     git

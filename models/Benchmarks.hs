@@ -11,6 +11,9 @@ import Statistics.Distribution.Polymorphic
 import Control.Monad.Bayes.Simple
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Sequential
 
 import NonlinearSSM
 
@@ -62,6 +65,29 @@ benchmarkableIS g m = nfIO $ fmap (second toLog) $ sampleIOwith (runWeighted m) 
 benchIS :: NFData a => GenIO -> Weighted SamplerIO a -> Benchmark
 benchIS g m = bench "IS" $ benchmarkableIS g m
 
+benchSMC :: NFData a => Int -> [Int] -> GenIO -> Sequential (Population SamplerIO) a -> Benchmark
+benchSMC k ns g m =
+  benchN "SMC" ns $ \n -> bench "" $ nfIO $ fmap (map fst) $ sampleIOwith (runPopulation $ smcMultinomial k n m) g
+
+benchMH :: [Int] -> GenIO -> (forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark
+benchMH ns g m =
+  benchN "MH" ns $ \n -> bench "" $ nfIO $ sampleIOwith (alg m n) g where
+    alg :: (forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Int -> SamplerIO [Vector Double]
+    alg = mhPrior
+
+-- benchSSM :: [Int] -> GenIO -> ((forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark)
+--          -> Benchmark
+-- benchSSM ns g benchF =
+--   benchN "SSM" ns $ \n -> env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchF . NonlinearSSM.posterior)
+
+-- ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
+-- ssmMHbenchmarks ls g ns = benchN "SSM" ns f where
+--   f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchMH ls g . NonlinearSSM.posterior)
+
+ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
+ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
+  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMC l ns g . NonlinearSSM.posterior)
+
 ssmISbenchmarks :: GenIO -> [Int] -> Benchmark
 ssmISbenchmarks g ns = benchN "SSM" ns f where
   f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchIS g . NonlinearSSM.posterior)
@@ -74,7 +100,8 @@ main = do
   let benchmarks = [
         pdfBenchmarks,
         samplingBenchmarks g,
-        ssmISbenchmarks g defNs
+        ssmISbenchmarks g defNs,
+        ssmSMCbenchmarks defNs g defNs
         ]
 
   defaultMain benchmarks
