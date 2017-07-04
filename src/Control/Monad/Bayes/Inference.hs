@@ -69,7 +69,7 @@ import qualified Control.Monad.Bayes.Inference.Variational as VI
 -- The program must not contain factors larger than 1.
 rejection :: Monad m => Int -- ^ number of samples accepted
                      -> Rejection m a -> m [a]
-rejection n d = sequence $ replicate n s where
+rejection n d = replicateM n s where
   s = do
     m <- runRejection d
     case m of Just x  -> return x
@@ -92,7 +92,7 @@ smcMultinomial :: (Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)
     => Int -- ^ number of resampling points
     -> Int -- ^ number of particles
     -> Sequential (Population m) a -> Population m a
-smcMultinomial k n = smcWithResampler resample k n
+smcMultinomial = smcWithResampler resample
 
 -- | `smcMultinomial` with post-processing like in 'importance''.
 smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
@@ -183,7 +183,7 @@ mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ uns
 -- Current implementation is wasteful in that it computes the density of a trace twice.
 -- This could be fixed by providing a specialized implementation instead.
 mhPrior :: MonadDist m => (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> Int -> m [a]
-mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (prior d >> return ()))) n
+mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (void $ prior d))) n
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
