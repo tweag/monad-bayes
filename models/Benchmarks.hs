@@ -78,22 +78,31 @@ benchMH ns g m =
     composeN 0 _ x = x
     composeN n f x = composeN (n-1) f (f x)
 
+benchSMCRM :: NFData a => Int -> [Int] -> [Int] -> GenIO -> Sequential (Traced (Population SamplerIO)) a -> Benchmark
+benchSMCRM k ns ts g m =
+  benchN "SMCRM" ns $ \n -> benchN "Trans" ts $ \t -> bench "" $ nfIO $ sampleIOwith (fmap (map fst) $ runPopulation $ smcRM k n t kernel m) g where
+    kernel = randomWalkKernel 1
+
 -- benchSSM :: [Int] -> GenIO -> ((forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark)
 --          -> Benchmark
 -- benchSSM ns g benchF =
 --   benchN "SSM" ns $ \n -> env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchF . NonlinearSSM.posterior)
 
+ssmSMCRMbenchmarks :: [Int] -> GenIO -> [Int] -> [Int] -> Benchmark
+ssmSMCRMbenchmarks ls g ns ts = benchN "SSM" ls f where
+  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMCRM l ns ts g . NonlinearSSM.posterior)
+
 ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
-ssmMHbenchmarks ls g ns = benchN "SSM" ns f where
-  f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchMH ls g . NonlinearSSM.posterior)
+ssmMHbenchmarks ls g ns = benchN "SSM" ls f where
+  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchMH ns g . NonlinearSSM.posterior)
 
 ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
 ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMC l ns g . NonlinearSSM.posterior)
 
 ssmISbenchmarks :: GenIO -> [Int] -> Benchmark
-ssmISbenchmarks g ns = benchN "SSM" ns f where
-  f n = env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchIS g . NonlinearSSM.posterior)
+ssmISbenchmarks g ls = benchN "SSM" ls f where
+  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchIS g . NonlinearSSM.posterior)
 
 main :: IO ()
 main = do
@@ -105,7 +114,8 @@ main = do
         --samplingBenchmarks g,
         ssmISbenchmarks g defNs,
         ssmSMCbenchmarks defNs g defNs,
-        ssmMHbenchmarks defNs g defNs
+        ssmMHbenchmarks defNs g defNs,
+        ssmSMCRMbenchmarks defNs g defNs defNs
         ]
 
   defaultMain benchmarks
