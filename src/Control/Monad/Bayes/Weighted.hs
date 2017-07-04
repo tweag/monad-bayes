@@ -89,7 +89,7 @@ prior :: (HasCustomReal m, Functor m) => Weighted m a -> m a
 prior = fmap fst . runWeighted
 
 -- | Apply a transformation to the transformed monad.
-hoist :: (forall x. m x -> m x) -> Weighted m a -> Weighted m a
+hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Weighted m a -> Weighted n a
 hoist t = Weighted . mapStateT t . toStateT
 
 -- | Similar to 'Weighted', only each factor is both  passed to the transformed
