@@ -21,6 +21,7 @@ module Control.Monad.Bayes.Inference (
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  smcRM,
   MCMC,
   runMCMC,
   mh,
@@ -55,6 +56,7 @@ import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Constraint
 import Control.Monad.Bayes.Weighted
+import qualified Control.Monad.Bayes.Traced as Traced
 import Control.Monad.Bayes.MeanField
 import Control.Monad.Bayes.Reparametrized
 import Control.Monad.Bayes.Inference.MCMC hiding (mh)
@@ -113,6 +115,23 @@ smcWithResampler resampler k n =
   finish . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
   where
     hoist' = Sequential.hoistFirst
+
+-- | Resample-move Sequential Monte Carlo.
+smcRM :: forall m a k. (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ Population m)
+      => Int -- ^ number of resampling points
+      -> Int -- ^ number of particles
+      -> Int -- ^ number of MH transitions after each resampling
+      -> k -- ^ MH kernel
+      -> Sequential (Traced.Traced (Population m)) a -- ^ model
+      -> Population m a
+smcRM k n t kernel =
+  Traced.marginal . finish .
+    composeCopies k (advance . hoistS (composeCopies t $ Traced.mhStep kernel)
+                      . hoistS (hoistT resample)) .
+    hoistS (hoistT (spawn n >>)) where
+      hoistS = Sequential.hoistFirst
+      hoistT = Traced.hoist
+
 
 -- | Obtain a valid trace by sampling from the prior.
 -- To ensure that the trace has non-zero posterior density,
