@@ -30,7 +30,7 @@ topic_dist_prior = dirichlet $ map (const 1) topics
 word_index :: Map.Map String Int
 word_index = Map.fromList $ zip vocabluary [0..]
 
-lda :: (MonadBayes m, CustomReal m ~ Double) => m (Map.Map Int (Discrete Double))
+lda :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 lda = do
   word_dist_for_topic <- do
     ts <- mapM (const $ fmap discreteDist word_dist_prior) [0 .. length topics]
@@ -45,4 +45,4 @@ lda = do
 
   mapM_ obs docs
 
-  return word_dist_for_topic
+  mapM (sample . snd) $ Map.toList word_dist_for_topic
