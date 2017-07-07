@@ -7,7 +7,7 @@ import Numeric.LogDomain
 import Control.Monad.Bayes.Simple
 
 xs :: [Double]
-xs = [-10, 05, 2, 6, 10]
+xs = [-10, -5, 2, 6, 10]
 
 labels :: [Bool]
 labels = [False, False, True, True, True]
