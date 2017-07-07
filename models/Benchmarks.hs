@@ -31,7 +31,7 @@ benchN :: String -> [Int] -> (Int -> Benchmark) -> Benchmark
 benchN name ns bmark = bgroup name $ map (\n -> bgroup (show n) [bmark n]) ns
 
 defNs :: [Int]
-defNs = [1,10]
+defNs = [100]
 
 defDiscrete :: Int -> Discrete Double
 defDiscrete n = discreteDist $ replicate n 1
@@ -119,9 +119,13 @@ main = do
   g <- createSystemRandom
 
   let lr = (LogReg.logisticRegression, unconstrain LogReg.logisticRegression, unconstrain LogReg.logisticRegression)
+  let hmm = (HMM.hmm, HMM.hmm, HMM.hmm)
+  let lda = (LDA.lda, unconstrain LDA.lda, unconstrain LDA.lda)
 
   let benchmarks = [
-        benchModel "LogReg" (length LogReg.xs) g lr
+        benchModel "LogReg" (length LogReg.xs) g lr,
+        benchModel "HMM" (length HMM.values) g hmm,
+        benchModel "LDA" (length (concat LDA.docs)) g lda
 
         --pdfBenchmarks,
         --samplingBenchmarks g,
