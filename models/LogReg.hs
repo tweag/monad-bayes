@@ -6,6 +6,8 @@ module LogReg where
 import Numeric.LogDomain
 import Control.Monad.Bayes.Simple
 
+import Debug.Trace (traceM, traceShowM)
+
 xs :: [Double]
 xs = [-10, -5, 2, 6, 10]
 

@@ -33,6 +33,9 @@ import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Augmented as Aug
 import Control.Monad.Bayes.Inference.MCMC
 
+import Debug.Trace (trace, traceM, traceShowM)
+import Control.Monad (when)
+
 data Traced m a = Traced (m (Trace (CustomReal m))) (Conditional (Weighted m) a)
 
 traceDist :: Traced m a -> m (Trace (CustomReal m))
@@ -75,8 +78,8 @@ instance (Monad m, Conditionable m) => Conditionable (Traced m) where
 instance MonadDist m => MonadDist (Traced m)
 instance MonadBayes m => MonadBayes (Traced m)
 
-hoist :: (CustomReal m ~ CustomReal n) => (forall x. m x -> n x) -> Traced m a -> Traced n a
-hoist f (Traced d m) = Traced (f d) (Cond.hoist (Weighted.hoist f) m)
+hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoist f (Traced d m) = Traced (f d) (m)
 
 marginal :: (HasCustomReal m, Monad m) => Traced m a -> m a
 marginal (Traced d m) = d >>= prior . unsafeConditional m
@@ -90,6 +93,7 @@ mhStep kernel (Traced d m) = Traced d' m where
     (t', w) <- proposeWithDensityRatio kernel t
     (_, p)  <- runWeighted $ unsafeConditional m t
     (_, p') <- runWeighted $ unsafeConditional m t'
-    let ratio = min 1 (w * p' / p)
-    accept <- bernoulli $ fromLogDomain ratio
+    let ratio = fromLogDomain $ min 1 (w * p' / p)
+    -- TODO: remove this isNaN hack once benchmarking is done 
+    accept <- if isNaN (fromCustomReal ratio) then return False else bernoulli ratio
     return $ if accept then t' else t

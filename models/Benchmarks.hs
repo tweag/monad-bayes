@@ -14,8 +14,12 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Inference.MCMC (randomWalkKernel)
+import Control.Monad.Bayes.Constraint
 
 import NonlinearSSM
+import qualified HMM
+import qualified LogReg
+import qualified LDA
 
 pdfBenchmarkable :: (Density d) => d -> Domain d -> Benchmarkable
 pdfBenchmarkable d = whnf (toLog . pdf d)
@@ -83,39 +87,48 @@ benchSMCRM k ns ts g m =
   benchN "SMCRM" ns $ \n -> benchN "Trans" ts $ \t -> bench "" $ nfIO $ sampleIOwith (fmap (map fst) $ runPopulation $ smcRM k n t kernel m) g where
     kernel = randomWalkKernel 1
 
+type Model a = (Sequential (Population SamplerIO) a, Traced (Weighted SamplerIO) a, Sequential (Traced (Population SamplerIO)) a)
+
+benchModel :: NFData a => String -> Int -> GenIO -> Model a -> Benchmark
+benchModel name k g (mSMC, mMH, mSMCRM) = bgroup name [benchSMC k defNs g mSMC, benchMH defNs g mMH, benchSMCRM k defNs [1] g mSMCRM]
+
 -- benchSSM :: [Int] -> GenIO -> ((forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark)
 --          -> Benchmark
 -- benchSSM ns g benchF =
 --   benchN "SSM" ns $ \n -> env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchF . NonlinearSSM.posterior)
 
-ssmSMCRMbenchmarks :: [Int] -> GenIO -> [Int] -> [Int] -> Benchmark
-ssmSMCRMbenchmarks ls g ns ts = benchN "SSM" ls f where
-  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMCRM l ns ts g . NonlinearSSM.posterior)
-
-ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
-ssmMHbenchmarks ls g ns = benchN "SSM" ls f where
-  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchMH ns g . NonlinearSSM.posterior)
-
-ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
-ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
-  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMC l ns g . NonlinearSSM.posterior)
-
-ssmISbenchmarks :: GenIO -> [Int] -> Benchmark
-ssmISbenchmarks g ls = benchN "SSM" ls f where
-  f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchIS g . NonlinearSSM.posterior)
+-- ssmSMCRMbenchmarks :: [Int] -> GenIO -> [Int] -> [Int] -> Benchmark
+-- ssmSMCRMbenchmarks ls g ns ts = benchN "SSM" ls f where
+--   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMCRM l ns ts g . NonlinearSSM.posterior)
+--
+-- ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
+-- ssmMHbenchmarks ls g ns = benchN "SSM" ls f where
+--   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchMH ns g . NonlinearSSM.posterior)
+--
+-- ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
+-- ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
+--   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMC l ns g . NonlinearSSM.posterior)
+--
+-- ssmISbenchmarks :: GenIO -> [Int] -> Benchmark
+-- ssmISbenchmarks g ls = benchN "SSM" ls f where
+--   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchIS g . NonlinearSSM.posterior)
 
 main :: IO ()
 main = do
 
   g <- createSystemRandom
 
+  let lr = (LogReg.logisticRegression, unconstrain LogReg.logisticRegression, unconstrain LogReg.logisticRegression)
+
   let benchmarks = [
+        benchModel "LogReg" (length LogReg.xs) g lr
+
         --pdfBenchmarks,
         --samplingBenchmarks g,
-        ssmISbenchmarks g defNs,
-        ssmSMCbenchmarks defNs g defNs,
-        ssmMHbenchmarks defNs g defNs,
-        ssmSMCRMbenchmarks defNs g defNs defNs
+        -- ssmISbenchmarks g defNs,
+        -- ssmSMCbenchmarks defNs g defNs,
+        -- ssmMHbenchmarks defNs g defNs,
+        -- ssmSMCRMbenchmarks defNs g defNs defNs
         ]
 
   defaultMain benchmarks

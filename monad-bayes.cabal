@@ -181,6 +181,8 @@ benchmark performance
                      , directory
                      , optparse-applicative
                      , abstract-par
+                     , containers
+                     , hmatrix
   default-language:    Haskell2010
   -- Main benchmark file should import all the modules to be
   -- maintained. Those modules should also be listed in
@@ -190,7 +192,10 @@ benchmark performance
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
   other-modules:       Plotting,
-                       NonlinearSSM
+                       NonlinearSSM,
+                       HMM,
+                       LogReg,
+                       LDA
   default-extensions:  RankNTypes
                      , TypeFamilies
                      , AllowAmbiguousTypes

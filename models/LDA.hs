@@ -45,4 +45,5 @@ lda = do
 
   mapM_ obs docs
 
+  -- return samples since Discrete is not NFData
   mapM (sample . snd) $ Map.toList word_dist_for_topic
