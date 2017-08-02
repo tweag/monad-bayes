@@ -21,6 +21,7 @@ module Control.Monad.Bayes.Inference (
   smcMultinomial,
   smcMultinomial',
   smcWithResampler,
+  smcRM,
   MCMC,
   runMCMC,
   mh,
@@ -55,6 +56,7 @@ import Control.Monad.Bayes.Conditional
 import Control.Monad.Bayes.Deterministic
 import Control.Monad.Bayes.Constraint
 import Control.Monad.Bayes.Weighted
+import qualified Control.Monad.Bayes.Traced as Traced
 import Control.Monad.Bayes.MeanField
 import Control.Monad.Bayes.Reparametrized
 import Control.Monad.Bayes.Inference.MCMC hiding (mh)
@@ -67,7 +69,7 @@ import qualified Control.Monad.Bayes.Inference.Variational as VI
 -- The program must not contain factors larger than 1.
 rejection :: Monad m => Int -- ^ number of samples accepted
                      -> Rejection m a -> m [a]
-rejection n d = sequence $ replicate n s where
+rejection n d = replicateM n s where
   s = do
     m <- runRejection d
     case m of Just x  -> return x
@@ -90,7 +92,7 @@ smcMultinomial :: (Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)
     => Int -- ^ number of resampling points
     -> Int -- ^ number of particles
     -> Sequential (Population m) a -> Population m a
-smcMultinomial k n = smcWithResampler resample k n
+smcMultinomial = smcWithResampler resample
 
 -- | `smcMultinomial` with post-processing like in 'importance''.
 smcMultinomial' :: (Ord a, Monad m, HasCustomReal m, Sampleable (Discrete (CustomReal m)) m)
@@ -113,6 +115,23 @@ smcWithResampler resampler k n =
   finish . composeCopies k (advance . hoist' resampler) . hoist' (spawn n >>)
   where
     hoist' = Sequential.hoistFirst
+
+-- | Resample-move Sequential Monte Carlo.
+smcRM :: forall m a k. (MonadDist m, MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ Population m)
+      => Int -- ^ number of resampling points
+      -> Int -- ^ number of particles
+      -> Int -- ^ number of MH transitions after each resampling
+      -> k -- ^ MH kernel
+      -> Sequential (Traced.Traced (Population m)) a -- ^ model
+      -> Population m a
+smcRM k n t kernel =
+  Traced.marginal . finish .
+    composeCopies k (advance . hoistS (composeCopies t $ Traced.mhStep kernel)
+                      . hoistS (hoistT resample)) .
+    hoistS (hoistT (spawn n >>)) where
+      hoistS = Sequential.hoistFirst
+      hoistT = Traced.hoist
+
 
 -- | Obtain a valid trace by sampling from the prior.
 -- To ensure that the trace has non-zero posterior density,
@@ -164,7 +183,7 @@ mhPriorKernel model = customKernel (const $ marginal $ joint model) (const $ uns
 -- Current implementation is wasteful in that it computes the density of a trace twice.
 -- This could be fixed by providing a specialized implementation instead.
 mhPrior :: MonadDist m => (forall n. (MonadBayes n, CustomReal n ~ CustomReal m) => n a) -> Int -> m [a]
-mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (prior d >> return ()))) n
+mhPrior d n = prior (marginal (joint d)) >>= runMCMC (mh d (mhPriorKernel (void $ prior d))) n
 
 -- | Sequential Independent Metropolis Hastings.
 -- Outputs one sample per SMC run.
