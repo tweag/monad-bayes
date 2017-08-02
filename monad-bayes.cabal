@@ -141,29 +141,6 @@ benchmark monad-bayes-bench
                        StrictlySmallerSupport,
                        Plotting
 
-benchmark nonlinear-benchmark
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      models
-  build-depends:       base
-                     , monad-bayes
-                     , transformers
-                     , mtl
-                     , statistics
-                     , vector
-                     , Chart
-                     , Chart-cairo
-                     , optparse-applicative
-                     , directory
-  default-language:    Haskell2010
-  -- Main benchmark file should import all the modules to be
-  -- maintained. Those modules should also be listed in
-  -- `other-modules`.
-  main-is:             Nonlinear.hs
-  -- List all models we want to watch for changes.
-  -- DO NOT list modules that don't compile.
-  -- They make it impossible to run `stack ghci`.
-  other-modules:       Plotting
-
 benchmark lgss-benchmark
   type:                exitcode-stdio-1.0
   hs-source-dirs:      models
@@ -186,6 +163,42 @@ benchmark lgss-benchmark
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
   other-modules:       Plotting
+
+benchmark performance
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      models
+  build-depends:       base
+                     , monad-bayes
+                     , transformers
+                     , mtl
+                     , vector
+                     , criterion
+                     , ad
+                     , mwc-random
+                     , statistics
+                     , Chart
+                     , Chart-cairo
+                     , directory
+                     , optparse-applicative
+                     , abstract-par
+                     , containers
+                     , hmatrix
+  default-language:    Haskell2010
+  -- Main benchmark file should import all the modules to be
+  -- maintained. Those modules should also be listed in
+  -- `other-modules`.
+  main-is:             Benchmarks.hs
+  -- List all models we want to watch for changes.
+  -- DO NOT list modules that don't compile.
+  -- They make it impossible to run `stack ghci`.
+  other-modules:       Plotting,
+                       NonlinearSSM,
+                       HMM,
+                       LogReg,
+                       LDA
+  default-extensions:  RankNTypes
+                     , TypeFamilies
+                     , AllowAmbiguousTypes
 
 source-repository head
   type:     git
