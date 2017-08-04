@@ -109,37 +109,37 @@ test-suite monad-bayes-test
                        TestOptimization,
                        StrictlySmallerSupport
 
-benchmark monad-bayes-bench
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      models
-  build-depends:       base
-                     , monad-bayes
-                     , mtl
-                     , transformers
-                     , math-functions
-                     , hmatrix
-                     , statistics
-                     , vector
-                     , Chart
-                     , Chart-cairo
-                     , optparse-applicative
-                     , directory
-  default-language:    Haskell2010
-  -- Main benchmark file should import all the modules to be
-  -- maintained. Those modules should also be listed in
-  -- `other-modules`.
-  main-is:             BenchAll.hs
-  -- List all models we want to watch for changes.
-  -- DO NOT list modules that don't compile.
-  -- They make it impossible to run `stack ghci`.
-  other-modules:       Sprinkler,
-                       BetaBin,
-                       Dice,
-                       Gamma,
-                       HMM,
-                       DPmixture,
-                       StrictlySmallerSupport,
-                       Plotting
+-- benchmark monad-bayes-bench
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      models
+--   build-depends:       base
+--                      , monad-bayes
+--                      , mtl
+--                      , transformers
+--                      , math-functions
+--                      , hmatrix
+--                      , statistics
+--                      , vector
+--                      , Chart
+--                      , Chart-cairo
+--                      , optparse-applicative
+--                      , directory
+--   default-language:    Haskell2010
+--   -- Main benchmark file should import all the modules to be
+--   -- maintained. Those modules should also be listed in
+--   -- `other-modules`.
+--   main-is:             BenchAll.hs
+--   -- List all models we want to watch for changes.
+--   -- DO NOT list modules that don't compile.
+--   -- They make it impossible to run `stack ghci`.
+--   other-modules:       Sprinkler,
+--                        BetaBin,
+--                        Dice,
+--                        Gamma,
+--                        HMM,
+--                        DPmixture,
+--                        StrictlySmallerSupport,
+--                        Plotting
 
 benchmark lgss-benchmark
   type:                exitcode-stdio-1.0

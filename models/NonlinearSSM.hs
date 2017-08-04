@@ -26,6 +26,7 @@ import qualified Data.Vector as Vector
 import Graphics.Rendering.Chart.Easy hiding (Vector)
 import Graphics.Rendering.Chart.Backend.Cairo (toFile, fo_format, FileFormat(PDF))
 import Options.Applicative
+import Data.Semigroup ((<>))
 import System.Directory
 
 import Plotting

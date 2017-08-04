@@ -13,9 +13,10 @@ import Graphics.Rendering.Chart.Easy hiding (Vector)
 import Graphics.Rendering.Chart.Backend.Cairo (toFile, fo_format, FileFormat(PDF))
 import Options.Applicative
 import System.Directory
+import Data.Semigroup ((<>))
 import Control.Monad.Trans
 import System.IO
-import Control.Monad (when, unless)
+import Control.Monad (when, unless, replicateM)
 
 import Control.Monad.Bayes.Simple hiding (normalize)
 import Control.Monad.Bayes.Prior
@@ -32,13 +33,13 @@ main = do
   (trial, cachePath) <- execParser opts
   when trial $ putStrLn "Trial run"
 
-  if not trial then do
+  if not trial then
     sampleIO $ lgssBenchmark cachePath 50 100 (map (2^) [1..10])
-  else do
+  else
     sampleIO $ lgssBenchmark cachePath 5 10 [10,20,40]
 
 opts :: ParserInfo (Bool,FilePath)
-opts = flip info fullDesc ((,) <$> trialFlag <*> cacheDir) where
+opts = info ((,) <$> trialFlag <*> cacheDir) fullDesc where
   trialFlag = switch
     ( long "trial"
     <> help "Run a quick version of benchmarks to check that all is working correctly.")
@@ -54,9 +55,9 @@ lgssBenchmark cachePath t nRuns ns = do
   let plotPath = "lgss.pdf"
 
   let param = LGSSParam (0,1) 1 0 1 1 0 1
-  scores <- sequence $ replicate nRuns $ do
+  scores <- replicateM nRuns $ do
     ys <- synthesizeData param t
-    ref <- return $ kalman param ys
+    let ref = kalman param ys
     let run m = do -- RMSE on the mean of filetering distribution
           estMean <- popAvg Vector.last (normalize m)
           let trueMean = fst (Vector.last ref)
@@ -91,7 +92,7 @@ linearGaussian :: (MonadBayes m, CustomReal m ~ Double)
                -> m (Vector Double) -- ^ latent sequence posterior X_{1:T}
 linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
   let step xs y = do{
-    x' <- normal (a*(head xs) + b) sdX;
+    x' <- normal (a * head xs + b) sdX;
     observe (normalDist (c*x' + d) sdY) y;
     return (x':xs)}
 
@@ -106,7 +107,7 @@ randomWalk :: (MonadBayes m, CustomReal m ~ Double)
            -> StdDev -- ^ observation model noise
            -> Vector Double -- ^ observed sequence Y_{1:T}
            -> m (Vector Double)
-randomWalk p0 sdX sdY ys = linearGaussian (LGSSParam p0 1 0 sdX 1 0 sdY) ys
+randomWalk p0 sdX sdY = linearGaussian (LGSSParam p0 1 0 sdX 1 0 sdY)
 
 -- | Generate observed sequence from the prior.
 synthesizeData :: (MonadDist m, CustomReal m ~ Double)

@@ -9,4 +9,4 @@ packages:
 #   extra-dep: true
 
 extra-deps: []
-resolver: lts-7.7
+resolver: lts-9.0
