@@ -21,24 +21,14 @@ module Control.Monad.Bayes.Sampler (
     sampleSTfixed
                ) where
 
-import Control.Monad.ST (ST, runST)
+import Control.Monad.ST (ST, runST, stToIO)
 import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (lift, MonadIO)
-import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
-import Numeric.LinearAlgebra ((<#), size)
-import Data.Vector.Generic (replicateM)
+import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask, mapReaderT)
 
 import Control.Monad.Bayes.Class
-import Statistics.Distribution.Polymorphic.Normal as Normal
-import Statistics.Distribution.Polymorphic.Gamma
-import Statistics.Distribution.Polymorphic.Beta as Beta
-import Statistics.Distribution.Polymorphic.Uniform
-import Statistics.Distribution.Polymorphic.Discrete
-import Statistics.Distribution.Polymorphic.MVNormal as MVNormal
-import Statistics.Distribution.Polymorphic.Unconstrained
-import Control.Monad.Bayes.Simple
 
 -- | An `IO` based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -58,44 +48,11 @@ sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 sampleIOwith :: SamplerIO a -> GenIO -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
-instance HasCustomReal SamplerIO where
-  type CustomReal SamplerIO = Double
+fromSamplerST :: SamplerST a -> SamplerIO a
+fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
--- | Helper for converting distributions supplied by MWC-Random
-fromMWC :: (GenIO -> IO a) -> SamplerIO a
-fromMWC s = SamplerIO $ ask >>= lift . s
-
-instance Sampleable (Normal Double) SamplerIO where
-  sample d = fromMWC $ MWC.normal (Normal.mean d) (stddev d)
-
-instance Sampleable (Gamma Double) SamplerIO where
-  sample d = fromMWC $ MWC.gamma (shape d) (scale d)
-
-instance Sampleable (Beta Double) SamplerIO where
-  sample d = fromMWC $ MWC.beta (Beta.alpha d) (Beta.beta d)
-
-instance Sampleable (Uniform Double) SamplerIO where
-  sample d = fromMWC $ uniformR (lower d, upper d)
-
-instance Sampleable (Discrete Double) SamplerIO where
-  sample d = fromMWC $ MWC.categorical $ weights d
-
-instance Sampleable MVNormal SamplerIO where
-  sample d = do
-    let m = MVNormal.mean d
-    let u = chol_upper d
-    z <- replicateM (size m) $ fromMWC MWC.standard
-    return $ m + (z <# u)
-
-instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerIO) => Sampleable (Unconstrained d) SamplerIO where
-  sample d = fmap (transformConstraints d') $ sample d' where
-    d' = getConstrained d
-
-instance MonadDist SamplerIO where
-  exponential r    = fromMWC $ MWC.exponential (recip r)
-  geometric p      = fromMWC $ MWC.geometric0 p
-  bernoulli p      = fromMWC $ MWC.bernoulli p
-  dirichlet ws     = fromMWC $ MWC.dirichlet ws
+instance MonadSample SamplerIO where
+  random = fromSamplerST random
 
 
 
@@ -132,41 +89,18 @@ sampleSTfixed (SamplerST s) = runST $ do
   gen <- create
   runReaderT s gen
 
-instance HasCustomReal SamplerST where
-  type CustomReal SamplerST = Double
-
 -- | Helper for converting distributions supplied by MWC-Random
-fromMWC' :: (forall s. GenST s -> ST s a) -> SamplerST a
-fromMWC' s = SamplerST $ ask >>= lift . s
+fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST a
+fromMWC s = SamplerST $ ask >>= lift . s
 
-instance Sampleable (Normal Double) SamplerST where
-  sample d = fromMWC' $ MWC.normal (Normal.mean d) (stddev d)
+instance MonadSample SamplerST where
+  random = fromMWC System.Random.MWC.uniform
 
-instance Sampleable (Gamma Double) SamplerST where
-  sample d = fromMWC' $ MWC.gamma (shape d) (scale d)
+  uniform a b = fromMWC $ uniformR (a,b)
+  normal m s = fromMWC $ MWC.normal m s
+  gamma shape scale = fromMWC $ MWC.gamma shape scale
+  beta a b = fromMWC $ MWC.beta a b
 
-instance Sampleable (Beta Double) SamplerST where
-  sample d = fromMWC' $ MWC.beta (Beta.alpha d) (Beta.beta d)
-
-instance Sampleable (Uniform Double) SamplerST where
-  sample d = fromMWC' $ uniformR (lower d, upper d)
-
-instance Sampleable (Discrete Double) SamplerST where
-  sample d = fromMWC' $ MWC.categorical $ weights d
-
-instance Sampleable MVNormal SamplerST where
-  sample d = do
-    let m = MVNormal.mean d
-    let u = chol_upper d
-    z <- replicateM (size m) $ fromMWC' MWC.standard
-    return $ m + (z <# u)
-
-instance (KnownSupport d, RealNum d ~ Domain d, Sampleable d SamplerST) => Sampleable (Unconstrained d) SamplerST where
-  sample d = fmap (transformConstraints d') $ sample d' where
-    d' = getConstrained d
-
-instance MonadDist SamplerST where
-  exponential r    = fromMWC' $ MWC.exponential (recip r)
-  geometric p      = fromMWC' $ MWC.geometric0 p
-  bernoulli p      = fromMWC' $ MWC.bernoulli p
-  dirichlet ws     = fromMWC' $ MWC.dirichlet ws
+  bernoulli p = fromMWC $ MWC.bernoulli p
+  categorical ps = fromMWC $ MWC.categorical ps
+  geometric p = fromMWC $ MWC.geometric0 p

@@ -15,141 +15,165 @@ Portability : GHC
 
 
 module Control.Monad.Bayes.Class (
-  module Statistics.Distribution.Polymorphic.Class,
-  module Numeric.CustomReal,
-  HasCustomReal,
-  CustomReal,
-  Sampleable,
-  sample,
-  Conditionable,
-  factor,
-  condition,
-  observe
+  MonadSample,
+  random,
+  uniform,
+  normal,
+  gamma,
+  beta,
+  bernoulli,
+  categorical,
+  geometric,
+  poisson
 ) where
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Cont
+-- import Control.Monad.Trans.Maybe
+-- import Control.Monad.Trans.State
+-- import Control.Monad.Trans.Writer
+-- import Control.Monad.Trans.Reader
+-- import Control.Monad.Trans.RWS hiding (tell)
+-- import Control.Monad.Trans.List
+-- import Control.Monad.Trans.Cont
 
-import Numeric.CustomReal (IsCustomReal, toCustomReal, fromCustomReal, sum)
-import qualified Numeric.LogDomain as Log
-import Statistics.Distribution.Polymorphic.Class
+import Statistics.Distribution
+import Statistics.Distribution.Uniform (uniformDistr)
+import Statistics.Distribution.Normal (normalDistr)
+import Statistics.Distribution.Gamma (gammaDistr)
+import Statistics.Distribution.Beta (betaDistr)
+import Statistics.Distribution.Geometric (geometric0)
+import qualified Statistics.Distribution.Poisson as Poisson
 
--- | The type used to represent real numbers in a given probabilistic program.
--- In most cases this is just `Double`, but
--- it is abstracted mostly to support Automatic Differentiation.
-class (IsCustomReal (CustomReal m)) => HasCustomReal m where
-  type CustomReal (m :: * -> *)
+import Data.Vector.Generic
+import Control.Monad (when)
 
--- | Type class asserting that a particular distibution can be sampled in structures of given type.
-class Distribution d => Sampleable d m where
-  sample :: d -> m (Domain d)
+-- | Class of monads that can draw random variables.
+class Monad m => MonadSample m where
+  -- | A random variable distributed uniformly on [0,1].
+  random :: m Double
 
--- | Probabilistic program types that allow conditioning.
--- Both soft and hard conditions are allowed.
-class HasCustomReal m => Conditionable m where
+  uniform :: Double -> Double -> m Double
+  uniform a b = draw (uniformDistr a b)
+  normal :: Double -> Double -> m Double
+  normal m s = draw (normalDistr m s)
+  gamma :: Double -> Double -> m Double
+  gamma shape scale = draw (gammaDistr shape scale)
+  beta :: Double -> Double -> m Double
+  beta a b = draw (betaDistr a b)
 
-    -- | Conditioning with an arbitrary factor, as found in factor graphs.
-    -- Bear in mind that some inference algorithms may require `factor`s to be
-    -- non-negative to work correctly.
-    factor :: Log.LogDomain (CustomReal m) -> m ()
+  bernoulli :: Double -> m Bool
+  bernoulli p = fmap (< p) random
+  categorical :: Vector v Double => v Double -> m Int
+  categorical ps = fromPMF (ps !)
+  geometric :: Double -> m Int
+  geometric p = discrete (geometric0 p)
+  poisson :: Double -> m Int
+  poisson lambda = discrete (Poisson.poisson lambda)
 
-    -- | Hard conditioning on an arbitrary predicate.
-    --
-    -- > condition b = factor (if b then 1 else 0)
-    condition :: Bool -> m ()
-    condition b = factor $ if b then 1 else 0
+-- | Draw a value from a continuous distribution using iverse CDF.
+draw :: (ContDistr d, MonadSample m) => d -> m Double
+draw d = fmap (quantile d) random
 
-    -- | Soft conditioning on a noisy value.
-    --
-    -- > observe d x = factor (pdf d x)
-    observe :: (Density d, RealNum d ~ CustomReal m) => d -> Domain d -> m ()
-    observe d x = factor (pdf d x)
+-- | Draw a value from a discrete distribution using a sequence of draws from Bernoulli.
+fromPMF :: MonadSample m => (Int -> Double) -> m Int
+fromPMF p = f 0 1 where
+  f i r = do
+    when (r < 0) $ error "fromPMF: total PMF above 1"
+    let q = p i
+    when (q < 0 || q > 1) $ error "fromPMF: invalid probability value"
+    b <- bernoulli (q / r)
+    if b then pure i else f (i+1) (r-q)
+
+-- | Draw a value from a discrete distributions using the PMF.
+discrete :: (DiscreteDistr d, MonadSample m) => d -> m Int
+discrete d = fromPMF (probability d)
+
+-- | Monads that can score different execution paths.
+class Monad m => MonadCond m where
+  score :: Double -> m ()
+
+-- | Monads that support both sampling and scoring.
+class (MonadSample m, MonadCond m) => MonadInfer m
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
-instance HasCustomReal m => HasCustomReal (IdentityT m) where
-  type CustomReal (IdentityT m) = CustomReal m
+instance MonadSample m => MonadSample (IdentityT m) where
+  random = lift random
+  bernoulli = lift . bernoulli
 
-instance (Sampleable d m, Monad m) => Sampleable d (IdentityT m) where
-  sample = lift . sample
+instance MonadCond m => MonadCond (IdentityT m) where
+  score = lift . score
 
-instance (Conditionable m, Monad m) => Conditionable (IdentityT m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (MaybeT m) where
-  type CustomReal (MaybeT m) = CustomReal m
-
-instance (Sampleable d m, Monad m) => Sampleable d (MaybeT m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m) => Conditionable (MaybeT m) where
-  factor = lift . factor
+instance MonadInfer m => MonadInfer (IdentityT m)
 
 
-instance HasCustomReal m => HasCustomReal (ReaderT r m) where
-  type CustomReal (ReaderT r m) = CustomReal m
-
-instance (Sampleable d m, Monad m) => Sampleable d (ReaderT r m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m) => Conditionable (ReaderT r m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (WriterT w m) where
-  type CustomReal (WriterT w m) = CustomReal m
-
-instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (WriterT w m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m, Monoid w) => Conditionable (WriterT w m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (StateT s m) where
-  type CustomReal (StateT s m) = CustomReal m
-
-instance (Sampleable d m, Monad m) => Sampleable d (StateT s m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m) => Conditionable (StateT s m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (RWST r w s m) where
-  type CustomReal (RWST r w s m) = CustomReal m
-
-instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (RWST r w s m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m, Monoid w) => Conditionable (RWST r w s m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (ListT m) where
-  type CustomReal (ListT m) = CustomReal m
-
-instance (Sampleable d m, Monad m) => Sampleable d (ListT m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m) => Conditionable (ListT m) where
-  factor = lift . factor
-
-
-instance HasCustomReal m => HasCustomReal (ContT r m) where
-  type CustomReal (ContT r m) = CustomReal m
-
-instance (Sampleable d m, Monad m) => Sampleable d (ContT r m) where
-  sample = lift . sample
-
-instance (Conditionable m, Monad m) => Conditionable (ContT r m) where
-  factor = lift . factor
+-- instance HasCustomReal m => HasCustomReal (MaybeT m) where
+--   type CustomReal (MaybeT m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m) => Sampleable d (MaybeT m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m) => Conditionable (MaybeT m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (ReaderT r m) where
+--   type CustomReal (ReaderT r m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m) => Sampleable d (ReaderT r m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m) => Conditionable (ReaderT r m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (WriterT w m) where
+--   type CustomReal (WriterT w m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (WriterT w m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m, Monoid w) => Conditionable (WriterT w m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (StateT s m) where
+--   type CustomReal (StateT s m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m) => Sampleable d (StateT s m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m) => Conditionable (StateT s m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (RWST r w s m) where
+--   type CustomReal (RWST r w s m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (RWST r w s m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m, Monoid w) => Conditionable (RWST r w s m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (ListT m) where
+--   type CustomReal (ListT m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m) => Sampleable d (ListT m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m) => Conditionable (ListT m) where
+--   factor = lift . factor
+--
+--
+-- instance HasCustomReal m => HasCustomReal (ContT r m) where
+--   type CustomReal (ContT r m) = CustomReal m
+--
+-- instance (Sampleable d m, Monad m) => Sampleable d (ContT r m) where
+--   sample = lift . sample
+--
+-- instance (Conditionable m, Monad m) => Conditionable (ContT r m) where
+--   factor = lift . factor
