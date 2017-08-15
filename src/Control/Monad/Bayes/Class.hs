@@ -23,6 +23,7 @@ module Control.Monad.Bayes.Class (
   beta,
   bernoulli,
   categorical,
+  logCategorical,
   geometric,
   poisson,
   MonadCond,
@@ -38,7 +39,7 @@ import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Writer
 -- import Control.Monad.Trans.Reader
 -- import Control.Monad.Trans.RWS hiding (tell)
--- import Control.Monad.Trans.List
+import Control.Monad.Trans.List
 -- import Control.Monad.Trans.Cont
 
 import Statistics.Distribution
@@ -72,6 +73,8 @@ class Monad m => MonadSample m where
   bernoulli p = fmap (< p) random
   categorical :: Vector v Double => v Double -> m Int
   categorical ps = fromPMF (ps !)
+  logCategorical :: (Vector v (Log Double), Vector v Double) => v (Log Double) -> m Int
+  logCategorical = categorical . Data.Vector.Generic.map (exp . ln)
   geometric :: Double -> m Int
   geometric p = discrete (geometric0 p)
   poisson :: Double -> m Int
@@ -168,16 +171,17 @@ instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
 --
 -- instance (Conditionable m, Monad m, Monoid w) => Conditionable (RWST r w s m) where
 --   factor = lift . factor
---
---
--- instance HasCustomReal m => HasCustomReal (ListT m) where
---   type CustomReal (ListT m) = CustomReal m
---
--- instance (Sampleable d m, Monad m) => Sampleable d (ListT m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m) => Conditionable (ListT m) where
---   factor = lift . factor
+
+
+instance MonadSample m => MonadSample (ListT m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+
+instance MonadCond m => MonadCond (ListT m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (ListT m)
+
 --
 --
 -- instance HasCustomReal m => HasCustomReal (ContT r m) where
