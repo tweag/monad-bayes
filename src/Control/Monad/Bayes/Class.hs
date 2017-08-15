@@ -24,14 +24,18 @@ module Control.Monad.Bayes.Class (
   bernoulli,
   categorical,
   geometric,
-  poisson
+  poisson,
+  MonadCond,
+  score,
+  factor,
+  MonadInfer
 ) where
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 -- import Control.Monad.Trans.Maybe
 -- import Control.Monad.Trans.State
--- import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Writer
 -- import Control.Monad.Trans.Reader
 -- import Control.Monad.Trans.RWS hiding (tell)
 -- import Control.Monad.Trans.List
@@ -44,6 +48,8 @@ import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import qualified Statistics.Distribution.Poisson as Poisson
+
+import Numeric.Log
 
 import Data.Vector.Generic
 import Control.Monad (when)
@@ -91,7 +97,11 @@ discrete d = fromPMF (probability d)
 
 -- | Monads that can score different execution paths.
 class Monad m => MonadCond m where
-  score :: Double -> m ()
+  score :: Log Double -> m ()
+
+-- | Synonym for 'score'.
+factor :: MonadCond m => Log Double -> m ()
+factor = score
 
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
@@ -127,16 +137,17 @@ instance MonadInfer m => MonadInfer (IdentityT m)
 --
 -- instance (Conditionable m, Monad m) => Conditionable (ReaderT r m) where
 --   factor = lift . factor
---
---
--- instance HasCustomReal m => HasCustomReal (WriterT w m) where
---   type CustomReal (WriterT w m) = CustomReal m
---
--- instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (WriterT w m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m, Monoid w) => Conditionable (WriterT w m) where
---   factor = lift . factor
+
+
+instance (Monoid w, MonadSample m) => MonadSample (WriterT w m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+
+instance (Monoid w, MonadCond m) => MonadCond (WriterT w m) where
+  score = lift . score
+
+instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
+
 --
 --
 -- instance HasCustomReal m => HasCustomReal (StateT s m) where
