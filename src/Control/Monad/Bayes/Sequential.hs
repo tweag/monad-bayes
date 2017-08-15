@@ -25,15 +25,14 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Data.Either
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
 
 -- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly useful
 -- for implementation of SMC-related methods.
 -- All the probabilistic effects are lifted from the transformed monad,
 -- but also `suspend` is inserted after each `factor`.
-newtype Sequential m a = Sequential {runSequential :: (Coroutine (Await ()) m a)}
-  deriving(Functor,Applicative,Monad,MonadTrans, MonadIO)
+newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
+  deriving(Functor,Applicative,Monad,MonadTrans,MonadIO)
 extract :: Await () a -> a
 extract (Await f) = f ()
 
@@ -67,14 +66,11 @@ hoist :: (Monad m, Monad n) =>
             (forall x. m x -> n x) -> Sequential m a -> Sequential n a
 hoist f = Sequential . mapMonad f . runSequential
 
-instance HasCustomReal m => HasCustomReal (Sequential m) where
-  type CustomReal (Sequential m) = CustomReal m
+instance MonadSample m => MonadSample (Sequential m) where
+  random = lift random
+  bernoulli = lift . bernoulli
 
-instance (Sampleable d m, Monad m) => Sampleable d (Sequential m) where
-  sample = lift . sample
+instance MonadCond m => MonadCond (Sequential m) where
+  score w = lift (score w) >> suspend
 
-instance (Conditionable m, Monad m) => Conditionable (Sequential m) where
-  factor w = lift (factor w) >> suspend
-
-instance MonadDist m => MonadDist (Sequential m)
-instance MonadBayes m => MonadBayes (Sequential m)
+instance MonadInfer m => MonadInfer (Sequential m)

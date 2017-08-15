@@ -19,6 +19,7 @@ library
                      , Control.Monad.Bayes.Free
                      , Control.Monad.Bayes.Sampler
                      , Control.Monad.Bayes.Weighted
+                     , Control.Monad.Bayes.Sequential
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
