@@ -22,78 +22,73 @@ module Control.Monad.Bayes.Traced (
 
 import Data.Monoid ((<>))
 import Control.Applicative (liftA2)
-import Control.Monad.Trans (MonadTrans, lift)
+import Data.Functor.Identity
+import Control.Monad.Trans.Writer
+import qualified Data.Vector as V
 
-import Numeric.LogDomain
+import Numeric.Log (ln)
 
-import Control.Monad.Bayes.Simple
-import Control.Monad.Bayes.Trace
-import Control.Monad.Bayes.Conditional as Cond
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Bayes.Augmented as Aug
-import Control.Monad.Bayes.Inference.MCMC
+import Control.Monad.Bayes.Free
 
-import Debug.Trace (trace, traceM, traceShowM)
-import Control.Monad (when)
+type Trace = [Double]
 
-data Traced m a = Traced (m (Trace (CustomReal m))) (Conditional (Weighted m) a)
+emptyTrace :: Applicative m => m Trace
+emptyTrace = pure []
 
-traceDist :: Traced m a -> m (Trace (CustomReal m))
-traceDist (Traced d _) = d
+data Traced m a = Traced (Weighted FreeSampler a) (m [Double])
 
-model :: Traced m a -> Conditional (Weighted m) a
-model (Traced _ m) = m
+traceDist :: Traced m a -> m [Double]
+traceDist (Traced _ d) = d
 
-emptyTrace :: Applicative m => m (Trace r)
-emptyTrace = pure $ fromLists ([],[])
+model :: Traced m a -> Weighted FreeSampler a
+model (Traced m _) = m
 
 instance Functor m => Functor (Traced m) where
-  fmap f (Traced d m) = Traced d (fmap f m)
+  fmap f (Traced m d) = Traced (fmap f m) d
 
 instance Monad m => Applicative (Traced m) where
-  pure x = Traced emptyTrace (pure x)
-  (Traced df mf) <*> (Traced dx mx) = Traced (liftA2 (<>) df dx) (mf <*> mx)
+  pure x = Traced (pure x) emptyTrace
+  (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<>) df dx)
 
-instance (HasCustomReal m, Monad m) => Monad (Traced m) where
-  (Traced dx mx) >>= f = Traced dy my where
+instance Monad m => Monad (Traced m) where
+  (Traced mx dx) >>= f = Traced my dy where
     dy = do
-      t <- dx
-      (x,_) <- runWeighted $ unsafeConditional mx t
-      t' <- traceDist $ f x
-      return (t <> t')
+      us <- dx
+      let x = runIdentity $ prior $ Weighted.hoist (Identity . withRandomness us) mx
+      vs <- traceDist $ f x
+      return (us <> vs)
     my = mx >>= model . f
 
-instance HasCustomReal m => HasCustomReal (Traced m) where
-  type CustomReal (Traced m) = CustomReal m
+instance MonadSample m => MonadSample (Traced m) where
+  random = Traced random (fmap (:[]) random)
 
-instance MonadTrans Traced where
-  lift m = Traced emptyTrace (lift $ lift m)
+instance MonadCond m => MonadCond (Traced m) where
+  score w = Traced (score w) (score w >> pure [])
 
-instance (Distribution d, Monad m, Sampleable d (Conditional (Weighted m)), Sampleable d (Augmented m)) => Sampleable d (Traced m) where
-  sample p = Traced (Aug.marginal $ joint $ sample p) (sample p)
-
-instance (Monad m, Conditionable m) => Conditionable (Traced m) where
-  factor w = Traced (factor w >> emptyTrace) (factor w)
-
-instance MonadDist m => MonadDist (Traced m)
-instance MonadBayes m => MonadBayes (Traced m)
+instance MonadInfer m => MonadInfer (Traced m)
 
 hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoist f (Traced d m) = Traced (f d) (m)
+hoist f (Traced m d) = Traced m (f d)
 
-marginal :: (HasCustomReal m, Monad m) => Traced m a -> m a
-marginal (Traced d m) = d >>= prior . unsafeConditional m
+marginal :: Monad m => Traced m a -> m a
+marginal (Traced m d) = fmap (`withRandomness` prior m) d
 
-mhStep :: (MHKernel k, KernelDomain k ~ Trace (CustomReal m), MHSampler k ~ m,
-           MonadDist m)
-       => k -> Traced m a -> Traced m a
-mhStep kernel (Traced d m) = Traced d' m where
+mhStep :: MonadSample m => Traced m a -> Traced m a
+mhStep (Traced m d) = Traced m d' where
   d' = do
-    t <- d
-    (t', w) <- proposeWithDensityRatio kernel t
-    (_, p)  <- runWeighted $ unsafeConditional m t
-    (_, p') <- runWeighted $ unsafeConditional m t'
-    let ratio = fromLogDomain $ min 1 (w * p' / p)
-    -- TODO: remove this isNaN hack once benchmarking is done 
-    accept <- if isNaN (fromCustomReal ratio) then return False else bernoulli ratio
-    return $ if accept then t' else t
+    us <- d
+    let (_, p) = runIdentity $ runWeighted $ Weighted.hoist (Identity . withRandomness us) m
+    us' <- proposeChange us
+    ((_, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+    let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
+    accept <- bernoulli ratio
+    return $ if accept then vs else us
+
+  proposeChange us = do
+    let n = length us
+    i <- categorical $ V.replicate n (1 / fromIntegral n)
+    u' <- random
+    let (xs, _:ys) = splitAt i us
+    return $ xs ++ (u':ys)

@@ -20,24 +20,11 @@ module Control.Monad.Bayes.Parametric (
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans
 
-import Control.Monad.Bayes.Class hiding (Parametric)
-import Control.Monad.Bayes.Simple hiding (Parametric)
+import Control.Monad.Bayes.Class
 
 -- | A transformer keeping track of the (hyper)parameters for the model.
 newtype Parametric p m a = Parametric (ReaderT p m a)
-  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO)
-
-instance HasCustomReal m => HasCustomReal (Parametric p m) where
-  type CustomReal (Parametric p m) = CustomReal m
-
-instance Sampleable d m => Sampleable d (Parametric p m) where
-  sample = parametric . const . sample
-
-instance Conditionable m => Conditionable (Parametric p m) where
-  factor = parametric . const . factor
-
-instance MonadDist m => MonadDist (Parametric p m)
-instance MonadBayes m => MonadBayes (Parametric p m)
+  deriving(Functor, Applicative, Monad, MonadTrans, MonadIO, MonadSample, MonadCond, MonadInfer)
 
 -- | Construct a computation with global parameters.
 parametric :: (p -> m a) -> Parametric p m a

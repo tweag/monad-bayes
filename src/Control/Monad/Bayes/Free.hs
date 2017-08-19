@@ -1,7 +1,9 @@
 
 module Control.Monad.Bayes.Free (
   FreeSampler,
-  interpret
+  interpret,
+  withRandomness,
+  withPartialRandomness
 ) where
 
 import Control.Monad.Free
@@ -22,3 +24,15 @@ instance MonadSample FreeSampler where
 interpret :: MonadSample m => FreeSampler a -> m a
 interpret (FreeSampler m) = foldFree f m where
   f (Random k) = fmap k random
+
+withRandomness :: [Double] -> FreeSampler a -> a
+withRandomness randomness (FreeSampler m) = run randomness m where
+  run _ (Pure x) = x
+  run (u:us) (Free (Random f)) = run us (f u)
+  run [] (Free _) = error "FreeSampler: the list of randomness was too short"
+
+withPartialRandomness :: MonadSample m => [Double] -> FreeSampler a -> m (a, [Double])
+withPartialRandomness randomness (FreeSampler m) = run randomness m where
+  run _ (Pure x) = pure (x, [])
+  run (u:us) (Free (Random f)) = do {(x, vs) <- run us (f u); return (x, u:vs)}
+  run [] (Free (Random f)) = do{v <- random; (x, vs) <- run [] (f v); return (x, v:vs)}

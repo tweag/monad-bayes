@@ -37,7 +37,7 @@ import Control.Monad.Trans.Identity
 -- import Control.Monad.Trans.Maybe
 -- import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
--- import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Reader
 -- import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
 -- import Control.Monad.Trans.Cont
@@ -130,16 +130,16 @@ instance MonadInfer m => MonadInfer (IdentityT m)
 --
 -- instance (Conditionable m, Monad m) => Conditionable (MaybeT m) where
 --   factor = lift . factor
---
---
--- instance HasCustomReal m => HasCustomReal (ReaderT r m) where
---   type CustomReal (ReaderT r m) = CustomReal m
---
--- instance (Sampleable d m, Monad m) => Sampleable d (ReaderT r m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m) => Conditionable (ReaderT r m) where
---   factor = lift . factor
+
+
+instance MonadSample m => MonadSample (ReaderT r m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+
+instance MonadCond m => MonadCond (ReaderT r m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (ReaderT r m)
 
 
 instance (Monoid w, MonadSample m) => MonadSample (WriterT w m) where
