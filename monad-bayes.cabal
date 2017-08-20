@@ -22,6 +22,7 @@ library
                      , Control.Monad.Bayes.Sequential
                      , Control.Monad.Bayes.Population
                      , Control.Monad.Bayes.Traced
+                     , Control.Monad.Bayes.Enumerator
                      , Control.Monad.Bayes.Inference
   build-depends:       base >= 4.7 && < 5
                      , containers
@@ -53,25 +54,25 @@ library
   other-extensions:    ScopedTypeVariables
                      , DeriveFunctor
 
--- test-suite monad-bayes-test
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      test, models
---   main-is:             Spec.hs
---   build-depends:       base
---                      , monad-bayes
---                      , hspec
---                      , QuickCheck
---                      , ieee754
---                      , mtl
---                      , math-functions
---                      , transformers
---                      , ad
---                      , reflection
---                      , hmatrix
---   ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
---   default-language:    Haskell2010
---   main-is:             Spec.hs
---   other-modules:       Sprinkler,
+test-suite monad-bayes-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test, models
+  main-is:             Spec.hs
+  build-depends:       base
+                     , monad-bayes
+                     , hspec
+                     , QuickCheck
+                     , ieee754
+                     , mtl
+                     , math-functions
+                     , transformers
+                     , ad
+                     , reflection
+                     , hmatrix
+  ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
+  default-language:    Haskell2010
+  main-is:             Spec.hs
+  other-modules:       Sprinkler
 --                        TestEnumerator,
 --                        TestPopulation,
 --                        TestInference,

@@ -29,6 +29,7 @@ module Control.Monad.Bayes.Class (
   MonadCond,
   score,
   factor,
+  condition,
   MonadInfer
 ) where
 
@@ -105,6 +106,10 @@ class Monad m => MonadCond m where
 -- | Synonym for 'score'.
 factor :: MonadCond m => Log Double -> m ()
 factor = score
+
+-- | Hard conditioning.
+condition :: MonadCond m => Bool -> m ()
+condition b = score $ if b then 1 else 0
 
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
