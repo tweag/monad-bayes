@@ -16,8 +16,9 @@ Portability : GHC
 module Control.Monad.Bayes.Traced (
   Traced,
   Control.Monad.Bayes.Traced.hoist,
-  Control.Monad.Bayes.Traced.marginal,
-  Control.Monad.Bayes.Traced.mhStep
+  marginal,
+  mhStep,
+  mh
 ) where
 
 import Data.Monoid ((<>))
@@ -75,20 +76,29 @@ hoist f (Traced m d) = Traced m (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced m d) = fmap (`withRandomness` prior m) d
 
-mhStep :: MonadSample m => Traced m a -> Traced m a
-mhStep (Traced m d) = Traced m d' where
-  d' = do
-    us <- d
-    let (_, p) = runIdentity $ runWeighted $ Weighted.hoist (Identity . withRandomness us) m
-    us' <- proposeChange us
-    ((_, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
-    let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
-    accept <- bernoulli ratio
-    return $ if accept then vs else us
-
-  proposeChange us = do
+mhTrans :: MonadSample m => Weighted FreeSampler a -> [Double] -> m [Double]
+mhTrans m us = do
+  let (_, p) = runIdentity $ runWeighted $ Weighted.hoist (Identity . withRandomness us) m
+  us' <- do
     let n = length us
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     u' <- random
     let (xs, _:ys) = splitAt i us
     return $ xs ++ (u':ys)
+  ((_, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
+  accept <- bernoulli ratio
+  return $ if accept then vs else us
+
+mhStep :: MonadSample m => Traced m a -> Traced m a
+mhStep (Traced m d) = Traced m d' where
+  d' = d >>= mhTrans m
+
+mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh n (Traced m d) = fmap (map (\us -> runIdentity $ prior $ Weighted.hoist (Identity . withRandomness us) m)) t where
+  t = f n
+  f 0 = fmap (:[]) d
+  f k = do
+    x:xs <- f (k-1)
+    y <- mhTrans m x
+    return (y:x:xs)

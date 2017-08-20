@@ -22,6 +22,7 @@ library
                      , Control.Monad.Bayes.Sequential
                      , Control.Monad.Bayes.Population
                      , Control.Monad.Bayes.Traced
+                     , Control.Monad.Bayes.Inference
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
