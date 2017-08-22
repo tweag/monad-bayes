@@ -4,7 +4,7 @@ import Test.QuickCheck
 
 import qualified TestWeighted
 import qualified TestEnumerator
--- import qualified TestPopulation
+import qualified TestPopulation
 -- import qualified TestSequential
 -- import qualified TestTrace
 -- import qualified TestInference
@@ -31,26 +31,26 @@ main = hspec $ do
       TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $ do
       TestEnumerator.passed4 `shouldBe` True
---   describe "Empirical" $ do
---     context "controlling population" $ do
---       it "preserves the population when not expicitly altered" $ do
---         pop_size <- TestPopulation.pop_size
---         pop_size `shouldBe` 5
---       it "multiplies the number of samples when spawn invoked twice" $ do
---         many_size <- TestPopulation.many_size
---         many_size `shouldBe` 15
---       it "correctly computes population average" $ do
---         TestPopulation.popAvg_check `shouldBe` True
--- --    context "checking properties of samples" $ do
--- --      it "correctly checks if all particles satisfy a property" $ do
--- --        TestPopulation.all_check `shouldBe` True
---     context "distribution-preserving transformations" $ do
---       it "transform preserves the distribution" $ do
---         TestPopulation.trans_check1 `shouldBe` True
---         TestPopulation.trans_check2 `shouldBe` True
---       it "resample preserves the distribution" $ do
---         TestPopulation.resample_check 1 `shouldBe` True
---         TestPopulation.resample_check 2 `shouldBe` True
+  describe "Population" $ do
+    context "controlling population" $ do
+      it "preserves the population when not expicitly altered" $ do
+        popSize <- TestPopulation.popSize
+        popSize `shouldBe` 5
+      it "multiplies the number of samples when spawn invoked twice" $ do
+        manySize <- TestPopulation.manySize
+        manySize `shouldBe` 15
+      it "correctly computes population average" $ do
+        TestPopulation.popAvgCheck `shouldBe` True
+--    context "checking properties of samples" $ do
+--      it "correctly checks if all particles satisfy a property" $ do
+--        TestPopulation.all_check `shouldBe` True
+    context "distribution-preserving transformations" $ do
+      it "collapse preserves the distribution" $ do
+        TestPopulation.transCheck1 `shouldBe` True
+        TestPopulation.transCheck2 `shouldBe` True
+      it "resample preserves the distribution" $ do
+        TestPopulation.resampleCheck 1 `shouldBe` True
+        TestPopulation.resampleCheck 2 `shouldBe` True
 --   describe "Particle" $ do
 --     it "stops at every factor" $ do
 --       TestSequential.check_two_sync 0 `shouldBe` True

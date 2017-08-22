@@ -1,43 +1,43 @@
 module TestPopulation where
 
 import Data.AEq
-import Control.Monad.Trans.Identity
 
-import Numeric.LogDomain (LogDomain, toLogDomain, fromLogDomain)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
-import qualified Control.Monad.Bayes.Enumerator as Dist
+import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Population as Population
 import Sprinkler
 
-enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
-enumerate = Dist.enumerate
-
-expectation :: (a -> Double) -> Dist.Dist Double a -> Double
-expectation = Dist.expectation
-
+weightedSampleSize :: MonadSample m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
 
-pop_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
+popSize :: IO Int
+popSize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
 
-many_size = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
+manySize :: IO Int
+manySize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
 
-sprinkler :: MonadBayes m => m Bool
+sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
-sprinkler_exact = enumerate Sprinkler.soft
+
+sprinklerExact :: [(Bool, Double)]
+sprinklerExact = enumerate Sprinkler.soft
 
 --all_check = (mass (Population.all id (spawn 2 >> sprinkler)) True) ~== 0.09
 
-trans_check1 = enumerate (runIdentityT (collapse sprinkler)) ~==
-               sprinkler_exact
-trans_check2 = enumerate (runIdentityT (collapse (spawn 2 >> sprinkler))) ~==
-               sprinkler_exact
+transCheck1 :: Bool
+transCheck1 = enumerate (collapse sprinkler) ~==
+               sprinklerExact
+transCheck2 :: Bool
+transCheck2 = enumerate (collapse (spawn 2 >> sprinkler)) ~==
+               sprinklerExact
 
-resample_check n =
-  (enumerate . runIdentityT . collapse . resample) (spawn 2 >> sprinkler) ~==
-  sprinkler_exact
+resampleCheck :: Int -> Bool
+resampleCheck n =
+  (enumerate . collapse . resample) (spawn n >> sprinkler) ~==
+  sprinklerExact
 
-popAvg_check = (expectation f Sprinkler.soft) ~== (expectation id (popAvg f $ normalizeProper Sprinkler.soft)) where
+popAvgCheck :: Bool
+popAvgCheck = expectation f Sprinkler.soft ~== expectation id (popAvg f $ normalizeProper Sprinkler.soft) where
   f True = 10
   f False = 4
