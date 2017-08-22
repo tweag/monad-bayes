@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Class (
   bernoulli,
   categorical,
   logCategorical,
+  uniformD,
   geometric,
   poisson,
   MonadCond,
@@ -54,6 +55,7 @@ import qualified Statistics.Distribution.Poisson as Poisson
 import Numeric.Log
 
 import Data.Vector.Generic
+import qualified Data.Vector as V
 import Control.Monad (when)
 
 -- | Class of monads that can draw random variables.
@@ -74,6 +76,11 @@ class Monad m => MonadSample m where
   bernoulli p = fmap (< p) random
   categorical :: Vector v Double => v Double -> m Int
   categorical ps = fromPMF (ps !)
+  uniformD :: [a] -> m a
+  uniformD xs = do
+    let n = Prelude.length xs
+    i <- categorical $ V.replicate n (1 / fromIntegral n)
+    return (xs !! i)
   logCategorical :: (Vector v (Log Double), Vector v Double) => v (Log Double) -> m Int
   logCategorical = categorical . Data.Vector.Generic.map (exp . ln)
   geometric :: Double -> m Int
