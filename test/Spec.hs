@@ -3,7 +3,7 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
 import qualified TestWeighted
--- import qualified TestEnumerator
+import qualified TestEnumerator
 -- import qualified TestPopulation
 -- import qualified TestSequential
 -- import qualified TestTrace
@@ -21,15 +21,16 @@ main = hspec $ do
     it "accumulates likelihood correctly" $ do
       passed <- TestWeighted.passed
       passed `shouldBe` True
---   describe "Dist" $ do
---     it "normalizes categorical" $ do
---       TestEnumerator.passed1 `shouldBe` True
---     it "sorts samples and aggregates weights" $ do
---       TestEnumerator.passed2 `shouldBe` True
---     it "gives correct answer for the sprinkler model" $ do
---       TestEnumerator.passed3 `shouldBe` True
---     it "computes expectation correctly" $ do
---       TestEnumerator.passed4 `shouldBe` True
+  describe "Dist" $ do
+    -- we no longer normalize weights in categorical
+    -- it "normalizes categorical" $ do
+    --   TestEnumerator.passed1 `shouldBe` True
+    it "sorts samples and aggregates weights" $ do
+      TestEnumerator.passed2 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $ do
+      TestEnumerator.passed3 `shouldBe` True
+    it "computes expectation correctly" $ do
+      TestEnumerator.passed4 `shouldBe` True
 --   describe "Empirical" $ do
 --     context "controlling population" $ do
 --       it "preserves the population when not expicitly altered" $ do

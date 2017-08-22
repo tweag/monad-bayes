@@ -70,11 +70,12 @@ test-suite monad-bayes-test
                      , reflection
                      , hmatrix
                      , log-domain
+                     , vector
   ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
   default-language:    Haskell2010
   main-is:             Spec.hs
   other-modules:       Sprinkler,
---                        TestEnumerator,
+                       TestEnumerator,
 --                        TestPopulation,
 --                        TestInference,
 --                        TestSequential,
