@@ -39,6 +39,9 @@ import Numeric.Log
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (hoist)
 
+logNormalize :: V.Vector (Log Double) -> V.Vector (Log Double)
+logNormalize v = V.map (/ z) v where
+  z = sum v
 
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving(Functor,Applicative,Monad,MonadIO,MonadSample,MonadCond,MonadInfer)
@@ -75,7 +78,7 @@ resample m = fromWeightedList $ do
   let n = length xs
   let z = sum ps
   if z > 0 then do
-    ancestors <- sequenceA $ replicate n $ logCategorical $ V.fromList ps
+    ancestors <- sequenceA $ replicate n $ logCategorical $ logNormalize $ V.fromList ps
     let offsprings = map (xs !!) ancestors
     return $ map (, z / fromIntegral n) offsprings
   else
@@ -91,7 +94,7 @@ proper m = do
   let (xs, ps) = unzip pop
   let z = sum ps
   index <- if z > 0 then
-      logCategorical $ V.fromList ps
+      logCategorical $ logNormalize $ V.fromList ps
     else
       let n = length xs in
         categorical $ V.replicate n (1 / fromIntegral n)

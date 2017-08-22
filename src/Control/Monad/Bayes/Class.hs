@@ -157,6 +157,7 @@ instance MonadInfer m => MonadInfer (ReaderT r m)
 instance (Monoid w, MonadSample m) => MonadSample (WriterT w m) where
   random = lift random
   bernoulli = lift . bernoulli
+  categorical = lift . categorical
 
 instance (Monoid w, MonadCond m) => MonadCond (WriterT w m) where
   score = lift . score
@@ -188,6 +189,7 @@ instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
 instance MonadSample m => MonadSample (ListT m) where
   random = lift random
   bernoulli = lift . bernoulli
+  categorical = lift . categorical
 
 instance MonadCond m => MonadCond (ListT m) where
   score = lift . score
