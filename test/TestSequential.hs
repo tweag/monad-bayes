@@ -3,41 +3,45 @@ module TestSequential where
 import Data.AEq
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Simple
-import qualified Control.Monad.Bayes.Enumerator as Dist
+import Control.Monad.Bayes.Enumerator as Dist
 import Control.Monad.Bayes.Sequential
 import Sprinkler
 
-enumerate :: Ord a => Dist.Dist Double a -> [(a,Double)]
-enumerate = Dist.enumerate
-
-mass :: Ord a => Dist.Dist Double a -> a -> Double
-mass = Dist.mass
-
-two_sync :: MonadBayes m => m Int
-two_sync = do
+twoSync :: MonadInfer m => m Int
+twoSync = do
   x <- uniformD[0,1]
   factor (fromIntegral x)
   y <- uniformD[0,1]
   factor (fromIntegral y)
   return (x+y)
 
-finished_two_sync n = finished (run n two_sync) where
+finishedTwoSync :: MonadInfer m => Int -> m Bool
+finishedTwoSync n = finished (run n twoSync) where
   run 0 d = d
-  run n d = run (n-1) (advance d)
-check_two_sync 0 = mass (finished_two_sync 0) False ~== 1
-check_two_sync 1 = mass (finished_two_sync 1) False ~== 1
-check_two_sync 2 = mass (finished_two_sync 2) True  ~== 1
+  run k d = run (k-1) (advance d)
 
-sprinkler :: MonadBayes m => m Bool
+checkTwoSync :: Int -> Bool
+checkTwoSync 0 = mass (finishedTwoSync 0) False ~== 1
+checkTwoSync 1 = mass (finishedTwoSync 1) False ~== 1
+checkTwoSync 2 = mass (finishedTwoSync 2) True  ~== 1
+checkTwoSync _ = error "Unexpected argument"
+
+sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
 
-check_preserve = enumerate (finish sprinkler) ~== enumerate sprinkler
+checkPreserve :: Bool
+checkPreserve = enumerate (finish sprinkler) ~== enumerate sprinkler
 
-p_finished 0 = 0.8267716535433071
-p_finished 1 = 0.9988062077198566
-p_finished 2 = 1
-is_finished n = finished (run n sprinkler) where
+pFinished :: Int -> Double
+pFinished 0 = 0.8267716535433071
+pFinished 1 = 0.9988062077198566
+pFinished 2 = 1
+pFinished _ = error "Unexpected argument"
+
+isFinished :: MonadInfer m => Int -> m Bool
+isFinished n = finished (run n sprinkler) where
   run 0 d = d
-  run n d = run (n-1) (advance d)
-check_sync n = mass (is_finished n) True ~== p_finished n
+  run k d = run (k-1) (advance d)
+
+checkSync :: Int -> Bool
+checkSync n = mass (isFinished n) True ~== pFinished n

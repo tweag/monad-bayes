@@ -78,7 +78,7 @@ test-suite monad-bayes-test
                        TestEnumerator,
                        TestPopulation,
 --                        TestInference,
---                        TestSequential,
+                       TestSequential,
                        TestWeighted
 --                        TestSMCObservations,
 --                        TestTrace,

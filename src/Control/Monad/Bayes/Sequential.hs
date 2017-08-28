@@ -69,6 +69,7 @@ hoist f = Sequential . mapMonad f . runSequential
 instance MonadSample m => MonadSample (Sequential m) where
   random = lift random
   bernoulli = lift . bernoulli
+  categorical = lift . categorical
 
 instance MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend

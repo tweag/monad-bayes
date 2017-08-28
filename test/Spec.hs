@@ -5,7 +5,7 @@ import Test.QuickCheck
 import qualified TestWeighted
 import qualified TestEnumerator
 import qualified TestPopulation
--- import qualified TestSequential
+import qualified TestSequential
 -- import qualified TestTrace
 -- import qualified TestInference
 -- import qualified TestSMCObservations
@@ -51,26 +51,26 @@ main = hspec $ do
       it "resample preserves the distribution" $ do
         TestPopulation.resampleCheck 1 `shouldBe` True
         TestPopulation.resampleCheck 2 `shouldBe` True
---   describe "Particle" $ do
---     it "stops at every factor" $ do
---       TestSequential.check_two_sync 0 `shouldBe` True
---       TestSequential.check_two_sync 1 `shouldBe` True
---       TestSequential.check_two_sync 2 `shouldBe` True
---     it "preserves the distribution" $ do
---       TestSequential.check_preserve `shouldBe` True
---     it "produces correct intermediate weights" $ do
---       TestSequential.check_sync 0 `shouldBe` True
---       TestSequential.check_sync 1 `shouldBe` True
---       TestSequential.check_sync 2 `shouldBe` True
---   -- describe "Trace" $ do
---   --   context "RandomDB = [Cache]" $ do
---   --     it "correctly records values" $ do
---   --       TestTrace.check_writing `shouldBe` True
---   --     it "correctly reuses values" $ do
---   --       TestTrace.check_reading `shouldBe` True
---   --   it "has reuse ratio 1 on an empty database" $ do
---   --     TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
---   --     TestTrace.check_reuse_ratio TestSequential.sprinkler `shouldBe` True
+  describe "Sequential" $ do
+    it "stops at every factor" $ do
+      TestSequential.checkTwoSync 0 `shouldBe` True
+      TestSequential.checkTwoSync 1 `shouldBe` True
+      TestSequential.checkTwoSync 2 `shouldBe` True
+    it "preserves the distribution" $ do
+      TestSequential.checkPreserve `shouldBe` True
+    it "produces correct intermediate weights" $ do
+      TestSequential.checkSync 0 `shouldBe` True
+      TestSequential.checkSync 1 `shouldBe` True
+      TestSequential.checkSync 2 `shouldBe` True
+  -- describe "Trace" $ do
+  --   context "RandomDB = [Cache]" $ do
+  --     it "correctly records values" $ do
+  --       TestTrace.check_writing `shouldBe` True
+  --     it "correctly reuses values" $ do
+  --       TestTrace.check_reading `shouldBe` True
+  --   it "has reuse ratio 1 on an empty database" $ do
+  --     TestTrace.check_reuse_ratio TestTrace.m            `shouldBe` True
+  --     TestTrace.check_reuse_ratio TestSequential.sprinkler `shouldBe` True
 --   describe "Density" $ do
 --     it "correctly evaluates conditional distribution" $ do
 --       TestConditional.check_missing_conditional `shouldBe` True
@@ -84,7 +84,7 @@ main = hspec $ do
 --     it "terminates" $ do
 --       seq TestInference.check_terminate_smc () `shouldBe` ()
 --     it "preserves the distribution on the sprinkler model" $ do
---       TestInference.check_preserve_smc `shouldBe` True
+--       TestInference.checkPreserve_smc `shouldBe` True
 --     prop "number of particles is equal to its second parameter" $
 --       \observations particles ->
 --         observations >= 0 && particles >= 1 ==> ioProperty $ do
@@ -106,11 +106,11 @@ main = hspec $ do
 --       TestInference.check_prior_mh `shouldBe` True
 --   -- describe "Population/Trace/Particle hybrids" $ do
 --   --   it "ISMH preserves the posterior on the sprinkler model" $ do
---   --     TestInference.check_preserve_ismh `shouldBe` True
+--   --     TestInference.checkPreserve_ismh `shouldBe` True
 --   --   it "SMH preserves the posterior on the sprinkler model" $ do
---   --     TestInference.check_preserve_smh `shouldBe` True
+--   --     TestInference.checkPreserve_smh `shouldBe` True
 --   --   it "Resample-move SMC preserves the posterior on the sprinkler model" $ do
---   --     TestInference.check_preserve_smcrm `shouldBe` True
+--   --     TestInference.checkPreserve_smcrm `shouldBe` True
 --
 --     -- too large to execute
 --     -- it "PIMH leaves posterior invariant" $ do
