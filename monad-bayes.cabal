@@ -80,7 +80,6 @@ test-suite monad-bayes-test
                        TestInference,
                        TestSequential,
                        TestWeighted
---                        TestTrace,
 --                        StrictlySmallerSupport
 
 -- benchmark monad-bayes-bench
