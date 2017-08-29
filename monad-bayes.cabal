@@ -81,11 +81,6 @@ test-suite monad-bayes-test
                        TestSequential,
                        TestWeighted
 --                        TestTrace,
---                        TestGradient,
---                        TestConditional,
---                        TestDistribution,
---                        TestProposal,
---                        TestOptimization,
 --                        StrictlySmallerSupport
 
 -- benchmark monad-bayes-bench

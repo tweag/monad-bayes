@@ -8,11 +8,6 @@ import qualified TestPopulation
 import qualified TestSequential
 -- import qualified TestTrace
 import qualified TestInference
--- import qualified TestGradient
--- import qualified TestConditional
--- import qualified TestDistribution
--- import qualified TestProposal
--- import qualified TestOptimization
 
 
 main :: IO ()
@@ -41,9 +36,6 @@ main = hspec $ do
         manySize `shouldBe` 15
       it "correctly computes population average" $ do
         TestPopulation.popAvgCheck `shouldBe` True
---    context "checking properties of samples" $ do
---      it "correctly checks if all particles satisfy a property" $ do
---        TestPopulation.all_check `shouldBe` True
     context "distribution-preserving transformations" $ do
       it "collapse preserves the distribution" $ do
         TestPopulation.transCheck1 `shouldBe` True
@@ -115,11 +107,3 @@ main = hspec $ do
 --     -- too large to execute
 --     -- it "PIMH leaves posterior invariant" $ do
 --     --   TestInference.check_pimh_trans `shouldBe` True
---   describe "Density computation" $ do
---     it "gives correct value on gamma-normal-beta model" $ do
---       TestGradient.check_density `shouldBe` True
---     it "gives correct gradient on gamma-normal-beta model" $ do
---       TestGradient.check_gradient `shouldBe` True
---   TestDistribution.spec
---   TestProposal.spec
---   TestOptimization.spec
