@@ -7,13 +7,13 @@ import qualified TestEnumerator
 import qualified TestPopulation
 import qualified TestSequential
 -- import qualified TestTrace
--- import qualified TestInference
--- import qualified TestSMCObservations
+import qualified TestInference
 -- import qualified TestGradient
 -- import qualified TestConditional
 -- import qualified TestDistribution
 -- import qualified TestProposal
 -- import qualified TestOptimization
+
 
 main :: IO ()
 main = hspec $ do
@@ -80,16 +80,16 @@ main = hspec $ do
 --     it "correctly computes joint density" $ do
 --       TestConditional.check_joint_density_true `shouldBe` True
 --       TestConditional.check_joint_density_false `shouldBe` True
---   describe "SMC" $ do
---     it "terminates" $ do
---       seq TestInference.check_terminate_smc () `shouldBe` ()
---     it "preserves the distribution on the sprinkler model" $ do
---       TestInference.checkPreserve_smc `shouldBe` True
---     prop "number of particles is equal to its second parameter" $
---       \observations particles ->
---         observations >= 0 && particles >= 1 ==> ioProperty $ do
---           check_particles <- TestInference.check_particles observations particles
---           return $ check_particles == particles
+  describe "SMC" $ do
+    it "terminates" $ do
+      seq TestInference.checkTerminateSMC () `shouldBe` ()
+    it "preserves the distribution on the sprinkler model" $ do
+      TestInference.checkPreserveSMC `shouldBe` True
+    prop "number of particles is equal to its second parameter" $
+      \observations particles ->
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          checkParticles <- TestInference.checkParticles observations particles
+          return $ checkParticles == particles
 --   describe "MH" $ do
 --     -- it "MH from prior leaves posterior invariant" $ do
 --     --   TestInference.check_prior_trans `shouldBe` True
@@ -115,15 +115,6 @@ main = hspec $ do
 --     -- too large to execute
 --     -- it "PIMH leaves posterior invariant" $ do
 --     --   TestInference.check_pimh_trans `shouldBe` True
---   -- describe "Number of SMC observations sufficient for each models" $ do
---   --   check_smc_observations 5 "Gamma.model" Gamma.model
---   --   check_smc_observations 0 "Gamma.exact" Gamma.exact
---   --   check_smc_observations 0 "Dice.dice" (Dice.dice 4)
---   --   check_smc_observations 1 "Dice.dice_soft" Dice.dice_soft
---   --   check_smc_observations 1 "Dice.dice_hard" Dice.dice_hard
---   --   check_smc_observations 0 "BetaBin.latent" (BetaBin.latent 5)
---   --   check_smc_observations 0 "BetaBin.urn" (BetaBin.urn 5)
---   --   check_smc_observations 16 "HMM.hmm" HMM.hmm
 --   describe "Density computation" $ do
 --     it "gives correct value on gamma-normal-beta model" $ do
 --       TestGradient.check_density `shouldBe` True
@@ -132,8 +123,3 @@ main = hspec $ do
 --   TestDistribution.spec
 --   TestProposal.spec
 --   TestOptimization.spec
---
--- check_smc_observations n modelName model =
---     it (show n ++ " observations for " ++ modelName) $ do
---       check_smc_weight <- TestSMCObservations.check_smc_weight n 30 model
---       check_smc_weight `shouldBe` True

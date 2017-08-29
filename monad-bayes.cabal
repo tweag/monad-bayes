@@ -77,10 +77,9 @@ test-suite monad-bayes-test
   other-modules:       Sprinkler,
                        TestEnumerator,
                        TestPopulation,
---                        TestInference,
+                       TestInference,
                        TestSequential,
                        TestWeighted
---                        TestSMCObservations,
 --                        TestTrace,
 --                        TestGradient,
 --                        TestConditional,

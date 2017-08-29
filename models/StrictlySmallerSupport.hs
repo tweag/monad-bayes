@@ -3,10 +3,10 @@
 -- smaller than the other.
 module StrictlySmallerSupport where
 
-import Control.Monad.Bayes.Simple
+import Control.Monad.Bayes.Class
 
-model :: MonadDist m => m Bool
+model :: MonadSample m => m Bool
 model = do
   x <- bernoulli 0.5
-  y <- uniformD (if x then [1, 2] else [1, 2, 3, 4] :: [Int])
+  _ <- uniformD (if x then [1, 2] else [1, 2, 3, 4] :: [Int])
   return x
