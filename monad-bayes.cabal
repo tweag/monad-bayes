@@ -33,9 +33,6 @@ library
                      , mwc-random
                      , safe
                      , vector
-                     , ad
-                     , reflection
-                     , hmatrix
                      , ieee754
                      , free
                      , statistics
@@ -66,9 +63,6 @@ test-suite monad-bayes-test
                      , mtl
                      , math-functions
                      , transformers
-                     , ad
-                     , reflection
-                     , hmatrix
                      , log-domain
                      , vector
   ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
