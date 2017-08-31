@@ -34,6 +34,9 @@ hoistSP :: (Monad m)
        => (forall x. m x -> m x) -> S (P m) a -> S (P m) a
 hoistSP f = hoistS (hoistP f)
 
+-- | A tag to indicate a fragment on which inner SMC is to be run.
+-- Should be applied to every full fragment before it's included
+-- in the main program.
 innerLevel :: Monad m
            => S (P m) a
            -> S (P (S (P m))) a
@@ -45,7 +48,14 @@ innerLevel m = do
 composeCopies :: Int -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (replicate k f)
 
-nestedSMC :: MonadSample m => Int -> Int -> Int -> Int -> S (P (S (P m))) a -> P m a
+-- | Nested Sequential Monte Carlo algorithm (Naesseth et al. 2015).
+nestedSMC :: MonadSample m
+          => Int -- ^ number of steps in the outer SMC
+          -> Int -- ^ number of particles in the outer SMC
+          -> Int -- ^ number of steps in the inner SMC
+          -> Int -- ^ number of particles in the inner SMC
+          -> S (P (S (P m))) a
+          -> P m a
 nestedSMC kOuter nOuter kInner nInner =
   strip . composeCopies kOuter outerStep . hoistS (spawn nOuter >>) where
     strip = flatten . hoistP finish . finish
