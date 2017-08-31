@@ -17,10 +17,12 @@ module Control.Monad.Bayes.Weighted (
     withWeight,
     runWeighted,
     prior,
+    flatten,
     hoist,
                   ) where
 
 import Control.Arrow (second)
+-- import Control.Applicative (($>))
 import Data.Monoid
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
@@ -67,6 +69,10 @@ withWeight m = Weighted $ do
 -- | Discard the weight.
 prior :: (Functor m) => Weighted m a -> m a
 prior = fmap fst . runWeighted
+
+-- | Combine weights from two different levels.
+flatten :: Monad m => Weighted (Weighted m) a -> Weighted m a
+flatten m = withWeight $ (\((x,p),q) -> (x, p*q)) <$> runWeighted (runWeighted m)
 
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a

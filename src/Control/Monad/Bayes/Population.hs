@@ -23,6 +23,7 @@ module Control.Monad.Bayes.Population (
     normalize,
     normalizeProper,
     popAvg,
+    flatten,
     hoist
                  ) where
 
@@ -37,7 +38,7 @@ import qualified Data.Vector as V
 
 import Numeric.Log
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (hoist)
+import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
 
 logNormalize :: V.Vector (Log Double) -> V.Vector (Log Double)
 logNormalize v = V.map (/ z) v where
@@ -143,6 +144,15 @@ popAvg f p = do
   let ys = map (\(x,w) -> f x * w) xs
   let t = Data.List.sum ys
   return t
+
+-- | Combine a population of populations into a single population.
+flatten :: Monad m => Population (Population m) a -> Population m a
+flatten m = Population $ withWeight $ ListT t where
+  t = f <$> (runPopulation . runPopulation) m
+  f d = do
+    (x,p) <- d
+    (y,q) <- x
+    return (y, p*q)
 
 -- | Applies a transformation to the inner monad.
 hoist :: (Monad m, Monad n)
