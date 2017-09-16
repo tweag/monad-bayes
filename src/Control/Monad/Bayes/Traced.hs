@@ -23,7 +23,6 @@ module Control.Monad.Bayes.Traced (
 
 import Data.Monoid ((<>))
 import Control.Applicative (liftA2)
-import Data.Functor.Identity
 import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
 
@@ -38,15 +37,15 @@ type Trace = [Double]
 emptyTrace :: Applicative m => m Trace
 emptyTrace = pure []
 
-data Traced m a = Traced (Weighted FreeSampler a) (m [Double])
+data Traced m a = Traced (Weighted (FreeSamplerT m) a) (m [Double])
 
 traceDist :: Traced m a -> m [Double]
 traceDist (Traced _ d) = d
 
-model :: Traced m a -> Weighted FreeSampler a
+model :: Traced m a -> Weighted (FreeSamplerT m) a
 model (Traced m _) = m
 
-instance Functor m => Functor (Traced m) where
+instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) d
 
 instance Monad m => Applicative (Traced m) where
@@ -57,7 +56,7 @@ instance Monad m => Monad (Traced m) where
   (Traced mx dx) >>= f = Traced my dy where
     dy = do
       us <- dx
-      let x = runIdentity $ prior $ Weighted.hoist (Identity . withRandomness us) mx
+      x <- prior $ Weighted.hoist (withRandomness us) mx
       vs <- traceDist $ f x
       return (us <> vs)
     my = mx >>= model . f
@@ -70,15 +69,17 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
+-- | TODO: more variants
 hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoist f (Traced m d) = Traced m (f d)
 
 marginal :: Monad m => Traced m a -> m a
-marginal (Traced m d) = fmap (`withRandomness` prior m) d
+marginal (Traced m d) = d >>= (`withRandomness` prior m)
 
-mhTrans :: MonadSample m => Weighted FreeSampler a -> [Double] -> m [Double]
+mhTrans :: MonadSample m => Weighted (FreeSamplerT m) a -> [Double] -> m [Double]
 mhTrans m us = do
-  let (_, p) = runIdentity $ runWeighted $ Weighted.hoist (Identity . withRandomness us) m
+  -- TODO: Cache the weight so that we don't need to recompute it here.
+  (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m
   us' <- do
     let n = length us
     i <- categorical $ V.replicate n (1 / fromIntegral n)
@@ -95,7 +96,8 @@ mhStep (Traced m d) = Traced m d' where
   d' = d >>= mhTrans m
 
 mh :: MonadSample m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map (\us -> runIdentity $ prior $ Weighted.hoist (Identity . withRandomness us) m)) t where
+-- Note that this re-runs the simulation for each trace produced.
+mh n (Traced m d) = t >>= mapM (\us -> prior $ Weighted.hoist (withRandomness us) m) where
   t = f n
   f 0 = fmap (:[]) d
   f k = do

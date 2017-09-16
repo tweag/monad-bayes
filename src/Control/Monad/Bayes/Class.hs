@@ -37,7 +37,7 @@ module Control.Monad.Bayes.Class (
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
 -- import Control.Monad.Trans.Maybe
--- import Control.Monad.Trans.State
+import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Control.Monad.Trans.Reader
 -- import Control.Monad.Trans.RWS hiding (tell)
@@ -164,17 +164,18 @@ instance (Monoid w, MonadCond m) => MonadCond (WriterT w m) where
 
 instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
 
---
---
--- instance HasCustomReal m => HasCustomReal (StateT s m) where
---   type CustomReal (StateT s m) = CustomReal m
---
--- instance (Sampleable d m, Monad m) => Sampleable d (StateT s m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m) => Conditionable (StateT s m) where
---   factor = lift . factor
---
+
+instance MonadSample m => MonadSample (StateT s m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+
+instance MonadCond m => MonadCond (StateT s m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (StateT s m)
+
+
 --
 -- instance HasCustomReal m => HasCustomReal (RWST r w s m) where
 --   type CustomReal (RWST r w s m) = CustomReal m
