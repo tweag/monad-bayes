@@ -25,6 +25,7 @@ library
                      , Control.Monad.Bayes.Enumerator
                      , Control.Monad.Bayes.Inference
                      , Control.Monad.Bayes.Inference.NestedSMC
+                     , Control.Monad.Bayes.Inference.PMMH
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl

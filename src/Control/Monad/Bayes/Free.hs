@@ -4,7 +4,8 @@ module Control.Monad.Bayes.Free (
   hoist,
   interpret,
   withRandomness,
-  withPartialRandomness
+  withPartialRandomness,
+  pullWeighted
 ) where
 
 import Control.Monad.Trans
@@ -13,6 +14,7 @@ import Control.Monad.State
 import Control.Monad.Trans.Free
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Weighted (Weighted)
 
 newtype SamF a = Random (Double -> a)
 
@@ -60,3 +62,6 @@ withPartialRandomness randomness (FreeSampler m) =
             y:ys -> put ys >> return y
       tell [x]
       k x
+
+pullWeighted :: FreeSampler (Weighted m) a -> Weighted (FreeSampler m) a
+pullWeighted = undefined
