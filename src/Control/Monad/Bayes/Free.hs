@@ -1,6 +1,7 @@
 
 module Control.Monad.Bayes.Free (
   FreeSamplerT,
+  hoist,
   interpret,
   withRandomness,
   withPartialRandomness
@@ -31,6 +32,9 @@ instance Monad m => MonadFree SamF (FreeSamplerT m) where
 
 instance Monad m => MonadSample (FreeSamplerT m) where
   random = FreeSamplerT $ liftF (Random id)
+
+hoist :: (Monad m) => (forall x. m x -> n x) -> FreeSamplerT m a -> FreeSamplerT n a
+hoist f (FreeSamplerT m) = FreeSamplerT (hoistFreeT f m)
 
 interpret :: MonadSample m => FreeSamplerT m a -> m a
 interpret (FreeSamplerT m) = iterT f m where

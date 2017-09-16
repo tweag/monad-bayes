@@ -15,7 +15,9 @@ Portability : GHC
 
 module Control.Monad.Bayes.Traced (
   Traced,
-  Control.Monad.Bayes.Traced.hoist,
+  hoistT,
+  hoistM,
+  hoistMT,
   marginal,
   mhStep,
   mh
@@ -30,7 +32,7 @@ import Numeric.Log (ln)
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Bayes.Free
+import Control.Monad.Bayes.Free as FreeSampler
 
 type Trace = [Double]
 
@@ -69,9 +71,14 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
--- | TODO: more variants
-hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoist f (Traced m d) = Traced m (f d)
+hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoistT f (Traced m d) = Traced m (f d)
+
+hoistM :: Monad m => (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoistM f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) d
+
+hoistMT :: Monad m => (forall x. m x -> n x) -> Traced m a -> Traced n a
+hoistMT f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) (f d)
 
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced m d) = d >>= (`withRandomness` prior m)

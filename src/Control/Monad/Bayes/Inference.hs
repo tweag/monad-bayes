@@ -92,4 +92,4 @@ smcRM k n t =
                       . hoistS (hoistT resample)) .
     hoistS (hoistT (spawn n >>)) where
       hoistS = Sequential.hoistFirst
-      hoistT = Traced.hoist
+      hoistT = Traced.hoistT
