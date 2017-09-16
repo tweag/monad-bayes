@@ -39,12 +39,12 @@ type Trace = [Double]
 emptyTrace :: Applicative m => m Trace
 emptyTrace = pure []
 
-data Traced m a = Traced (Weighted (FreeSamplerT m) a) (m [Double])
+data Traced m a = Traced (Weighted (FreeSampler m) a) (m [Double])
 
 traceDist :: Traced m a -> m [Double]
 traceDist (Traced _ d) = d
 
-model :: Traced m a -> Weighted (FreeSamplerT m) a
+model :: Traced m a -> Weighted (FreeSampler m) a
 model (Traced m _) = m
 
 instance Monad m => Functor (Traced m) where
@@ -83,7 +83,7 @@ hoistMT f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced m d) = d >>= (`withRandomness` prior m)
 
-mhTrans :: MonadSample m => Weighted (FreeSamplerT m) a -> [Double] -> m [Double]
+mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> [Double] -> m [Double]
 mhTrans m us = do
   -- TODO: Cache the weight so that we don't need to recompute it here.
   (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m
