@@ -17,8 +17,9 @@ module Control.Monad.Bayes.Inference.NestedSMC (
 import Control.Monad.Trans (lift)
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential
-import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Inference
 
 type S = Sequential
@@ -28,7 +29,7 @@ hoistS = Control.Monad.Bayes.Sequential.hoistFirst
 type P = Population
 hoistP :: (Monad m, Monad n)
        => (forall x. m x -> n x) -> P m a -> P n a
-hoistP = Control.Monad.Bayes.Population.hoist
+hoistP = Pop.hoist
 
 hoistSP :: (Monad m)
        => (forall x. m x -> m x) -> S (P m) a -> S (P m) a
@@ -58,13 +59,13 @@ nestedSMC :: MonadSample m
           -> P m a
 nestedSMC kOuter nOuter kInner nInner =
   strip . composeCopies kOuter outerStep . hoistS (spawn nOuter >>) where
-    strip = flatten . hoistP finish . finish
+    strip = Pop.flatten . hoistP finish . finish
     outerStep = advance . hoistS resample . innerSMC
     innerSMC = hoistSP (weigh . proper . smcMultinomial kInner nInner) where
       weigh d = lift $ do
         -- The 'do' block runs in the 'P m' monad.
         -- This is because we want to accumulate weight but not
         -- introduce a suspension.
-        (x,w) <- lift d
+        (x,w) <- lift $ runWeighted d
         factor w
         return x
