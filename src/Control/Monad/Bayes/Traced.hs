@@ -26,6 +26,7 @@ module Control.Monad.Bayes.Traced (
 
 import Data.Monoid ((<>))
 import Control.Applicative (liftA2)
+import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
 
@@ -63,6 +64,9 @@ instance Monad m => Monad (Traced m) where
       vs <- traceDist $ f x
       return (us <> vs)
     my = mx >>= model . f
+
+instance MonadTrans Traced where
+  lift x = Traced (lift $ lift x) emptyTrace
 
 instance MonadSample m => MonadSample (Traced m) where
   random = Traced random (fmap (:[]) random)
