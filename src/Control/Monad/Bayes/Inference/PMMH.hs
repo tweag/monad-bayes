@@ -39,7 +39,7 @@ collapse' :: MonadSample m
 collapse' =
   hoistW (hoistF lift)  .
   Weighted.flatten .
-  hoistW (pullWeighted . hoistF proper)
+  hoistW (FreeSampler.pullWeight . hoistF proper)
 
 -- pmmhSetup :: MonadSample m
 --           => Int -> Int -> T (S (P (W m))) a -> T (W m) a

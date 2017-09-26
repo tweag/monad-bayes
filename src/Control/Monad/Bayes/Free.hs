@@ -5,8 +5,10 @@ module Control.Monad.Bayes.Free (
   interpret,
   withRandomness,
   withPartialRandomness,
-  pullWeighted
+  pullWeight
 ) where
+
+import Data.Bifunctor (second)
 
 import Control.Monad.Trans
 import Control.Monad.Writer
@@ -14,7 +16,7 @@ import Control.Monad.State
 import Control.Monad.Trans.Free
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Weighted hiding (hoist, pullWeight)
 
 newtype SamF a = Random (Double -> a)
 
@@ -63,5 +65,10 @@ withPartialRandomness randomness (FreeSampler m) =
       tell [x]
       k x
 
-pullWeighted :: FreeSampler (Weighted m) a -> Weighted (FreeSampler m) a
-pullWeighted = undefined
+pullWeight :: Monad m => FreeSampler (Weighted m) a -> Weighted (FreeSampler m) a
+pullWeight (FreeSampler m) = withWeight $ FreeSampler $ f m where
+  f n = FreeT $ do
+    (t, p) <- runWeighted $ runFreeT n
+    return $ case t of
+      Pure x -> Pure (x,p)
+      Free s -> Free $ fmap (fmap (second (*p)) . f) s
