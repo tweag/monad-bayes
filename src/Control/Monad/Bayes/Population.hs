@@ -16,6 +16,9 @@ module Control.Monad.Bayes.Population (
     fromWeightedList,
     spawn,
     resample,
+    extractEvidence,
+    pushEvidence,
+    pullWeight,
     proper,
     evidence,
     collapse,
@@ -29,7 +32,7 @@ module Control.Monad.Bayes.Population (
 
 import Prelude hiding (sum, all)
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
 
@@ -38,7 +41,7 @@ import qualified Data.Vector as V
 
 import Numeric.Log
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
+import Control.Monad.Bayes.Weighted hiding (flatten, hoist, pullWeight)
 
 logNormalize :: V.Vector (Log Double) -> V.Vector (Log Double)
 logNormalize v = V.map (/ z) v where
@@ -86,25 +89,39 @@ resample m = fromWeightedList $ do
     -- if all weights are zero do not resample
     return pop
 
+extractEvidence :: Monad m
+                => Population m a -> Population (Weighted m) a
+extractEvidence m = fromWeightedList $ do
+  pop <- lift $ runPopulation m
+  let (xs, ps) = unzip pop
+  let z = sum ps
+  let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
+  factor z
+  return $ zip xs ws
+
+pushEvidence :: MonadCond m
+           => Population m a -> Population m a
+pushEvidence = hoist applyWeight . extractEvidence
+
+pullWeight :: Monad m => Population (Weighted m) a -> Weighted (Population m) a
+pullWeight m = withWeight $ fromWeightedList $ do
+  (pop, w) <- runWeighted $ runPopulation m
+  return $ map (first (,w)) pop
+
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
 proper :: (MonadSample m)
-       => Population m a -> m (a,Log Double)
+       => Population m a -> Weighted m a
 proper m = do
-  pop <- runPopulation m
+  pop <- runPopulation $ extractEvidence m
   let (xs, ps) = unzip pop
-  let z = sum ps
-  index <- if z > 0 then
-      logCategorical $ logNormalize $ V.fromList ps
-    else
-      let n = length xs in
-        categorical $ V.replicate n (1 / fromIntegral n)
+  index <- logCategorical $ V.fromList ps
   let x = xs !! index
-  return (x,z)
+  return x
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: (Monad m) => Population m a -> m (Log Double)
-evidence = fmap (sum . map snd) . runPopulation
+evidence = extractWeight . runPopulation . extractEvidence
 
 -- | Picks one point from the population and uses model evidence as a 'factor'
 -- in the transformed monad.
@@ -112,10 +129,7 @@ evidence = fmap (sum . map snd) . runPopulation
 -- introducing bias.
 collapse :: (MonadInfer m)
          => Population m a -> m a
-collapse e = do
-  (x,p) <- proper e
-  factor p
-  return x
+collapse = applyWeight . proper
 
 -- | Applies a random transformation to a population.
 mapPopulation :: (Monad m) => ([(a, Log Double)] -> m [(a, Log Double)]) ->
@@ -125,17 +139,13 @@ mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 -- | Normalizes the weights in the population so that their sum is 1.
 -- This transformation introduces bias.
 normalize :: (Monad m) => Population m a -> Population m a
-normalize = mapPopulation norm where
-    norm xs = pure $ map (second (/ z)) xs where
-      z = sum $ map snd xs
+normalize = hoist prior . extractEvidence
 
 -- | Normalizes the weights in the population so that their sum is 1.
 -- The sum of weights is pushed as a factor to the transformed monad,
 -- so bo bias is introduced.
 normalizeProper :: (MonadCond m) => Population m a -> Population m a
-normalizeProper = mapPopulation norm where
-    norm xs = factor z >> pure (map (second (/ z)) xs) where
-      z = sum $ map snd xs
+normalizeProper = pushEvidence
 
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double

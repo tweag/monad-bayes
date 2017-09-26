@@ -16,8 +16,11 @@ module Control.Monad.Bayes.Weighted (
     Weighted,
     withWeight,
     runWeighted,
+    extractWeight,
     prior,
     flatten,
+    applyWeight,
+    pullWeight,
     hoist,
                   ) where
 
@@ -57,6 +60,10 @@ instance MonadSample m => MonadInfer (Weighted m)
 runWeighted :: (Functor m) => Weighted m a -> m (a, Log Double)
 runWeighted (Weighted m) = second unWeight <$> runWriterT m
 
+-- | Compute the weight and discard the sample.
+extractWeight :: Functor m => Weighted m a -> m (Log Double)
+extractWeight m = snd <$> runWeighted m
+
 -- | Embed a random variable with explicitly given likelihood.
 --
 -- > runWeighted . withWeight = id
@@ -73,6 +80,19 @@ prior = fmap fst . runWeighted
 -- | Combine weights from two different levels.
 flatten :: Monad m => Weighted (Weighted m) a -> Weighted m a
 flatten m = withWeight $ (\((x,p),q) -> (x, p*q)) <$> runWeighted (runWeighted m)
+
+-- | Use the weight as a factor in the transformed monad.
+applyWeight :: MonadCond m => Weighted m a -> m a
+applyWeight m = do
+  (x, w) <- runWeighted m
+  factor w
+  return x
+
+-- | Switch the order of two 'Weighted' transformers.
+pullWeight :: Monad m => Weighted (Weighted m) a -> Weighted (Weighted m) a
+pullWeight m = withWeight $ withWeight $ do
+  ((x, p), q) <- runWeighted $ runWeighted m
+  return ((x, q), p)
 
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
