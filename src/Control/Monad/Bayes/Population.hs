@@ -19,6 +19,7 @@ module Control.Monad.Bayes.Population (
     extractEvidence,
     pushEvidence,
     pullWeight,
+    pushWeight,
     proper,
     evidence,
     collapse,
@@ -107,6 +108,11 @@ pullWeight :: Monad m => Population (Weighted m) a -> Weighted (Population m) a
 pullWeight m = withWeight $ fromWeightedList $ do
   (pop, w) <- runWeighted $ runPopulation m
   return $ map (first (,w)) pop
+
+pushWeight :: Monad m => Weighted (Population m) a -> Population (Weighted m) a
+pushWeight m = extractEvidence $ fromWeightedList $ do
+  ps <- runPopulation $ runWeighted m
+  return $ map (\((x, p), q) -> (x, p*q)) ps
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
