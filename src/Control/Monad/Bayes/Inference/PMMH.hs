@@ -41,8 +41,11 @@ runPF =
   pushWeight .
   hoistW FreeSampler.pullPopulation
 
--- pmmhSetup :: MonadSample m
---           => Int -> Int -> T (S (P (W m))) a -> T (W m) a
+pmmhSetup :: MonadSample m
+          => Int -> Int -> Traced (Sequential (Population m)) a -> Traced m [(a, Log Double)]
+pmmhSetup k p =
+  hoistMT (prior . proper . finish) . -- remove Seq and Pop layers since they're not doing anything at this point
+  transformModel (hoistW (hoistF (lift . lift)) . runPF . hoistW (hoistF (smcMultinomial k p))) -- apply SMC to the marginalized variables
 
 pmmh :: MonadSample m
      => Int
@@ -52,6 +55,4 @@ pmmh :: MonadSample m
      -> m [[(a, Log Double)]]
 pmmh n k p =
   mh n . -- run pseudo-marginal MH on the obtained model
-  hoistMT (prior . proper . finish) . -- remove Seq and Pop layers since they're not doing anything at this point
-  transformModel (hoistW (hoistF (lift . lift)) . runPF . hoistW (hoistF (smcMultinomial k p))) . -- apply SMC to the marginalized variables
-  hoistT (lift . finish) -- remove suspensions from trace distribution
+  pmmhSetup k p  -- augment latent space with a particle filter
