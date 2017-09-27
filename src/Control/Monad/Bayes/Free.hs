@@ -5,7 +5,8 @@ module Control.Monad.Bayes.Free (
   interpret,
   withRandomness,
   withPartialRandomness,
-  pullWeight
+  pullWeight,
+  pullPopulation
 ) where
 
 import Data.Bifunctor (second)
@@ -17,6 +18,7 @@ import Control.Monad.Trans.Free
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (hoist, pullWeight)
+import Control.Monad.Bayes.Population hiding (hoist, pullWeight)
 
 newtype SamF a = Random (Double -> a)
 
@@ -72,3 +74,18 @@ pullWeight (FreeSampler m) = withWeight $ FreeSampler $ f m where
     return $ case t of
       Pure x -> Pure (x,p)
       Free s -> Free $ fmap (fmap (second (*p)) . f) s
+
+pullPopulation :: Monad m => FreeSampler (Population m) a -> Population (FreeSampler m) a
+pullPopulation (FreeSampler m) = fromWeightedList $ FreeSampler $ f m where
+  f n = FreeT $ do
+    ps <- runPopulation $ runFreeT n
+    let (ts, ws) = unzip ps
+    let isPure (Pure _) = True
+        isPure _ = False
+        isFree = not . isPure
+    if all isPure ts then
+      let xs = map (\(Pure x) -> x) ts in return $ Pure (zip xs ws)
+    else if all isFree ts then
+      return $ Free $ Random $ \u -> concat <$> sequence [fmap (map (second (* w))) (f $ s u) | (Free (Random s), w) <- ps]
+    else
+      error "pullPopulation: different sizes in population"
