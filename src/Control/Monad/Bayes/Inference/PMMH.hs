@@ -10,6 +10,8 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Inference.PMMH (
+  latent,
+  pmmhSetup,
   pmmh
 )  where
 
@@ -32,6 +34,9 @@ hoistW = Weighted.hoist
 hoistF :: (Monad m)
        => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoistF = FreeSampler.hoist
+
+latent :: Monad m => Sequential (Population m) a -> Traced (Sequential (Population m)) a
+latent = lift
 
 runPF :: MonadSample m
           => Weighted (FreeSampler (Population m)) a
