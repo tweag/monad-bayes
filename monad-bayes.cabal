@@ -23,9 +23,11 @@ library
                      , Control.Monad.Bayes.Population
                      , Control.Monad.Bayes.Traced
                      , Control.Monad.Bayes.Enumerator
+                     , Control.Monad.Bayes.Helpers
                      , Control.Monad.Bayes.Inference
                      , Control.Monad.Bayes.Inference.NestedSMC
                      , Control.Monad.Bayes.Inference.PMMH
+                     , Control.Monad.Bayes.Inference.SMC2
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
