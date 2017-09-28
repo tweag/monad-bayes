@@ -6,10 +6,12 @@ module Control.Monad.Bayes.Free (
   withRandomness,
   withPartialRandomness,
   pullWeight,
-  pullPopulation
+  pullPopulation,
+  pushPopulation
 ) where
 
-import Data.Bifunctor (second)
+import Numeric.Log
+import Data.Bifunctor (first, second)
 
 import Control.Monad.Trans
 import Control.Monad.Writer
@@ -89,3 +91,12 @@ pullPopulation (FreeSampler m) = fromWeightedList $ FreeSampler $ f m where
       return $ Free $ Random $ \u -> concat <$> sequence [fmap (map (second (* w))) (f $ s u) | (Free (Random s), w) <- ps]
     else
       error "pullPopulation: different sizes in population"
+
+pushPopulation :: Monad m => Population (FreeSampler m) a -> FreeSampler (Population m) a
+pushPopulation m = FreeSampler $ f (runFreeSampler $ runPopulation m) where
+  f :: Monad m => FreeT SamF m [(a, Log Double)] -> FreeT SamF (Population m) a
+  f n = FreeT $ fromWeightedList $ do
+    t <- runFreeT n
+    case t of
+      Pure xs -> return $ map (first Pure) xs
+      Free (Random s) -> return [(Free (Random (f . s)), 1)]

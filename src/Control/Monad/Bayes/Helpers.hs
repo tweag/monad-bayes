@@ -21,6 +21,7 @@ module Control.Monad.Bayes.Helpers (
   T,
   hoistM,
   hoistT,
+  hoistWF,
   hoistPM,
   hoistMP,
   hoistSP,
@@ -57,6 +58,11 @@ hoistS = Seq.hoistFirst
 hoistF :: (Monad m) => (forall x. m x -> n x) -> F m a -> F n a
 hoistF = Free.hoist
 
+
+hoistWF :: Monad m
+      => (forall x. m x -> n x)
+      -> W (F m) a -> W (F n) a
+hoistWF m = hoistW $ hoistF m
 
 hoistPM :: Monad m
       => (forall x. m x -> m x)
