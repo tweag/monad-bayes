@@ -10,7 +10,6 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Inference.SMC2 (
-  param,
   latent,
   smc2
 ) where
@@ -27,19 +26,13 @@ import Control.Monad.Bayes.Helpers
 composeCopies :: Int -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (replicate k f)
 
-param :: Monad m => T (P m) a -> S (P (T (P m))) a
-param = lift . lift
-
-latentHelper :: Monad m => P m a -> P (T (P m)) a
-latentHelper = hoistP (lift . lift)
-
-latent :: Monad m => S (P m) a -> S (P (T (P m))) a
-latent = Seq.hoist latentHelper
+latent :: Monad m => S (P (P m)) a -> T (S (P (P m))) a
+latent = lift
 
 smc2 :: MonadSample m
-     => Int -> Int -> Int -> Int -> S (P (T (P m))) a -> P m a
+     => Int -> Int -> Int -> Int -> S (T (P (P m))) a -> P m a
 smc2 k n p t =
   Pop.flatten .
-  hoistP marginal . finish .
-  composeCopies k (advance . hoistSP (composeCopies t mhStep) . hoistSPM resample . hoistS resample) .
-  hoistS (hoistPM (spawn n >>) . (spawn p >>))
+  marginal . finish .
+  composeCopies k (advance . hoistSM resample . hoistS (composeCopies t mhStep) . hoistSTP resample . hoistSM (lift . collapse)) .
+  hoistSTP (spawn n >>) . hoistSM (spawn p >>)
