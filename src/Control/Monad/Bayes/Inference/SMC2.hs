@@ -11,6 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Inference.SMC2 (
   param,
+  latent,
   smc2
 ) where
 
@@ -28,6 +29,12 @@ composeCopies k f = foldr (.) id (replicate k f)
 
 param :: Monad m => T (P m) a -> S (P (T (P m))) a
 param = lift . lift
+
+latentHelper :: Monad m => P m a -> P (T (P m)) a
+latentHelper = hoistP (lift . lift)
+
+latent :: Monad m => S (P m) a -> S (P (T (P m))) a
+latent = Seq.hoist latentHelper
 
 smc2 :: MonadSample m
      => Int -> Int -> Int -> Int -> S (P (T (P m))) a -> P m a
