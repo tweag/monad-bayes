@@ -31,7 +31,8 @@ module Control.Monad.Bayes.Class (
   score,
   factor,
   condition,
-  MonadInfer
+  MonadInfer,
+  normalPdf
 ) where
 
 import Control.Monad.Trans.Class
@@ -120,6 +121,9 @@ condition b = score $ if b then 1 else 0
 
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
+
+normalPdf :: Double -> Double -> Double -> Log Double
+normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
