@@ -29,8 +29,8 @@ import Control.Monad.Bayes.Helpers
 composeCopies :: Int -> (a -> a) -> (a -> a)
 composeCopies k f = foldr (.) id (replicate k f)
 
-latent :: Monad m => S (P (P m)) a -> T (S (P (P m))) a
-latent = lift
+latent :: Monad m => S (P (P m)) a -> S (T (P (P m))) a
+latent = Seq.hoist lift
 
 pf :: MonadSample m
           => Weighted (FreeSampler (Population m)) a
