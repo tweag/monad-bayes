@@ -49,13 +49,13 @@ runPF =
 pmmhSetup :: MonadSample m
           => Int -> Int -> Traced (Sequential (Population m)) a -> Traced m [(a, Log Double)]
 pmmhSetup k p =
-  hoistMT (prior . proper . finish) . -- remove Seq and Pop layers since they're not doing anything at this point
+  hoistMT (unlift . normalize . finish) . -- remove Seq and Pop layers since they're not doing anything at this point
   transformModel (hoistW (hoistF (lift . lift)) . runPF . hoistW (hoistF (smcMultinomial k p))) -- apply SMC to the marginalized variables
 
 pmmh :: MonadSample m
-     => Int
-     -> Int
-     -> Int
+     => Int -- ^ number of MH steps
+     -> Int -- ^ number of time steps
+     -> Int -- ^ number of particles
      -> Traced (Sequential (Population m)) a
      -> m [[(a, Log Double)]]
 pmmh n k p =

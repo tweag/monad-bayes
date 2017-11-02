@@ -11,6 +11,7 @@ Portability : GHC
 
 module Control.Monad.Bayes.Population (
     Population,
+    unlift,
     runPopulation,
     explicitPopulation,
     fromWeightedList,
@@ -53,6 +54,11 @@ newtype Population m a = Population (Weighted (ListT m) a)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
+
+unlift :: Functor m => Population m a -> m a
+unlift m = fmap f (runPopulation m) where
+  f [(x,1)] = x
+  f _ = error "Population.unlift: population was non-trivial"
 
 -- | Explicit representation of the weighted sample with weights in log domain.
 runPopulation :: Functor m => Population m a -> m [(a, Log Double)]

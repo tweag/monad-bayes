@@ -88,7 +88,7 @@ pullPopulation (FreeSampler m) = fromWeightedList $ FreeSampler $ f m where
     if all isPure ts then
       let xs = map (\(Pure x) -> x) ts in return $ Pure (zip xs ws)
     else if all isFree ts then
-      return $ Free $ Random $ \u -> concat <$> sequence [fmap (map (second (* w))) (f $ s u) | (Free (Random s), w) <- ps]
+      return $ Free $ Random $ \u -> f $ FreeT $ fromWeightedList $ concat <$> sequence [fmap (map (second (* w))) (runPopulation $ runFreeT $ s u) | (Free (Random s), w) <- ps]
     else
       error "pullPopulation: different sizes in population"
 
