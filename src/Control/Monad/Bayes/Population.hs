@@ -106,7 +106,8 @@ resampleSystematic m = fromWeightedList $ do
     u <- random
     let weights = V.fromList (map (exp . ln . (/z)) ps)
     let ancestors = systematic u weights
-    let offsprings = map (xs !!) ancestors
+    let xvec = V.fromList xs
+    let offsprings = map (xvec V.!) ancestors
     return $ map (, z / fromIntegral n) offsprings
   else
     -- if all weights are zero do not resample
