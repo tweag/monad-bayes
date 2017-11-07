@@ -60,3 +60,9 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticles observations particles
           return $ checkParticles == particles
+  describe "SMC with systematic resampling" $ do
+    prop "number of particles is equal to its second parameter" $
+      \observations particles ->
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          checkParticles <- TestInference.checkParticlesSystematic observations particles
+          return $ checkParticles == particles

@@ -18,6 +18,7 @@ module Control.Monad.Bayes.Inference (
   importance',
   smcMultinomial,
   smcMultinomial',
+  smcSystematic,
   smcWithResampler,
   smcRM,
 ) where
@@ -62,6 +63,13 @@ smcMultinomial' :: (Ord a, MonadSample m)
      => Int -> Int
      -> Sequential (Population m) a -> m [(a, Double)]
 smcMultinomial' k n d = fmap compact $ explicitPopulation $ smcMultinomial k n d
+
+-- | Sequential Monte Carlo from the prior with systematic resampling.
+smcSystematic :: MonadSample m
+    => Int -- ^ number of resampling points
+    -> Int -- ^ number of particles
+    -> Sequential (Population m) a -> Population m a
+smcSystematic = smcWithResampler resampleSystematic
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)

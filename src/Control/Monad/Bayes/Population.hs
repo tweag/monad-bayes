@@ -17,6 +17,7 @@ module Control.Monad.Bayes.Population (
     fromWeightedList,
     spawn,
     resample,
+    resampleSystematic,
     extractEvidence,
     pushEvidence,
     pullWeight,
@@ -78,6 +79,38 @@ fromWeightedList = Population . withWeight . ListT
 -- without introducing bias.
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
+
+-- | Systematic resampling helper.
+systematic :: Double -> V.Vector Double -> [Int]
+systematic u ps = f 0 (u / fromIntegral n) 0 0 [] where
+  prob i = ps V.! i
+  n = length ps
+  inc = 1 / fromIntegral n
+  f i _ _ _ acc | i == n = acc
+  f i v j q acc =
+    if v < q then
+      f (i+1) (v+inc) j q (j-1:acc)
+    else
+      f i v (j + 1) (q + prob j) acc
+
+-- | Resample the population using the underlying monad and a systematic resampling scheme.
+-- The total weight is preserved.
+resampleSystematic :: (MonadSample m)
+         => Population m a -> Population m a
+resampleSystematic m = fromWeightedList $ do
+  pop <- runPopulation m
+  let (xs, ps) = unzip pop
+  let n = length xs
+  let z = sum ps
+  if z > 0 then do
+    u <- random
+    let weights = V.fromList (map (exp . ln . (/z)) ps)
+    let ancestors = systematic u weights
+    let offsprings = map (xs !!) ancestors
+    return $ map (, z / fromIntegral n) offsprings
+  else
+    -- if all weights are zero do not resample
+    return pop
 
 -- | Resample the population using the underlying monad and a simple resampling scheme.
 -- The total weight is preserved.
