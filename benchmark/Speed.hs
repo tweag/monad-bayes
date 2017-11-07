@@ -30,7 +30,7 @@ benchIS g m = bench "IS" $ benchmarkableIS g m
 
 benchSMC :: NFData a => Int -> [Int] -> GenIO -> Sequential (Population SamplerIO) a -> Benchmark
 benchSMC k ns g m =
-  benchN "SMC" ns $ \n -> bench "" $ nfIO $ map fst <$> sampleIOwith (runPopulation $ smcMultinomial k n m) g
+  benchN "SMC" ns $ \n -> bench "" $ nfIO $ map fst <$> sampleIOwith (runPopulation $ smcSystematic k n m) g
 
 benchMH :: NFData a => [Int] -> GenIO -> Traced (Weighted SamplerIO) a -> Benchmark
 benchMH ns g m =

@@ -32,7 +32,7 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-      in show <$> (runPopulation $ smcMultinomial k n m)
+      in show <$> (runPopulation $ smcSystematic k n m)
     MH  ->
       let t = 100
           (_, m) = getModel model
