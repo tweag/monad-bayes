@@ -27,6 +27,7 @@ module Control.Monad.Bayes.Class (
   uniformD,
   geometric,
   poisson,
+  dirichlet,
   MonadCond,
   score,
   factor,
@@ -55,7 +56,7 @@ import qualified Statistics.Distribution.Poisson as Poisson
 
 import Numeric.Log
 
-import Data.Vector.Generic
+import Data.Vector.Generic as VG
 import qualified Data.Vector as V
 import Control.Monad (when)
 
@@ -83,11 +84,18 @@ class Monad m => MonadSample m where
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     return (xs !! i)
   logCategorical :: (Vector v (Log Double), Vector v Double) => v (Log Double) -> m Int
-  logCategorical = categorical . Data.Vector.Generic.map (exp . ln)
+  logCategorical = categorical . VG.map (exp . ln)
   geometric :: Double -> m Int
   geometric p = discrete (geometric0 p)
   poisson :: Double -> m Int
   poisson lambda = discrete (Poisson.poisson lambda)
+
+  dirichlet :: Vector v Double => v Double -> m (v Double)
+  dirichlet as = do
+    xs <- VG.mapM (`gamma` 1) as
+    let s = VG.sum xs
+    let ys = VG.map (/ s) xs
+    return ys
 
 -- | Draw a value from a continuous distribution using iverse CDF.
 draw :: (ContDistr d, MonadSample m) => d -> m Double
