@@ -80,6 +80,58 @@ test-suite monad-bayes-test
                        TestWeighted
 --                        StrictlySmallerSupport
 
+benchmark ssm-bench
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      models
+                     , benchmark
+  build-depends:       base
+                     , monad-bayes
+                    --  , mtl
+                    --  , transformers
+                    --  , math-functions
+                    --  , hmatrix
+                    --  , statistics
+                    --  , vector
+                    --  , Chart
+                    --  , Chart-cairo
+                    --  , optparse-applicative
+                    --  , directory
+  default-language:    Haskell2010
+  default-extensions:  RankNTypes
+  -- Main benchmark file should import all the modules to be
+  -- maintained. Those modules should also be listed in
+  -- `other-modules`.
+  main-is:             SSM.hs
+  -- List all models we want to watch for changes.
+  -- DO NOT list modules that don't compile.
+  -- They make it impossible to run `stack ghci`.
+  other-modules:       NonlinearSSM
+
+benchmark speed-bench
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      models
+                     , benchmark
+  build-depends:       base
+                     , monad-bayes
+                     , criterion
+                     , abstract-par
+                     , log-domain
+                     , vector
+                     , mwc-random
+                     , containers
+  default-language:    Haskell2010
+  default-extensions:  RankNTypes
+  -- Main benchmark file should import all the modules to be
+  -- maintained. Those modules should also be listed in
+  -- `other-modules`.
+  main-is:             Speed.hs
+  -- List all models we want to watch for changes.
+  -- DO NOT list modules that don't compile.
+  -- They make it impossible to run `stack ghci`.
+  other-modules:       LogReg
+                     , HMM
+                     , LDA
+
 -- benchmark monad-bayes-bench
 --   type:                exitcode-stdio-1.0
 --   hs-source-dirs:      models
