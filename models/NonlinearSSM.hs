@@ -1,4 +1,4 @@
-module SSM where
+module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
 
