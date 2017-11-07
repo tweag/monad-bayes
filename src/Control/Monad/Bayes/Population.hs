@@ -38,6 +38,7 @@ import Prelude hiding (sum, all)
 import Control.Arrow (first, second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
+import Control.Monad (replicateM)
 
 import qualified Data.List
 import qualified Data.Vector as V
@@ -45,10 +46,6 @@ import qualified Data.Vector as V
 import Numeric.Log
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (flatten, hoist, pullWeight)
-
-logNormalize :: V.Vector (Log Double) -> V.Vector (Log Double)
-logNormalize v = V.map (/ z) v where
-  z = sum v
 
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving(Functor,Applicative,Monad,MonadIO,MonadSample,MonadCond,MonadInfer)
@@ -80,6 +77,24 @@ fromWeightedList = Population . withWeight . ListT
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
+resampleGeneric :: MonadSample m
+                => (V.Vector Double -> m [Int]) -- ^ resampler
+                -> Population m a -> Population m a
+resampleGeneric resampler m = fromWeightedList $ do
+  pop <- runPopulation m
+  let (xs, ps) = unzip pop
+  let n = length xs
+  let z = sum ps
+  if z > 0 then do
+    let weights = V.fromList (map (exp . ln . (/z)) ps)
+    ancestors <- resampler weights
+    let xvec = V.fromList xs
+    let offsprings = map (xvec V.!) ancestors
+    return $ map (, z / fromIntegral n) offsprings
+  else
+    -- if all weights are zero do not resample
+    return pop
+
 -- | Systematic resampling helper.
 systematic :: Double -> V.Vector Double -> [Int]
 systematic u ps = f 0 (u / fromIntegral n) 0 0 [] where
@@ -97,38 +112,17 @@ systematic u ps = f 0 (u / fromIntegral n) 0 0 [] where
 -- The total weight is preserved.
 resampleSystematic :: (MonadSample m)
          => Population m a -> Population m a
-resampleSystematic m = fromWeightedList $ do
-  pop <- runPopulation m
-  let (xs, ps) = unzip pop
-  let n = length xs
-  let z = sum ps
-  if z > 0 then do
-    u <- random
-    let weights = V.fromList (map (exp . ln . (/z)) ps)
-    let ancestors = systematic u weights
-    let xvec = V.fromList xs
-    let offsprings = map (xvec V.!) ancestors
-    return $ map (, z / fromIntegral n) offsprings
-  else
-    -- if all weights are zero do not resample
-    return pop
+resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
+
+-- | Multinomial resampler.
+multinomial :: MonadSample m => V.Vector Double -> m [Int]
+multinomial ps = replicateM (V.length ps) (categorical ps)
 
 -- | Resample the population using the underlying monad and a simple resampling scheme.
 -- The total weight is preserved.
 resample :: (MonadSample m)
          => Population m a -> Population m a
-resample m = fromWeightedList $ do
-  pop <- runPopulation m
-  let (xs, ps) = unzip pop
-  let n = length xs
-  let z = sum ps
-  if z > 0 then do
-    ancestors <- sequenceA $ replicate n $ logCategorical $ logNormalize $ V.fromList ps
-    let offsprings = map (xs !!) ancestors
-    return $ map (, z / fromIntegral n) offsprings
-  else
-    -- if all weights are zero do not resample
-    return pop
+resample = resampleGeneric multinomial
 
 extractEvidence :: Monad m
                 => Population m a -> Population (Weighted m) a
