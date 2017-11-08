@@ -11,7 +11,6 @@ Portability : GHC
 
 module Control.Monad.Bayes.Inference.PMMH (
   latent,
-  pmmhSetup,
   pmmh
 )  where
 
@@ -20,44 +19,17 @@ import Numeric.Log
 import Control.Monad.Trans (lift)
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Bayes.Free as FreeSampler
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Inference
 
-hoistW :: (Monad m)
-       => (forall x. m x -> n x) -> Weighted m a -> Weighted n a
-hoistW = Weighted.hoist
+latent :: Monad m => m a -> Sequential (Population (Traced m)) a
+latent = lift . lift . lift
 
-hoistF :: (Monad m)
-       => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
-hoistF = FreeSampler.hoist
-
-latent :: Monad m => Sequential (Population m) a -> Traced (Sequential (Population m)) a
-latent = lift
-
-runPF :: MonadSample m
-          => Weighted (FreeSampler (Population m)) a
-          -> Weighted (FreeSampler m) [(a, Log Double)]
-runPF =
-  runPopulation .
-  pushWeight .
-  hoistW FreeSampler.pullPopulation
-
-pmmhSetup :: MonadSample m
-          => Int -> Int -> Traced (Sequential (Population m)) a -> Traced m [(a, Log Double)]
-pmmhSetup k p =
-  hoistMT (unlift . normalize . finish) . -- remove Seq and Pop layers since they're not doing anything at this point
-  transformModel (hoistW (hoistF (lift . lift)) . runPF . hoistW (hoistF (smcMultinomial k p))) -- apply SMC to the marginalized variables
-
-pmmh :: MonadSample m
+pmmh :: MonadInfer m
      => Int -- ^ number of MH steps
      -> Int -- ^ number of time steps
      -> Int -- ^ number of particles
-     -> Traced (Sequential (Population m)) a
-     -> m [[(a, Log Double)]]
-pmmh n k p =
-  mh n . -- run pseudo-marginal MH on the obtained model
-  pmmhSetup k p  -- augment latent space with a particle filter
+      -> Sequential (Population (Traced m)) a -> m [[(a, Log Double)]]
+pmmh t k n = mh t . runPopulation . pushEvidence . smcSystematic k n
