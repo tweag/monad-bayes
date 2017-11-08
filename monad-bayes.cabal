@@ -57,7 +57,7 @@ library
                      , free
                      , statistics
                      , log-domain
-  ghc-options:         -Wall -fno-warn-redundant-constraints
+  ghc-options:         -Wall -fno-warn-redundant-constraints -O2
   default-language:    Haskell2010
   default-extensions:  RankNTypes
                      , GeneralizedNewtypeDeriving
