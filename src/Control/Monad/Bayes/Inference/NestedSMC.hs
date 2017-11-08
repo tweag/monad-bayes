@@ -20,7 +20,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Population as Pop
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
 
 type S = Sequential
 hoistS :: (forall x. m x -> m x) -> S m a -> S m a

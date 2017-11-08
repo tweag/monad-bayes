@@ -19,7 +19,8 @@ import Control.Monad.Trans
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population as Pop
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Helpers
 
 latent :: Monad m => m a -> S (P (S (T (P m)))) a
@@ -31,5 +32,4 @@ smc2 :: MonadSample m
      -> Int -- ^ number of outer particles
      -> Int -- ^ number of MH transitions
      -> S (P (S (T (P m)))) a -> P m [(a, Log Double)]
--- TODO: implement smcSystematicPushingEvidence to get true SMC2
-smc2 k n p t = smcRM k p t . runPopulation . smcSystematic k n -- smcSystematicPusingEvidence k n
+smc2 k n p t = rmsmc k p t . runPopulation . smcSystematicPush k n

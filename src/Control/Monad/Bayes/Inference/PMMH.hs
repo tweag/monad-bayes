@@ -22,7 +22,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Traced
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
 
 latent :: Monad m => m a -> Sequential (Population (Traced m)) a
 latent = lift . lift . lift
