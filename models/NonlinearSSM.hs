@@ -4,7 +4,7 @@ import Control.Monad.Bayes.Class
 
 -- | A nonlinear series model from Doucet et al. (2000)
 -- "On sequential Monte Carlo sampling methods" section VI.B
-model :: (MonadInfer m, MonadInfer n)
+model :: (MonadInfer m, MonadSample n)
       => (forall x. n x -> m x) -- ^ tag for latent variables
       -> [Double]  -- ^ observed data
       -> m [Double] -- ^ list of latent states from t=1
@@ -21,12 +21,12 @@ model latent obs = do
         let n = length acc
         let mean = 0.5 * x + 25 * x / (1 + sq x) +
                    8 * cos (1.2 * fromIntegral n)
-        x' <- normal mean sigmaX
+        x' <- latent $ normal mean sigmaX
         factor $ normalPdf (sq x' / 20) sigmaY y
         simulate ys x' (x':acc)
 
   x0 <- latent $ normal 0 (sqrt 5)
-  xs <- latent $ simulate obs x0 []
+  xs <- simulate obs x0 []
   return $ reverse xs
 
 generateData :: MonadSample m
