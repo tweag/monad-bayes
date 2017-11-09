@@ -42,7 +42,6 @@ library
                      , Control.Monad.Bayes.Helpers
                      , Control.Monad.Bayes.Inference.SMC
                      , Control.Monad.Bayes.Inference.RMSMC
-                     , Control.Monad.Bayes.Inference.NestedSMC
                      , Control.Monad.Bayes.Inference.PMMH
                      , Control.Monad.Bayes.Inference.SMC2
   build-depends:       base >= 4.7 && < 5
