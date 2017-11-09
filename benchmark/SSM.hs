@@ -19,17 +19,17 @@ main = sampleIO $ do
   let ys = map snd dat
 
   liftIO $ print "SMC"
-  smcRes <- runPopulation $ smcMultinomial t 10 (model id ys)
+  smcRes <- runPopulation $ smcMultinomial t 10 (param >>= model ys)
   liftIO $ print $ show smcRes
 
   liftIO $ print "RM-SMC"
-  smcrmRes <- runPopulation $ rmsmc t 10 10 (model id ys)
+  smcrmRes <- runPopulation $ rmsmc t 10 10 (param >>= model ys)
   liftIO $ print $ show smcrmRes
 
   liftIO $ print "PMMH"
-  pmmhRes <- prior $ pmmh 2 t 3 (model PMMH.latent ys)
+  pmmhRes <- prior $ pmmh 2 t 3 param (model ys)
   liftIO $ print $ show pmmhRes
 
   liftIO $ print "SMC2"
-  smc2Res <- runPopulation $ smc2 t 3 2 1 (model SMC2.latent ys)
+  smc2Res <- runPopulation $ smc2 t 3 2 1 param (model ys)
   liftIO $ print $ show smc2Res
