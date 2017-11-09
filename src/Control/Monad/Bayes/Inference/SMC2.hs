@@ -10,7 +10,6 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Inference.SMC2 (
-  latent,
   smc2
 ) where
 
@@ -23,13 +22,29 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Helpers
 
-latent :: Monad m => m a -> S (P (S (T (P m)))) a
-latent = lift . lift . lift . lift . lift
+newtype SMC2 m a = SMC2 (S (T (P m)) a)
+  deriving(Functor,Applicative,Monad)
+setup :: SMC2 m a -> S (T (P m)) a
+setup (SMC2 m) = m
+
+instance MonadTrans SMC2 where
+  lift = SMC2 . lift . lift . lift
+
+instance MonadSample m => MonadSample (SMC2 m) where
+  random = lift random
+
+instance Monad m => MonadCond (SMC2 m) where
+  score = SMC2 . score
+
+instance MonadSample m => MonadInfer (SMC2 m) where
 
 smc2 :: MonadSample m
      => Int -- ^ number of time steps
      -> Int -- ^ number of inner particles
      -> Int -- ^ number of outer particles
      -> Int -- ^ number of MH transitions
-     -> S (P (S (T (P m)))) a -> P m [(a, Log Double)]
-smc2 k n p t = rmsmc k p t . runPopulation . smcSystematicPush k n
+     -> SMC2 m b -- ^ model parameters
+     -> ( b -> S (P (SMC2 m)) a) -- ^ model
+     -> P m [(a, Log Double)]
+smc2 k n p t param model =
+  rmsmc k p t $ setup (param >>= runPopulation . smcSystematicPush k n . model)
