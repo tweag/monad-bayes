@@ -6,7 +6,8 @@ import Data.Semigroup ((<>))
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Traced
@@ -41,7 +42,7 @@ runAlg model alg =
       let n = 100
           t = 1
           (k, m) = getModel model
-      in show <$> (runPopulation $ smcRM k n t m)
+      in show <$> (runPopulation $ rmsmc k n t m)
 
 
 infer :: Model -> Alg -> IO ()

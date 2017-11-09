@@ -16,7 +16,8 @@ module Control.Monad.Bayes.Sequential (
     advance,
     finished,
     hoistFirst,
-    hoist
+    hoist,
+    sis
                 ) where
 
 import Control.Monad.Trans
@@ -35,6 +36,16 @@ newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
   deriving(Functor,Applicative,Monad,MonadTrans,MonadIO)
 extract :: Await () a -> a
 extract (Await f) = f ()
+
+instance MonadSample m => MonadSample (Sequential m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+
+instance MonadCond m => MonadCond (Sequential m) where
+  score w = lift (score w) >> suspend
+
+instance MonadInfer m => MonadInfer (Sequential m)
 
 -- | A point where the computation is paused.
 suspend :: Monad m => Sequential m ()
@@ -66,12 +77,15 @@ hoist :: (Monad m, Monad n) =>
             (forall x. m x -> n x) -> Sequential m a -> Sequential n a
 hoist f = Sequential . mapMonad f . runSequential
 
-instance MonadSample m => MonadSample (Sequential m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
+-- | Apply a function a given number of times.
+composeCopies :: Int -> (a -> a) -> (a -> a)
+composeCopies k f = foldr (.) id (replicate k f)
 
-instance MonadCond m => MonadCond (Sequential m) where
-  score w = lift (score w) >> suspend
-
-instance MonadInfer m => MonadInfer (Sequential m)
+-- | Sequential importance sampling.
+-- Applies a given transformation after each time step.
+sis :: Monad m
+    => (forall x. m x -> m x) -- ^ transformation
+    -> Int -- ^ number of time steps
+    -> Sequential m a
+    -> m a
+sis f k = finish . composeCopies k (advance . hoistFirst f)

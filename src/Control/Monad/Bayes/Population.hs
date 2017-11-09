@@ -17,6 +17,7 @@ module Control.Monad.Bayes.Population (
     fromWeightedList,
     spawn,
     resample,
+    resampleMultinomial,
     resampleSystematic,
     extractEvidence,
     pushEvidence,
@@ -123,6 +124,10 @@ multinomial ps = replicateM (V.length ps) (categorical ps)
 resample :: (MonadSample m)
          => Population m a -> Population m a
 resample = resampleGeneric multinomial
+
+resampleMultinomial :: (MonadSample m)
+                    => Population m a -> Population m a
+resampleMultinomial = resample
 
 extractEvidence :: Monad m
                 => Population m a -> Population (Weighted m) a

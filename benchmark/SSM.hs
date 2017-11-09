@@ -5,7 +5,8 @@ import Control.Monad.IO.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.PMMH as PMMH
 import Control.Monad.Bayes.Inference.SMC2 as SMC2
 
@@ -22,7 +23,7 @@ main = sampleIO $ do
   liftIO $ print $ show smcRes
 
   liftIO $ print "RM-SMC"
-  smcrmRes <- runPopulation $ smcRM t 10 10 (model id ys)
+  smcrmRes <- runPopulation $ rmsmc t 10 10 (model id ys)
   liftIO $ print $ show smcrmRes
 
   liftIO $ print "PMMH"

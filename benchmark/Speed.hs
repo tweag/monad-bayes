@@ -6,7 +6,8 @@ import Data.Bifunctor (second)
 
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Traced
@@ -42,7 +43,7 @@ benchMH ns g m =
 
 benchSMCRM :: NFData a => Int -> [Int] -> [Int] -> GenIO -> Sequential (Traced (Population SamplerIO)) a -> Benchmark
 benchSMCRM k ns ts g m =
-  benchN "SMCRM" ns $ \n -> benchN "Trans" ts $ \t -> bench "" $ nfIO $ sampleIOwith (fmap (map fst) $ runPopulation $ smcRM k n t m) g
+  benchN "SMCRM" ns $ \n -> benchN "Trans" ts $ \t -> bench "" $ nfIO $ sampleIOwith (fmap (map fst) $ runPopulation $ rmsmc k n t m) g
 
 type Model a = (Sequential (Population SamplerIO) a, Traced (Weighted SamplerIO) a, Sequential (Traced (Population SamplerIO)) a)
 

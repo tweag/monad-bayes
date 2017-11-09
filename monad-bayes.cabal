@@ -40,7 +40,8 @@ library
                      , Control.Monad.Bayes.Traced
                      , Control.Monad.Bayes.Enumerator
                      , Control.Monad.Bayes.Helpers
-                     , Control.Monad.Bayes.Inference
+                     , Control.Monad.Bayes.Inference.SMC
+                     , Control.Monad.Bayes.Inference.RMSMC
                      , Control.Monad.Bayes.Inference.NestedSMC
                      , Control.Monad.Bayes.Inference.PMMH
                      , Control.Monad.Bayes.Inference.SMC2

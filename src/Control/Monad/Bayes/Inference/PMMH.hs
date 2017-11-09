@@ -10,7 +10,6 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Inference.PMMH (
-  latent,
   pmmh
 )  where
 
@@ -24,12 +23,12 @@ import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Inference.SMC
 
-latent :: Monad m => m a -> Sequential (Population (Traced m)) a
-latent = lift . lift . lift
-
 pmmh :: MonadInfer m
      => Int -- ^ number of MH steps
      -> Int -- ^ number of time steps
      -> Int -- ^ number of particles
-      -> Sequential (Population (Traced m)) a -> m [[(a, Log Double)]]
-pmmh t k n = mh t . runPopulation . pushEvidence . smcSystematic k n
+     -> Traced m b -- ^ model parameters prior
+     -> (b -> Sequential (Population m) a) -- ^ model
+     -> m [[(a, Log Double)]]
+pmmh t k n param model =
+  mh t (param >>= runPopulation . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
