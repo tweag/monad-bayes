@@ -43,8 +43,8 @@ smc2 :: MonadSample m
      -> Int -- ^ number of inner particles
      -> Int -- ^ number of outer particles
      -> Int -- ^ number of MH transitions
-     -> SMC2 m b -- ^ model parameters
+     -> S (T (P m)) b -- ^ model parameters
      -> ( b -> S (P (SMC2 m)) a) -- ^ model
      -> P m [(a, Log Double)]
 smc2 k n p t param model =
-  rmsmc k p t $ setup (param >>= runPopulation . smcSystematicPush k n . model)
+  rmsmc k p t (param >>= setup . runPopulation . smcSystematicPush k n . model)
