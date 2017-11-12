@@ -39,9 +39,9 @@ start :: MonadSample m => m [Int]
 start = uniformD [[0],[1],[2]]
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
-hmm :: (MonadInfer m) => m [Int]
-hmm = fmap reverse states where
-  states = foldl expand start values
+hmm :: (MonadInfer m) => [Double] -> m [Int]
+hmm dataset = fmap reverse states where
+  states = foldl expand start dataset
   --expand :: MonadBayes m => m [Int] -> Double -> m [Int]
   expand d y = do
     rest <- d

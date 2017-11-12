@@ -20,9 +20,9 @@ data Model = LR | HMM | LDA
   deriving(Read,Show)
 
 getModel :: MonadInfer m => Model -> (Int, m String)
-getModel LR = (length LogReg.xs, show <$> LogReg.logisticRegression)
-getModel HMM = (length HMM.values, show <$> HMM.hmm)
-getModel LDA = (length (concat LDA.docs), show <$> LDA.lda)
+getModel LR = (length LogReg.xs, show <$> LogReg.logisticRegression (zip LogReg.xs LogReg.labels))
+getModel HMM = (length HMM.values, show <$> HMM.hmm HMM.values)
+getModel LDA = (length (concat LDA.docs), show <$> LDA.lda LDA.docs)
 
 data Alg = SMC | MH | RMSMC
   deriving(Read,Show)

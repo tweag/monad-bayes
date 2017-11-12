@@ -32,8 +32,8 @@ topic_dist_prior = dirichlet $ V.replicate (length topics) 1
 word_index :: Map.Map String Int
 word_index = Map.fromList $ zip vocabluary [0..]
 
-lda :: MonadInfer m => m [Int]
-lda = do
+lda :: MonadInfer m => [[String]] -> m [Int]
+lda docs = do
   word_dist_for_topic <- do
     ts <- mapM (const word_dist_prior) [0 .. length topics]
     return $ Map.fromList $ zip [0 .. length topics] ts

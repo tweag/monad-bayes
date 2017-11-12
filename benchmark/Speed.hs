@@ -1,15 +1,13 @@
 import Criterion.Main
-import Numeric.Log
+import Criterion.Types
 import System.Random.MWC (createSystemRandom, GenIO)
-import Control.Monad.Par.Class (NFData)
-import Data.Bifunctor (second)
 
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sequential
 import Control.Monad.Bayes.Traced
 
 -- import NonlinearSSM
@@ -17,80 +15,72 @@ import qualified HMM
 import qualified LogReg
 import qualified LDA
 
-defNs :: [Int]
-defNs = [100]
 
-benchN :: String -> [Int] -> (Int -> Benchmark) -> Benchmark
-benchN name ns bmark = bgroup name $ map (\n -> bgroup (show n) [bmark n]) ns
+data ProbProgSys = MonadBayes | Anglican | WebPPL
+  deriving(Show)
 
-benchmarkableIS :: NFData a => GenIO -> Weighted SamplerIO a -> Benchmarkable
-benchmarkableIS g m = nfIO $ second ln <$> sampleIOwith (runWeighted m) g
+data Model = LR [(Double,Bool)] | HMM [Double] | LDA [[String]]
+instance Show Model where
+  show (LR xs) = "LR" ++ show (length xs)
+  show (HMM xs) = "HMM" ++ show (length xs)
+  show (LDA xs) = "LDA" ++ show (length $ head xs)
+buildModel :: MonadInfer m => Model -> m String
+buildModel (LR dataset) = show <$> LogReg.logisticRegression dataset
+buildModel (HMM dataset) = show <$> HMM.hmm dataset
+buildModel (LDA dataset) = show <$> LDA.lda dataset
+modelLength :: Model -> Int
+modelLength (LR xs) = length xs
+modelLength (HMM xs) = length xs
+modelLength (LDA xs) = length xs
 
-benchIS :: NFData a => GenIO -> Weighted SamplerIO a -> Benchmark
-benchIS g m = bench "IS" $ benchmarkableIS g m
+data Alg = MH Int | SMC Int | RMSMC Int Int
+instance Show Alg where
+  show (MH n) = "MH" ++ show n
+  show (SMC n) = "SMC" ++ show n
+  show (RMSMC n t) = "SMCRM" ++ show n ++ "-" ++ show t
+runAlg :: Model -> Alg -> SamplerIO String
+runAlg model (MH n) = show <$> prior (mh n (buildModel model))
+runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
+runAlg model (RMSMC n t) = show <$> runPopulation (rmsmc (modelLength model) n t (buildModel model))
 
-benchSMC :: NFData a => Int -> [Int] -> GenIO -> Sequential (Population SamplerIO) a -> Benchmark
-benchSMC k ns g m =
-  benchN "SMC" ns $ \n -> bench "" $ nfIO $ map fst <$> sampleIOwith (runPopulation $ smcSystematic k n m) g
+prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
+prepareBenchmarkable _ Anglican _ _  = error "Anglican benchmarks not available"
+prepareBenchmarkable _ WebPPL _ _ = error "WebPPL benchmarks not available"
 
-benchMH :: NFData a => [Int] -> GenIO -> Traced (Weighted SamplerIO) a -> Benchmark
-benchMH ns g m =
-  benchN "MH" ns $ \n -> bench "" $ nfIO $ sampleIOwith (prior $ marginal $ composeN n mhStep m) g where
-
-    composeN :: Int -> (a -> a) -> a -> a
-    composeN 0 _ x = x
-    composeN n f x = composeN (n-1) f (f x)
-
-benchSMCRM :: NFData a => Int -> [Int] -> [Int] -> GenIO -> Sequential (Traced (Population SamplerIO)) a -> Benchmark
-benchSMCRM k ns ts g m =
-  benchN "SMCRM" ns $ \n -> benchN "Trans" ts $ \t -> bench "" $ nfIO $ sampleIOwith (fmap (map fst) $ runPopulation $ rmsmc k n t m) g
-
-type Model a = (Sequential (Population SamplerIO) a, Traced (Weighted SamplerIO) a, Sequential (Traced (Population SamplerIO)) a)
-
-benchModel :: NFData a => String -> Int -> GenIO -> Model a -> Benchmark
-benchModel name k g (mSMC, mMH, mSMCRM) = bgroup name [benchSMC k defNs g mSMC, benchMH defNs g mMH, benchSMCRM k defNs [1] g mSMCRM]
-
--- benchSSM :: [Int] -> GenIO -> ((forall n. (MonadBayes n, CustomReal n ~ Double) => n (Vector Double)) -> Benchmark)
---          -> Benchmark
--- benchSSM ns g benchF =
---   benchN "SSM" ns $ \n -> env (sampleIOwith (NonlinearSSM.synthesizeData n) g) (benchF . NonlinearSSM.posterior)
-
--- ssmSMCRMbenchmarks :: [Int] -> GenIO -> [Int] -> [Int] -> Benchmark
--- ssmSMCRMbenchmarks ls g ns ts = benchN "SSM" ls f where
---   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMCRM l ns ts g . NonlinearSSM.posterior)
---
--- ssmMHbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
--- ssmMHbenchmarks ls g ns = benchN "SSM" ls f where
---   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchMH ns g . NonlinearSSM.posterior)
---
--- ssmSMCbenchmarks :: [Int] -> GenIO -> [Int] -> Benchmark
--- ssmSMCbenchmarks ls g ns = benchN "SSM" ls f where
---   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchSMC l ns g . NonlinearSSM.posterior)
---
--- ssmISbenchmarks :: GenIO -> [Int] -> Benchmark
--- ssmISbenchmarks g ls = benchN "SSM" ls f where
---   f l = env (sampleIOwith (NonlinearSSM.synthesizeData l) g) (benchIS g . NonlinearSSM.posterior)
+prepareBenchmark :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmark
+prepareBenchmark g system model alg =
+  bench (show system ++ sep ++ show model ++ sep ++ show alg) $
+  prepareBenchmarkable g system model alg where
+    sep = "_"
 
 main :: IO ()
 main = do
 
   g <- createSystemRandom
 
-  let lr = (LogReg.logisticRegression, LogReg.logisticRegression, LogReg.logisticRegression)
-  let hmm = (HMM.hmm, HMM.hmm, HMM.hmm)
-  let lda = (LDA.lda, LDA.lda, LDA.lda)
+  let systems = [MonadBayes]
 
-  let benchmarks = [
-        benchModel "LogReg" (length LogReg.xs) g lr,
-        benchModel "HMM" (length HMM.values) g hmm,
-        benchModel "LDA" (length (concat LDA.docs)) g lda
+  let lrData = replicate 100 (0.0, True) --TODO: draw some non-trivial datapoints
+  let lrLengths = [1, 3, 10]
+  let hmmData = replicate 100 0 -- TODO: draw some non-trivial datapoints
+  let hmmLengths = [1, 3, 10]
+  let ldaData = replicate 5 (replicate 100 "wolf") -- TODO: draw some non-trivial datapoints
+  let ldaLengths = [1, 3]--, 10]
 
-        --pdfBenchmarks,
-        --samplingBenchmarks g,
-        -- ssmISbenchmarks g defNs,
-        -- ssmSMCbenchmarks defNs g defNs,
-        -- ssmMHbenchmarks defNs g defNs,
-        -- ssmSMCRMbenchmarks defNs g defNs defNs
-        ]
+  let models = map (LR . (`take` lrData)) lrLengths ++
+               map (HMM . (`take` hmmData)) hmmLengths ++
+               map (\n -> LDA $ map (take n) ldaData) ldaLengths
 
-  defaultMain benchmarks
+  let algs = [MH 10, SMC 10, RMSMC 10 1]
+
+  let benchmarks = map (uncurry3 (prepareBenchmark g)) xs where
+        uncurry3 f (x,y,z) = f x y z
+        xs = do
+          s <- systems
+          m <- models
+          a <- algs
+          return (s,m,a)
+
+  let config = defaultConfig{csvFile = Just "speed.csv"}
+  defaultMainWith config benchmarks

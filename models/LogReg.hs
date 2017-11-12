@@ -12,8 +12,8 @@ xs = [-10, -5, 2, 6, 10]
 labels :: [Bool]
 labels = [False, False, True, True, True]
 
-logisticRegression :: (MonadInfer m) => m Double
-logisticRegression = do
+logisticRegression :: (MonadInfer m) => [(Double, Bool)] -> m Double
+logisticRegression dat = do
   m <- normal 0 1
   b <- normal 0 1
   sigma <- gamma 1 1
@@ -22,5 +22,5 @@ logisticRegression = do
       obs x label = do
         p <- sigmoid x
         factor $ (Exp . log) $ if label then p else 1 - p
-  mapM_ (uncurry obs) (zip xs labels)
+  mapM_ (uncurry obs) dat
   sigmoid 8
