@@ -135,6 +135,7 @@ benchmark speed-bench
                      , vector
                      , mwc-random
                      , containers
+                     , process
   default-language:    Haskell2010
   default-extensions:  RankNTypes
   -- Main benchmark file should import all the modules to be
