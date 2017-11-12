@@ -1,6 +1,7 @@
 import Criterion.Main
 import Criterion.Types
 import System.Random.MWC (createSystemRandom, GenIO)
+import Control.Monad (replicateM)
 
 import GHC.IO.Handle
 import System.Exit
@@ -174,18 +175,18 @@ main = do
 
   let systems = [MonadBayes,Anglican]
 
-  let lrData = replicate 100 (0.1, True) --TODO: draw some non-trivial datapoints
-  let lrLengths = [1, 3, 10]
-  let hmmData = replicate 100 0 -- TODO: draw some non-trivial datapoints
-  let hmmLengths = [1, 3, 10]
-  let ldaData = replicate 5 (replicate 100 "wolf") -- TODO: draw some non-trivial datapoints
-  let ldaLengths = [1, 3]--, 10]
+  lrData <- sampleIOwith (replicateM 100 $ (,) <$> uniform (-1) 1 <*> bernoulli 0.5) g
+  let lrLengths = [1, 3, 10, 30, 100]
+  hmmData <- sampleIOwith (replicateM 100 (uniformD [0,1,2])) g
+  let hmmLengths = [1, 3, 10, 30, 100]
+  ldaData <- sampleIOwith (replicateM 5 (replicateM 100 (uniformD LDA.vocabluary))) g
+  let ldaLengths = [1, 3, 10, 30, 100]
 
   let models = map (LR . (`take` lrData)) lrLengths ++
                map (HMM . (`take` hmmData)) hmmLengths ++
                map (\n -> LDA $ map (take n) ldaData) ldaLengths
 
-  let algs = [MH 10, SMC 10, RMSMC 10 1]
+  let algs = [MH 10, MH 30, MH 100, SMC 10, SMC 30, SMC 100, RMSMC 10 1, RMSMC 30 1, RMSMC 100 1, RMSMC 10 3, RMSMC 30 3, RMSMC 100 1]
 
   let benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
