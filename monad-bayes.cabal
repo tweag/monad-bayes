@@ -136,6 +136,7 @@ benchmark speed-bench
                      , mwc-random
                      , containers
                      , process
+  ghc-options:         -rtsopts "-with-rtsopts=-M1g -K1g"
   default-language:    Haskell2010
   default-extensions:  RankNTypes
   -- Main benchmark file should import all the modules to be
