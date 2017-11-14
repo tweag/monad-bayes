@@ -3,6 +3,8 @@ import Criterion.Types
 import System.Random.MWC (createSystemRandom, GenIO)
 import Control.Monad (replicateM)
 
+import Debug.Trace
+
 import GHC.IO.Handle
 import System.Exit
 import System.Process hiding (env)
@@ -35,29 +37,47 @@ anglicanModelName (LR _) = "logisticRegression"
 anglicanModelName (HMM _) = "hmm"
 anglicanModelName (LDA _) = "lda"
 
+clojureBool :: Bool -> String
+clojureBool False = "false"
+clojureBool True = "true"
+
+-- | Format Haskell [Bool] as a Clojure Boolean vector.
+clojureBoolVector :: [Bool] -> String
+clojureBoolVector = clojureVector . map clojureBool
+
 -- | Format a Haskell list as a Clojure vector.
-clojureVector :: Show a => [a] -> String
-clojureVector xs = "[" ++ foldr (++) "]" (map ((++ " ") . show) xs)
+clojureVector :: [String] -> String
+clojureVector xs = "[" ++ unwords xs ++ "]"
+
+-- | Format a Haskell list as a Clojure vector.
+clojureShowVector :: Show a => [a] -> String
+clojureShowVector xs = clojureVector $ map show xs
 
 -- | Insert data into an Anglican model.
 anglicanData :: LeinProc -> Model -> IO ()
-anglicanData (LeinProc input _ _) model = do
-  hPutStr input $ "(ns+ " ++ anglicanModelName model ++ ")"
+anglicanData lein model = do
+  anglican lein ["(use 'nstools.ns)\n"]
+  anglican lein ["(ns+ " ++ anglicanModelName model ++ ")\n"]
   case model of
     LR dataset -> do
       let (xs, labels) = unzip dataset
-      hPutStr input $ "(def xs " ++ clojureVector xs ++ ")"
-      hPutStr input $ "(def labels " ++ clojureVector labels ++ ")"
+      anglican lein ["(ns-unmap *ns* 'xs)\n"]
+      anglican lein ["(def xs " ++ clojureShowVector xs ++ ")\n", "nil\n"]
+      anglican lein ["(ns-unmap *ns* 'labels)\n"]
+      anglican lein ["(def labels " ++ clojureBoolVector labels ++ ")\n", "nil\n"]
     HMM observations -> do
-      hPutStr input $ "(def observations " ++ clojureVector observations ++ ")"
+      anglican lein ["(ns-unmap *ns* 'observations)\n"]
+      anglican lein ["(def observations " ++ clojureShowVector observations ++ ")\n", "nil\n"]
     LDA docs -> do
-      hPutStr input $ "(def docs " ++ clojureVector (map clojureVector docs) ++ ")"
-  hFlush input
+      anglican lein ["(ns-unmap *ns* 'docs)\n"]
+      anglican lein ["(def docs " ++ clojureVector (map clojureShowVector docs) ++ ")\n", "nil\n"]
+  anglican lein ["(use 'nstools.ns)\n"]
+  anglican lein ["(ns+ anglican.core)\n"]
 
-anglican :: LeinProc -> String -> IO ()
-anglican (LeinProc input output _) cmd = do
+anglican :: LeinProc -> [String] -> IO ()
+anglican (LeinProc input output _) cmds = do
   -- execute command
-  hPutStr input cmd
+  mapM (hPutStr input) cmds
   hFlush input
   -- wait until all samples are produced
   waitForAnglican output
@@ -67,6 +87,7 @@ waitForAnglican :: Handle -> IO ()
 waitForAnglican handle = run where
   run = do
     l <- hGetLine handle
+    -- traceIO l
     -- We recognize that Anglican is finished when the repl emits a line "nil"
     if l == "nil" then
       return ()
@@ -80,7 +101,10 @@ startLein = do
   (Just input, Just output, _, process) <- createProcess setup
   -- wait until Leiningen starts producing output to make sure it's ready
   _ <- hWaitForInput output (-1) -- wait for output indefinitely
-  return $ LeinProc input output process
+  let lein = LeinProc input output process
+  anglican lein ["(use 'nstools.ns)\n"]
+  return lein
+
 
 -- | Path to the WebPPL project with benchmarks.
 webpplPath :: String
@@ -135,15 +159,15 @@ prepareBenchmark e MonadBayes model alg =
   bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
   prepareBenchmarkable (rng e) MonadBayes model alg where
     sep = "_"
-prepareBenchmark e Anglican model alg = bench name $ whnfIO collect where
+prepareBenchmark e Anglican model alg = env prepareData (const $ bench name $ whnfIO collect) where
   name = show Anglican ++ sep ++ show model ++ sep ++ show alg
   sep = "_"
   algString (MH n) = "-a lmh -n " ++ show n
   algString (SMC n) = "-a smc -n " ++ show n
   algString (RMSMC _ _) = error "Anglican does not support resample-move SMC"
+  prepareData = anglicanData (lein e) model
   collect = do
-    anglicanData (lein e) model
-    anglican (lein e) $ "(m! " ++ anglicanModelName model ++ " " ++ algString alg ++ ")\n"
+    anglican (lein e) $ ["(time (m! " ++ anglicanModelName model ++ " " ++ algString alg ++ "))\n"]
 prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run where
   name = show WebPPL ++ sep ++ show model ++ sep ++ show alg
   sep = "_"
@@ -154,7 +178,8 @@ prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run where
   dataString (HMM obs) = "--obs='" ++ javascriptList obs ++ "'"
   dataString (LDA docs) = unwords $ map (\(i,doc) -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") (zip [1..5] docs)
   run = do
-    (_, _, _, process) <- createProcess $ (shell $ "node_modules/webppl/webppl " ++ webpplModelName model ++ ".wppl -- " ++ algString alg ++ dataString model){cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
+    let command = "node " ++ webpplModelName model ++ ".js " ++ algString alg ++ dataString model
+    (_, _, _, process) <- createProcess $ (shell command){cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
     exitCode <- waitForProcess process
     case exitCode of
       ExitSuccess -> return ()
@@ -173,20 +198,25 @@ main = do
   l <- startLein
   let e = Env g l
 
-  let systems = [MonadBayes,Anglican]
+  let systems = [
+                  -- MonadBayes,
+                  Anglican
+                  -- WebPPL
+                ]
 
   lrData <- sampleIOwith (replicateM 100 $ (,) <$> uniform (-1) 1 <*> bernoulli 0.5) g
-  let lrLengths = [1, 3, 10, 30, 100]
+  let lrLengths = [3, 10, 30, 100]
   hmmData <- sampleIOwith (replicateM 100 (uniformD [0,1,2])) g
-  let hmmLengths = [1, 3, 10, 30, 100]
+  let hmmLengths = [3, 10, 30, 100]
   ldaData <- sampleIOwith (replicateM 5 (replicateM 100 (uniformD LDA.vocabluary))) g
-  let ldaLengths = [1, 3, 10, 30, 100]
+  let ldaLengths = [3, 10, 30]--, 100]
 
   let models = map (LR . (`take` lrData)) lrLengths ++
                map (HMM . (`take` hmmData)) hmmLengths ++
                map (\n -> LDA $ map (take n) ldaData) ldaLengths
 
-  let algs = [MH 10, MH 30, MH 100, SMC 10, SMC 30, SMC 100, RMSMC 10 1, RMSMC 30 1, RMSMC 100 1, RMSMC 10 3, RMSMC 30 3, RMSMC 100 1]
+  let algs = [MH 10, MH 30, MH 100,
+              SMC 10, SMC 30, SMC 100]--, RMSMC 10 1, RMSMC 30 1, RMSMC 100 1, RMSMC 10 3, RMSMC 30 3, RMSMC 100 1]
 
   let benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
@@ -196,5 +226,5 @@ main = do
           a <- algs
           return (s,m,a)
 
-  let config = defaultConfig{csvFile = Just "speed.csv"}
+  let config = defaultConfig{csvFile = Just "speed.csv", rawDataFile = Just "raw.dat", timeLimit = 60}
   defaultMainWith config benchmarks
