@@ -10,9 +10,6 @@ Portability : GHC
 -}
 
 module Control.Monad.Bayes.Weighted (
-    Weight,
-    weight,
-    unWeight,
     Weighted,
     withWeight,
     runWeighted,
@@ -24,41 +21,25 @@ module Control.Monad.Bayes.Weighted (
     hoist,
                   ) where
 
-import Control.Arrow (second)
--- import Control.Applicative (($>))
-import Data.Monoid
 import Control.Monad.Trans
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans.State
 
 import Numeric.Log
 import Control.Monad.Bayes.Class
 
--- | Representation of a weight in importance sampling algorithms.
--- Internally represented in log-domain, but semantically a non-negative real number.
--- 'Monoid' instance with respect to multiplication.
-newtype Weight = Weight (Product (Log Double))
-    deriving(Eq, Num, Ord, Show, Monoid)
-
--- | Semantic conversion.
-weight :: Log Double -> Weight
-weight = Weight . Product
-
--- | Inverse of `weight`.
-unWeight :: Weight -> Log Double
-unWeight (Weight (Product p)) = p
-
 -- | Executes the program using the prior distribution, while accumulating likelihood.
-newtype Weighted m a = Weighted (WriterT Weight m a)
+newtype Weighted m a = Weighted (StateT (Log Double) m a)
+    --StateT is more efficient than WriterT
     deriving(Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
 
 instance Monad m => MonadCond (Weighted m) where
-  score w = Weighted (tell $ weight w)
+  score w = Weighted (modify (* w))
 
 instance MonadSample m => MonadInfer (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
 runWeighted :: (Functor m) => Weighted m a -> m (a, Log Double)
-runWeighted (Weighted m) = second unWeight <$> runWriterT m
+runWeighted (Weighted m) = runStateT m 1
 
 -- | Compute the weight and discard the sample.
 extractWeight :: Functor m => Weighted m a -> m (Log Double)
@@ -70,7 +51,7 @@ extractWeight m = snd <$> runWeighted m
 withWeight :: (Monad m) => m (a, Log Double) -> Weighted m a
 withWeight m = Weighted $ do
   (x,w) <- lift m
-  tell (weight w)
+  modify (* w)
   return x
 
 -- | Discard the weight.
@@ -96,4 +77,4 @@ pullWeight m = withWeight $ withWeight $ do
 
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
-hoist t (Weighted m) = Weighted $ mapWriterT t m
+hoist t (Weighted m) = Weighted $ mapStateT t m
