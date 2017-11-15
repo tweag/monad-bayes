@@ -82,7 +82,7 @@ hoistT f (Traced m d) = Traced m (f d)
 hoistM :: Monad m => (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistM f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) d
 
-hoistMT :: Monad m => (forall x. m x -> n x) -> Traced m a -> Traced n a
+hoistMT :: (Monad m, Monad n) => (forall x. m x -> n x) -> Traced m a -> Traced n a
 hoistMT f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) (f d)
 
 transformModel :: (Weighted (FreeSampler m) a -> Weighted (FreeSampler m) b)

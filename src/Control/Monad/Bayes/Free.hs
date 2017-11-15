@@ -4,23 +4,15 @@ module Control.Monad.Bayes.Free (
   hoist,
   interpret,
   withRandomness,
-  withPartialRandomness,
-  pullWeight,
-  pullPopulation,
-  pushPopulation
+  withPartialRandomness
 ) where
-
-import Numeric.Log
-import Data.Bifunctor (first, second)
 
 import Control.Monad.Trans
 import Control.Monad.Writer
 import Control.Monad.State
-import Control.Monad.Trans.Free
+import Control.Monad.Trans.Free.Church
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (hoist, pullWeight)
-import Control.Monad.Bayes.Population hiding (hoist, pullWeight)
 
 newtype SamF a = Random (Double -> a)
 
@@ -28,10 +20,10 @@ instance Functor SamF where
   fmap f (Random k) = Random (f . k)
 
 
-newtype FreeSampler m a = FreeSampler (FreeT SamF m a)
+newtype FreeSampler m a = FreeSampler (FT SamF m a)
   deriving(Functor,Applicative,Monad,MonadTrans)
 
-runFreeSampler :: FreeSampler m a -> FreeT SamF m a
+runFreeSampler :: FreeSampler m a -> FT SamF m a
 runFreeSampler (FreeSampler m) = m
 
 instance Monad m => MonadFree SamF (FreeSampler m) where
@@ -40,8 +32,8 @@ instance Monad m => MonadFree SamF (FreeSampler m) where
 instance Monad m => MonadSample (FreeSampler m) where
   random = FreeSampler $ liftF (Random id)
 
-hoist :: (Monad m) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
-hoist f (FreeSampler m) = FreeSampler (hoistFreeT f m)
+hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
+hoist f (FreeSampler m) = FreeSampler (hoistFT f m)
 
 interpret :: MonadSample m => FreeSampler m a -> m a
 interpret (FreeSampler m) = iterT f m where
@@ -57,7 +49,7 @@ withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness w
 
 withPartialRandomness :: MonadSample m => [Double] -> FreeSampler m a -> m (a, [Double])
 withPartialRandomness randomness (FreeSampler m) =
-  runWriterT $ evalStateT (iterTM f $ hoistFreeT lift m) randomness where
+  runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness where
     f (Random k) = do
       -- This block runs in StateT [Double] (WriterT [Double]) m.
       -- StateT propagates consumed randomness while WriterT records
@@ -68,35 +60,3 @@ withPartialRandomness randomness (FreeSampler m) =
             y:ys -> put ys >> return y
       tell [x]
       k x
-
-pullWeight :: Monad m => FreeSampler (Weighted m) a -> Weighted (FreeSampler m) a
-pullWeight (FreeSampler m) = withWeight $ FreeSampler $ f m where
-  f n = FreeT $ do
-    (t, p) <- runWeighted $ runFreeT n
-    return $ case t of
-      Pure x -> Pure (x,p)
-      Free s -> Free $ fmap (fmap (second (*p)) . f) s
-
-pullPopulation :: Monad m => FreeSampler (Population m) a -> Population (FreeSampler m) a
-pullPopulation (FreeSampler m) = fromWeightedList $ FreeSampler $ f m where
-  f n = FreeT $ do
-    ps <- runPopulation $ runFreeT n
-    let (ts, ws) = unzip ps
-    let isPure (Pure _) = True
-        isPure _ = False
-        isFree = not . isPure
-    if all isPure ts then
-      let xs = map (\(Pure x) -> x) ts in return $ Pure (zip xs ws)
-    else if all isFree ts then
-      return $ Free $ Random $ \u -> f $ FreeT $ fromWeightedList $ concat <$> sequence [fmap (map (second (* w))) (runPopulation $ runFreeT $ s u) | (Free (Random s), w) <- ps]
-    else
-      error "pullPopulation: different sizes in population"
-
-pushPopulation :: Monad m => Population (FreeSampler m) a -> FreeSampler (Population m) a
-pushPopulation m = FreeSampler $ f (runFreeSampler $ runPopulation m) where
-  f :: Monad m => FreeT SamF m [(a, Log Double)] -> FreeT SamF (Population m) a
-  f n = FreeT $ fromWeightedList $ do
-    t <- runFreeT n
-    case t of
-      Pure xs -> return $ map (first Pure) xs
-      Free (Random s) -> return [(Free (Random (f . s)), 1)]

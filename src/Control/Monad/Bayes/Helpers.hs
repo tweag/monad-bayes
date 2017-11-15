@@ -55,11 +55,11 @@ hoistP = Pop.hoist
 hoistS :: (forall x. m x -> m x) -> S m a -> S m a
 hoistS = Seq.hoistFirst
 
-hoistF :: (Monad m) => (forall x. m x -> n x) -> F m a -> F n a
+hoistF :: (Monad m, Monad n) => (forall x. m x -> n x) -> F m a -> F n a
 hoistF = Free.hoist
 
 
-hoistWF :: Monad m
+hoistWF :: (Monad m, Monad n)
       => (forall x. m x -> n x)
       -> W (F m) a -> W (F n) a
 hoistWF m = hoistW $ hoistF m
