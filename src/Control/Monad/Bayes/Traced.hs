@@ -16,14 +16,12 @@ Portability : GHC
 module Control.Monad.Bayes.Traced (
   Traced,
   hoistT,
-  hoistM,
-  hoistMT,
-  transformModel,
   marginal,
   mhStep,
   mh
 ) where
 
+import Data.Bifunctor (first,second)
 import Data.Monoid ((<>))
 import Control.Applicative (liftA2)
 import Control.Monad.Trans
@@ -41,59 +39,48 @@ type Trace = [Double]
 emptyTrace :: Applicative m => m Trace
 emptyTrace = pure []
 
-data Traced m a = Traced (Weighted (FreeSampler m) a) (m [Double])
+data Traced m a = Traced (Weighted (FreeSampler m) a) (m ([Double], a))
 
-traceDist :: Traced m a -> m [Double]
+traceDist :: Traced m a -> m ([Double], a)
 traceDist (Traced _ d) = d
 
 model :: Traced m a -> Weighted (FreeSampler m) a
 model (Traced m _) = m
 
 instance Monad m => Functor (Traced m) where
-  fmap f (Traced m d) = Traced (fmap f m) d
+  fmap f (Traced m d) = Traced (fmap f m) (fmap (second f) d)
 
 instance Monad m => Applicative (Traced m) where
-  pure x = Traced (pure x) emptyTrace
-  (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<>) df dx)
+  pure x = Traced (pure x) (pure ([],x))
+  (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) ((\(t,x) (r,y) -> (t <> r, x y)) <$> df <*> dx)
 
 instance Monad m => Monad (Traced m) where
   (Traced mx dx) >>= f = Traced my dy where
     dy = do
-      us <- dx
-      x <- prior $ Weighted.hoist (withRandomness us) mx
-      vs <- traceDist $ f x
-      return (us <> vs)
+      (us, x) <- dx
+      (vs, y) <- traceDist $ f x
+      return (us <> vs, y)
     my = mx >>= model . f
 
 instance MonadTrans Traced where
-  lift x = Traced (lift $ lift x) emptyTrace
+  lift m = Traced (lift $ lift m) (fmap (\x -> ([],x)) m)
 
 instance MonadSample m => MonadSample (Traced m) where
-  random = Traced random (fmap (:[]) random)
+  random = Traced random (fmap (\u -> ([u],u)) random)
 
 instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced (score w) (score w >> pure [])
+  score w = Traced (score w) (score w >> pure ([],()))
 
 instance MonadInfer m => MonadInfer (Traced m)
 
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced m d) = Traced m (f d)
 
-hoistM :: Monad m => (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistM f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) d
-
-hoistMT :: (Monad m, Monad n) => (forall x. m x -> n x) -> Traced m a -> Traced n a
-hoistMT f (Traced m d) = Traced (Weighted.hoist (FreeSampler.hoist f) m) (f d)
-
-transformModel :: (Weighted (FreeSampler m) a -> Weighted (FreeSampler m) b)
-               -> Traced m a -> Traced m b
-transformModel f (Traced m d) = Traced (f m) d
-
 marginal :: Monad m => Traced m a -> m a
-marginal (Traced m d) = d >>= (`withRandomness` prior m)
+marginal (Traced _ d) = fmap snd d
 
-mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> [Double] -> m [Double]
-mhTrans m us = do
+mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> ([Double], a) -> m ([Double], a)
+mhTrans m (us,a) = do
   -- TODO: Cache the weight so that we don't need to recompute it here.
   (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m
   us' <- do
@@ -102,10 +89,10 @@ mhTrans m us = do
     u' <- random
     let (xs, _:ys) = splitAt i us
     return $ xs ++ (u':ys)
-  ((_, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+  ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
   accept <- bernoulli ratio
-  return $ if accept then vs else us
+  return $ if accept then (vs,b) else (us,a)
 
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d' where
@@ -113,7 +100,7 @@ mhStep (Traced m d) = Traced m d' where
 
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 -- Note that this re-runs the simulation for each trace produced.
-mh n (Traced m d) = t >>= mapM (\us -> prior $ Weighted.hoist (withRandomness us) m) where
+mh n (Traced m d) = fmap (map snd) t where
   t = f n
   f 0 = fmap (:[]) d
   f k = do

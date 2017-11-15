@@ -19,17 +19,9 @@ module Control.Monad.Bayes.Helpers (
   F,
   hoistF,
   T,
-  hoistM,
   hoistT,
   hoistWF,
-  hoistPM,
-  hoistMP,
   hoistSP,
-  hoistMS,
-  hoistSM,
-  hoistSPM,
-  hoistSMP,
-  hoistMPS,
   hoistSTP
 ) where
 
@@ -64,45 +56,10 @@ hoistWF :: (Monad m, Monad n)
       -> W (F m) a -> W (F n) a
 hoistWF m = hoistW $ hoistF m
 
-hoistPM :: Monad m
-      => (forall x. m x -> m x)
-      -> P (T m) a -> P (T m) a
-hoistPM m = hoistP $ hoistM m
-
-hoistMP :: Monad m
-        => (forall x. m x -> m x)
-        -> T (P m) a -> T (P m) a
-hoistMP m = hoistM $ hoistP m
-
 hoistSP :: Monad m
         => (forall x. m x -> m x)
         -> S (P m) a -> S (P m) a
 hoistSP m = hoistS $ hoistP m
-
-hoistMS :: Monad m
-        => (forall x. m x -> m x)
-        -> T (S m) a -> T (S m) a
-hoistMS m = hoistM $ hoistS m
-
-hoistSM :: Monad m
-        => (forall x. m x -> m x)
-        -> S (T m) a -> S (T m) a
-hoistSM m = hoistS $ hoistM m
-
-hoistSPM :: Monad m
-         => (forall x. m x -> m x)
-         -> S (P (T m)) a -> S (P (T m)) a
-hoistSPM m = hoistS $ hoistPM m
-
-hoistSMP :: Monad m
-         => (forall x. m x -> m x)
-         -> S (T (P m)) a -> S (T (P m)) a
-hoistSMP m = hoistSM $ hoistP m
-
-hoistMPS :: Monad m
-         => (forall x. m x -> m x)
-         -> T (P (S m)) a -> T (P (S m)) a
-hoistMPS m = hoistMP $ hoistS m
 
 hoistSTP :: Monad m
          => (forall x. m x -> m x)
