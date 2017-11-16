@@ -34,10 +34,10 @@ transCheck2 = enumerate (collapse (spawn 2 >> sprinkler)) ~==
 
 resampleCheck :: Int -> Bool
 resampleCheck n =
-  (enumerate . collapse . resample) (spawn n >> sprinkler) ~==
+  (enumerate . collapse . resampleMultinomial) (spawn n >> sprinkler) ~==
   sprinklerExact
 
 popAvgCheck :: Bool
-popAvgCheck = expectation f Sprinkler.soft ~== expectation id (popAvg f $ normalizeProper Sprinkler.soft) where
+popAvgCheck = expectation f Sprinkler.soft ~== expectation id (popAvg f $ pushEvidence Sprinkler.soft) where
   f True = 10
   f False = 4

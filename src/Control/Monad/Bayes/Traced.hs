@@ -21,9 +21,8 @@ module Control.Monad.Bayes.Traced (
   mh
 ) where
 
-import Data.Bifunctor (first,second)
+import Data.Bifunctor (second)
 import Data.Monoid ((<>))
-import Control.Applicative (liftA2)
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
@@ -36,12 +35,9 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 type Trace = [Double]
 
-emptyTrace :: Applicative m => m Trace
-emptyTrace = pure []
+data Traced m a = Traced (Weighted (FreeSampler m) a) (m (Trace, a))
 
-data Traced m a = Traced (Weighted (FreeSampler m) a) (m ([Double], a))
-
-traceDist :: Traced m a -> m ([Double], a)
+traceDist :: Traced m a -> m (Trace, a)
 traceDist (Traced _ d) = d
 
 model :: Traced m a -> Weighted (FreeSampler m) a
@@ -79,7 +75,7 @@ hoistT f (Traced m d) = Traced m (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap snd d
 
-mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> ([Double], a) -> m ([Double], a)
+mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> (Trace, a) -> m (Trace, a)
 mhTrans m (us,a) = do
   -- TODO: Cache the weight so that we don't need to recompute it here.
   (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m

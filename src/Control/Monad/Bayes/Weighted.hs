@@ -17,7 +17,6 @@ module Control.Monad.Bayes.Weighted (
     prior,
     flatten,
     applyWeight,
-    pullWeight,
     hoist,
                   ) where
 
@@ -55,6 +54,7 @@ withWeight m = Weighted $ do
   return x
 
 -- | Discard the weight.
+-- This operation introduces bias.
 prior :: (Functor m) => Weighted m a -> m a
 prior = fmap fst . runWeighted
 
@@ -68,12 +68,6 @@ applyWeight m = do
   (x, w) <- runWeighted m
   factor w
   return x
-
--- | Switch the order of two 'Weighted' transformers.
-pullWeight :: Monad m => Weighted (Weighted m) a -> Weighted (Weighted m) a
-pullWeight m = withWeight $ withWeight $ do
-  ((x, p), q) <- runWeighted $ runWeighted m
-  return ((x, q), p)
 
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a

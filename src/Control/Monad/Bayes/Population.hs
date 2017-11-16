@@ -11,24 +11,19 @@ Portability : GHC
 
 module Control.Monad.Bayes.Population (
     Population,
-    unlift,
     runPopulation,
     explicitPopulation,
     fromWeightedList,
     spawn,
-    resample,
     resampleMultinomial,
     resampleSystematic,
     extractEvidence,
     pushEvidence,
-    pullWeight,
-    pushWeight,
     proper,
     evidence,
     collapse,
     mapPopulation,
     normalize,
-    normalizeProper,
     popAvg,
     flatten,
     hoist
@@ -36,7 +31,7 @@ module Control.Monad.Bayes.Population (
 
 import Prelude hiding (sum, all)
 
-import Control.Arrow (first, second)
+import Control.Arrow (second)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
 import Control.Monad (replicateM)
@@ -46,18 +41,13 @@ import qualified Data.Vector as V
 
 import Numeric.Log
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (flatten, hoist, pullWeight)
+import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
 
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving(Functor,Applicative,Monad,MonadIO,MonadSample,MonadCond,MonadInfer)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
-
-unlift :: Functor m => Population m a -> m a
-unlift m = fmap f (runPopulation m) where
-  f [(x,1)] = x
-  f _ = error "Population.unlift: population was non-trivial"
 
 -- | Explicit representation of the weighted sample with weights in log domain.
 runPopulation :: Functor m => Population m a -> m [(a, Log Double)]
@@ -119,16 +109,14 @@ resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 multinomial :: MonadSample m => V.Vector Double -> m [Int]
 multinomial ps = replicateM (V.length ps) (categorical ps)
 
--- | Resample the population using the underlying monad and a simple resampling scheme.
+-- | Resample the population using the underlying monad and a multinomial resampling scheme.
 -- The total weight is preserved.
-resample :: (MonadSample m)
-         => Population m a -> Population m a
-resample = resampleGeneric multinomial
-
 resampleMultinomial :: (MonadSample m)
-                    => Population m a -> Population m a
-resampleMultinomial = resample
+         => Population m a -> Population m a
+resampleMultinomial = resampleGeneric multinomial
 
+-- | Separate the sum of weights into the 'Weighted' transformer.
+-- Weights are normalized after this operation.
 extractEvidence :: Monad m
                 => Population m a -> Population (Weighted m) a
 extractEvidence m = fromWeightedList $ do
@@ -139,19 +127,11 @@ extractEvidence m = fromWeightedList $ do
   factor z
   return $ zip xs ws
 
+-- | Push the evidence estimator as a score to the transformed monad.
+-- Weights are normalized after this operation.
 pushEvidence :: MonadCond m
            => Population m a -> Population m a
 pushEvidence = hoist applyWeight . extractEvidence
-
-pullWeight :: Monad m => Population (Weighted m) a -> Weighted (Population m) a
-pullWeight m = withWeight $ fromWeightedList $ do
-  (pop, w) <- runWeighted $ runPopulation m
-  return $ map (first (,w)) pop
-
-pushWeight :: Monad m => Weighted (Population m) a -> Population (Weighted m) a
-pushWeight m = extractEvidence $ fromWeightedList $ do
-  ps <- runPopulation $ runWeighted m
-  return $ map (\((x, p), q) -> (x, p*q)) ps
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
@@ -185,12 +165,6 @@ mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 -- This transformation introduces bias.
 normalize :: (Monad m) => Population m a -> Population m a
 normalize = hoist prior . extractEvidence
-
--- | Normalizes the weights in the population so that their sum is 1.
--- The sum of weights is pushed as a factor to the transformed monad,
--- so bo bias is introduced.
-normalizeProper :: (MonadCond m) => Population m a -> Population m a
-normalizeProper = pushEvidence
 
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
