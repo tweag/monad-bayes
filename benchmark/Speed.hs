@@ -137,13 +137,13 @@ buildModel (LDA dataset) = show <$> LDA.lda dataset
 modelLength :: Model -> Int
 modelLength (LR xs) = length xs
 modelLength (HMM xs) = length xs
-modelLength (LDA xs) = length xs
+modelLength (LDA xs) = sum (map length xs)
 
 data Alg = MH Int | SMC Int | RMSMC Int Int
 instance Show Alg where
   show (MH n) = "MH" ++ show n
   show (SMC n) = "SMC" ++ show n
-  show (RMSMC n t) = "SMCRM" ++ show n ++ "-" ++ show t
+  show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 runAlg :: Model -> Alg -> SamplerIO String
 runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
@@ -191,34 +191,21 @@ supported :: (ProbProgSys, Model, Alg) -> Bool
 supported (Anglican, _, RMSMC _ _) = False
 supported _ = True
 
-main :: IO ()
-main = do
+systems = [
+            MonadBayes,
+            Anglican,
+            WebPPL
+          ]
 
-  g <- createSystemRandom
-  l <- startLein
-  let e = Env g l
-
-  let systems = [
-                  -- MonadBayes,
-                  Anglican
-                  -- WebPPL
-                ]
-
-  lrData <- sampleIOwith (replicateM 100 $ (,) <$> uniform (-1) 1 <*> bernoulli 0.5) g
-  let lrLengths = [3, 10, 30, 100]
-  hmmData <- sampleIOwith (replicateM 100 (uniformD [0,1,2])) g
-  let hmmLengths = [3, 10, 30, 100]
-  ldaData <- sampleIOwith (replicateM 5 (replicateM 100 (uniformD LDA.vocabluary))) g
-  let ldaLengths = [3, 10, 30]--, 100]
-
-  let models = map (LR . (`take` lrData)) lrLengths ++
-               map (HMM . (`take` hmmData)) hmmLengths ++
-               map (\n -> LDA $ map (take n) ldaData) ldaLengths
-
-  let algs = [MH 10, MH 30, MH 100,
-              SMC 10, SMC 30, SMC 100]--, RMSMC 10 1, RMSMC 30 1, RMSMC 100 1, RMSMC 10 3, RMSMC 30 3, RMSMC 100 1]
-
-  let benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
+lengthBenchmarks e lrData hmmData ldaData = benchmarks where
+  lrLengths = map (*10) [1..10]
+  hmmLengths = map (*10) [1..10]
+  ldaLengths = map (*5) [1..10]
+  models = map (LR . (`take` lrData)) lrLengths ++
+           map (HMM . (`take` hmmData)) hmmLengths ++
+           map (\n -> LDA $ map (take n) ldaData) ldaLengths
+  algs = [MH 100, SMC 100, RMSMC 10 1]
+  benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
         xs = do
           s <- systems
@@ -226,5 +213,36 @@ main = do
           a <- algs
           return (s,m,a)
 
-  let config = defaultConfig{csvFile = Just "speed.csv", rawDataFile = Just "raw.dat", timeLimit = 60}
-  defaultMainWith config benchmarks
+samplesBenchmarks e lrData hmmData ldaData = benchmarks where
+  lrLengths = [50]
+  hmmLengths = [20]
+  ldaLengths = [10]
+  models = map (LR . (`take` lrData)) lrLengths ++
+           map (HMM . (`take` hmmData)) hmmLengths ++
+           map (\n -> LDA $ map (take n) ldaData) ldaLengths
+  algs = map (\x -> MH (10*x)) [1..10] ++ map (\x -> SMC (10*x)) [1..10]
+         ++ map (RMSMC 10) [1..10]
+  benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
+        uncurry3 f (x,y,z) = f x y z
+        xs = do
+          s <- systems
+          m <- models
+          a <- algs
+          return (s,m,a)
+
+main :: IO ()
+main = do
+
+  g <- createSystemRandom
+  l <- startLein
+  let e = Env g l
+
+  lrData <- sampleIOwith (replicateM 100 $ (,) <$> uniform (-1) 1 <*> bernoulli 0.5) g
+  hmmData <- sampleIOwith (replicateM 100 (uniformD [0,1,2])) g
+  ldaData <- sampleIOwith (replicateM 5 (replicateM 100 (uniformD LDA.vocabluary))) g
+
+  let configLength = defaultConfig{csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
+  defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
+
+  let configSamples = defaultConfig{csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
+  defaultMainWith configLength (samplesBenchmarks e lrData hmmData ldaData)
