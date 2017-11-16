@@ -77,7 +77,6 @@ marginal (Traced _ d) = fmap snd d
 
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> (Trace, a) -> m (Trace, a)
 mhTrans m (us,a) = do
-  -- TODO: Cache the weight so that we don't need to recompute it here.
   (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m
   us' <- do
     let n = length us
@@ -95,7 +94,6 @@ mhStep (Traced m d) = Traced m d' where
   d' = d >>= mhTrans m
 
 mh :: MonadSample m => Int -> Traced m a -> m [a]
--- Note that this re-runs the simulation for each trace produced.
 mh n (Traced m d) = fmap (map snd) t where
   t = f n
   f 0 = fmap (:[]) d
