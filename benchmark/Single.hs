@@ -39,7 +39,7 @@ runAlg model alg =
           (_, m) = getModel model
       in show <$> (prior $ mh t m)
     RMSMC ->
-      let n = 100
+      let n = 10
           t = 1
           (k, m) = getModel model
       in show <$> (runPopulation $ rmsmc k n t m)
