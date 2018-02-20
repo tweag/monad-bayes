@@ -125,7 +125,7 @@ plt.savefig("length.pdf")
 
 # plot execution time vs. # samples
 
-benchmarks = pd.read_csv("speed.csv")
+benchmarks = pd.read_csv("speed-samples.csv")
 results = unpack_names(benchmarks["Name"])
 results["time"] = benchmarks["Mean"]
 results["timeLB"] = benchmarks["MeanLB"]

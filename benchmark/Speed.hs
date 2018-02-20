@@ -245,4 +245,4 @@ main = do
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
 
   let configSamples = defaultConfig{csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configLength (samplesBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
