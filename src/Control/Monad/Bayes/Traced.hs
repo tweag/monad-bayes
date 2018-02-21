@@ -9,10 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  UndecidableInstances
- #-}
-
 module Control.Monad.Bayes.Traced (
   Traced,
   hoistT,
@@ -23,6 +19,7 @@ module Control.Monad.Bayes.Traced (
 
 import Data.Bifunctor (second)
 import Data.Monoid ((<>))
+import Control.Monad (join)
 import Control.Monad.Trans
 import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
@@ -35,45 +32,51 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 type Trace = [Double]
 
-data Traced m a = Traced (Weighted (FreeSampler m) a) (m (Trace, a))
+newtype Traced m a = Traced (m (Weighted (FreeSampler m) a, (Trace, a)))
+runTraced :: Traced m a -> m (Weighted (FreeSampler m) a, (Trace, a))
+runTraced (Traced c) = c
 
-traceDist :: Traced m a -> m (Trace, a)
-traceDist (Traced _ d) = d
-
-model :: Traced m a -> Weighted (FreeSampler m) a
-model (Traced m _) = m
+pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where
-  fmap f (Traced m d) = Traced (fmap f m) (fmap (second f) d)
+  fmap f (Traced c) = Traced $ do
+    (m, t) <- c
+    let m' = fmap f m
+    let t' = second f t
+    return (m', t')
 
 instance Monad m => Applicative (Traced m) where
-  pure x = Traced (pure x) (pure ([],x))
-  (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) ((\(t,x) (r,y) -> (t <> r, x y)) <$> df <*> dx)
+  pure x = Traced $ pure (pure x, ([], x))
+  (Traced cf) <*> (Traced cx) = Traced $ do
+    (mf, (tf, f)) <- cf
+    (mx, (tx, x)) <- cx
+    return (mf <*> mx, (tf <> tx, f x))
 
 instance Monad m => Monad (Traced m) where
-  (Traced mx dx) >>= f = Traced my dy where
-    dy = do
-      (us, x) <- dx
-      (vs, y) <- traceDist $ f x
-      return (us <> vs, y)
-    my = mx >>= model . f
+  (Traced cx) >>= f = Traced $ do
+    (mx, (tx, x)) <- cx
+    let m = mx >>= pushM . fmap fst . runTraced . f
+    (_, (ty, y)) <- runTraced $ f x
+    let t = tx <> ty
+    return (m, (t, y))
 
 instance MonadTrans Traced where
-  lift m = Traced (lift $ lift m) (fmap (\x -> ([],x)) m)
+  lift m = Traced $ fmap ((,) (lift $ lift m) . (,) []) m
 
 instance MonadSample m => MonadSample (Traced m) where
-  random = Traced random (fmap (\u -> ([u],u)) random)
+  random = Traced $ fmap ((,) random . \u -> ([u], u)) random
 
 instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced (score w) (score w >> pure ([],()))
+  score w = Traced $ fmap ((,) (score w)) (score w >> pure ([],()))
 
 instance MonadInfer m => MonadInfer (Traced m)
 
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistT f (Traced m d) = Traced m (f d)
+hoistT f (Traced c) = Traced (f c)
 
 marginal :: Monad m => Traced m a -> m a
-marginal (Traced _ d) = fmap snd d
+marginal (Traced c) = fmap (snd . snd) c
 
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> (Trace, a) -> m (Trace, a)
 mhTrans m (us,a) = do
@@ -90,14 +93,19 @@ mhTrans m (us,a) = do
   return $ if accept then (vs,b) else (us,a)
 
 mhStep :: MonadSample m => Traced m a -> Traced m a
-mhStep (Traced m d) = Traced m d' where
-  d' = d >>= mhTrans m
+mhStep (Traced c) = Traced $ do
+  (m, t) <- c
+  t' <- mhTrans m t
+  return (m, t')
 
 mh :: MonadSample m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map snd) t where
-  t = f n
-  f 0 = fmap (:[]) d
-  f k = do
-    x:xs <- f (k-1)
-    y <- mhTrans m x
-    return (y:x:xs)
+mh n (Traced c) = do
+  (m,t) <- c
+  let f 0 = return [t]
+      f k = do
+        x:xs <- f (k-1)
+        y <- mhTrans m x
+        return (y:x:xs)
+  ts <- f n
+  let xs = map snd ts
+  return xs
