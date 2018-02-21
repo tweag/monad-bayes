@@ -28,7 +28,7 @@ rmsmc :: MonadSample m
       -> Population m a
 rmsmc k n t =
   marginal .
-  sis (composeCopies t mhStep . hoistT resampleSystematic) k .
+  sis (freeze . composeCopies t mhStep . hoistT resampleSystematic) k .
   hoistS (hoistT (spawn n >>))
 
 -- | Apply a function a given number of times.
