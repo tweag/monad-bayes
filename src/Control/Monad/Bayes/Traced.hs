@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Traced (
   Traced,
   hoistT,
   marginal,
+  freeze,
   mhStep,
   mh
 ) where
@@ -77,6 +78,11 @@ hoistT f (Traced c) = Traced (f c)
 
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced c) = fmap (snd . snd) c
+
+freeze :: Monad m => Traced m a -> Traced m a
+freeze (Traced c) = Traced $ do
+  (_, (_, x)) <- c
+  return (return x, ([], x))
 
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> (Trace, a) -> m (Trace, a)
 mhTrans m (us,a) = do
