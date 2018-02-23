@@ -147,7 +147,7 @@ instance Show Alg where
 runAlg :: Model -> Alg -> SamplerIO String
 runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
-runAlg model (RMSMC n t) = show <$> runPopulation (rmsmc (modelLength model) n t (buildModel model))
+runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g

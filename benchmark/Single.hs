@@ -42,7 +42,7 @@ runAlg model alg =
       let n = 10
           t = 1
           (k, m) = getModel model
-      in show <$> (runPopulation $ rmsmc k n t m)
+      in show <$> (runPopulation $ rmsmcLocal k n t m)
 
 
 infer :: Model -> Alg -> IO ()
