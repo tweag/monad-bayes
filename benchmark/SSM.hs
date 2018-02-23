@@ -23,7 +23,7 @@ main = sampleIO $ do
   liftIO $ print $ show smcRes
 
   liftIO $ print "RM-SMC"
-  smcrmRes <- runPopulation $ rmsmc t 10 10 (param >>= model ys)
+  smcrmRes <- runPopulation $ rmsmcLocal t 10 10 (param >>= model ys)
   liftIO $ print $ show smcrmRes
 
   liftIO $ print "PMMH"
