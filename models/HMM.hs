@@ -35,16 +35,15 @@ emissionMean x = mean x where
   mean 2 = 0
 
 -- | Initial state distribution
-start :: MonadSample m => m [Int]
-start = uniformD [[0],[1],[2]]
+start :: MonadSample m => m Int
+start = uniformD [0,1,2]
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
 hmm :: (MonadInfer m) => [Double] -> m [Int]
-hmm dataset = fmap reverse states where
-  states = foldl expand start dataset
-  --expand :: MonadBayes m => m [Int] -> Double -> m [Int]
-  expand d y = do
-    rest <- d
-    x    <- trans $ head rest
-    factor $ normalPdf (emissionMean x) 1 y
-    return (x:rest)
+hmm dataset = f dataset (const . return) where
+  expand x y = do
+    x' <- trans x
+    factor $ normalPdf (emissionMean x') 1 y
+    return x'
+  f [] k = start >>= k []
+  f (y:ys) k = f ys (\xs x -> expand x y >>= k (x:xs))
