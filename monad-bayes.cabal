@@ -37,6 +37,8 @@ library
                      , Control.Monad.Bayes.Weighted
                      , Control.Monad.Bayes.Sequential
                      , Control.Monad.Bayes.Population
+                     , Control.Monad.Bayes.Traced.Static
+                     , Control.Monad.Bayes.Traced.Dynamic
                      , Control.Monad.Bayes.Traced
                      , Control.Monad.Bayes.Enumerator
                      , Control.Monad.Bayes.Helpers
@@ -44,6 +46,7 @@ library
                      , Control.Monad.Bayes.Inference.RMSMC
                      , Control.Monad.Bayes.Inference.PMMH
                      , Control.Monad.Bayes.Inference.SMC2
+  other-modules:       Control.Monad.Bayes.Traced.Common
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl

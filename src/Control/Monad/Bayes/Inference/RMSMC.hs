@@ -18,6 +18,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential as Seq
 import Control.Monad.Bayes.Traced as Tr
+import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
 import Control.Monad.Bayes.Helpers
 
 -- | Resample-move Sequential Monte Carlo.
@@ -39,12 +40,12 @@ rmsmcLocal :: MonadSample m
            => Int -- ^ number of timesteps
            -> Int -- ^ number of particles
            -> Int -- ^ number of MH transitions after each resampling
-           -> Sequential (Traced (Population m)) a -- ^ model
+           -> Sequential (TrDyn.Traced (Population m)) a -- ^ model
            -> Population m a
 rmsmcLocal k n t =
-  marginal .
-  sis (freeze . composeCopies t mhStep . hoistT resampleSystematic) k .
-  hoistS (hoistT (spawn n >>))
+  TrDyn.marginal .
+  sis (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoistT resampleSystematic) k .
+  hoistS (TrDyn.hoistT (spawn n >>))
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
