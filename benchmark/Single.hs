@@ -16,13 +16,26 @@ import qualified HMM
 import qualified LogReg
 import qualified LDA
 
-data Model = LR | HMM | LDA
-  deriving(Read,Show)
+data Model = LR Int | HMM Int | LDA (Int, Int)
+  deriving(Show, Read)
+parseModel :: String -> Maybe Model
+parseModel s =
+  case s of
+    'L':'R':n -> Just $ LR (read n)
+    'H':'M':'M':n -> Just $ HMM (read n)
+    'L':'D':'A':n -> Just $ LDA (5, read n)
+    _ -> Nothing
 
-getModel :: MonadInfer m => Model -> (Int, m String)
-getModel LR = (length LogReg.xs, show <$> LogReg.logisticRegression (zip LogReg.xs LogReg.labels))
-getModel HMM = (length HMM.values, show <$> HMM.hmm HMM.values)
-getModel LDA = (length (concat LDA.docs), show <$> LDA.lda LDA.docs)
+getModel :: MonadInfer m => Model ->  (Int, m String)
+getModel model = (size model, program model) where
+  size (LR n) = n
+  size (HMM n) = n
+  size (LDA (d,w)) = d*w
+  synthesize :: SamplerST a -> (a -> b) -> b
+  synthesize dataGen prog = prog (sampleSTfixed dataGen)
+  program (LR n) = show <$> synthesize (LogReg.syntheticData n) LogReg.logisticRegression
+  program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
+  program (LDA (d,w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
 
 data Alg = SMC | MH | RMSMC
   deriving(Read,Show)
@@ -40,7 +53,7 @@ runAlg model alg =
       in show <$> (prior $ mh t m)
     RMSMC ->
       let n = 10
-          t = 1
+          t = 10
           (k, m) = getModel model
       in show <$> (runPopulation $ rmsmcLocal k n t m)
 
@@ -53,7 +66,7 @@ infer model alg = do
 
 opts :: ParserInfo (Model, Alg)
 opts = flip info fullDesc $ liftA2 (,) model alg where
-  model = option auto
+  model = option (maybeReader parseModel)
           ( long "model"
           <> short 'm'
           <> help "Model")
