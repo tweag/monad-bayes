@@ -192,9 +192,9 @@ supported (Anglican, _, RMSMC _ _) = False
 supported _ = True
 
 systems = [
-            MonadBayes,
-            Anglican,
-            WebPPL
+            MonadBayes
+            -- Anglican,
+            -- WebPPL
           ]
 
 lengthBenchmarks e lrData hmmData ldaData = benchmarks where
@@ -237,9 +237,9 @@ main = do
   l <- startLein
   let e = Env g l
 
-  lrData <- sampleIOwith (replicateM 100 $ (,) <$> uniform (-1) 1 <*> bernoulli 0.5) g
-  hmmData <- sampleIOwith (replicateM 100 (uniformD [0,1,2])) g
-  ldaData <- sampleIOwith (replicateM 5 (replicateM 100 (uniformD LDA.vocabluary))) g
+  lrData <- sampleIOwith (LogReg.syntheticData 100) g
+  hmmData <- sampleIOwith (HMM.syntheticData 100) g
+  ldaData <- sampleIOwith (LDA.syntheticData 5 100) g
 
   let configLength = defaultConfig{csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)

@@ -3,6 +3,8 @@
 
 module LogReg where
 
+import Control.Monad (replicateM)
+
 import Numeric.Log
 import Control.Monad.Bayes.Class
 
@@ -24,3 +26,10 @@ logisticRegression dat = do
         factor $ (Exp . log) $ if label then p else 1 - p
   mapM_ (uncurry obs) dat
   sigmoid 8
+
+syntheticData :: MonadSample m => Int -> m [(Double, Bool)]
+syntheticData n = replicateM n syntheticPoint where
+    syntheticPoint = do
+      x <- uniform (-1) 1
+      label <- bernoulli 0.5
+      return (x,label)

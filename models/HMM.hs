@@ -7,11 +7,13 @@
 
 module HMM (
   values,
-  hmm
+  hmm,
+  syntheticData
   ) where
 
 --Hidden Markov Models
 
+import Control.Monad (replicateM)
 import Data.Vector (fromList)
 
 import Control.Monad.Bayes.Class
@@ -47,3 +49,7 @@ hmm dataset = f dataset (const . return) where
     return x'
   f [] k = start >>= k []
   f (y:ys) k = f ys (\xs x -> expand x y >>= k (x:xs))
+
+syntheticData :: MonadSample m => Int -> m [Double]
+syntheticData n = replicateM n syntheticPoint where
+    syntheticPoint = uniformD [0,1,2]

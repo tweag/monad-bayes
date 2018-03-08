@@ -4,6 +4,7 @@
 module LDA where
 
 import Numeric.Log
+import qualified Control.Monad as List (replicateM)
 import Data.Vector as V hiding (length, zip, mapM, mapM_)
 import qualified Data.Map as Map
 
@@ -49,3 +50,7 @@ lda docs = do
 
   -- return samples since Discrete is not NFData
   mapM (categorical . snd) $ Map.toList word_dist_for_topic
+
+syntheticData :: MonadSample m => Int -> Int -> m [[String]]
+syntheticData d w = List.replicateM d (List.replicateM w syntheticWord) where
+  syntheticWord = uniformD vocabluary
