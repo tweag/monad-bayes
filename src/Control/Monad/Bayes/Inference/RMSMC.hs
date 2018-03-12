@@ -11,7 +11,8 @@ Portability : GHC
 
 module Control.Monad.Bayes.Inference.RMSMC (
   rmsmc,
-  rmsmcLocal
+  rmsmcLocal,
+  rmsmcBasic
 ) where
 
 import Control.Monad.Bayes.Class
@@ -19,6 +20,7 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential as Seq
 import Control.Monad.Bayes.Traced as Tr
 import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
+import qualified Control.Monad.Bayes.Traced.Basic as TrBas
 import Control.Monad.Bayes.Helpers
 
 -- | Resample-move Sequential Monte Carlo.
@@ -32,6 +34,18 @@ rmsmc k n t =
   marginal .
   sis (composeCopies t mhStep . hoistT resampleSystematic) k .
   hoistS (hoistT (spawn n >>))
+
+-- | Resample-move Sequential Monte Carlo.
+rmsmcBasic :: MonadSample m
+      => Int -- ^ number of timesteps
+      -> Int -- ^ number of particles
+      -> Int -- ^ number of MH transitions after each resampling
+      -> Sequential (TrBas.Traced (Population m)) a -- ^ model
+      -> Population m a
+rmsmcBasic k n t =
+  TrBas.marginal .
+  sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k .
+  hoistS (TrBas.hoistT (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered

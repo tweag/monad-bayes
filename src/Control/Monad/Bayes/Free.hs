@@ -4,8 +4,11 @@ module Control.Monad.Bayes.Free (
   hoist,
   interpret,
   withRandomness,
-  withPartialRandomness
+  withPartialRandomness,
+  runWith
 ) where
+
+import Data.Functor.Identity
 
 import Control.Monad.Trans
 import Control.Monad.Writer
@@ -46,6 +49,17 @@ withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness w
     case xs of
       [] -> error "FreeSampler: the list of randomness was too short"
       y:ys -> put ys >> k y
+
+runWith :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
+runWith randomness (FreeSampler m) =
+  runWriterT $ evalStateT (runF m return f) randomness where
+    f (Random k) = do
+      xs <- get
+      x <- case xs of
+            [] -> random
+            y:ys -> put ys >> return y
+      tell [x]
+      k x
 
 withPartialRandomness :: MonadSample m => [Double] -> FreeSampler m a -> m (a, [Double])
 withPartialRandomness randomness (FreeSampler m) =
