@@ -198,18 +198,23 @@ systems = [
           ]
 
 lengthBenchmarks e lrData hmmData ldaData = benchmarks where
-  lrLengths = map (*10) [1..10]
-  hmmLengths = map (*10) [1..10]
-  ldaLengths = map (*5) [1..10]
-  models = map (LR . (`take` lrData)) lrLengths ++
-           map (HMM . (`take` hmmData)) hmmLengths ++
-           map (\n -> LDA $ map (take n) ldaData) ldaLengths
-  algs = [MH 100, SMC 100, RMSMC 10 1]
+  lrLengths = [10] ++ map (*100) [1..10]
+  hmmLengths = [10] ++ map (*100) [1..10]
+  ldaLengths = [5] ++ map (*50) [1..10]
+  models =
+    map (LR . (`take` lrData)) lrLengths ++
+    map (HMM . (`take` hmmData)) hmmLengths ++
+    map (\n -> LDA $ map (take n) ldaData) ldaLengths
+  algs = [
+    MH 100
+    SMC 100,
+    RMSMC 10 1
+    ]
   benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
         xs = do
-          s <- systems
           m <- models
+          s <- systems
           a <- algs
           return (s,m,a)
 
@@ -220,14 +225,14 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks where
   models = map (LR . (`take` lrData)) lrLengths ++
            map (HMM . (`take` hmmData)) hmmLengths ++
            map (\n -> LDA $ map (take n) ldaData) ldaLengths
-  algs = map (\x -> MH (10*x)) [1..10] ++ map (\x -> SMC (10*x)) [1..10]
-         ++ map (RMSMC 10) [1..10]
+  algs =  map (\x -> MH (100*x)) [1..10] ++ map (\x -> SMC (100*x)) [1..10]
+         map (\x -> RMSMC 10 (10*x)) [1..10]
   benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
         xs = do
+          a <- algs
           s <- systems
           m <- models
-          a <- algs
           return (s,m,a)
 
 main :: IO ()
@@ -237,9 +242,9 @@ main = do
   l <- startLein
   let e = Env g l
 
-  lrData <- sampleIOwith (LogReg.syntheticData 100) g
-  hmmData <- sampleIOwith (HMM.syntheticData 100) g
-  ldaData <- sampleIOwith (LDA.syntheticData 5 100) g
+  lrData <- sampleIOwith (LogReg.syntheticData 1000) g
+  hmmData <- sampleIOwith (HMM.syntheticData 1000) g
+  ldaData <- sampleIOwith (LDA.syntheticData 5 1000) g
 
   let configLength = defaultConfig{csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)

@@ -53,9 +53,9 @@ runAlg model alg =
       in show <$> (prior $ mh t m)
     RMSMC ->
       let n = 10
-          t = 10
+          t = 1
           (k, m) = getModel model
-      in show <$> (runPopulation $ rmsmcLocal k n t m)
+      in show <$> (runPopulation $ rmsmcBasic k n t m)
 
 
 infer :: Model -> Alg -> IO ()
