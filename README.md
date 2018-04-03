@@ -6,6 +6,34 @@ A library for probabilistic programming in Haskell using probability monads. The
 
 For the code associated with Haskell2015 paper "Practical Probabilistic Programming with Monads" see the `haskell2015` branch.
 
+## Installation (using Stack)
+
+Ensure stack is already installed by following these [instructions](https://docs.hashttps://docs.haskellstack.org/en/stable/install_and_upgrade/)
+
+To fork repo:
+
+```
+git clone https://github.com/adscib/monad-bayes.git
+```
+
+To run the build:
+
+```
+stack build
+```
+
+To test the code:
+
+```
+stack test
+```
+
+To open interactive session:
+
+```
+stack ghci
+```
+
 ## Contributing
 
 Contributions are always welcome. Please use the issue tracker to report bugs, make feature requests, and offer suggestions for improving performance. Showing interest in the project in any form will help speed up the development process.
