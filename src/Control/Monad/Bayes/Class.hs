@@ -9,11 +9,6 @@ Portability : GHC
 
 -}
 
-{-# LANGUAGE
-  GADTs
- #-}
-
-
 module Control.Monad.Bayes.Class (
   MonadSample,
   random,
@@ -38,13 +33,13 @@ module Control.Monad.Bayes.Class (
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Identity
--- import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Control.Monad.Trans.Reader
--- import Control.Monad.Trans.RWS hiding (tell)
+import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.List
--- import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Cont
 
 import Statistics.Distribution
 import Statistics.Distribution.Uniform (uniformDistr)
@@ -146,14 +141,13 @@ instance MonadCond m => MonadCond (IdentityT m) where
 instance MonadInfer m => MonadInfer (IdentityT m)
 
 
--- instance HasCustomReal m => HasCustomReal (MaybeT m) where
---   type CustomReal (MaybeT m) = CustomReal m
---
--- instance (Sampleable d m, Monad m) => Sampleable d (MaybeT m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m) => Conditionable (MaybeT m) where
---   factor = lift . factor
+instance MonadSample m => MonadSample (MaybeT m) where
+  random = lift random
+
+instance MonadCond m => MonadCond (MaybeT m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (MaybeT m)
 
 
 instance MonadSample m => MonadSample (ReaderT r m) where
@@ -188,15 +182,13 @@ instance MonadCond m => MonadCond (StateT s m) where
 instance MonadInfer m => MonadInfer (StateT s m)
 
 
---
--- instance HasCustomReal m => HasCustomReal (RWST r w s m) where
---   type CustomReal (RWST r w s m) = CustomReal m
---
--- instance (Sampleable d m, Monad m, Monoid w) => Sampleable d (RWST r w s m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m, Monoid w) => Conditionable (RWST r w s m) where
---   factor = lift . factor
+instance (MonadSample m, Monoid w) => MonadSample (RWST r w s m) where
+  random = lift random
+
+instance (MonadCond m, Monoid w) => MonadCond (RWST r w s m) where
+  score = lift . score
+
+instance (MonadInfer m, Monoid w) => MonadInfer (RWST r w s m)
 
 
 instance MonadSample m => MonadSample (ListT m) where
@@ -209,13 +201,11 @@ instance MonadCond m => MonadCond (ListT m) where
 
 instance MonadInfer m => MonadInfer (ListT m)
 
---
---
--- instance HasCustomReal m => HasCustomReal (ContT r m) where
---   type CustomReal (ContT r m) = CustomReal m
---
--- instance (Sampleable d m, Monad m) => Sampleable d (ContT r m) where
---   sample = lift . sample
---
--- instance (Conditionable m, Monad m) => Conditionable (ContT r m) where
---   factor = lift . factor
+
+instance MonadSample m => MonadSample (ContT r m) where
+  random = lift random
+
+instance MonadCond m => MonadCond (ContT r m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (ContT r m)
