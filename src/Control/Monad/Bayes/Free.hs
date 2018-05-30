@@ -17,12 +17,16 @@ import Control.Monad.Trans.Free.Church
 
 import Control.Monad.Bayes.Class
 
+-- | Random sampling functor.
 newtype SamF a = Random (Double -> a)
 
 instance Functor SamF where
   fmap f (Random k) = Random (f . k)
 
 
+-- | Free monad transformer over random sampling.
+-- Uses the Church-encoded version of the free monad
+-- for efficiency.
 newtype FreeSampler m a = FreeSampler (FT SamF m a)
   deriving(Functor,Applicative,Monad,MonadTrans)
 
@@ -38,10 +42,12 @@ instance Monad m => MonadSample (FreeSampler m) where
 hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoist f (FreeSampler m) = FreeSampler (hoistFT f m)
 
+-- | Execute random sampling in the transformed monad.
 interpret :: MonadSample m => FreeSampler m a -> m a
 interpret (FreeSampler m) = iterT f m where
   f (Random k) = random >>= k
 
+-- | Execute computation with supplied values for random choices.
 withRandomness :: Monad m => [Double] -> FreeSampler m a -> m a
 withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness where
   f (Random k) = do
@@ -50,17 +56,9 @@ withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness w
       [] -> error "FreeSampler: the list of randomness was too short"
       y:ys -> put ys >> k y
 
-runWith :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
-runWith randomness (FreeSampler m) =
-  runWriterT $ evalStateT (runF m return f) randomness where
-    f (Random k) = do
-      xs <- get
-      x <- case xs of
-            [] -> random
-            y:ys -> put ys >> return y
-      tell [x]
-      k x
-
+-- | Execute computation with supplied values for a subset of random choices.
+-- Return the output value and a record of all random choices used, whether
+-- taken as input or drawn using the transformed monad.
 withPartialRandomness :: MonadSample m => [Double] -> FreeSampler m a -> m (a, [Double])
 withPartialRandomness randomness (FreeSampler m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness where
@@ -74,3 +72,7 @@ withPartialRandomness randomness (FreeSampler m) =
             y:ys -> put ys >> return y
       tell [x]
       k x
+
+-- | Like 'withPartialRandomness', but use an arbitrary sampling monad.
+runWith :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
+runWith randomness m = withPartialRandomness randomness $ hoist (return . runIdentity) m

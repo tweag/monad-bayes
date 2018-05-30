@@ -27,6 +27,9 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 import Control.Monad.Bayes.Traced.Common(Trace, mhTrans)
 
+-- | A tracing monad where only a subset of random choices are traced.
+-- The random choices that are not to be traced should be lifted
+-- from the transformed monad.
 data Traced m a = Traced (Weighted (FreeSampler m) a) (m (Trace, a))
 
 traceDist :: Traced m a -> m (Trace, a)

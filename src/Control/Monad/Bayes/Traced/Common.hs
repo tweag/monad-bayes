@@ -27,20 +27,7 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 type Trace = [Double]
 
-mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> (Trace, a) -> m (Trace, a)
-mhTrans' m (us,a) = do
-  let (_, p) = runIdentity $ runWeighted $ Weighted.hoist (withRandomness us) m
-  us' <- do
-    let n = length us
-    i <- categorical $ V.replicate n (1 / fromIntegral n)
-    u' <- random
-    let (xs, _:ys) = splitAt i us
-    return $ xs ++ (u':ys)
-  ((b, q), vs) <- runWith us' (runWeighted m)
-  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
-  accept <- bernoulli ratio
-  return $ if accept then (vs,b) else (us,a)
-
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> (Trace, a) -> m (Trace, a)
 mhTrans m (us,a) = do
   (_, p) <- runWeighted $ Weighted.hoist (withRandomness us) m
@@ -54,3 +41,7 @@ mhTrans m (us,a) = do
   let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
   accept <- bernoulli ratio
   return $ if accept then (vs,b) else (us,a)
+
+-- | A variant of 'mhTrans' with an external sampling monad.
+mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> (Trace, a) -> m (Trace, a)
+mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)

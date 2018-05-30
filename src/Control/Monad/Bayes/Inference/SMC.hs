@@ -38,7 +38,7 @@ smcMultinomial :: MonadSample m
                -> Int -- ^ number of particles
                -> Sequential (Population m) a -- ^ model
                -> Population m a
-smcMultinomial k n = sir resampleMultinomial k n
+smcMultinomial = sir resampleMultinomial
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are not normalized.
@@ -47,24 +47,24 @@ smcSystematic  :: MonadSample m
                -> Int -- ^ number of particles
                -> Sequential (Population m) a -- ^ model
                -> Population m a
-smcSystematic k n = sir resampleSystematic k n
+smcSystematic = sir resampleSystematic
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
--- as a factor into the transformed monad.
+-- as a score into the transformed monad.
 smcMultinomialPush :: MonadInfer m
                    => Int -- ^ number of timesteps
                    -> Int -- ^ number of particles
                    -> Sequential (Population m) a -- ^ model
                    -> Population m a
-smcMultinomialPush k n = sir (pushEvidence . resampleMultinomial) k n
+smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
--- as a factor into the transformed monad.
+-- as a score into the transformed monad.
 smcSystematicPush  :: MonadInfer m
                    => Int -- ^ number of timesteps
                    -> Int -- ^ number of particles
                    -> Sequential (Population m) a -- ^ model
                    -> Population m a
-smcSystematicPush k n = sir (pushEvidence . resampleSystematic) k n
+smcSystematicPush = sir (pushEvidence . resampleSystematic)

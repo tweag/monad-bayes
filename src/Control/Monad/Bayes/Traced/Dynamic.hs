@@ -29,6 +29,8 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 import Control.Monad.Bayes.Traced.Common(Trace, mhTrans)
 
+-- | A tracing monad where only a subset of random choices are traced
+-- and this subset can be adjusted dynamically.
 newtype Traced m a = Traced (m (Weighted (FreeSampler m) a, (Trace, a)))
 runTraced :: Traced m a -> m (Weighted (FreeSampler m) a, (Trace, a))
 runTraced (Traced c) = c
@@ -75,6 +77,8 @@ hoistT f (Traced c) = Traced (f c)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced c) = fmap (snd . snd) c
 
+-- | Freeze all traced random choices to their current
+-- values and stop tracing them.
 freeze :: Monad m => Traced m a -> Traced m a
 freeze (Traced c) = Traced $ do
   (_, (_, x)) <- c

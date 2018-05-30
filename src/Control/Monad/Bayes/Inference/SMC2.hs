@@ -22,6 +22,8 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Helpers
 
+-- | Helper monad transformer for preprocessing the
+-- model for 'smc2'.
 newtype SMC2 m a = SMC2 (S (T (P m)) a)
   deriving(Functor,Applicative,Monad)
 setup :: SMC2 m a -> S (T (P m)) a
@@ -38,6 +40,7 @@ instance Monad m => MonadCond (SMC2 m) where
 
 instance MonadSample m => MonadInfer (SMC2 m) where
 
+-- | Sequential Monte Carlo squared.
 smc2 :: MonadSample m
      => Int -- ^ number of time steps
      -> Int -- ^ number of inner particles

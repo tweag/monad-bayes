@@ -35,7 +35,8 @@ rmsmc k n t =
   sis (composeCopies t mhStep . hoistT resampleSystematic) k .
   hoistS (hoistT (spawn n >>))
 
--- | Resample-move Sequential Monte Carlo.
+-- | Resample-move Sequential Monte Carlo with a more efficient
+-- tracing representation.
 rmsmcBasic :: MonadSample m
       => Int -- ^ number of timesteps
       -> Int -- ^ number of particles

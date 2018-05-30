@@ -35,7 +35,7 @@ import Data.Maybe
 import Control.Monad.Bayes.Class
 
 
--- | A transformer similar to 'Population', but additionally integrates
+-- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving(Functor, Applicative, Monad, Alternative, MonadPlus)

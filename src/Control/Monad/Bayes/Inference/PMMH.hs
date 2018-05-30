@@ -23,6 +23,7 @@ import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Inference.SMC
 
+-- | Particle Marginal Metropolis-Hastings.
 pmmh :: MonadInfer m
      => Int -- ^ number of MH steps
      -> Int -- ^ number of time steps

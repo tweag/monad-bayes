@@ -148,7 +148,7 @@ proper m = do
 evidence :: (Monad m) => Population m a -> m (Log Double)
 evidence = extractWeight . runPopulation . extractEvidence
 
--- | Picks one point from the population and uses model evidence as a 'factor'
+-- | Picks one point from the population and uses model evidence as a 'score'
 -- in the transformed monad.
 -- This way a single sample can be selected from a population without
 -- introducing bias.

@@ -27,6 +27,9 @@ import Control.Monad.Bayes.Free as FreeSampler
 
 import Control.Monad.Bayes.Traced.Common(Trace, mhTrans')
 
+-- | Tracing monad that records random choices made in the program.
+-- The first component is used to run the program with a modified trace,
+-- while the second records a trace and an output value from a run.
 data Traced m a = Traced (Weighted (FreeSampler Identity) a) (m (Trace, a))
 
 traceDist :: Traced m a -> m (Trace, a)
@@ -61,13 +64,17 @@ instance MonadInfer m => MonadInfer (Traced m)
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced m d) = Traced m (f d)
 
+-- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap snd d
 
+-- | A single step of the Trace MH algorithm.
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d' where
   d' = d >>= mhTrans' m
 
+-- | Full run of the Trace MH algorithm with a specified
+-- number of steps.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map snd) t where
   t = f n
