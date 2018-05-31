@@ -24,7 +24,7 @@ import qualified LDA
 
 -- | Path to the Anglican project with benchmarks.
 anglicanPath :: String
-anglicanPath = "/scratch/ams240/repos/anglican-white-paper/experiments"
+anglicanPath = "/home/anglican-white-paper/experiments"
 
 -- | Running Leiningen repl process.
 -- Leiningen takes a lot of time to start so we keep a repl
