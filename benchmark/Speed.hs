@@ -108,7 +108,7 @@ startLein = do
 
 -- | Path to the WebPPL project with benchmarks.
 webpplPath :: String
-webpplPath = "/scratch/ams240/repos/anglican-white-paper/experiments/WebPPL"
+webpplPath = "/home/anglican-white-paper/experiments/WebPPL"
 
 -- | Format Haskell list as a Javascript list.
 javascriptList :: Show a => [a] -> String
