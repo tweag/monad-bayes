@@ -193,8 +193,8 @@ supported _ = True
 
 systems = [
             MonadBayes
-            -- Anglican,
-            -- WebPPL
+            Anglican,
+            WebPPL
           ]
 
 lengthBenchmarks e lrData hmmData ldaData = benchmarks where
