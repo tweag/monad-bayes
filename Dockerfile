@@ -53,7 +53,7 @@ RUN wget -O- "https://github.com/fpco/pid1/releases/download/pid1%2F$PID1_VERSIO
 RUN cd $HOME && \
     git clone https://github.com/adscib/monad-bayes.git && \
     cd monad-bayes && \
-    git checkout 4145a744a29f3763b5934ddcc2316ee661215394 && \
+    git checkout a6aec1d55af391c220b8cc586d5f629dcac5e7bf && \
     stack build && \
     stack test && \
     stack build monad-bayes:speed-bench --no-run-benchmarks
