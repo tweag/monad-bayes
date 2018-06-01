@@ -24,7 +24,7 @@ import qualified LDA
 
 -- | Path to the Anglican project with benchmarks.
 anglicanPath :: String
-anglicanPath = "/home/anglican-white-paper/experiments"
+anglicanPath = "/root/anglican-white-paper/experiments"
 
 -- | Running Leiningen repl process.
 -- Leiningen takes a lot of time to start so we keep a repl
@@ -108,7 +108,7 @@ startLein = do
 
 -- | Path to the WebPPL project with benchmarks.
 webpplPath :: String
-webpplPath = "/home/anglican-white-paper/experiments/WebPPL"
+webpplPath = anglicanPath ++ "/WebPPL"
 
 -- | Format Haskell list as a Javascript list.
 javascriptList :: Show a => [a] -> String

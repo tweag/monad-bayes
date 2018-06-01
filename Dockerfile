@@ -1,7 +1,5 @@
 FROM ubuntu:16.04
 
-MAINTAINER Emanuel Borsboom <manny@fpcomplete.com>
-
 ARG GHC_VERSION=8.0.2
 ARG LTS_SLUG=lts-9.0
 ARG PID1_VERSION=0.1.0.1
@@ -72,13 +70,12 @@ RUN cd /bin && \
 
 #
 # fetch and install Anglican
-# This is only required to run comparisons with Anglican
-# and can be safely omitted.
 #
 
 RUN cd $HOME && \
     git clone https://adscib@bitbucket.org/adscib/anglican-white-paper.git && \
     cd anglican-white-paper && \
+    git checkout 96b9f61 && \
     echo "(use 'nstools.ns)" | lein repl
 
 #
