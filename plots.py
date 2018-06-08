@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # for Docker use only
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
@@ -56,7 +58,7 @@ def style(system):
     elif system == 'Anglican':
         return 'bs'
     else:
-        return 'gX'
+        return 'gx'
 
 models = ["LR", "HMM", "LDA"]
 algs = ["MH", "SMC", "RMSMC"]
