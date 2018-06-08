@@ -78,7 +78,6 @@ library
 test-suite monad-bayes-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test, models
-  main-is:             Spec.hs
   build-depends:       base
                      , monad-bayes
                      , hspec

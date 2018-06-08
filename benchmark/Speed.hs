@@ -24,7 +24,7 @@ import qualified LDA
 
 -- | Path to the Anglican project with benchmarks.
 anglicanPath :: String
-anglicanPath = "/scratch/ams240/repos/anglican-white-paper/experiments"
+anglicanPath = "/root/anglican-white-paper/experiments"
 
 -- | Running Leiningen repl process.
 -- Leiningen takes a lot of time to start so we keep a repl
@@ -108,7 +108,7 @@ startLein = do
 
 -- | Path to the WebPPL project with benchmarks.
 webpplPath :: String
-webpplPath = "/scratch/ams240/repos/anglican-white-paper/experiments/WebPPL"
+webpplPath = anglicanPath ++ "/WebPPL"
 
 -- | Format Haskell list as a Javascript list.
 javascriptList :: Show a => [a] -> String
@@ -192,9 +192,9 @@ supported (Anglican, _, RMSMC _ _) = False
 supported _ = True
 
 systems = [
-            MonadBayes
-            -- Anglican,
-            -- WebPPL
+            MonadBayes,
+            Anglican,
+            WebPPL
           ]
 
 lengthBenchmarks e lrData hmmData ldaData = benchmarks where
@@ -206,7 +206,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks where
     map (HMM . (`take` hmmData)) hmmLengths ++
     map (\n -> LDA $ map (take n) ldaData) ldaLengths
   algs = [
-    MH 100
+    MH 100,
     SMC 100,
     RMSMC 10 1
     ]
@@ -225,7 +225,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks where
   models = map (LR . (`take` lrData)) lrLengths ++
            map (HMM . (`take` hmmData)) hmmLengths ++
            map (\n -> LDA $ map (take n) ldaData) ldaLengths
-  algs =  map (\x -> MH (100*x)) [1..10] ++ map (\x -> SMC (100*x)) [1..10]
+  algs =  map (\x -> MH (100*x)) [1..10] ++ map (\x -> SMC (100*x)) [1..10] ++
          map (\x -> RMSMC 10 (10*x)) [1..10]
   benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
