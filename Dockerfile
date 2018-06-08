@@ -58,6 +58,11 @@ RUN cd $HOME && \
     stack test && \
     stack build monad-bayes:speed-bench --no-run-benchmarks
 
+#
+# install pandas for the plotting script
+#
+
+RUN pip3 install pandas==0.23.0
 
 #
 # install Leiningen which is required by Anglican
@@ -99,9 +104,4 @@ RUN cd $HOME/anglican-white-paper/experiments/WebPPL && \
     node_modules/webppl/webppl lda.wppl --compile --out lda.js
 
 
-#
-# Set up pid1 entrypoint and default command
-#
-
-ENTRYPOINT ["/usr/local/sbin/pid1"]
 CMD ["bash"]
