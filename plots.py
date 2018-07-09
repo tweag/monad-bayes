@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
+import matplotlib
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 benchmark_pattern = "(?P<system>(MonadBayes|Anglican|WebPPL))_(?P<model>(LR|HMM|LDA))(?P<length>[0-9]+)_(?P<alg>(SMC(?P<smcparam>[0-9]+$)|MH(?P<mhparam>[0-9]+$)|RMSMC(?P<rmsmcparam>[0-9]+-[0-9]+$)))"
 benchmark_reg = re.compile(benchmark_pattern)
