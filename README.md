@@ -8,7 +8,7 @@ For the code associated with Haskell2015 paper "Practical Probabilistic Programm
 
 ## Installation (using Stack)
 
-Ensure stack is already installed by following these [instructions](https://docs.hashttps://docs.haskellstack.org/en/stable/install_and_upgrade/)
+Ensure stack is already installed by following these [instructions](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
 
 To fork repo:
 
