@@ -24,7 +24,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
 
-import Control.Monad.Bayes.Traced.Common(Trace, mhTrans, output, singleton, bind)
+import Control.Monad.Bayes.Traced.Common
 
 -- | A tracing monad where only a subset of random choices are traced.
 -- The random choices that are not to be traced should be lifted
@@ -56,7 +56,7 @@ instance MonadSample m => MonadSample (Traced m) where
   random = Traced random (fmap singleton random)
 
 instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced (score w) (score w >> pure (pure ()))
+  score w = Traced (score w) (score w >> pure (scored w))
 
 instance MonadInfer m => MonadInfer (Traced m)
 
