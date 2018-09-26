@@ -206,7 +206,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks where
     map (HMM . (`take` hmmData)) hmmLengths ++
     map (\n -> LDA $ map (take n) ldaData) ldaLengths
   algs = [
-    MH 100
+    MH 100,
     SMC 100,
     RMSMC 10 1
     ]
@@ -226,7 +226,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks where
            map (HMM . (`take` hmmData)) hmmLengths ++
            map (\n -> LDA $ map (take n) ldaData) ldaLengths
   algs =  map (\x -> MH (100*x)) [1..10] ++ map (\x -> SMC (100*x)) [1..10]
-         map (\x -> RMSMC 10 (10*x)) [1..10]
+          ++ map (\x -> RMSMC 10 (10*x)) [1..10]
   benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs where
         uncurry3 f (x,y,z) = f x y z
         xs = do
