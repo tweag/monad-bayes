@@ -28,6 +28,7 @@ executable example
   other-modules:       LogReg
                      , HMM
                      , LDA
+                     , Dice
 
 library
   hs-source-dirs:      src
