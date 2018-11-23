@@ -19,7 +19,7 @@ module Control.Monad.Bayes.Traced.Static (
 
 import Control.Monad.Trans
 import Control.Applicative (liftA2)
-
+import Control.Monad.Fail
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
@@ -70,7 +70,7 @@ mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d' where
   d' = d >>= mhTrans m
 
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: (MonadSample m, MonadFail m) => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output) t where
   t = f n
   f 0 = fmap (:[]) d

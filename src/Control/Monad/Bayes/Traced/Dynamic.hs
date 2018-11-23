@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Traced.Dynamic (
 
 import Control.Monad (join)
 import Control.Monad.Trans
-
+import Control.Monad.Fail
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
@@ -88,7 +88,7 @@ mhStep (Traced c) = Traced $ do
   t' <- mhTrans m t
   return (m, t')
 
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: (MonadSample m, MonadFail m) => Int -> Traced m a -> m [a]
 mh n (Traced c) = do
   (m,t) <- c
   let f 0 = return [t]

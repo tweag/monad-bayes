@@ -1,12 +1,5 @@
-flags: {}
+resolver: nightly-2018-11-20
+
 packages:
 - '.'
-# - location:
-#     git: https://github.com/adscib/haskell-chart
-#     commit: 021e5b2ce5b0ddb7c8a71569f8708330068fbf4a
-#   subdirs:
-#     - chart
-#   extra-dep: true
 
-extra-deps: []
-resolver: lts-9.0

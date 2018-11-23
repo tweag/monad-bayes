@@ -2,7 +2,7 @@ import System.Random.MWC (createSystemRandom, GenIO)
 import Data.Time
 import Options.Applicative
 import Data.Semigroup ((<>))
-
+import Control.Monad.Fail
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Weighted

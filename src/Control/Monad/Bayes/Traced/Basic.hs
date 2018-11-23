@@ -19,7 +19,7 @@ module Control.Monad.Bayes.Traced.Basic (
 
 import Data.Functor.Identity
 import Control.Applicative (liftA2)
-
+import Control.Monad.Fail
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
@@ -71,7 +71,7 @@ mhStep (Traced m d) = Traced m d' where
 
 -- | Full run of the Trace MH algorithm with a specified
 -- number of steps.
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: (MonadSample m, MonadFail m) => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output) t where
   t = f n
   f 0 = fmap (:[]) d
