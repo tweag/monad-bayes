@@ -1,126 +1,106 @@
-{-# LANGUAGE
-  TupleSections,
-  GeneralizedNewtypeDeriving,
-  FlexibleInstances,
-  FlexibleContexts
- #-}
+{-|
+Module      : Control.Monad.Bayes.Sampler
+Description : Psuedo-random sampling monads
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
 
 module Control.Monad.Bayes.Sampler (
-    Sampler,
-    sample,
-    StdSampler,
-    stdSample,
-    MTSampler,
-    mtSample
+    SamplerIO,
+    sampleIO,
+    sampleIOfixed,
+    sampleIOwith,
+    Seed,
+    SamplerST(SamplerST),
+    runSamplerST,
+    sampleST,
+    sampleSTfixed
                ) where
 
-import System.Random
+import Control.Monad.ST (ST, runST, stToIO)
 import System.Random.MWC
-import System.Random.Mersenne.Pure64
-import Control.Monad (liftM2)
-import qualified Data.Number.LogFloat as LogFloat
-import Data.Tuple
-import Data.Random.Distribution.Beta
-import Data.Random.Distribution.Normal
-import Data.Random.Distribution.Categorical
-import Data.Random.Distribution.Multinomial (Multinomial(Multinomial))
-import Data.Random.Distribution
-import qualified Data.Random.Sample
-import Data.Random hiding (sample)
-import Control.Arrow (first,second)
-import Data.Number.LogFloat
-import qualified Data.Foldable as Fold
-import Control.Monad.State.Lazy
+import qualified System.Random.MWC.Distributions as MWC
+import Control.Monad.State (State, state)
+import Control.Monad.Trans (lift, MonadIO)
+import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask, mapReaderT)
 
 import Control.Monad.Bayes.Class
 
--- | A random sampler using `StdGen` as a source of randomness.
--- It uses `split` instead of passing the modified generator,
--- which makes `Sampler` lazy and potentially parallel.
--- Can be used for probabilistic computation, but not with conditioning,
--- unless transformed.
-newtype Sampler a = Sampler (StdGen -> a)
-    deriving (Functor)
+-- | An `IO` based random sampler using the MWC-Random package.
+newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
+  deriving(Functor, Applicative, Monad, MonadIO)
 
-sample :: Sampler a -> StdGen -> a
-sample (Sampler s) = s
+-- | Initialize PRNG using OS-supplied randomness.
+-- For efficiency this operation should be applied at the very end, ideally once per program.
+sampleIO :: SamplerIO a -> IO a
+sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 
--- | Converts from `State` `StdGen` to `Sampler`.
-fromState :: Control.Monad.State.Lazy.State System.Random.StdGen a -> Sampler a
-fromState = Sampler . (fst .) . runState
+-- | Like `sampleIO`, but with a fixed random seed.
+-- Useful for reproducibility.
+sampleIOfixed :: SamplerIO a -> IO a
+sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
-instance Applicative Sampler where
-    pure = return
-    (<*>) = liftM2 ($)
+-- | Like 'sampleIO' but with a custom PRNG.
+sampleIOwith :: SamplerIO a -> GenIO -> IO a
+sampleIOwith (SamplerIO m) = runReaderT m
 
-instance Monad Sampler where
-    return = Sampler . const
-    Sampler d >>= f = Sampler $
-                       \g -> let
-                           x          = d g1
-                           Sampler y  = f x
-                           (g1,g2)    = split g
-         in
-           y g2
+fromSamplerST :: SamplerST a -> SamplerIO a
+fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
-instance MonadDist Sampler where
-    discrete xs = wrapper $ fromWeightedList $
-                    map (first fromLogFloat) $ zip xs [0..]
-    normal m s  = wrapper $ Normal m s
-    gamma a b   = wrapper $ Gamma a (1 / b)
-    beta a b    = wrapper $ Beta a b  --need to check parameterization
-    uniform a b = wrapper $ Uniform a b
-
--- | Wrapper for random-fu distributions.
-wrapper :: Distribution d a => d a -> Sampler a
-wrapper = Sampler . (fst .) . sampleState
+instance MonadSample SamplerIO where
+  random = fromSamplerST random
 
 
----------------------------------------------------
--- MonadDist instance for the RVar monad and concrete samplers
 
-instance MonadDist (RVarT m) where
-  --should probably normalize before converting from log-domain
-  discrete xs = rvarT $ fromWeightedList $ map (first fromLogFloat) $ zip xs [0..]
-  normal m s = rvarT $ Normal m s
-  gamma  a b = rvarT $ Gamma a (1 / b)
-  beta   a b = rvarT $ Beta a b
-  uniform a b = rvarT $ Uniform a b
-  multinomial ps n = do
-    let (xs,ws) = unzip ps
-    let qs = map LogFloat.fromLogFloat $ map (/ LogFloat.sum ws) ws
-    counts <- rvarT $ Multinomial qs n
-    return $ zip xs counts
 
-instance MonadDist IO where
-    primitive d = convert $ primitive d where
-        convert :: RVar a -> IO a
-        convert = Data.Random.Sample.sample
-    multinomial ps n = convert $ multinomial ps n where
-      convert :: RVar a -> IO a
-      convert = Data.Random.Sample.sample
+-- | An `ST` based random sampler using the MWC-Random package.
+newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
-newtype StdSampler a = StdSampler (State StdGen a)
-    deriving (Functor, Applicative, Monad)
-instance MonadDist StdSampler where
-  primitive d = convert $ primitive d where
-    convert :: RVar a -> StdSampler a
-    convert = StdSampler . Data.Random.Sample.sample
-  multinomial ps n = convert $ multinomial ps n where
-    convert :: RVar a -> StdSampler a
-    convert = StdSampler . Data.Random.Sample.sample
+runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a
+runSamplerST (SamplerST s) = s
 
-stdSample :: StdSampler a -> StdGen -> a
-stdSample (StdSampler s) = evalState s
+instance Functor SamplerST where
+  fmap f (SamplerST s) = SamplerST $ fmap f s
 
-newtype MTSampler a = MTSampler (State PureMT a)
-    deriving (Functor, Applicative, Monad)
-instance MonadDist (MTSampler) where
-    primitive d = convert $ primitive d where
-        convert :: RVar a -> MTSampler a
-        convert = MTSampler . Data.Random.Sample.sample
-    multinomial ps n = convert $ multinomial ps n where
-      convert :: RVar a -> MTSampler a
-      convert = MTSampler . Data.Random.Sample.sample
-mtSample :: MTSampler a -> PureMT -> a
-mtSample (MTSampler s) = evalState s
+instance Applicative SamplerST where
+  pure x = SamplerST $ pure x
+  (SamplerST f) <*> (SamplerST x) = SamplerST $ f <*> x
+
+instance Monad SamplerST where
+  (SamplerST x) >>= f = SamplerST $ x >>= runSamplerST . f
+
+-- | Run the sampler with a supplied seed.
+-- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
+sampleST :: SamplerST a -> State Seed a
+sampleST (SamplerST s) =
+  state $ \seed -> runST $ do
+    gen <- restore seed
+    y <- runReaderT s gen
+    finalSeed <- save gen
+    return (y, finalSeed)
+
+-- | Run the sampler with a fixed random seed.
+sampleSTfixed :: SamplerST a -> a
+sampleSTfixed (SamplerST s) = runST $ do
+  gen <- create
+  runReaderT s gen
+
+-- | Helper for converting distributions supplied by MWC-Random
+fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST a
+fromMWC s = SamplerST $ ask >>= lift . s
+
+instance MonadSample SamplerST where
+  random = fromMWC System.Random.MWC.uniform
+
+  uniform a b = fromMWC $ uniformR (a,b)
+  normal m s = fromMWC $ MWC.normal m s
+  gamma shape scale = fromMWC $ MWC.gamma shape scale
+  beta a b = fromMWC $ MWC.beta a b
+
+  bernoulli p = fromMWC $ MWC.bernoulli p
+  categorical ps = fromMWC $ MWC.categorical ps
+  geometric p = fromMWC $ MWC.geometric0 p

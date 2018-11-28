@@ -13,33 +13,68 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
+executable example
+  hs-source-dirs:      benchmark, models
+  main-is:             Single.hs
+  build-depends:       base
+                     , monad-bayes
+                     , log-domain
+                     , vector
+                     , containers
+                     , mwc-random
+                     , time
+                     , optparse-applicative
+  default-language:    Haskell2010
+  other-modules:       LogReg
+                     , HMM
+                     , LDA
+                     , Dice
+
 library
   hs-source-dirs:      src
-  exposed-modules:     Control.Monad.Bayes.Primitive,
-                       Control.Monad.Bayes.Class,
-                       Control.Monad.Bayes.Dist,
-                       Control.Monad.Bayes.Sampler,
-                       Control.Monad.Bayes.Prior,
-                       Control.Monad.Bayes.Rejection,
-                       Control.Monad.Bayes.Weighted,
-                       Control.Monad.Bayes.Empirical,
-                       Control.Monad.Bayes.Particle,
-                       Control.Monad.Bayes.Inference,
-                       Control.Monad.Bayes.Metrics,
-                       Control.Monad.Bayes.Trace
+  exposed-modules:     Control.Monad.Bayes.Class
+                     , Control.Monad.Bayes.Free
+                     , Control.Monad.Bayes.Sampler
+                     , Control.Monad.Bayes.Weighted
+                     , Control.Monad.Bayes.Sequential
+                     , Control.Monad.Bayes.Population
+                     , Control.Monad.Bayes.Traced.Static
+                     , Control.Monad.Bayes.Traced.Dynamic
+                     , Control.Monad.Bayes.Traced.Basic
+                     , Control.Monad.Bayes.Traced
+                     , Control.Monad.Bayes.Enumerator
+                     , Control.Monad.Bayes.Helpers
+                     , Control.Monad.Bayes.Inference.SMC
+                     , Control.Monad.Bayes.Inference.RMSMC
+                     , Control.Monad.Bayes.Inference.PMMH
+                     , Control.Monad.Bayes.Inference.SMC2
+  other-modules:       Control.Monad.Bayes.Traced.Common
   build-depends:       base >= 4.7 && < 5
                      , containers
-                     , random
-                     , random-fu
-                     , logfloat
                      , mtl
                      , transformers
                      , math-functions
                      , monad-coroutine
                      , mwc-random
-                     , mersenne-random-pure64
-                     , monad-memo
+                     , safe
+                     , vector
+                     , ieee754
+                     , free
+                     , statistics
+                     , log-domain
+  ghc-options:         -Wall -fno-warn-redundant-constraints -O2
   default-language:    Haskell2010
+  default-extensions:  RankNTypes
+                     , GeneralizedNewtypeDeriving
+                     , StandaloneDeriving
+                     , TypeFamilies
+                     , FlexibleContexts
+                     , FlexibleInstances
+                     , TupleSections
+                     , MultiParamTypeClasses
+                     , GADTs
+  other-extensions:    ScopedTypeVariables
+                     , DeriveFunctor
 
 test-suite monad-bayes-test
   type:                exitcode-stdio-1.0
@@ -49,53 +84,166 @@ test-suite monad-bayes-test
                      , monad-bayes
                      , hspec
                      , QuickCheck
-                     , random
                      , ieee754
                      , mtl
                      , math-functions
-                     , logfloat
                      , transformers
---                     , hmatrix
-                     , monad-memo
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+                     , log-domain
+                     , vector
+  ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
   default-language:    Haskell2010
-  main-is:             Spec.hs
   other-modules:       Sprinkler,
-                       TestDist,
-                       TestEmpirical,
+                       TestEnumerator,
+                       TestPopulation,
                        TestInference,
-                       TestParticle,
-                       TestWeighted,
-                       TestSMCObservations,
-                       TestTrace,
-                       StrictlySmallerSupport,
-                       BetaBin,
-                       DPmixture,
-                       Dice,
-                       Gamma,
-                       HMM
+                       TestSequential,
+                       TestWeighted
+--                        StrictlySmallerSupport
 
-benchmark monad-bayes-bench
+benchmark ssm-bench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      models
+                     , benchmark
   build-depends:       base
                      , monad-bayes
-                     , random-fu
-                     , logfloat
-                     , mtl
-                     , math-functions
---                     , hmatrix
-                     , monad-memo
+                    --  , mtl
+                    --  , transformers
+                    --  , math-functions
+                    --  , hmatrix
+                    --  , statistics
+                    --  , vector
+                    --  , Chart
+                    --  , Chart-cairo
+                    --  , optparse-applicative
+                    --  , directory
   default-language:    Haskell2010
+  default-extensions:  RankNTypes
   -- Main benchmark file should import all the modules to be
   -- maintained. Those modules should also be listed in
   -- `other-modules`.
-  main-is:             BenchAll.hs
+  main-is:             SSM.hs
   -- List all models we want to watch for changes.
   -- DO NOT list modules that don't compile.
   -- They make it impossible to run `stack ghci`.
-  other-modules:       Sprinkler, BetaBin, Dice, Gamma, HMM, DPmixture,
-                       StrictlySmallerSupport
+  other-modules:       NonlinearSSM
+
+benchmark speed-bench
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      models
+                     , benchmark
+  build-depends:       base
+                     , monad-bayes
+                     , criterion
+                     , abstract-par
+                     , log-domain
+                     , vector
+                     , mwc-random
+                     , containers
+                     , process
+  ghc-options:         -rtsopts "-with-rtsopts=-M1g -K1g"
+  default-language:    Haskell2010
+  default-extensions:  RankNTypes
+  -- Main benchmark file should import all the modules to be
+  -- maintained. Those modules should also be listed in
+  -- `other-modules`.
+  main-is:             Speed.hs
+  -- List all models we want to watch for changes.
+  -- DO NOT list modules that don't compile.
+  -- They make it impossible to run `stack ghci`.
+  other-modules:       LogReg
+                     , HMM
+                     , LDA
+
+-- benchmark monad-bayes-bench
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      models
+--   build-depends:       base
+--                      , monad-bayes
+--                      , mtl
+--                      , transformers
+--                      , math-functions
+--                      , hmatrix
+--                      , statistics
+--                      , vector
+--                      , Chart
+--                      , Chart-cairo
+--                      , optparse-applicative
+--                      , directory
+--   default-language:    Haskell2010
+--   -- Main benchmark file should import all the modules to be
+--   -- maintained. Those modules should also be listed in
+--   -- `other-modules`.
+--   main-is:             BenchAll.hs
+--   -- List all models we want to watch for changes.
+--   -- DO NOT list modules that don't compile.
+--   -- They make it impossible to run `stack ghci`.
+--   other-modules:       Sprinkler,
+--                        BetaBin,
+--                        Dice,
+--                        Gamma,
+--                        HMM,
+--                        DPmixture,
+--                        StrictlySmallerSupport,
+--                        Plotting
+
+-- benchmark lgss-benchmark
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      models
+--   build-depends:       base
+--                      , monad-bayes
+--                      , transformers
+--                      , mtl
+--                      , statistics
+--                      , vector
+--                      , Chart
+--                      , Chart-cairo
+--                      , optparse-applicative
+--                      , directory
+--   default-language:    Haskell2010
+--   -- Main benchmark file should import all the modules to be
+--   -- maintained. Those modules should also be listed in
+--   -- `other-modules`.
+--   main-is:             LGSS.hs
+--   -- List all models we want to watch for changes.
+--   -- DO NOT list modules that don't compile.
+--   -- They make it impossible to run `stack ghci`.
+--   other-modules:       Plotting
+--
+-- benchmark performance
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      models
+--   build-depends:       base
+--                      , monad-bayes
+--                      , transformers
+--                      , mtl
+--                      , vector
+--                      , criterion
+--                      , ad
+--                      , mwc-random
+--                      , statistics
+--                      , Chart
+--                      , Chart-cairo
+--                      , directory
+--                      , optparse-applicative
+--                      , abstract-par
+--                      , containers
+--                      , hmatrix
+--   default-language:    Haskell2010
+--   -- Main benchmark file should import all the modules to be
+--   -- maintained. Those modules should also be listed in
+--   -- `other-modules`.
+--   main-is:             Benchmarks.hs
+--   -- List all models we want to watch for changes.
+--   -- DO NOT list modules that don't compile.
+--   -- They make it impossible to run `stack ghci`.
+--   other-modules:       Plotting,
+--                        NonlinearSSM,
+--                        HMM,
+--                        LogReg,
+--                        LDA
+--   default-extensions:  RankNTypes
+--                      , TypeFamilies
+--                      , AllowAmbiguousTypes
 
 source-repository head
   type:     git

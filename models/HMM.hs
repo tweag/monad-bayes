@@ -1,120 +1,55 @@
+-- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
+
 {-# LANGUAGE
- FlexibleContexts
+ FlexibleContexts,
+ TypeFamilies
  #-}
 
 module HMM (
-            hmm,
---            exactMarginals
-           ) where
+  values,
+  hmm,
+  syntheticData
+  ) where
 
 --Hidden Markov Models
 
---import Numeric.LinearAlgebra.HMatrix -- for the exact posterior only
-import Data.Number.LogFloat
+import Control.Monad (replicateM)
+import Data.Vector (fromList)
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Primitive
-import qualified Control.Monad.Bayes.Dist as Dist
-
--- | States of the HMM
-states :: [Int]
-states = [-1,0,1]
 
 -- | Observed values
 values :: [Double]
-values = [0.9,0.8,0.7,0,-0.025,5,2,0.1,0,
+values = [0.9,0.8,0.7,0,-0.025,-5,-2,-0.1,0,
           0.13,0.45,6,0.2,0.3,-1,-1]
 
 -- | The transition model.
-trans :: MonadDist d => Int -> d Int
-trans (-1) = categorical $ zip states [0.1, 0.4, 0.5]
-trans 0    = categorical $ zip states [0.2, 0.6, 0.2]
-trans 1    = categorical $ zip states [0.15,0.7,0.15]
+trans :: MonadSample m => Int -> m Int
+trans 0 = categorical $ fromList [0.1, 0.4, 0.5]
+trans 1 = categorical $ fromList [0.2, 0.6, 0.2]
+trans 2 = categorical $ fromList [0.15,0.7,0.15]
 
 -- | The emission model.
-emission :: Int -> Primitive Double
-emission x = Normal (fromIntegral x) 1
+emissionMean :: Int -> Double
+emissionMean x = mean x where
+  mean 0 = -1
+  mean 1 = 1
+  mean 2 = 0
 
 -- | Initial state distribution
-start :: MonadDist d => d [Int]
-start = uniformD $ map (:[]) states
+start :: MonadSample m => m Int
+start = uniformD [0,1,2]
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
-hmm :: MonadBayes d => d [Int]
-hmm = fmap reverse states where
-  states = foldl expand start values
-  expand :: MonadBayes d => d [Int] -> Double -> d [Int]
-  expand d y = do
-    rest <- d
-    x    <- trans $ head rest
-    observe (emission x) y
-    return (x:rest)
+hmm :: (MonadInfer m) => [Double] -> m [Int]
+hmm dataset = f dataset (const . return) where
+  expand x y = do
+    x' <- trans x
+    factor $ normalPdf (emissionMean x') 1 y
+    return x'
+  f [] k = start >>= k []
+  f (y:ys) k = f ys (\xs x -> expand x y >>= k (x:xs))
 
-
-------------------------------------------------------------
--- Exact marginal posterior with forward-backward
-
--- exactMarginals :: MonadDist d => [d Int]
--- exactMarginals = map marginal [1 .. length values] where
---     marginal i = categorical $ zip states $ map (logFloat . lookup i) [1 .. length states]
---     lookup = hmmExactMarginal initial tmatrix scores
---
--- initial :: Vector Double
--- initial = fromList $ map snd $ Dist.explicit $ start
---
--- tmatrix :: Matrix Double
--- tmatrix = fromColumns $ map (fromList . map snd . Dist.explicit . trans) states
---
--- scores :: [Vector Double]
--- scores = map (\y -> fromList $ map (fromLogFloat . (\x -> pdf (emission x) y)) states) values
---
--- -- | Runs forward-backward, then looks up the probability of ith latent
--- -- variable being in state s.
--- hmmExactMarginal :: Vector Double -> Matrix Double -> [Vector Double]
---                     -> Int -> Int -> Double
--- hmmExactMarginal init trans obs =
---   let
---     marginals = forwardBackward init trans obs
---     n = length obs
---     lookup i s = marginals ! s ! i
---   in
---    lookup
---
--- -- | Runs forward-backward, then looks up the probability  of a sequence of states.
--- hmmExact :: Vector Double -> Matrix Double -> [Vector Double] -> [Int] -> Double
--- hmmExact init trans obs =
---     let
---         marginals = forwardBackward init trans obs
---         n = length obs
---         lookup i [] = if i == n then 1 else error "Dimension mismatch"
---         lookup i (x:xs) = (marginals ! x ! i) * lookup (i+1) xs
---     in
---         lookup 0
---
--- -- | Produces marginal posteriors for all state variables using forward-backward.
--- -- In the resulting matrix the row index is state and column index is time.
--- forwardBackward :: Vector Double -> Matrix Double -> [Vector Double] -> Matrix Double
--- forwardBackward init trans obs = alphas * betas where
---     (alphas,cs) = forward  init trans obs
---     betas       = backward init trans obs cs
---
--- forward :: Vector Double -> Matrix Double -> [Vector Double] -> (Matrix Double, Vector Double)
--- forward init trans obs = (fromColumns as, fromList cs) where
---     run p [] = ([],[])
---     run p (w:ws) = (a:as, c:cs) where
---         a' = w * (trans #> p)
---         a  = scale c a'
---         c  = 1 / norm_1 a'
---         (as,cs) = run a ws
---     (as,cs) = run init obs
---
--- backward :: Vector Double -> Matrix Double -> [Vector Double] -> Vector Double -> Matrix Double
--- backward init trans obs cs = fromColumns bs where
---     run :: Vector Double -> [Vector Double] -> [Double] -> [Vector Double]
---     run p [] [] = []
---     run p (w:ws) (c:cs) = p:bs where
---         b  = scale c (t #> (w * p))
---         bs = run b ws cs
---     t = tr trans
---     bs = reverse $ run (cmap (const 1) init) (reverse obs) (reverse (toList cs))
---     n = length obs
+syntheticData :: MonadSample m => Int -> m [Double]
+syntheticData n = replicateM n syntheticPoint where
+    syntheticPoint = uniformD [0,1,2]

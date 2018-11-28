@@ -1,63 +1,74 @@
-{-# LANGUAGE
-  GeneralizedNewtypeDeriving
- #-}
+{-|
+Module      : Control.Monad.Bayes.Weighted
+Description : Probability monad accumulating the likelihood
+Copyright   : (c) Adam Scibior, 2016
+License     : MIT
+Maintainer  : ams240@cam.ac.uk
+Stability   : experimental
+Portability : GHC
+
+-}
 
 module Control.Monad.Bayes.Weighted (
-    Weight,
-    weight,
-    unWeight,
-    Weighted(Weighted),  --constructor is needed in Dist
+    Weighted,
     withWeight,
     runWeighted,
-    WeightRecorderT(WeightRecorderT), -- constructor used in Trace
-    runWeightRecorderT,               -- destructor  used in Trace
-    duplicateWeight
+    extractWeight,
+    prior,
+    flatten,
+    applyWeight,
+    hoist,
                   ) where
 
-import Control.Arrow (first,second)
-import Data.Number.LogFloat
-import Data.Monoid
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans
+import Control.Monad.Trans.State
 
+import Numeric.Log
 import Control.Monad.Bayes.Class
 
--- | Representation of a weight in importance sampling algorithms.
--- Internally represented in log-domain, but semantically a non-negative real number.
--- 'Monoid' instance with respect to multiplication.
-newtype Weight = Weight (Product LogFloat)
-    deriving(Eq, Num, Ord, Show, Monoid)
+-- | Executes the program using the prior distribution, while accumulating likelihood.
+newtype Weighted m a = Weighted (StateT (Log Double) m a)
+    --StateT is more efficient than WriterT
+    deriving(Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
 
-weight :: LogFloat -> Weight
-weight = Weight . Product
+instance Monad m => MonadCond (Weighted m) where
+  score w = Weighted (modify (* w))
 
-unWeight :: Weight -> LogFloat
-unWeight (Weight (Product p)) = p
+instance MonadSample m => MonadInfer (Weighted m)
 
--- | A wrapper for 'WriterT' 'Weight' that executes the program
--- emitting the likelihood score.
-newtype Weighted m a = Weighted {toWriterT :: WriterT Weight m a}
-    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
+-- | Obtain an explicit value of the likelihood for a given value.
+runWeighted :: (Functor m) => Weighted m a -> m (a, Log Double)
+runWeighted (Weighted m) = runStateT m 1
 
-runWeighted :: Functor m => Weighted m a -> m (a, LogFloat)
-runWeighted = fmap (second unWeight) . runWriterT . toWriterT
+-- | Compute the weight and discard the sample.
+extractWeight :: Functor m => Weighted m a -> m (Log Double)
+extractWeight m = snd <$> runWeighted m
 
-withWeight :: Monad m => m (a, LogFloat) -> Weighted m a
-withWeight = Weighted . WriterT . fmap (second weight)
+-- | Embed a random variable with explicitly given likelihood.
+--
+-- > runWeighted . withWeight = id
+withWeight :: (Monad m) => m (a, Log Double) -> Weighted m a
+withWeight m = Weighted $ do
+  (x,w) <- lift m
+  modify (* w)
+  return x
 
-instance MonadDist m => MonadBayes (Weighted m) where
-    factor = Weighted . tell . weight
+-- | Discard the weight.
+-- This operation introduces bias.
+prior :: (Functor m) => Weighted m a -> m a
+prior = fmap fst . runWeighted
 
--- | Similar to 'Weighted', only the weight is both recorded and passed
--- to the underlying monad. Useful for getting the exact posterior and
--- the associated likelihood.
-newtype WeightRecorderT m a =
-  WeightRecorderT {runWeightRecorderT :: Weighted m a}
-    deriving(Functor, Applicative, Monad, MonadTrans, MonadDist)
+-- | Combine weights from two different levels.
+flatten :: Monad m => Weighted (Weighted m) a -> Weighted m a
+flatten m = withWeight $ (\((x,p),q) -> (x, p*q)) <$> runWeighted (runWeighted m)
 
--- | Both record weight and pass it to the underlying monad.
-duplicateWeight :: MonadBayes m => WeightRecorderT m a -> Weighted m a
-duplicateWeight = runWeightRecorderT
+-- | Use the weight as a factor in the transformed monad.
+applyWeight :: MonadCond m => Weighted m a -> m a
+applyWeight m = do
+  (x, w) <- runWeighted m
+  factor w
+  return x
 
-instance MonadBayes m => MonadBayes (WeightRecorderT m) where
-  factor w = WeightRecorderT (factor w >> lift (factor w))
+-- | Apply a transformation to the transformed monad.
+hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
+hoist t (Weighted m) = Weighted $ mapStateT t m
