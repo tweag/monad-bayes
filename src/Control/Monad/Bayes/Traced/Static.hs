@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Traced.Static (
   Traced,
   hoistT,
   marginal,
+  guided,
   mhStep,
   mh
 ) where
@@ -65,6 +66,14 @@ hoistT f (Traced m d) = Traced m (f d)
 
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
+
+guided :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+guided p q = Traced mp $ traceDist q >>= (withTrace mp) where
+  mp = model p
+
+importance :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+importance p q  = Traced mp $ traceDist q >>= (importanceWithTrace mp) where
+  mp = model p
 
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d' where
