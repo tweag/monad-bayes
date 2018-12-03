@@ -15,6 +15,8 @@ module Control.Monad.Bayes.Traced.Common (
   output,
   scored,
   bind,
+  withTrace,
+  importanceWithTrace,
   mhTrans,
   mhTrans'
 ) where
@@ -59,6 +61,27 @@ bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
+
+withVariables :: MonadSample m => Weighted (FreeSampler m) a -> [Double] ->
+                 m (Trace a)
+withVariables m vs = do
+  ((a, p), vs') <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness vs) m
+  return $ Trace vs' a p
+
+withTrace :: MonadSample m => Weighted (FreeSampler m) a -> Trace b ->
+             m (Trace a)
+withTrace m t = withVariables m (variables t)
+
+importanceWithTrace :: MonadSample m => Weighted (FreeSampler m) a -> Trace b ->
+                       m (Trace a)
+importanceWithTrace m t = do
+  (Trace vsp a p) <- withVariables m vsq
+  return $ Trace (importanceVs vsp) a (p / q)
+  where
+    vsq = variables t
+    q = density t
+    extendedVsQ vsp = vsq ++ (take (length vsp - length vsq) (repeat 1))
+    importanceVs vsp = zipWith (/) vsp (extendedVsQ vsp)
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
