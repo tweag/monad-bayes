@@ -13,6 +13,8 @@ module Control.Monad.Bayes.Traced.Dynamic (
   Traced,
   hoistT,
   marginal,
+  guided,
+  importance,
   freeze,
   mhStep,
   mh
@@ -73,6 +75,20 @@ hoistT f (Traced c) = Traced (f c)
 
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced c) = fmap (output . snd) c
+
+guided :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+guided p q = Traced $ do
+  (mp, _) <- runTraced p
+  (_, tq) <- runTraced q
+  tp' <- withTrace mp tq
+  return (mp, tp')
+
+importance :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+importance p q = Traced $ do
+  (mp, _) <- runTraced p
+  (_, tq) <- runTraced q
+  tp' <- importanceWithTrace mp tq
+  return (mp, tp')
 
 -- | Freeze all traced random choices to their current
 -- values and stop tracing them.
