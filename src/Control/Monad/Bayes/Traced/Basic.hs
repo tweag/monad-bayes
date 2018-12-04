@@ -14,6 +14,7 @@ module Control.Monad.Bayes.Traced.Basic (
   hoistT,
   marginal,
   guided,
+  importance,
   mhStep,
   mh
 ) where
