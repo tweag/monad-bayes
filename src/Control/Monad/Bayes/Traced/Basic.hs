@@ -13,10 +13,12 @@ module Control.Monad.Bayes.Traced.Basic (
   Traced,
   hoistT,
   marginal,
+  guided,
   mhStep,
   mh
 ) where
 
+import Control.Monad.Trans.Writer
 import Data.Functor.Identity
 import Control.Applicative (liftA2)
 
@@ -63,6 +65,14 @@ hoistT f (Traced m d) = Traced m (f d)
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
+
+guided :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+guided p q = Traced mp $ traceDist q >>= (withTrace' mp) where
+  mp = model p
+
+importance :: MonadSample m => Traced m a -> Traced m b -> Traced m a
+importance p q = Traced mp $ traceDist q >>= (importanceWithTrace' mp) where
+  mp = model p
 
 -- | A single step of the Trace MH algorithm.
 mhStep :: MonadSample m => Traced m a -> Traced m a
