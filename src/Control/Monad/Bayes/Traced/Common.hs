@@ -88,23 +88,19 @@ importanceWithTrace :: MonadSample m => Weighted (FreeSampler m) a -> Trace b ->
                        m (Trace a)
 importanceWithTrace m t = do
   (Trace vsp a p) <- withVariables m vsq
-  return $ Trace (importanceVs vsp) a (p / q)
+  return $ Trace vsp a (p / q)
   where
     vsq = variables t
     q = density t
-    extendedVsQ vsp = vsq ++ (take (length vsp - length vsq) (repeat 1))
-    importanceVs vsp = zipWith (/) vsp (extendedVsQ vsp)
 
 importanceWithTrace' :: MonadSample m => Weighted (FreeSampler Identity) a ->
                         Trace b -> m (Trace a)
 importanceWithTrace' m t = do
   (Trace vsp a p) <- withVariables' m vsq
-  return $ Trace (importanceVs vsp) a (p / q)
+  return $ Trace vsp a (p / q)
   where
     vsq = variables t
     q = density t
-    extendedVsQ vsp = vsq ++ (take (length vsp - length vsq) (repeat 1))
-    importanceVs vsp = zipWith (/) vsp (extendedVsQ vsp)
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
