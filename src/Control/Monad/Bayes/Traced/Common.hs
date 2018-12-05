@@ -87,8 +87,8 @@ withTrace' m t = withVariables' m (variables t)
 importanceWithTrace :: MonadSample m => Weighted (FreeSampler m) a -> Trace b ->
                        m (Trace a)
 importanceWithTrace m t = do
-  (Trace vsp a p) <- withVariables (score (1/q) >> m) vsq
-  return $ Trace vsp a (p / q)
+  (Trace vsp a pq) <- withVariables (score (1/q) >> m) vsq
+  return $ Trace vsp a pq
   where
     vsq = variables t
     q = density t
@@ -96,8 +96,8 @@ importanceWithTrace m t = do
 importanceWithTrace' :: MonadSample m => Weighted (FreeSampler Identity) a ->
                         Trace b -> m (Trace a)
 importanceWithTrace' m t = do
-  (Trace vsp a p) <- withVariables' (score (1/q) >> m) vsq
-  return $ Trace vsp a (p / q)
+  (Trace vsp a pq) <- withVariables' (score (1/q) >> m) vsq
+  return $ Trace vsp a pq
   where
     vsq = variables t
     q = density t
