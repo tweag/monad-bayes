@@ -72,13 +72,13 @@ applyWeight m = do
   factor w
   return x
 
-propose :: MonadCond m => Weighted m a -> Weighted m a
+propose :: Monad m => Weighted m a -> Weighted m a
 propose m = do
   x <- m
   Weighted $ modify (\w -> w**(-2))
   return x
 
-scoreImportance :: MonadCond m => Weighted m a -> (a -> Log Double) -> Weighted m a
+scoreImportance :: Monad m => Weighted m a -> (a -> Log Double) -> Weighted m a
 scoreImportance proposal prior = do
   x <- propose proposal
   score (prior x)
