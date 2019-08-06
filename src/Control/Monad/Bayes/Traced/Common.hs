@@ -73,7 +73,7 @@ mhTrans m t = do
     let (xs, _:ys) = splitAt i us
     return $ xs ++ (u':ys)
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
-  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length vs) / p * fromIntegral (length us))
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length us) / p * fromIntegral (length vs))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
