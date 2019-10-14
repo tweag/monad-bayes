@@ -76,6 +76,6 @@ mh n (Traced m d) = fmap (map output) t where
   t = f n
   f 0 = fmap (:[]) d
   f k = do
-    x:xs <- f (k-1)
-    y <- mhTrans' m x
-    return (y:x:xs)
+    l <- f (k-1)
+    y <- mhTrans' m (head l)
+    return (y:l)

@@ -93,9 +93,9 @@ mh n (Traced c) = do
   (m,t) <- c
   let f 0 = return [t]
       f k = do
-        x:xs <- f (k-1)
-        y <- mhTrans m x
-        return (y:x:xs)
+        l <- f (k-1)
+        y <- mhTrans m (head l)
+        return (y:l)
   ts <- f n
   let xs = map output ts
   return xs
