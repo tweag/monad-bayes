@@ -49,6 +49,7 @@ executable example
 library
   hs-source-dirs:      src
   exposed-modules:     Control.Monad.Bayes.Class
+                     , Control.Monad.Bayes.Distributions
                      , Control.Monad.Bayes.Free
                      , Control.Monad.Bayes.Sampler
                      , Control.Monad.Bayes.Weighted
