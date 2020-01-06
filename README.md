@@ -35,4 +35,3 @@ To open interactive session:
 ```
 stack ghci
 ```
-
