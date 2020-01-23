@@ -48,7 +48,7 @@ library
                      , Control.Monad.Bayes.Inference.RMSMC
                      , Control.Monad.Bayes.Inference.PMMH
                      , Control.Monad.Bayes.Inference.SMC2
-  other-modules:       Control.Monad.Bayes.Traced.Common
+                     , Control.Monad.Bayes.Traced.Common
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , mtl
