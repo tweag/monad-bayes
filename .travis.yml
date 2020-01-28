@@ -1,7 +1,7 @@
 ###############################################################################
 # To see the local changes made to this file, run:
 #
-# $ curl -sS https://raw.githubusercontent.com/commercialhaskell/stack/68781de01a2f90f8e3689caebb69f3c1d447e944/doc/travis-complex.yml | diff -u - .travis.yml
+# $ curl -sS https://raw.githubusercontent.com/commercialhaskell/stack/33a6c2d04967881d6e043a09a32e9dbb7addfdf5/doc/travis-complex.yml | diff -u - .travis.yml
 ###############################################################################
 
 # This is the complex Travis configuration, which is intended for use
@@ -14,8 +14,8 @@
 # Copy these contents into the root directory of your Github project in a file
 # named .travis.yml
 
-# Use new container infrastructure to enable caching
-sudo: false
+# Run jobs on Linux unless "os" is specified explicitly.
+os: linux
 
 # Do not choose a language; we provide our own build tools.
 language: generic
@@ -36,9 +36,9 @@ cache:
 # cache file per set of arguments.
 #
 # If you need to have different apt packages for each combination in the
-# matrix, you can use a line such as:
+# job matrix, you can use a line such as:
 #     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
-matrix:
+jobs:
   include:
   # We grab the appropriate GHC and cabal-install versions from hvr's PPA. See:
   # https://github.com/hvr/multi-ghc-travis
