@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # Generates profiling information for selected models and inference algorithms.
 
 stack build --profile
