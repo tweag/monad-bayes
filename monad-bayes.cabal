@@ -1,17 +1,18 @@
+cabal-version:       2.0
 name:                monad-bayes
 version:             0.1.0.0
-synopsis:            A library for probabilistic programming in Haskell.
-description:         A library for probabilistic programming in Haskell using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.
+synopsis:            A library for probabilistic programming.
+description:         A library for probabilistic programming using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.
 homepage:            http://github.com/adscib/monad-bayes#readme
 license:             MIT
 license-file:        LICENSE
 author:              Adam Scibior
 maintainer:          adscib@gmail.com
 copyright:           2015-2019 Adam Scibior
+bug-reports:         https://github.com/adscib/monad-bayes/issues
+stability:           experimental
 category:            Statistics
 build-type:          Simple
--- extra-source-files:
-cabal-version:       >=1.10
 
 executable example
   hs-source-dirs:      benchmark, models
@@ -108,13 +109,7 @@ benchmark ssm-bench
                      , monad-bayes
   default-language:    Haskell2010
   default-extensions:  RankNTypes
-  -- Main benchmark file should import all the modules to be
-  -- maintained. Those modules should also be listed in
-  -- `other-modules`.
   main-is:             SSM.hs
-  -- List all models we want to watch for changes.
-  -- DO NOT list modules that don't compile.
-  -- They make it impossible to run `stack ghci`.
   other-modules:       NonlinearSSM
 
 benchmark speed-bench
@@ -133,107 +128,10 @@ benchmark speed-bench
   ghc-options:         -rtsopts "-with-rtsopts=-M1g -K1g"
   default-language:    Haskell2010
   default-extensions:  RankNTypes
-  -- Main benchmark file should import all the modules to be
-  -- maintained. Those modules should also be listed in
-  -- `other-modules`.
   main-is:             Speed.hs
-  -- List all models we want to watch for changes.
-  -- DO NOT list modules that don't compile.
-  -- They make it impossible to run `stack ghci`.
   other-modules:       LogReg
                      , HMM
                      , LDA
-
--- benchmark monad-bayes-bench
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      models
---   build-depends:       base
---                      , monad-bayes
---                      , mtl
---                      , transformers
---                      , math-functions
---                      , hmatrix
---                      , statistics
---                      , vector
---                      , Chart
---                      , Chart-cairo
---                      , optparse-applicative
---                      , directory
---   default-language:    Haskell2010
---   -- Main benchmark file should import all the modules to be
---   -- maintained. Those modules should also be listed in
---   -- `other-modules`.
---   main-is:             BenchAll.hs
---   -- List all models we want to watch for changes.
---   -- DO NOT list modules that don't compile.
---   -- They make it impossible to run `stack ghci`.
---   other-modules:       Sprinkler,
---                        BetaBin,
---                        Dice,
---                        Gamma,
---                        HMM,
---                        DPmixture,
---                        StrictlySmallerSupport,
---                        Plotting
-
--- benchmark lgss-benchmark
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      models
---   build-depends:       base
---                      , monad-bayes
---                      , transformers
---                      , mtl
---                      , statistics
---                      , vector
---                      , Chart
---                      , Chart-cairo
---                      , optparse-applicative
---                      , directory
---   default-language:    Haskell2010
---   -- Main benchmark file should import all the modules to be
---   -- maintained. Those modules should also be listed in
---   -- `other-modules`.
---   main-is:             LGSS.hs
---   -- List all models we want to watch for changes.
---   -- DO NOT list modules that don't compile.
---   -- They make it impossible to run `stack ghci`.
---   other-modules:       Plotting
---
--- benchmark performance
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      models
---   build-depends:       base
---                      , monad-bayes
---                      , transformers
---                      , mtl
---                      , vector
---                      , criterion
---                      , ad
---                      , mwc-random
---                      , statistics
---                      , Chart
---                      , Chart-cairo
---                      , directory
---                      , optparse-applicative
---                      , abstract-par
---                      , containers
---                      , hmatrix
---   default-language:    Haskell2010
---   -- Main benchmark file should import all the modules to be
---   -- maintained. Those modules should also be listed in
---   -- `other-modules`.
---   main-is:             Benchmarks.hs
---   -- List all models we want to watch for changes.
---   -- DO NOT list modules that don't compile.
---   -- They make it impossible to run `stack ghci`.
---   other-modules:       Plotting,
---                        NonlinearSSM,
---                        HMM,
---                        LogReg,
---                        LDA
---   default-extensions:  RankNTypes
---                      , TypeFamilies
---                      , AllowAmbiguousTypes
 
 source-repository head
   type:     git
