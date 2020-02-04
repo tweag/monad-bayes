@@ -64,7 +64,6 @@ bind dx f = do
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans m t = do
   let us = variables t
-      a = output t
       p = density t
   us' <- do
     let n = length us
