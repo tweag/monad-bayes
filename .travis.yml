@@ -1,7 +1,7 @@
 ###############################################################################
 # To see the local changes made to this file, run:
 #
-# $ curl -sS https://raw.githubusercontent.com/commercialhaskell/stack/33a6c2d04967881d6e043a09a32e9dbb7addfdf5/doc/travis-complex.yml | diff -u - .travis.yml
+# $ curl -sS https://raw.githubusercontent.com/commercialhaskell/stack/0cbcce0b1b89e5431121b745afdd1dfbd3ba8a43/doc/travis-complex.yml | diff -u - .travis.yml
 ###############################################################################
 
 # This is the complex Travis configuration, which is intended for use
