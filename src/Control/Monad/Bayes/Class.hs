@@ -7,6 +7,30 @@ Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+This module defines 'MonadInfer', which can be used to represent a simple model
+like the following:
+
+@
+import Control.Monad (when)
+import Control.Monad.Bayes.Class
+
+model :: MonadInfer m => m Bool
+model = do
+  rain <- bernoulli 0.3
+  sprinkler <-
+    bernoulli $
+    if rain
+      then 0.1
+      else 0.4
+  let wetProb =
+    case (rain, sprinkler) of
+      (True,  True)  -> 0.98
+      (True,  False) -> 0.80
+      (False, True)  -> 0.90
+      (False, False) -> 0.00
+  score wetProb
+  return rain
+@
 -}
 
 module Control.Monad.Bayes.Class (
@@ -55,48 +79,98 @@ import Data.Vector.Generic as VG
 import qualified Data.Vector as V
 import Control.Monad (when)
 
--- | Class of monads that can draw random variables.
+-- | Monads that can draw random variables.
 class Monad m => MonadSample m where
-  -- | A random variable distributed uniformly on [0,1].
-  random :: m Double
+  -- | Draw from a uniform distribution.
+  random :: m Double -- ^ \(\sim \mathcal{U}(0, 1)\)
 
-  uniform :: Double -> Double -> m Double
+  -- | Draw from a uniform distribution.
+  uniform ::
+       Double -- ^ lower bound a
+    -> Double -- ^ upper bound b
+    -> m Double -- ^ \(\sim \mathcal{U}(a, b)\).
   uniform a b = draw (uniformDistr a b)
-  normal :: Double -> Double -> m Double
+
+  -- | Draw from a normal distribution.
+  normal ::
+       Double -- ^ mean μ
+    -> Double -- ^ standard deviation σ
+    -> m Double -- ^ \(\sim \mathcal{N}(\mu, \sigma^2)\)
   normal m s = draw (normalDistr m s)
-  gamma :: Double -> Double -> m Double
+
+  -- | Draw from a gamma distribution.
+  gamma ::
+       Double -- ^ shape k
+    -> Double -- ^ scale θ
+    -> m Double -- ^ \(\sim \Gamma(k, \theta)\)
   gamma shape scale = draw (gammaDistr shape scale)
-  beta :: Double -> Double -> m Double
+
+  -- | Draw from a beta distribution.
+  beta ::
+       Double -- ^ shape α
+    -> Double -- ^ shape β
+    -> m Double -- ^ \(\sim \mathrm{Beta}(\alpha, \beta)\)
   beta a b = draw (betaDistr a b)
 
-  bernoulli :: Double -> m Bool
+  -- | Draw from a Bernoulli distribution.
+  bernoulli ::
+       Double -- ^ probability p
+    -> m Bool -- ^ \(\sim \mathrm{B}(1, p)\)
   bernoulli p = fmap (< p) random
-  categorical :: Vector v Double => v Double -> m Int
+
+  -- | Draw from a categorical distribution.
+  categorical ::
+       Vector v Double
+    => v Double -- ^ event probabilities
+    -> m Int -- ^ outcome category
   categorical ps = fromPMF (ps !)
-  uniformD :: [a] -> m a
+
+  -- | Draw from a categorical distribution in the log domain.
+  logCategorical ::
+       (Vector v (Log Double), Vector v Double)
+    => v (Log Double) -- ^ event probabilities
+    -> m Int -- ^ outcome category
+  logCategorical = categorical . VG.map (exp . ln)
+
+  -- | Draw from a discrete uniform distribution.
+  uniformD ::
+       [a] -- ^ observable outcomes @xs@
+    -> m a -- ^ \(\sim \mathcal{U}\{\mathrm{xs}\}\)
   uniformD xs = do
     let n = Prelude.length xs
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     return (xs !! i)
-  logCategorical :: (Vector v (Log Double), Vector v Double) => v (Log Double) -> m Int
-  logCategorical = categorical . VG.map (exp . ln)
-  geometric :: Double -> m Int
-  geometric p = discrete (geometric0 p)
-  poisson :: Double -> m Int
-  poisson lambda = discrete (Poisson.poisson lambda)
 
-  dirichlet :: Vector v Double => v Double -> m (v Double)
+  -- | Draw from a geometric distribution.
+  geometric ::
+       Double -- ^ success rate p
+    -> m Int -- ^ \(\sim\) number of failed Bernoulli trials with success probability p before first success
+  geometric = discrete . geometric0
+
+  -- | Draw from a Poisson distribution.
+  poisson ::
+       Double -- ^ parameter λ
+    -> m Int -- ^ \(\sim \mathrm{Pois}(\lambda)\)
+  poisson = discrete . Poisson.poisson
+
+  -- | Draw from a Dirichlet distribution.
+  dirichlet ::
+       Vector v Double
+    => v Double -- ^ concentration parameters @as@
+    -> m (v Double) -- ^ \(\sim \mathrm{Dir}(\mathrm{as})\)
   dirichlet as = do
     xs <- VG.mapM (`gamma` 1) as
     let s = VG.sum xs
     let ys = VG.map (/ s) xs
     return ys
 
--- | Draw a value from a continuous distribution using iverse CDF.
+-- | Draw from a continuous distribution using the inverse cumulative density
+-- function.
 draw :: (ContDistr d, MonadSample m) => d -> m Double
 draw d = fmap (quantile d) random
 
--- | Draw a value from a discrete distribution using a sequence of draws from Bernoulli.
+-- | Draw from a discrete distribution using a sequence of draws from
+-- Bernoulli.
 fromPMF :: MonadSample m => (Int -> Double) -> m Int
 fromPMF p = f 0 1 where
   f i r = do
@@ -106,16 +180,22 @@ fromPMF p = f 0 1 where
     b <- bernoulli (q / r)
     if b then pure i else f (i+1) (r-q)
 
--- | Draw a value from a discrete distributions using the PMF.
+-- | Draw from a discrete distributions using the probability mass function.
 discrete :: (DiscreteDistr d, MonadSample m) => d -> m Int
-discrete d = fromPMF (probability d)
+discrete = fromPMF . probability
 
 -- | Monads that can score different execution paths.
 class Monad m => MonadCond m where
-  score :: Log Double -> m ()
+  -- | Record a likelihood.
+  score ::
+       Log Double -- ^ likelihood of the execution path
+    -> m ()
 
 -- | Synonym for 'score'.
-factor :: MonadCond m => Log Double -> m ()
+factor ::
+     MonadCond m
+  => Log Double -- ^ likelihood of the execution path
+  -> m ()
 factor = score
 
 -- | Hard conditioning.
@@ -125,7 +205,12 @@ condition b = score $ if b then 1 else 0
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
 
-normalPdf :: Double -> Double -> Double -> Log Double
+-- | Probability density function of the normal distribution.
+normalPdf ::
+     Double -- ^ mean μ
+  -> Double -- ^ standard deviation σ
+  -> Double -- ^ sample x
+  -> Log Double -- ^ relative likelihood of observing sample x in \(\mathcal{N}(\mu, \sigma^2)\)
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 ----------------------------------------------------------------------------

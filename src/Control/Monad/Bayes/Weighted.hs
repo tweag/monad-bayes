@@ -7,6 +7,8 @@ Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+'Weighted' is an instance of 'MonadCond'. Apply a 'MonadSample' transformer to
+obtain a 'MonadInfer' that can execute probabilistic models.
 -}
 
 module Control.Monad.Bayes.Weighted (
@@ -26,9 +28,9 @@ import Control.Monad.Trans.State
 import Numeric.Log
 import Control.Monad.Bayes.Class
 
--- | Executes the program using the prior distribution, while accumulating likelihood.
+-- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
-    --StateT is more efficient than WriterT
+    -- StateT is more efficient than WriterT
     deriving(Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
 
 instance Monad m => MonadCond (Weighted m) where

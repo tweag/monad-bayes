@@ -7,6 +7,7 @@ Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+'Sequential' represents a computation that can be suspended.
 -}
 
 module Control.Monad.Bayes.Sequential (
@@ -28,12 +29,13 @@ import Data.Either
 import Control.Monad.Bayes.Class
 
 -- | Represents a computation that can be suspended at certain points.
--- The intermediate monadic effects can be extracted, which is particularly useful
--- for implementation of SMC-related methods.
--- All the probabilistic effects are lifted from the transformed monad,
--- but also `suspend` is inserted after each `factor`.
+-- The intermediate monadic effects can be extracted, which is particularly
+-- useful for implementation of Sequential Monte Carlo related methods.
+-- All the probabilistic effects are lifted from the transformed monad, but
+-- also `suspend` is inserted after each `factor`.
 newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
   deriving(Functor,Applicative,Monad,MonadTrans,MonadIO)
+
 extract :: Await () a -> a
 extract (Await f) = f ()
 
@@ -42,6 +44,7 @@ instance MonadSample m => MonadSample (Sequential m) where
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
+-- | Execution is 'suspend'ed after each 'score'.
 instance MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend
 
@@ -55,14 +58,14 @@ suspend = Sequential await
 finish :: Monad m => Sequential m a -> m a
 finish = pogoStick extract . runSequential
 
--- | Run to the next suspension point.
--- If the computation is finished do nothing.
+-- | Execute to the next suspension point.
+-- If the computation is finished, do nothing.
 --
 -- > finish = finish . advance
 advance :: Monad m => Sequential m a -> Sequential m a
 advance = Sequential . bounce extract . runSequential
 
--- | Checks if no more suspension points remaining.
+-- | Return True if no more suspension points remain.
 finished :: Monad m => Sequential m a -> m Bool
 finished = fmap isRight . resume . runSequential
 

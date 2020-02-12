@@ -1,12 +1,15 @@
 {-|
 Module      : Control.Monad.Bayes.Inference.PMMH
-Description : Particle Marginal Metropolis-Hastings
+Description : Particle Marginal Metropolis-Hastings (PMMH)
 Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
 Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+Particle Marginal Metropolis-Hastings (PMMH) sampling.
+
+Christophe Andrieu, Arnaud Doucet, and Roman Holenstein. 2010. Particle Markov chain Monte Carlo Methods. /Journal of the Royal Statistical Society/ 72 (2010), 269-342. <http://www.stats.ox.ac.uk/~doucet/andrieu_doucet_holenstein_PMCMC.pdf>
 -}
 
 module Control.Monad.Bayes.Inference.PMMH (
@@ -23,9 +26,9 @@ import Control.Monad.Bayes.Population as Pop
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Inference.SMC
 
--- | Particle Marginal Metropolis-Hastings.
+-- | Particle Marginal Metropolis-Hastings sampling.
 pmmh :: MonadInfer m
-     => Int -- ^ number of MH steps
+     => Int -- ^ number of Metropolis-Hastings steps
      -> Int -- ^ number of time steps
      -> Int -- ^ number of particles
      -> Traced m b -- ^ model parameters prior

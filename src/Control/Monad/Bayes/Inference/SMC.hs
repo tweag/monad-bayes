@@ -1,12 +1,15 @@
 {-|
 Module      : Control.Monad.Bayes.Inference.SMC
-Description : Sequential Monte Carlo
+Description : Sequential Monte Carlo (SMC)
 Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
 Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+Sequential Monte Carlo (SMC) sampling.
+
+Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
 -}
 
 module Control.Monad.Bayes.Inference.SMC (

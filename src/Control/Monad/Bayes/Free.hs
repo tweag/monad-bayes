@@ -1,3 +1,14 @@
+{-|
+Module      : Control.Monad.Bayes.Free
+Description : Free monad transformer over random sampling
+Copyright   : (c) Adam Scibior, 2015-2020
+License     : MIT
+Maintainer  : leonhard.markert@tweag.io
+Stability   : experimental
+Portability : GHC
+
+'FreeSampler' is a free monad transformer over random sampling.
+-}
 
 module Control.Monad.Bayes.Free (
   FreeSampler,
@@ -25,8 +36,8 @@ instance Functor SamF where
 
 
 -- | Free monad transformer over random sampling.
--- Uses the Church-encoded version of the free monad
--- for efficiency.
+
+-- Uses the Church-encoded version of the free monad for efficiency.
 newtype FreeSampler m a = FreeSampler (FT SamF m a)
   deriving(Functor,Applicative,Monad,MonadTrans)
 
@@ -39,6 +50,7 @@ instance Monad m => MonadFree SamF (FreeSampler m) where
 instance Monad m => MonadSample (FreeSampler m) where
   random = FreeSampler $ liftF (Random id)
 
+-- | Hoist 'FreeSampler' through a monad transform.
 hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoist f (FreeSampler m) = FreeSampler (hoistFT f m)
 
