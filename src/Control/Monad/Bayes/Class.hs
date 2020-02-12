@@ -1,9 +1,9 @@
 {-|
 Module      : Control.Monad.Bayes.Class
 Description : Types for probabilistic modelling
-Copyright   : (c) Adam Scibior, 2016
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 

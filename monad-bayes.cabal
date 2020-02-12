@@ -3,13 +3,13 @@ name:                monad-bayes
 version:             0.1.0.0
 synopsis:            A library for probabilistic programming.
 description:         A library for probabilistic programming using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.
-homepage:            http://github.com/adscib/monad-bayes#readme
+homepage:            http://github.com/tweag/monad-bayes#readme
 license:             MIT
 license-file:        LICENSE
-author:              Adam Scibior
-maintainer:          adscib@gmail.com
-copyright:           2015-2019 Adam Scibior
-bug-reports:         https://github.com/adscib/monad-bayes/issues
+author:              Adam Scibior <adscib@gmail.com>
+maintainer:          leonhard.markert@tweag.io
+copyright:           2015-2020 Adam Scibior
+bug-reports:         https://github.com/tweag/monad-bayes/issues
 stability:           experimental
 category:            Statistics
 build-type:          Simple

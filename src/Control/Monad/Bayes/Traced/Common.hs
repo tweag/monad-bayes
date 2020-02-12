@@ -1,9 +1,9 @@
 {-|
 Module      : Control.Monad.Bayes.Traced.Common
 Description : Numeric code for Trace MCMC
-Copyright   : (c) Adam Scibior, 2017
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 

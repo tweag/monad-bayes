@@ -1,9 +1,9 @@
 {-|
 Module      : Control.Monad.Bayes.Traced.Dynamic
 Description : Distributions on execution traces that can be dynamically frozen
-Copyright   : (c) Adam Scibior, 2017
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
