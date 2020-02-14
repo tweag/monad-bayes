@@ -1,21 +1,46 @@
 # monad-bayes
 
-[![Build Status](https://travis-ci.org/adscib/monad-bayes.svg?branch=master)](https://travis-ci.org/adscib/monad-bayes)
+[![Build Status](https://travis-ci.org/tweag/monad-bayes.svg?branch=master)](https://travis-ci.org/tweag/monad-bayes)
 
-A library for probabilistic programming in Haskell using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers. The code is still experimental, but will be released on Hackage as soon as it reaches relative stability. User's guide will appear soon. In the meantime see the `models` folder that contains several examples.
+A library for **probabilistic programming in Haskell** using probability
+monads. The emphasis is on composition of inference algorithms implemented in
+terms of monad transformers.
 
-The code in this repository accompanies the ICFP 2018 paper [Functional programming for modular Bayesian inference](https://dl.acm.org/citation.cfm?id=3236778).
+Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), maintained by
+[Tweag I/O][tweagio].
 
-For the code associated with Haskell2015 paper "Practical Probabilistic Programming with Monads" see the `haskell2015` branch.
+## Project status
+
+As of February 2020, we are working towards releasing monad-bayes on Hackage.
+After the initial release, we will focus on improving documentation. In the
+meantime, see the [`models` folder][models] for examples.
+
+## Background
+
+The basis for the code in this repository is the ICFP 2018 paper [2]. For the
+code associated with the Haskell2015 paper [1], see the [`haskell2015`
+branch][haskell2015-branch].
+
+[1] Adam M. Ścibior, Zoubin Ghahramani, and Andrew D. Gordon. 2015. [Practical
+probabilistic programming with monads][haskell2015-doi]. In _Proceedings of the
+2015 ACM SIGPLAN Symposium on Haskell_ (Haskell ’15), Association for Computing
+Machinery, Vancouver, BC, Canada, 165–176.
+
+[2] Adam M. Ścibior, Ohad Kammar, and Zoubin Ghahramani. 2018. [Functional
+programming for modular Bayesian inference][icfp2018-doi]. In _Proceedings of
+the ACM on Programming Languages_ Volume 2, ICFP (July 2018), 83:1–83:29.
+
+[3] Adam M. Ścibior. 2019. [Formally justified and modular Bayesian inference
+for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
 
 ## Installation (using Stack)
 
-Ensure stack is already installed by following these [instructions](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
+Ensure `stack` is installed by following these [instructions][stack-install].
 
-To fork repo:
+To clone the repo:
 
 ```
-git clone https://github.com/adscib/monad-bayes.git
+git clone https://github.com/tweag/monad-bayes.git
 ```
 
 To run the build:
@@ -30,8 +55,18 @@ To test the code:
 stack test
 ```
 
-To open interactive session:
+To open an interactive session:
 
 ```
 stack ghci
 ```
+
+[adam-github]: https://github.com/adscib
+[adam-web]: https://www.cs.ubc.ca/~ascibior/
+[haskell2015-branch]: https://github.com/tweag/monad-bayes/tree/haskell2015
+[haskell2015-doi]: https://doi.org/10.1145/2804302.2804317
+[icfp2018-doi]: https://doi.org/10.1145/3236778
+[models]: https://github.com/tweag/monad-bayes/tree/master/models
+[stack-install]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
+[thesis-doi]: https://doi.org/10.17863/CAM.42233
+[tweagio]: https://tweag.io

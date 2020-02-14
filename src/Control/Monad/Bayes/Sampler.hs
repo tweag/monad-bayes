@@ -1,12 +1,14 @@
 {-|
 Module      : Control.Monad.Bayes.Sampler
-Description : Psuedo-random sampling monads
-Copyright   : (c) Adam Scibior, 2016
+Description : Pseudo-random sampling monads
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+'SamplerIO' and 'SamplerST' are instances of 'MonadSample'. Apply a 'MonadCond'
+transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 -}
 
 module Control.Monad.Bayes.Sampler (
@@ -30,21 +32,23 @@ import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask, mapReaderT)
 
 import Control.Monad.Bayes.Class
 
--- | An `IO` based random sampler using the MWC-Random package.
+-- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
   deriving(Functor, Applicative, Monad, MonadIO)
 
--- | Initialize PRNG using OS-supplied randomness.
--- For efficiency this operation should be applied at the very end, ideally once per program.
+-- | Initialize a pseudo-random number generator using randomness supplied by
+-- the operating system.
+-- For efficiency this operation should be applied at the very end, ideally
+-- once per program.
 sampleIO :: SamplerIO a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 
--- | Like `sampleIO`, but with a fixed random seed.
+-- | Like 'sampleIO', but with a fixed random seed.
 -- Useful for reproducibility.
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
--- | Like 'sampleIO' but with a custom PRNG.
+-- | Like 'sampleIO' but with a custom pseudo-random number generator.
 sampleIOwith :: SamplerIO a -> GenIO -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
@@ -57,7 +61,7 @@ instance MonadSample SamplerIO where
 
 
 
--- | An `ST` based random sampler using the MWC-Random package.
+-- | An 'ST' based random sampler using the @mwc-random@ package.
 newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a
@@ -89,7 +93,7 @@ sampleSTfixed (SamplerST s) = runST $ do
   gen <- create
   runReaderT s gen
 
--- | Helper for converting distributions supplied by MWC-Random
+-- | Convert a distribution supplied by @mwc-random@.
 fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST a
 fromMWC s = SamplerST $ ask >>= lift . s
 

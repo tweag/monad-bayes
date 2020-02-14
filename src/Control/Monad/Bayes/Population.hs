@@ -1,12 +1,13 @@
 {-|
 Module      : Control.Monad.Bayes.Population
 Description : Representation of distributions using multiple samples
-Copyright   : (c) Adam Scibior, 2016
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+'Population' turns a single sample into a collection of weighted samples.
 -}
 
 module Control.Monad.Bayes.Population (
@@ -43,13 +44,15 @@ import Numeric.Log
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
 
+-- | A collection of weighted samples, or particles.
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving(Functor,Applicative,Monad,MonadIO,MonadSample,MonadCond,MonadInfer)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
 
--- | Explicit representation of the weighted sample with weights in log domain.
+-- | Explicit representation of the weighted sample with weights in the log
+-- domain.
 runPopulation :: Functor m => Population m a -> m [(a, Log Double)]
 runPopulation (Population m) = runListT $ runWeighted m
 
@@ -57,13 +60,13 @@ runPopulation (Population m) = runListT $ runWeighted m
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
 explicitPopulation = fmap (map (second (exp . ln))) . runPopulation
 
--- | Initialise 'Population' with a concrete weighted sample.
+-- | Initialize 'Population' with a concrete weighted sample.
 fromWeightedList :: Monad m => m [(a,Log Double)] -> Population m a
 fromWeightedList = Population . withWeight . ListT
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
--- It is therefore safe to use `spawn` in arbitrary places in the program
+-- It is therefore safe to use 'spawn' in arbitrary places in the program
 -- without introducing bias.
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)

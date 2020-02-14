@@ -1,9 +1,9 @@
 {-|
 Module      : Control.Monad.Bayes.Traced.Dynamic
 Description : Distributions on execution traces that can be dynamically frozen
-Copyright   : (c) Adam Scibior, 2017
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
@@ -64,7 +64,7 @@ instance MonadSample m => MonadSample (Traced m) where
   random = Traced $ fmap ((,) random . singleton) random
 
 instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced $ fmap ((,) (score w)) (score w >> pure (scored w))
+  score w = Traced $ fmap (score w,) (score w >> pure (scored w))
 
 instance MonadInfer m => MonadInfer (Traced m)
 
@@ -80,7 +80,7 @@ freeze :: Monad m => Traced m a -> Traced m a
 freeze (Traced c) = Traced $ do
   (_, t) <- c
   let x = output t
-  return (return x, (pure x))
+  return (return x, pure x)
 
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced c) = Traced $ do

@@ -1,12 +1,15 @@
 {-|
 Module      : Control.Monad.Bayes.Inference.RMSMC
-Description : Resample-Move Sequential Monte Carlo
-Copyright   : (c) Adam Scibior, 2017
+Description : Resample-Move Sequential Monte Carlo (RM-SMC)
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
+Resample-move Sequential Monte Carlo (RM-SMC) sampling.
+
+Walter Gilks and Carlo Berzuini. 2001. Following a moving target - Monte Carlo inference for dynamic Bayesian models. /Journal of the Royal Statistical Society/ 63 (2001), 127-146. <http://www.mathcs.emory.edu/~whalen/Papers/BNs/MonteCarlo-DBNs.pdf>
 -}
 
 module Control.Monad.Bayes.Inference.RMSMC (
@@ -27,7 +30,7 @@ import Control.Monad.Bayes.Helpers
 rmsmc :: MonadSample m
       => Int -- ^ number of timesteps
       -> Int -- ^ number of particles
-      -> Int -- ^ number of MH transitions after each resampling
+      -> Int -- ^ number of Metropolis-Hastings transitions after each resampling
       -> Sequential (Traced (Population m)) a -- ^ model
       -> Population m a
 rmsmc k n t =
@@ -40,7 +43,7 @@ rmsmc k n t =
 rmsmcBasic :: MonadSample m
       => Int -- ^ number of timesteps
       -> Int -- ^ number of particles
-      -> Int -- ^ number of MH transitions after each resampling
+      -> Int -- ^ number of Metropolis-Hastings transitions after each resampling
       -> Sequential (TrBas.Traced (Population m)) a -- ^ model
       -> Population m a
 rmsmcBasic k n t =
@@ -54,7 +57,7 @@ rmsmcBasic k n t =
 rmsmcLocal :: MonadSample m
            => Int -- ^ number of timesteps
            -> Int -- ^ number of particles
-           -> Int -- ^ number of MH transitions after each resampling
+           -> Int -- ^ number of Metropolis-Hastings transitions after each resampling
            -> Sequential (TrDyn.Traced (Population m)) a -- ^ model
            -> Population m a
 rmsmcLocal k n t =

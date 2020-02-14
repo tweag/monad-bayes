@@ -1,9 +1,9 @@
 {-|
 Module      : Control.Monad.Bayes.Traced.Common
 Description : Numeric code for Trace MCMC
-Copyright   : (c) Adam Scibior, 2017
+Copyright   : (c) Adam Scibior, 2015-2020
 License     : MIT
-Maintainer  : ams240@cam.ac.uk
+Maintainer  : leonhard.markert@tweag.io
 Stability   : experimental
 Portability : GHC
 
@@ -64,7 +64,6 @@ bind dx f = do
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans m t = do
   let us = variables t
-      a = output t
       p = density t
   us' <- do
     let n = length us
