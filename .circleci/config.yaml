@@ -3,6 +3,7 @@ version: 2
 shared: &shared
   steps:
     - checkout
+    - run: stack --version
     - run: stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
     - run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
 
