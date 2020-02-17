@@ -9,19 +9,19 @@ workflows:
       - "lts-14.0"
 
 shared: &shared
-steps:
-  - checkout
-  - run: stack --version
-  - restore_cache:
-    key: v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "monad-bayes.cabal" }}
-  - run: stack --no-terminal $ARGS test --bench --only-dependencies
-  - save_cache:
-    key: v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "monad-bayes.cabal" }}
-    paths:
-      - $HOME/.ghc
-      - $HOME/.cabal
-      - $HOME/.stack
-  - run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
+  steps:
+    - checkout
+    - run: stack --version
+    - restore_cache:
+        key: v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "monad-bayes.cabal" }}
+    - run: stack --no-terminal $ARGS test --bench --only-dependencies
+    - save_cache:
+        key: v1-{{ .Environment.CIRCLE_JOB }}-{{ checksum "monad-bayes.cabal" }}
+        paths:
+          - $HOME/.ghc
+          - $HOME/.cabal
+          - $HOME/.stack
+    - run: stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
 
 jobs:
   "lts-11.0":
