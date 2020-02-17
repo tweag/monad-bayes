@@ -1,0 +1,13 @@
+steps:
+  - label: GHC 8.4
+    command: |
+      nix-build -A monad-bayes-ghc84 --no-out-link
+    timeout: 100
+  - label: GHC 8.6
+    command: |
+      nix-build -A monad-bayes-ghc86 --no-out-link
+    timeout: 100
+  - label: GHC 8.8
+    command: |
+      nix-build -A monad-bayes-ghc88 --no-out-link
+    timeout: 100

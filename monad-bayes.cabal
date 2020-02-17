@@ -1,11 +1,12 @@
 cabal-version:       2.0
+tested-with:         GHC==8.4.4, GHC==8.6.5, GHC==8.8.1
 name:                monad-bayes
 version:             0.1.0.0
 synopsis:            A library for probabilistic programming.
 description:         A library for probabilistic programming using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.
 homepage:            http://github.com/tweag/monad-bayes#readme
 license:             MIT
-license-file:        LICENSE
+license-file:        LICENSE.md
 author:              Adam Scibior <adscib@gmail.com>
 maintainer:          leonhard.markert@tweag.io
 copyright:           2015-2020 Adam Scibior
@@ -13,9 +14,13 @@ bug-reports:         https://github.com/tweag/monad-bayes/issues
 stability:           experimental
 category:            Statistics
 build-type:          Simple
-
 extra-source-files:
   CHANGELOG.md
+
+flag dev
+  description: Turn on development settings.
+  manual: True
+  default: False
 
 executable example
   hs-source-dirs:      benchmark, models
@@ -33,6 +38,13 @@ executable example
                      , HMM
                      , LDA
                      , Dice
+  if flag(dev)
+    ghc-options: -Wall -Wcompat
+                 -Wincomplete-record-updates
+                 -Wincomplete-uni-patterns
+                 -Wnoncanonical-monad-instances
+  else
+    ghc-options: -Wall
 
 library
   hs-source-dirs:      src
@@ -54,7 +66,7 @@ library
                      , Control.Monad.Bayes.Inference.SMC2
   other-modules:       Control.Monad.Bayes.Traced.Common
   -- See MAINTAINERS.md for when and how to update the version bounds.
-  build-depends:       base >= 4.10.1 && < 4.14
+  build-depends:       base >= 4.11 && < 4.14
                      , containers >= 0.5.10 && < 0.7
                      , free >= 5.0.2 && < 5.2
                      , ieee754 >= 0.8.0 && < 0.9
@@ -67,7 +79,13 @@ library
                      , statistics >= 0.14.0 && < 0.16
                      , transformers >= 0.5.2 && < 0.6
                      , vector >= 0.12.0 && < 0.13
-  ghc-options:         -Wall -fno-warn-redundant-constraints
+  if flag(dev)
+    ghc-options: -Wall -Wcompat
+                 -Wincomplete-record-updates
+                 -Wincomplete-uni-patterns
+                 -Wnoncanonical-monad-instances
+  else
+    ghc-options: -Wall
   default-language:    Haskell2010
   default-extensions:  RankNTypes
                      , GeneralizedNewtypeDeriving
@@ -95,7 +113,13 @@ test-suite monad-bayes-test
                      , transformers
                      , log-domain
                      , vector
-  ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -M1g -K1g"
+  if flag(dev)
+    ghc-options: -Wall -Wcompat
+                 -Wincomplete-record-updates
+                 -Wincomplete-uni-patterns
+                 -Wnoncanonical-monad-instances
+  else
+    ghc-options: -Wall
   default-language:    Haskell2010
   other-modules:       Sprinkler,
                        TestEnumerator,
@@ -128,7 +152,13 @@ benchmark speed-bench
                      , mwc-random
                      , containers
                      , process
-  ghc-options:         -rtsopts "-with-rtsopts=-M1g -K1g"
+  if flag(dev)
+    ghc-options: -Wall -Wcompat
+                 -Wincomplete-record-updates
+                 -Wincomplete-uni-patterns
+                 -Wnoncanonical-monad-instances
+  else
+    ghc-options: -Wall
   default-language:    Haskell2010
   default-extensions:  RankNTypes
   main-is:             Speed.hs
