@@ -22,5 +22,28 @@ A **new major GHC version** has been released. Here's what you need to do:
   supported version of GHC. If not, update it.
 - Update the Cabal **dependency bounds** as described above.
 
-[ghc-major]: https://gitlab.haskell.org/ghc/ghc/wikis/working-conventions/releases#major-releases
+## How to release a new version
 
+- Increment the version in `monad-bayes.cabal`. See the [Hackage Package
+  Versioning Policy][hackage-pvp].
+- Upload the package candidate sources:
+  ```console
+  $ dir=$(mktemp -d monad-bayes-sdist.XXXXXX)
+  $ cabal v2-sdist --builddir="$dir"
+  $ cabal upload --user=<hackage user> --password=<hackage password> "$dir/sdist/*.tar.gz"
+  $ rm -rf "$dir"
+  ```
+- Upload the package candidate documentation:
+  ```console
+  $ dir=$(mktemp -d monad-bayes-docs.XXXXXX)
+  $ cabal v2-haddock --builddir="$dir" --haddock-for-hackage --enable-doc
+  $ cabal upload --documentation --user=<hackage user> --password=<hackage password> "$dir/*-docs.tar.gz"
+  $ rm -rf "$dir"
+  ```
+- Check the candidate's Hackage page, make sure everything looks as expected.
+- When you're ready, repeat the above `cabal upload` commands (for sources and
+  documentation), adding `--publish` so the uploads are no longer marked as
+  candidates but as proper releases.
+
+[ghc-major]: https://gitlab.haskell.org/ghc/ghc/wikis/working-conventions/releases#major-releases
+[hackage-pvp]: https://pvp.haskell.org/
