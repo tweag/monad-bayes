@@ -1,5 +1,13 @@
 version: 2
 
+workflows:
+  version: 2
+  stack_build:
+    jobs:
+      - "lts-11"
+      - "lts-12"
+      - "lts-14"
+
 shared: &shared
   steps:
     - checkout
