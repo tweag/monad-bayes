@@ -14,6 +14,9 @@ stability:           experimental
 category:            Statistics
 build-type:          Simple
 
+extra-source-files:
+  CHANGELOG.md
+
 executable example
   hs-source-dirs:      benchmark, models
   main-is:             Single.hs
@@ -135,4 +138,4 @@ benchmark speed-bench
 
 source-repository head
   type:     git
-  location: https://github.com/adscib/monad-bayes
+  location: https://github.com/tweag/monad-bayes.git
