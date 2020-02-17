@@ -18,13 +18,13 @@ shared: &shared
 jobs:
   "lts-11":
     <<: *shared
-    environment.ARGS: "--resolver lts-11"
-    docker: [image: "fpco/stack-build:lts-11.0@sha256:0830599b74433d0da428d550a1f6e11d2a092d079a26f1bcdc8299c72907257a"]
+    environment.ARGS: "--resolver lts-11.0"
+    docker: [image: "fpco/stack-build:lts-11.0"]
   "lts-12":
     <<: *shared
-    environment.ARGS: "--resolver lts-12"
-    docker: [image: "fpco/stack-build:lts-12.0@sha256:fdbabc6df1135ab640041c966a2f8ced3bdaff7226de4a41f52d8c08fc9d64c7"]
+    environment.ARGS: "--resolver lts-12.0"
+    docker: [image: "fpco/stack-build:lts-12.0"]
   "lts-14":
     <<: *shared
-    environment.ARGS: "--resolver lts-14"
-    docker: [image: "fpco/stack-build:lts-14.0@sha256:e6be3229b47b790ba2a8dd3f8d36e879705e0df18082f6afe0f36979987194a6"]
+    environment.ARGS: "--resolver lts-14.0"
+    docker: [image: "fpco/stack-build:lts-14.0"]
