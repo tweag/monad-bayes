@@ -11,9 +11,8 @@ Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), maintained by
 
 ## Project status
 
-As of February 2020, we are working towards releasing monad-bayes on Hackage.
-After the initial release, we will focus on improving documentation. In the
-meantime, see the [`models` folder][models] for examples.
+Now that `monad-bayes` has been released on Hackage, we will focus on improving
+documentation. In the meantime, see the [`models` folder][models] for examples.
 
 ## Background
 
