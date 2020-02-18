@@ -1,6 +1,6 @@
 # monad-bayes
 
-[![Build Status](https://travis-ci.org/tweag/monad-bayes.svg?branch=master)](https://travis-ci.org/tweag/monad-bayes)
+[![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes) [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
 
 A library for **probabilistic programming in Haskell** using probability
 monads. The emphasis is on composition of inference algorithms implemented in
