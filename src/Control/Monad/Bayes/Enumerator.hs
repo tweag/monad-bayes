@@ -22,7 +22,7 @@ module Control.Monad.Bayes.Enumerator (
             ) where
 
 import Data.AEq (AEq, (===), (~==))
-import Control.Applicative (Applicative, Alternative)
+import Control.Applicative (Alternative)
 import Control.Monad (MonadPlus)
 import Control.Arrow (second)
 import qualified Data.Map as Map
