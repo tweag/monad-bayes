@@ -1,6 +1,8 @@
 # monad-bayes
 
-[![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes) [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
+[![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
+[![Stackage Nightly](http://stackage.org/package/monad-bayes/badge/nightly)](http://stackage.org/nightly/package/monad-bayes)
+[![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
 
 A library for **probabilistic programming in Haskell** using probability
 monads. The emphasis is on composition of inference algorithms implemented in
