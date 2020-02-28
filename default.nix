@@ -29,7 +29,6 @@ in {
       ghcid
       hindent
       hlint
-      stylish-cabal
       pkgs.nixpkgs-fmt
       pkgs.python37
       pkgs.python37Packages.matplotlib
