@@ -31,10 +31,9 @@ trans 2 = categorical $ fromList [0.15,0.7,0.15]
 
 -- | The emission model.
 emissionMean :: Int -> Double
-emissionMean x = mean x where
-  mean 0 = -1
-  mean 1 = 1
-  mean 2 = 0
+emissionMean 0 = -1
+emissionMean 1 = 1
+emissionMean 2 = 0
 
 -- | Initial state distribution
 start :: MonadSample m => m Int

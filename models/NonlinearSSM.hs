@@ -12,6 +12,9 @@ param = do
   let sigmaY = 1 / sqrt precY
   return (sigmaX, sigmaY)
 
+mean :: Double -> Int -> Double
+mean x n = 0.5 * x + 25 * x / (1 + sq x) + 8 * cos (1.2 * fromIntegral n)
+
 -- | A nonlinear series model from Doucet et al. (2000)
 -- "On sequential Monte Carlo sampling methods" section VI.B
 model :: (MonadInfer m)
@@ -23,9 +26,7 @@ model obs (sigmaX, sigmaY) = do
       simulate [] _ acc = return acc
       simulate (y:ys) x acc = do
         let n = length acc
-        let mean = 0.5 * x + 25 * x / (1 + sq x) +
-                   8 * cos (1.2 * fromIntegral n)
-        x' <- normal mean sigmaX
+        x' <- normal (mean x n) sigmaX
         factor $ normalPdf (sq x' / 20) sigmaY y
         simulate ys x' (x':acc)
 
@@ -42,9 +43,7 @@ generateData t = do
       simulate 0 _ acc = return acc
       simulate k x acc = do
         let n = length acc
-        let mean = 0.5 * x + 25 * x / (1 + sq x) +
-                   8 * cos (1.2 * fromIntegral n)
-        x' <- normal mean sigmaX
+        x' <- normal (mean x n) sigmaX
         y' <- normal (sq x' / 20) sigmaY
         simulate (k-1) x' ((x',y'):acc)
 

@@ -25,6 +25,7 @@ import Control.Monad.Bayes.Population
 
 import System.IO
 import Control.Arrow (first, second)
+import Control.Applicative ((<$>))
 import Control.Monad (unless, when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 
@@ -86,7 +87,7 @@ hmmBenchmark = do
   let isRes = map (\n -> HMM.hmmKL $ take n isSamples) ns
   -- mhSamples <- fmap (drop 5000) $ traceMH 10000 HMM.hmm
   -- let mhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhSamples) ns
-  mhPriorSamples <- fmap (drop 5000) $ mhPrior HMM.hmm 10000
+  mhPriorSamples <- drop 5000 <$> mhPrior HMM.hmm 10000
   let mhPriorRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhPriorSamples) ns
   pimhSamples <- pimh (length HMM.values) 100 1000 HMM.hmm
   let pimhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) pimhSamples) ns
