@@ -24,26 +24,26 @@ docs = [
   words "bear wolf bear python bear wolf bear wolf bear wolf"
   ]
 
-word_dist_prior :: MonadSample m => m (Vector Double)
-word_dist_prior = dirichlet $ V.replicate (length vocabluary) 1
+wordDistPrior :: MonadSample m => m (Vector Double)
+wordDistPrior = dirichlet $ V.replicate (length vocabluary) 1
 
-topic_dist_prior :: MonadSample m => m (Vector Double)
-topic_dist_prior = dirichlet $ V.replicate (length topics) 1
+topicDistPrior :: MonadSample m => m (Vector Double)
+topicDistPrior = dirichlet $ V.replicate (length topics) 1
 
-word_index :: Map.Map String Int
-word_index = Map.fromList $ zip vocabluary [0..]
+wordIndex :: Map.Map String Int
+wordIndex = Map.fromList $ zip vocabluary [0..]
 
 lda :: MonadInfer m => [[String]] -> m [Int]
 lda docs = do
   word_dist_for_topic <- do
-    ts <- mapM (const word_dist_prior) [0 .. length topics]
+    ts <- mapM (const wordDistPrior) [0 .. length topics]
     return $ Map.fromList $ zip [0 .. length topics] ts
 
   let obs doc = do
-        topic_dist <- fmap categorical topic_dist_prior
+        topic_dist <- fmap categorical topicDistPrior
         let f word = do
               topic <- topic_dist
-              factor $ (Exp . log) $ (word_dist_for_topic Map.! topic) V.! (word_index Map.! word)
+              factor $ (Exp . log) $ (word_dist_for_topic Map.! topic) V.! (wordIndex Map.! word)
         mapM_ f doc
 
   mapM_ obs docs

@@ -18,6 +18,8 @@ module DPmixture (
 
 import Prelude hiding (sum)
 
+import Control.Applicative ((<$>))
+
 import Data.List hiding (sum)
 import Data.Maybe
 import Data.Ix (range)
@@ -63,7 +65,7 @@ dpMixture =
       let atoms = [1..]
       breaks <- sequence $ repeat $ beta 1 1
       let classgen = stick breaks atoms
-      vars <- sequence $ repeat $ fmap ((1/) . (*k)) $ gamma a b
+      vars <- sequence $ repeat $ (1/) . (*k) <$> gamma a b
       means <- mapM (normal m) vars
       return (classgen, vars, means)
     n = length obs
@@ -144,13 +146,13 @@ evidence :: NormalInvGamma -> [Double] -> Double
 evidence prior xs = exp (logGamma a' - logGamma a) * (b ** a / b' ** a') * sqrt (k / k') * c ^ n where
     (m,k,a,b)     = prior
     (m',k',a',b') = posterior prior xs
-    c             = 1 / (2 * (sqrt pi))
+    c             = 1 / (2 * sqrt pi)
     n             = length xs
 
 
 -- | CRP prior over partitions
 crp :: [Int] -> Double
-crp labels = (product $ map factor counts) / factorial n where
+crp labels = product (map factor counts) / factorial n where
     factor x = factorial (x - 1)
     n = length labels
     counts = map (\x -> length (filter (== x) labels)) clusters
@@ -158,7 +160,7 @@ crp labels = (product $ map factor counts) / factorial n where
 
 -- | DP mixture likelihood of a partition
 mixture :: NormalInvGamma -> [Double] -> [Int] -> Double
-mixture prior xs ks = (product $ map (evidence prior) clusters) * crp ks where
+mixture prior xs ks = product (map (evidence prior) clusters) * crp ks where
   n = length xs
   clusters = map extract labels
   labels = nub ks

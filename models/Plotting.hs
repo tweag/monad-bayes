@@ -11,6 +11,8 @@ import Statistics.Sample (meanVariance)
 
 import Graphics.Rendering.Chart.Easy
 
+{-# ANN module "HLint: ignore Reduce duplication" #-}
+
 errBars :: Double -> Vector.Vector Double -> (Double, Double)
 errBars k xs = (mean, k * stdDev) where
   (mean, var) = meanVariance xs
@@ -27,10 +29,10 @@ anytimePlot x_title y_title ns inputs = do
 
   let generatePlot (algName, ys) = plot $ line algName [zip (map fromIntegral ns) (map LogValue ys)]
 
-  sequence_ $ map generatePlot inputs
+  mapM_ generatePlot inputs
 
-  layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
-  layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
+  layout_x_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ xLabelShow $ def)
+  layout_y_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ yLabelShow $ def)
 
   layout_x_axis . laxis_title .= x_title
   layout_y_axis . laxis_title .= y_title
@@ -45,10 +47,10 @@ oneShotPlot x_title y_title inputs = do
       plot $ points algName $ map (\(x, (y,_)) -> (LogValue x, LogValue y)) ps;
       plot $ return (def & plot_errbars_values .~ map processPoint ps)}
 
-  sequence_ $ map generatePlot inputs
+  mapM_ generatePlot inputs
 
-  layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
-  layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
+  layout_x_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ xLabelShow $ def)
+  layout_y_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ yLabelShow $ def)
 
   layout_x_axis . laxis_title .= x_title
   layout_y_axis . laxis_title .= y_title
@@ -76,10 +78,10 @@ errorbarPlot x_title y_title inputs = do
         plot $ points algName
              $ map (\(x, ys) -> (LogValue x, LogValue (sum ys / fromIntegral (length ys)))) ps
 
-  sequence_ $ map generatePlot inputs
+  mapM_ generatePlot inputs
 
-  layout_x_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ xLabelShow $ def)
-  layout_y_axis . laxis_generate .= (autoScaledLogAxis $ loga_labelf .~ yLabelShow $ def)
+  layout_x_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ xLabelShow $ def)
+  layout_y_axis . laxis_generate .= autoScaledLogAxis (loga_labelf .~ yLabelShow $ def)
 
   layout_x_axis . laxis_title .= x_title
   layout_y_axis . laxis_title .= y_title
