@@ -18,13 +18,15 @@ let
   monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml";
   monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml";
   monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml";
+
+  defaultHaskellPackages = pkgs.haskell.packages.ghc865;
 in {
   inherit monad-bayes-ghc84 monad-bayes-ghc86 monad-bayes-ghc88;
   shell = monad-bayes-ghc86.shellFor {
     packages = ps: [
       ps.monad-bayes
     ];
-    buildInputs = with pkgs.haskell.packages.ghc865; [
+    buildInputs = with defaultHaskellPackages; [
       cabal-install
       ghcid
       hindent
@@ -36,4 +38,5 @@ in {
       pkgs.stack
     ];
   };
+  lint = defaultHaskellPackages.callPackage ./nix/lint.nix {};
 }
