@@ -9,21 +9,20 @@ Portability : GHC
 
 'Sequential' represents a computation that can be suspended.
 -}
+module Control.Monad.Bayes.Sequential
+  ( Sequential
+  , suspend
+  , finish
+  , advance
+  , finished
+  , hoistFirst
+  , hoist
+  , sis
+  ) where
 
-module Control.Monad.Bayes.Sequential (
-    Sequential,
-    suspend,
-    finish,
-    advance,
-    finished,
-    hoistFirst,
-    hoist,
-    sis
-                ) where
-
-import Control.Monad.Trans
 import Control.Monad.Coroutine hiding (suspend)
 import Control.Monad.Coroutine.SuspensionFunctors
+import Control.Monad.Trans
 import Data.Either
 
 import Control.Monad.Bayes.Class
@@ -33,8 +32,11 @@ import Control.Monad.Bayes.Class
 -- useful for implementation of Sequential Monte Carlo related methods.
 -- All the probabilistic effects are lifted from the transformed monad, but
 -- also `suspend` is inserted after each `factor`.
-newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
-  deriving(Functor,Applicative,Monad,MonadTrans,MonadIO)
+newtype Sequential m a =
+  Sequential
+    { runSequential :: Coroutine (Await ()) m a
+    }
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 extract :: Await () a -> a
 extract (Await f) = f ()
@@ -76,8 +78,7 @@ hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 
 -- | Transform the inner monad.
 -- The transformation is applied recursively through all the suspension points.
-hoist :: (Monad m, Monad n) =>
-            (forall x. m x -> n x) -> Sequential m a -> Sequential n a
+hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> Sequential m a -> Sequential n a
 hoist f = Sequential . mapMonad f . runSequential
 
 -- | Apply a function a given number of times.
@@ -86,9 +87,10 @@ composeCopies k f = foldr (.) id (replicate k f)
 
 -- | Sequential importance sampling.
 -- Applies a given transformation after each time step.
-sis :: Monad m
-    => (forall x. m x -> m x) -- ^ transformation
-    -> Int -- ^ number of time steps
-    -> Sequential m a
-    -> m a
+sis ::
+     Monad m
+  => (forall x. m x -> m x) -- ^ transformation
+  -> Int -- ^ number of time steps
+  -> Sequential m a
+  -> m a
 sis f k = finish . composeCopies k (advance . hoistFirst f)

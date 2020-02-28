@@ -10,31 +10,31 @@ Portability : GHC
 'SamplerIO' and 'SamplerST' are instances of 'MonadSample'. Apply a 'MonadCond'
 transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 -}
-
-module Control.Monad.Bayes.Sampler (
-    SamplerIO,
-    sampleIO,
-    sampleIOfixed,
-    sampleIOwith,
-    Seed,
-    SamplerST(SamplerST),
-    runSamplerST,
-    sampleST,
-    sampleSTfixed
-               ) where
+module Control.Monad.Bayes.Sampler
+  ( SamplerIO
+  , sampleIO
+  , sampleIOfixed
+  , sampleIOwith
+  , Seed
+  , SamplerST(SamplerST)
+  , runSamplerST
+  , sampleST
+  , sampleSTfixed
+  ) where
 
 import Control.Monad.ST (ST, runST, stToIO)
+import Control.Monad.State (State, state)
+import Control.Monad.Trans (MonadIO, lift)
+import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
-import Control.Monad.State (State, state)
-import Control.Monad.Trans (lift, MonadIO)
-import Control.Monad.Trans.Reader (ReaderT, runReaderT, ask, mapReaderT)
 
 import Control.Monad.Bayes.Class
 
 -- | An 'IO' based random sampler using the MWC-Random package.
-newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
-  deriving(Functor, Applicative, Monad, MonadIO)
+newtype SamplerIO a =
+  SamplerIO (ReaderT GenIO IO a)
+  deriving (Functor, Applicative, Monad, MonadIO)
 
 -- | Initialize a pseudo-random number generator using randomness supplied by
 -- the operating system.
@@ -58,11 +58,9 @@ fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 instance MonadSample SamplerIO where
   random = fromSamplerST random
 
-
-
-
 -- | An 'ST' based random sampler using the @mwc-random@ package.
-newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
+newtype SamplerST a =
+  SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a
 runSamplerST (SamplerST s) = s
@@ -81,17 +79,19 @@ instance Monad SamplerST where
 -- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
 sampleST :: SamplerST a -> State Seed a
 sampleST (SamplerST s) =
-  state $ \seed -> runST $ do
-    gen <- restore seed
-    y <- runReaderT s gen
-    finalSeed <- save gen
-    return (y, finalSeed)
+  state $ \seed ->
+    runST $ do
+      gen <- restore seed
+      y <- runReaderT s gen
+      finalSeed <- save gen
+      return (y, finalSeed)
 
 -- | Run the sampler with a fixed random seed.
 sampleSTfixed :: SamplerST a -> a
-sampleSTfixed (SamplerST s) = runST $ do
-  gen <- create
-  runReaderT s gen
+sampleSTfixed (SamplerST s) =
+  runST $ do
+    gen <- create
+    runReaderT s gen
 
 -- | Convert a distribution supplied by @mwc-random@.
 fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST a
@@ -99,12 +99,10 @@ fromMWC s = SamplerST $ ask >>= lift . s
 
 instance MonadSample SamplerST where
   random = fromMWC System.Random.MWC.uniform
-
-  uniform a b = fromMWC $ uniformR (a,b)
+  uniform a b = fromMWC $ uniformR (a, b)
   normal m s = fromMWC $ MWC.normal m s
   gamma shape scale = fromMWC $ MWC.gamma shape scale
   beta a b = fromMWC $ MWC.beta a b
-
   bernoulli p = fromMWC $ MWC.bernoulli p
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p

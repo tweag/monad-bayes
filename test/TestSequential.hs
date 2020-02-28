@@ -9,21 +9,22 @@ import Sprinkler
 
 twoSync :: MonadInfer m => m Int
 twoSync = do
-  x <- uniformD[0,1]
+  x <- uniformD [0, 1]
   factor (fromIntegral x)
-  y <- uniformD[0,1]
+  y <- uniformD [0, 1]
   factor (fromIntegral y)
-  return (x+y)
+  return (x + y)
 
 finishedTwoSync :: MonadInfer m => Int -> m Bool
-finishedTwoSync n = finished (run n twoSync) where
-  run 0 d = d
-  run k d = run (k-1) (advance d)
+finishedTwoSync n = finished (run n twoSync)
+  where
+    run 0 d = d
+    run k d = run (k - 1) (advance d)
 
 checkTwoSync :: Int -> Bool
 checkTwoSync 0 = mass (finishedTwoSync 0) False ~== 1
 checkTwoSync 1 = mass (finishedTwoSync 1) False ~== 1
-checkTwoSync 2 = mass (finishedTwoSync 2) True  ~== 1
+checkTwoSync 2 = mass (finishedTwoSync 2) True ~== 1
 checkTwoSync _ = error "Unexpected argument"
 
 sprinkler :: MonadInfer m => m Bool
@@ -39,9 +40,10 @@ pFinished 2 = 1
 pFinished _ = error "Unexpected argument"
 
 isFinished :: MonadInfer m => Int -> m Bool
-isFinished n = finished (run n sprinkler) where
-  run 0 d = d
-  run k d = run (k-1) (advance d)
+isFinished n = finished (run n sprinkler)
+  where
+    run 0 d = d
+    run k d = run (k - 1) (advance d)
 
 checkSync :: Int -> Bool
 checkSync n = mass (isFinished n) True ~== pFinished n

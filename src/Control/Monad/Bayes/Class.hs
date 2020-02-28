@@ -32,106 +32,99 @@ model = do
   return rain
 @
 -}
-
-module Control.Monad.Bayes.Class (
-  MonadSample,
-  random,
-  uniform,
-  normal,
-  gamma,
-  beta,
-  bernoulli,
-  categorical,
-  logCategorical,
-  uniformD,
-  geometric,
-  poisson,
-  dirichlet,
-  MonadCond,
-  score,
-  factor,
-  condition,
-  MonadInfer,
-  normalPdf
-) where
+module Control.Monad.Bayes.Class
+  ( MonadSample
+  , random
+  , uniform
+  , normal
+  , gamma
+  , beta
+  , bernoulli
+  , categorical
+  , logCategorical
+  , uniformD
+  , geometric
+  , poisson
+  , dirichlet
+  , MonadCond
+  , score
+  , factor
+  , condition
+  , MonadInfer
+  , normalPdf
+  ) where
 
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Identity
+import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.RWS hiding (tell)
+import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Cont
 
 import Statistics.Distribution
-import Statistics.Distribution.Uniform (uniformDistr)
-import Statistics.Distribution.Normal (normalDistr)
-import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Beta (betaDistr)
+import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
+import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
+import Statistics.Distribution.Uniform (uniformDistr)
 
 import Numeric.Log
 
-import Data.Vector.Generic as VG
-import qualified Data.Vector as V
 import Control.Monad (when)
+import qualified Data.Vector as V
+import Data.Vector.Generic as VG
 
 -- | Monads that can draw random variables.
-class Monad m => MonadSample m where
+class Monad m =>
+      MonadSample m
   -- | Draw from a uniform distribution.
+  where
   random :: m Double -- ^ \(\sim \mathcal{U}(0, 1)\)
-
   -- | Draw from a uniform distribution.
   uniform ::
        Double -- ^ lower bound a
     -> Double -- ^ upper bound b
     -> m Double -- ^ \(\sim \mathcal{U}(a, b)\).
   uniform a b = draw (uniformDistr a b)
-
   -- | Draw from a normal distribution.
   normal ::
        Double -- ^ mean μ
     -> Double -- ^ standard deviation σ
     -> m Double -- ^ \(\sim \mathcal{N}(\mu, \sigma^2)\)
   normal m s = draw (normalDistr m s)
-
   -- | Draw from a gamma distribution.
   gamma ::
        Double -- ^ shape k
     -> Double -- ^ scale θ
     -> m Double -- ^ \(\sim \Gamma(k, \theta)\)
   gamma shape scale = draw (gammaDistr shape scale)
-
   -- | Draw from a beta distribution.
   beta ::
        Double -- ^ shape α
     -> Double -- ^ shape β
     -> m Double -- ^ \(\sim \mathrm{Beta}(\alpha, \beta)\)
   beta a b = draw (betaDistr a b)
-
   -- | Draw from a Bernoulli distribution.
   bernoulli ::
        Double -- ^ probability p
     -> m Bool -- ^ \(\sim \mathrm{B}(1, p)\)
   bernoulli p = fmap (< p) random
-
   -- | Draw from a categorical distribution.
   categorical ::
        Vector v Double
     => v Double -- ^ event probabilities
     -> m Int -- ^ outcome category
   categorical ps = fromPMF (ps !)
-
   -- | Draw from a categorical distribution in the log domain.
   logCategorical ::
        (Vector v (Log Double), Vector v Double)
     => v (Log Double) -- ^ event probabilities
     -> m Int -- ^ outcome category
   logCategorical = categorical . VG.map (exp . ln)
-
   -- | Draw from a discrete uniform distribution.
   uniformD ::
        [a] -- ^ observable outcomes @xs@
@@ -140,19 +133,16 @@ class Monad m => MonadSample m where
     let n = Prelude.length xs
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     return (xs !! i)
-
   -- | Draw from a geometric distribution.
   geometric ::
        Double -- ^ success rate p
     -> m Int -- ^ \(\sim\) number of failed Bernoulli trials with success probability p before first success
   geometric = discrete . geometric0
-
   -- | Draw from a Poisson distribution.
   poisson ::
        Double -- ^ parameter λ
     -> m Int -- ^ \(\sim \mathrm{Pois}(\lambda)\)
   poisson = discrete . Poisson.poisson
-
   -- | Draw from a Dirichlet distribution.
   dirichlet ::
        Vector v Double
@@ -172,21 +162,26 @@ draw d = fmap (quantile d) random
 -- | Draw from a discrete distribution using a sequence of draws from
 -- Bernoulli.
 fromPMF :: MonadSample m => (Int -> Double) -> m Int
-fromPMF p = f 0 1 where
-  f i r = do
-    when (r < 0) $ error "fromPMF: total PMF above 1"
-    let q = p i
-    when (q < 0 || q > 1) $ error "fromPMF: invalid probability value"
-    b <- bernoulli (q / r)
-    if b then pure i else f (i+1) (r-q)
+fromPMF p = f 0 1
+  where
+    f i r = do
+      when (r < 0) $ error "fromPMF: total PMF above 1"
+      let q = p i
+      when (q < 0 || q > 1) $ error "fromPMF: invalid probability value"
+      b <- bernoulli (q / r)
+      if b
+        then pure i
+        else f (i + 1) (r - q)
 
 -- | Draw from a discrete distributions using the probability mass function.
 discrete :: (DiscreteDistr d, MonadSample m) => d -> m Int
 discrete = fromPMF . probability
 
 -- | Monads that can score different execution paths.
-class Monad m => MonadCond m where
+class Monad m =>
+      MonadCond m
   -- | Record a likelihood.
+  where
   score ::
        Log Double -- ^ likelihood of the execution path
     -> m ()
@@ -200,10 +195,16 @@ factor = score
 
 -- | Hard conditioning.
 condition :: MonadCond m => Bool -> m ()
-condition b = score $ if b then 1 else 0
+condition b =
+  score $
+  if b
+    then 1
+    else 0
 
 -- | Monads that support both sampling and scoring.
-class (MonadSample m, MonadCond m) => MonadInfer m
+class (MonadSample m, MonadCond m) =>
+      MonadInfer m
+
 
 -- | Probability density function of the normal distribution.
 normalPdf ::
@@ -215,7 +216,6 @@ normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
-
 instance MonadSample m => MonadSample (IdentityT m) where
   random = lift random
   bernoulli = lift . bernoulli
@@ -225,7 +225,6 @@ instance MonadCond m => MonadCond (IdentityT m) where
 
 instance MonadInfer m => MonadInfer (IdentityT m)
 
-
 instance MonadSample m => MonadSample (MaybeT m) where
   random = lift random
 
@@ -233,7 +232,6 @@ instance MonadCond m => MonadCond (MaybeT m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (MaybeT m)
-
 
 instance MonadSample m => MonadSample (ReaderT r m) where
   random = lift random
@@ -243,7 +241,6 @@ instance MonadCond m => MonadCond (ReaderT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ReaderT r m)
-
 
 instance (Monoid w, MonadSample m) => MonadSample (WriterT w m) where
   random = lift random
@@ -255,7 +252,6 @@ instance (Monoid w, MonadCond m) => MonadCond (WriterT w m) where
 
 instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
 
-
 instance MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
@@ -266,7 +262,6 @@ instance MonadCond m => MonadCond (StateT s m) where
 
 instance MonadInfer m => MonadInfer (StateT s m)
 
-
 instance (MonadSample m, Monoid w) => MonadSample (RWST r w s m) where
   random = lift random
 
@@ -274,7 +269,6 @@ instance (MonadCond m, Monoid w) => MonadCond (RWST r w s m) where
   score = lift . score
 
 instance (MonadInfer m, Monoid w) => MonadInfer (RWST r w s m)
-
 
 instance MonadSample m => MonadSample (ListT m) where
   random = lift random
@@ -285,7 +279,6 @@ instance MonadCond m => MonadCond (ListT m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ListT m)
-
 
 instance MonadSample m => MonadSample (ContT r m) where
   random = lift random

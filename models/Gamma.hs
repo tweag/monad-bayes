@@ -1,13 +1,10 @@
-{-# LANGUAGE
- TypeFamilies
- #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Gamma where
 
 import Prelude hiding (sum)
 
 -- | A sequence of i.i.d. normal variables with Gamma prior on precision.
-
 import Control.Monad.Bayes.Simple
 
 points :: [Double]
@@ -27,6 +24,7 @@ model = do
 -- "Conjugate Bayesian analysis of the Gaussian distribution"
 -- section 4.
 exact :: (MonadDist m, CustomReal m ~ Double) => m Double
-exact = gamma a b where
+exact = gamma a b
+  where
     a = 1 + fromIntegral (length points) / 2
-    b = 1 + sum (map (^(2 :: Int)) points) / 2
+    b = 1 + sum (map (^ (2 :: Int)) points) / 2

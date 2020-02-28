@@ -8,9 +8,8 @@ Stability   : experimental
 Portability : GHC
 
 -}
-
-module Control.Monad.Bayes.Traced (
-  module Control.Monad.Bayes.Traced.Static
-) where
+module Control.Monad.Bayes.Traced
+  ( module Control.Monad.Bayes.Traced.Static
+  ) where
 
 import Control.Monad.Bayes.Traced.Static
