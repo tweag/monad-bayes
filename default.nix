@@ -27,6 +27,7 @@ in {
       ps.monad-bayes
     ];
     buildInputs = with defaultHaskellPackages; [
+      apply-refact
       cabal-install
       ghcid
       hindent
@@ -39,4 +40,5 @@ in {
     ];
   };
   lint = defaultHaskellPackages.callPackage ./nix/lint.nix {};
+  fix = defaultHaskellPackages.callPackage ./nix/fix.nix {};
 }
