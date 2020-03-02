@@ -4,9 +4,8 @@
 module LogReg where
 
 import Control.Monad (replicateM)
-
-import Numeric.Log
 import Control.Monad.Bayes.Class
+import Numeric.Log
 
 xs :: [Double]
 xs = [-10, -5, 2, 6, 10]
@@ -28,8 +27,9 @@ logisticRegression dat = do
   sigmoid 8
 
 syntheticData :: MonadSample m => Int -> m [(Double, Bool)]
-syntheticData n = replicateM n syntheticPoint where
+syntheticData n = replicateM n syntheticPoint
+  where
     syntheticPoint = do
       x <- uniform (-1) 1
       label <- bernoulli 0.5
-      return (x,label)
+      return (x, label)

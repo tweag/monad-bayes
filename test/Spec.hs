@@ -1,18 +1,17 @@
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-
-import qualified TestWeighted
 import qualified TestEnumerator
+import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
-import qualified TestInference
-
+import qualified TestWeighted
 
 main :: IO ()
 main = hspec $ do
-  describe "Weighted" $
-    it "accumulates likelihood correctly" $ do
+  describe "Weighted"
+    $ it "accumulates likelihood correctly"
+    $ do
       passed <- TestWeighted.passed
       passed `shouldBe` True
   describe "Dist" $ do
@@ -60,9 +59,9 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticles observations particles
           return $ checkParticles == particles
-  describe "SMC with systematic resampling" $
-    prop "number of particles is equal to its second parameter" $
-    \observations particles ->
+  describe "SMC with systematic resampling"
+    $ prop "number of particles is equal to its second parameter"
+    $ \observations particles ->
       observations >= 0 && particles >= 1 ==> ioProperty $ do
         checkParticles <- TestInference.checkParticlesSystematic observations particles
         return $ checkParticles == particles

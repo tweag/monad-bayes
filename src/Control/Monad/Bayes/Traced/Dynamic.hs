@@ -1,35 +1,32 @@
-{-|
-Module      : Control.Monad.Bayes.Traced.Dynamic
-Description : Distributions on execution traces that can be dynamically frozen
-Copyright   : (c) Adam Scibior, 2015-2020
-License     : MIT
-Maintainer  : leonhard.markert@tweag.io
-Stability   : experimental
-Portability : GHC
-
--}
-
-module Control.Monad.Bayes.Traced.Dynamic (
-  Traced,
-  hoistT,
-  marginal,
-  freeze,
-  mhStep,
-  mh
-) where
+-- |
+-- Module      : Control.Monad.Bayes.Traced.Dynamic
+-- Description : Distributions on execution traces that can be dynamically frozen
+-- Copyright   : (c) Adam Scibior, 2015-2020
+-- License     : MIT
+-- Maintainer  : leonhard.markert@tweag.io
+-- Stability   : experimental
+-- Portability : GHC
+module Control.Monad.Bayes.Traced.Dynamic
+  ( Traced,
+    hoistT,
+    marginal,
+    freeze,
+    mhStep,
+    mh,
+  )
+where
 
 import Control.Monad (join)
-import Control.Monad.Trans
-
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
-
 import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.Weighted as Weighted
+import Control.Monad.Trans
 
 -- | A tracing monad where only a subset of random choices are traced
 -- and this subset can be adjusted dynamically.
 newtype Traced m a = Traced (m (Weighted (FreeSampler m) a, Trace a))
+
 runTraced :: Traced m a -> m (Weighted (FreeSampler m) a, Trace a)
 runTraced (Traced c) = c
 
@@ -90,12 +87,12 @@ mhStep (Traced c) = Traced $ do
 
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced c) = do
-  (m,t) <- c
+  (m, t) <- c
   let f 0 = return [t]
       f k = do
-        ~(x:xs) <- f (k-1)
+        ~(x : xs) <- f (k -1)
         y <- mhTrans m x
-        return (y:x:xs)
+        return (y : x : xs)
   ts <- f n
   let xs = map output ts
   return xs

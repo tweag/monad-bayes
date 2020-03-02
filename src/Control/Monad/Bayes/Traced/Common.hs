@@ -1,40 +1,36 @@
-{-|
-Module      : Control.Monad.Bayes.Traced.Common
-Description : Numeric code for Trace MCMC
-Copyright   : (c) Adam Scibior, 2015-2020
-License     : MIT
-Maintainer  : leonhard.markert@tweag.io
-Stability   : experimental
-Portability : GHC
-
--}
-
-module Control.Monad.Bayes.Traced.Common (
-  Trace,
-  singleton,
-  output,
-  scored,
-  bind,
-  mhTrans,
-  mhTrans'
-) where
-
-import Control.Monad.Trans.Writer
-import qualified Data.Vector as V
-import Data.Functor.Identity
-
-import Numeric.Log (Log, ln)
+-- |
+-- Module      : Control.Monad.Bayes.Traced.Common
+-- Description : Numeric code for Trace MCMC
+-- Copyright   : (c) Adam Scibior, 2015-2020
+-- License     : MIT
+-- Maintainer  : leonhard.markert@tweag.io
+-- Stability   : experimental
+-- Portability : GHC
+module Control.Monad.Bayes.Traced.Common
+  ( Trace,
+    singleton,
+    output,
+    scored,
+    bind,
+    mhTrans,
+    mhTrans',
+  )
+where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Bayes.Free as FreeSampler
+import Control.Monad.Bayes.Weighted as Weighted
+import Control.Monad.Trans.Writer
+import Data.Functor.Identity
+import qualified Data.Vector as V
+import Numeric.Log (Log, ln)
 
-data Trace a =
-  Trace {
-    variables :: [Double],
-    output :: a,
-    density :: Log Double
-  }
+data Trace a
+  = Trace
+      { variables :: [Double],
+        output :: a,
+        density :: Log Double
+      }
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
@@ -45,8 +41,8 @@ instance Applicative Trace where
 
 instance Monad Trace where
   t >>= f =
-    let t' = f (output t) in
-    t' {variables = variables t ++ variables t', density = density t * density t'}
+    let t' = f (output t)
+     in t' {variables = variables t ++ variables t', density = density t * density t'}
 
 singleton :: Double -> Trace Double
 singleton u = Trace {variables = [u], output = u, density = 1}
@@ -69,8 +65,8 @@ mhTrans m t = do
     let n = length us
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     u' <- random
-    let (xs, _:ys) = splitAt i us
-    return $ xs ++ (u':ys)
+    let (xs, _ : ys) = splitAt i us
+    return $ xs ++ (u' : ys)
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral (length us) / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
