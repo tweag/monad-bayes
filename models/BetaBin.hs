@@ -1,14 +1,12 @@
-
 module BetaBin where
 
 -- The beta-binomial model in latent variable and urn model representations.
 -- The two formulations should be exactly equivalent, but only urn works with Dist.
 
 import Control.Monad (replicateM)
-import Control.Monad.State.Lazy (get,put,evalStateT)
-
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Simple
+import Control.Monad.State.Lazy (evalStateT, get, put)
 
 -- | Beta-binomial model as an i.i.d. sequence conditionally on weight.
 latent :: MonadDist m => Int -> m [Bool]
@@ -19,15 +17,15 @@ latent n = do
 
 -- | Beta-binomial as a random process.
 urn :: MonadDist m => Int -> m [Bool]
-urn n = flip evalStateT (1,1) $ do
-          let toss = do
-                (a,b) <- get
-                let weight = a / (a + b)
-                outcome <- bernoulli weight
-                let (a',b') = if outcome then (a+1,b) else (a,b+1)
-                put (a',b')
-                return outcome
-          replicateM n toss
+urn n = flip evalStateT (1, 1) $ do
+  let toss = do
+        (a, b) <- get
+        let weight = a / (a + b)
+        outcome <- bernoulli weight
+        let (a', b') = if outcome then (a + 1, b) else (a, b + 1)
+        put (a', b')
+        return outcome
+  replicateM n toss
 
 -- | Post-processing by counting the number of True values.
 count :: [Bool] -> Int
@@ -37,7 +35,7 @@ count = length . filter id
 -- The resulting distribution is on the remaining outcomes.
 cond :: MonadBayes m => m [Bool] -> m [Bool]
 cond d = do
-  (first:second:third:rest) <- d
+  (first : second : third : rest) <- d
   condition first
   condition second
   condition (not third)
@@ -45,4 +43,4 @@ cond d = do
 
 -- | The final conditional model, abstracting the representation.
 model :: MonadBayes m => (Int -> m [Bool]) -> Int -> m Int
-model repr n = fmap count $ cond $ repr (n+3)
+model repr n = fmap count $ cond $ repr (n + 3)

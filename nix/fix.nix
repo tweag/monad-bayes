@@ -12,6 +12,7 @@ writeScript "fix.sh" ''
   cabal="${cabal-install}/bin/cabal"
   git="${pkgs.git}/bin/git"
   hlint="${hlint}/bin/hlint"
+  ormolu="${pkgs.ormolu}/bin/ormolu"
   refactor="${apply-refact}/bin/refactor"
 
   if ! $git diff --quiet -- *.cabal; then
@@ -22,8 +23,13 @@ writeScript "fix.sh" ''
   $cabal format *.cabal
   echo 'SUCCESS: Formatted cabal file'
 
-  $git ls-tree -z -r HEAD --name-only | \
-      grep -z '\.hs$' | \
-      xargs -0 -I{} $hlint {} --refactor --with-refactor=$refactor --refactor-options="--inplace"
+  function haskell_files {
+      $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'
+  }
+
+  haskell_files | xargs -0 -I{} $hlint {} --refactor --with-refactor=$refactor --refactor-options="--inplace"
   echo 'SUCCESS: Applied HLint suggestions'
+
+  haskell_files | xargs -0 -I{} $ormolu --mode inplace {}
+  echo 'SUCCESS: Formatted Haskell files with Ormolu'
 ''

@@ -1,5 +1,3 @@
-
-
 module Dice where
 
 -- A toy model for dice rolling from http://dl.acm.org/citation.cfm?id=2804317
@@ -10,12 +8,12 @@ import Control.Monad.Bayes.Class
 
 -- | A toss of a six-sided die.
 die :: MonadSample m => m Int
-die = uniformD [1..6]
+die = uniformD [1 .. 6]
 
 -- | A sum of outcomes of n independent tosses of six-sided dice.
 dice :: MonadSample m => Int -> m Int
 dice 1 = die
-dice n = liftM2 (+) die (dice (n-1))
+dice n = liftM2 (+) die (dice (n -1))
 
 -- | Toss of two dice where the output is greater than 4.
 diceHard :: MonadInfer m => m Int

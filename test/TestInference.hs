@@ -1,18 +1,15 @@
-{-# LANGUAGE
-  Rank2Types,
-  TypeFamilies
- #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module TestInference where
 
-import Data.AEq
-import Numeric.Log
-
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Enumerator
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Sampler
+import Data.AEq
+import Numeric.Log
 import Sprinkler
 
 sprinkler :: MonadInfer m => m Bool
@@ -31,5 +28,6 @@ checkTerminateSMC :: IO [(Bool, Log Double)]
 checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
 
 checkPreserveSMC :: Bool
-checkPreserveSMC = (enumerate . collapse . smcMultinomial 2 2) sprinkler ~==
-                      enumerate sprinkler
+checkPreserveSMC =
+  (enumerate . collapse . smcMultinomial 2 2) sprinkler
+    ~== enumerate sprinkler
