@@ -1,13 +1,18 @@
 steps:
-  - label: GHC 8.4
+  - label: Lint and check formatting
+    command: |
+      nix-build -A lint -o lint.sh
+      ./lint.sh
+    timeout: 10
+  - label: Build and test on GHC 8.4
     command: |
       nix-build -A monad-bayes-ghc84 --no-out-link
     timeout: 100
-  - label: GHC 8.6
+  - label: Build and test on GHC 8.6
     command: |
       nix-build -A monad-bayes-ghc86 --no-out-link
     timeout: 100
-  - label: GHC 8.8
+  - label: Build and test on GHC 8.8
     command: |
       nix-build -A monad-bayes-ghc88 --no-out-link
     timeout: 100
