@@ -4,6 +4,7 @@ module BetaBin where
 -- The beta-binomial model in latent variable and urn model representations.
 -- The two formulations should be exactly equivalent, but only urn works with Dist.
 
+import Control.Monad (replicateM)
 import Control.Monad.State.Lazy (get,put,evalStateT)
 
 import Control.Monad.Bayes.Class
@@ -14,7 +15,7 @@ latent :: MonadDist m => Int -> m [Bool]
 latent n = do
   weight <- uniform 0 1
   let toss = bernoulli weight
-  sequence $ replicate n $ toss
+  replicateM n toss
 
 -- | Beta-binomial as a random process.
 urn :: MonadDist m => Int -> m [Bool]
@@ -26,7 +27,7 @@ urn n = flip evalStateT (1,1) $ do
                 let (a',b') = if outcome then (a+1,b) else (a,b+1)
                 put (a',b')
                 return outcome
-          sequence $ replicate n $ toss
+          replicateM n toss
 
 -- | Post-processing by counting the number of True values.
 count :: [Bool] -> Int
@@ -37,9 +38,9 @@ count = length . filter id
 cond :: MonadBayes m => m [Bool] -> m [Bool]
 cond d = do
   (first:second:third:rest) <- d
-  condition (first  == True)
-  condition (second == True)
-  condition (third  == False)
+  condition first
+  condition second
+  condition (not third)
   return rest
 
 -- | The final conditional model, abstracting the representation.

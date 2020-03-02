@@ -18,15 +18,15 @@ dice 1 = die
 dice n = liftM2 (+) die (dice (n-1))
 
 -- | Toss of two dice where the output is greater than 4.
-dice_hard :: MonadInfer m => m Int
-dice_hard = do
+diceHard :: MonadInfer m => m Int
+diceHard = do
   result <- dice 2
   condition (result > 4)
   return result
 
 -- | Toss of two dice with an artificial soft constraint.
-dice_soft :: MonadInfer m => m Int
-dice_soft = do
+diceSoft :: MonadInfer m => m Int
+diceSoft = do
   result <- dice 2
   score (1 / fromIntegral result)
   return result

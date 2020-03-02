@@ -1,7 +1,7 @@
 import Criterion.Main
 import Criterion.Types
 import System.Random.MWC (createSystemRandom, GenIO)
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, unless)
 
 import Debug.Trace
 
@@ -77,7 +77,7 @@ anglicanData lein model = do
 anglican :: LeinProc -> [String] -> IO ()
 anglican (LeinProc input output _) cmds = do
   -- execute command
-  mapM (hPutStr input) cmds
+  mapM_ (hPutStr input) cmds
   hFlush input
   -- wait until all samples are produced
   waitForAnglican output
@@ -89,10 +89,7 @@ waitForAnglican handle = run where
     l <- hGetLine handle
     -- traceIO l
     -- We recognize that Anglican is finished when the repl emits a line "nil"
-    if l == "nil" then
-      return ()
-    else
-      run
+    unless (l == "nil") run
 
 -- | Start a Leiningen process in a directory that contains benchmarks.
 startLein :: IO LeinProc
@@ -166,8 +163,8 @@ prepareBenchmark e Anglican model alg = env prepareData (const $ bench name $ wh
   algString (SMC n) = "-a smc -n " ++ show n
   algString (RMSMC _ _) = error "Anglican does not support resample-move SMC"
   prepareData = anglicanData (lein e) model
-  collect = do
-    anglican (lein e) $ ["(time (m! " ++ anglicanModelName model ++ " " ++ algString alg ++ "))\n"]
+  collect =
+    anglican (lein e) ["(time (m! " ++ anglicanModelName model ++ " " ++ algString alg ++ "))\n"]
 prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run where
   name = show WebPPL ++ sep ++ show model ++ sep ++ show alg
   sep = "_"
@@ -176,7 +173,7 @@ prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run where
   algString (RMSMC n t) = "--alg SMC --samples " ++ show n ++ " --rejuv " ++ show t ++ " "
   dataString (LR dataset) = let (xs, labels) = unzip dataset in "--xs='" ++ javascriptList xs ++ "' --labels='" ++ javascriptList (map (\b -> if b then 1 else 0) labels) ++ "'"
   dataString (HMM obs) = "--obs='" ++ javascriptList obs ++ "'"
-  dataString (LDA docs) = unwords $ map (\(i,doc) -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") (zip [1..5] docs)
+  dataString (LDA docs) = unwords $ zipWith (\ x y -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") [1..5] docs
   run = do
     let command = "node " ++ webpplModelName model ++ ".js " ++ algString alg ++ dataString model
     (_, _, _, process) <- createProcess $ (shell command){cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
@@ -198,9 +195,9 @@ systems = [
           ]
 
 lengthBenchmarks e lrData hmmData ldaData = benchmarks where
-  lrLengths = [10] ++ map (*100) [1..10]
-  hmmLengths = [10] ++ map (*100) [1..10]
-  ldaLengths = [5] ++ map (*50) [1..10]
+  lrLengths = 10 : map (*100) [1..10]
+  hmmLengths = 10 : map (*100) [1..10]
+  ldaLengths = 5 : map (*50) [1..10]
   models =
     map (LR . (`take` lrData)) lrLengths ++
     map (HMM . (`take` hmmData)) hmmLengths ++

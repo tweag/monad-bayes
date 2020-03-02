@@ -46,16 +46,16 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-      in show <$> (runPopulation $ smcSystematic k n m)
+      in show <$> runPopulation (smcSystematic k n m)
     MH  ->
       let t = 100
           (_, m) = getModel model
-      in show <$> (prior $ mh t m)
+      in show <$> prior (mh t m)
     RMSMC ->
       let n = 10
           t = 1
           (k, m) = getModel model
-      in show <$> (runPopulation $ rmsmcBasic k n t m)
+      in show <$> runPopulation (rmsmcBasic k n t m)
 
 
 infer :: Model -> Alg -> IO ()

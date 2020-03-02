@@ -12,7 +12,7 @@ branching :: (MonadBayes m, CustomReal m ~ Double) => m Int
 branching = do
   let count_prior = discrete $ replicate 10 0.1 -- TODO: change to poisson 4
   r <- count_prior
-  l <- if (4 < r) then
+  l <- if 4 < r then
          return 6
        else
          fmap (+ fib (3*r)) count_prior
