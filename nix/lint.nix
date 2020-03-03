@@ -13,6 +13,7 @@ writeScript "lint.sh" ''
   hlint="${hlint}/bin/hlint"
   nixpkgsfmt="${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
   ormolu="${pkgs.ormolu}/bin/ormolu"
+  prettier="${pkgs.nodePackages.prettier}/bin/prettier"
 
   if ! $git diff --quiet; then
       echo 'ERROR: Dirty working directory'
@@ -34,6 +35,13 @@ writeScript "lint.sh" ''
       exit 1
   fi
   echo 'SUCCESS: Nix files are formatted correctly'
+
+  if ! $git ls-tree -z -r HEAD --name-only | grep -z '\.\(yaml\|yml\|json\)$' | xargs -0 $prettier --list-different; then
+      echo 'FAILURE: YAML and JSON files were not formatted correctly'
+      echo 'Run "eval $(nix-build -A fix)" to fix this'
+      exit 1
+  fi
+  echo 'SUCCESS: YAML and JSON files are formatted correctly'
 
   function haskell_files {
       $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'
