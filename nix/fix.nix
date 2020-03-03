@@ -12,16 +12,15 @@ writeScript "fix.sh" ''
   cabal="${cabal-install}/bin/cabal"
   git="${pkgs.git}/bin/git"
   hlint="${hlint}/bin/hlint"
+  nixpkgsfmt="${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
   ormolu="${pkgs.ormolu}/bin/ormolu"
   refactor="${apply-refact}/bin/refactor"
 
-  if ! $git diff --quiet -- *.cabal; then
-      echo 'ERROR: Dirty working directory'
-      exit 1
-  fi
+  $git ls-tree -z -r HEAD --name-only | grep -z '\.cabal$' | xargs -0 $cabal format
+  echo 'SUCCESS: Cabal files formatted'
 
-  $cabal format *.cabal
-  echo 'SUCCESS: Formatted cabal file'
+  $git ls-tree -z -r HEAD --name-only | grep -z '\.nix$' | xargs -0 $nixpkgsfmt
+  echo 'SUCCESS: Nix files formatted'
 
   function haskell_files {
       $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'
