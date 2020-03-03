@@ -1,4 +1,4 @@
-{ pkgs ? (import ./nix/nixpkgs) }:
+{ pkgs ? (import ./nix/nixpkgs.nix) }:
 
 let
   source = [
@@ -42,4 +42,5 @@ in
   };
   lint = defaultHaskellPackages.callPackage ./nix/lint.nix {};
   fix = defaultHaskellPackages.callPackage ./nix/fix.nix {};
+  update = defaultHaskellPackages.callPackage ./nix/update.nix {};
 }
