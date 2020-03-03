@@ -9,14 +9,14 @@ import qualified Data.Map as Map
 import Data.Vector as V hiding (length, mapM, mapM_, zip)
 import Numeric.Log
 
-vocabluary :: [String]
-vocabluary = ["bear", "wolf", "python", "prolog"]
+vocabulary :: [String]
+vocabulary = ["bear", "wolf", "python", "prolog"]
 
 topics :: [String]
 topics = ["topic1", "topic2"]
 
-docs :: [[String]]
-docs =
+documents :: [[String]]
+documents =
   [ words "bear wolf bear wolf bear wolf python wolf bear wolf",
     words "python prolog python prolog python prolog python prolog python prolog",
     words "bear wolf bear wolf bear wolf bear wolf bear wolf",
@@ -25,13 +25,13 @@ docs =
   ]
 
 wordDistPrior :: MonadSample m => m (Vector Double)
-wordDistPrior = dirichlet $ V.replicate (length vocabluary) 1
+wordDistPrior = dirichlet $ V.replicate (length vocabulary) 1
 
 topicDistPrior :: MonadSample m => m (Vector Double)
 topicDistPrior = dirichlet $ V.replicate (length topics) 1
 
 wordIndex :: Map.Map String Int
-wordIndex = Map.fromList $ zip vocabluary [0 ..]
+wordIndex = Map.fromList $ zip vocabulary [0 ..]
 
 lda :: MonadInfer m => [[String]] -> m [Int]
 lda docs = do
@@ -51,4 +51,4 @@ lda docs = do
 syntheticData :: MonadSample m => Int -> Int -> m [[String]]
 syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
   where
-    syntheticWord = uniformD vocabluary
+    syntheticWord = uniformD vocabulary

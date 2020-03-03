@@ -1,4 +1,4 @@
-import Control.Monad (replicateM, unless)
+import Control.Monad (unless)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
@@ -8,7 +8,6 @@ import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Criterion.Main
 import Criterion.Types
-import Debug.Trace
 import GHC.IO.Handle
 -- import NonlinearSSM
 import qualified HMM
@@ -51,24 +50,24 @@ clojureShowVector xs = clojureVector $ map show xs
 
 -- | Insert data into an Anglican model.
 anglicanData :: LeinProc -> Model -> IO ()
-anglicanData lein model = do
-  anglican lein ["(use 'nstools.ns)\n"]
-  anglican lein ["(ns+ " ++ anglicanModelName model ++ ")\n"]
+anglicanData leinProc model = do
+  anglican leinProc ["(use 'nstools.ns)\n"]
+  anglican leinProc ["(ns+ " ++ anglicanModelName model ++ ")\n"]
   case model of
     LR dataset -> do
       let (xs, labels) = unzip dataset
-      anglican lein ["(ns-unmap *ns* 'xs)\n"]
-      anglican lein ["(def xs " ++ clojureShowVector xs ++ ")\n", "nil\n"]
-      anglican lein ["(ns-unmap *ns* 'labels)\n"]
-      anglican lein ["(def labels " ++ clojureBoolVector labels ++ ")\n", "nil\n"]
+      anglican leinProc ["(ns-unmap *ns* 'xs)\n"]
+      anglican leinProc ["(def xs " ++ clojureShowVector xs ++ ")\n", "nil\n"]
+      anglican leinProc ["(ns-unmap *ns* 'labels)\n"]
+      anglican leinProc ["(def labels " ++ clojureBoolVector labels ++ ")\n", "nil\n"]
     HMM observations -> do
-      anglican lein ["(ns-unmap *ns* 'observations)\n"]
-      anglican lein ["(def observations " ++ clojureShowVector observations ++ ")\n", "nil\n"]
+      anglican leinProc ["(ns-unmap *ns* 'observations)\n"]
+      anglican leinProc ["(def observations " ++ clojureShowVector observations ++ ")\n", "nil\n"]
     LDA docs -> do
-      anglican lein ["(ns-unmap *ns* 'docs)\n"]
-      anglican lein ["(def docs " ++ clojureVector (map clojureShowVector docs) ++ ")\n", "nil\n"]
-  anglican lein ["(use 'nstools.ns)\n"]
-  anglican lein ["(ns+ anglican.core)\n"]
+      anglican leinProc ["(ns-unmap *ns* 'docs)\n"]
+      anglican leinProc ["(def docs " ++ clojureVector (map clojureShowVector docs) ++ ")\n", "nil\n"]
+  anglican leinProc ["(use 'nstools.ns)\n"]
+  anglican leinProc ["(ns+ anglican.core)\n"]
 
 anglican :: LeinProc -> [String] -> IO ()
 anglican (LeinProc input output _) cmds = do
@@ -95,9 +94,9 @@ startLein = do
   (Just input, Just output, _, process) <- createProcess setup
   -- wait until Leiningen starts producing output to make sure it's ready
   _ <- hWaitForInput output (-1) -- wait for output indefinitely
-  let lein = LeinProc input output process
-  anglican lein ["(use 'nstools.ns)\n"]
-  return lein
+  let leinProc = LeinProc input output process
+  anglican leinProc ["(use 'nstools.ns)\n"]
+  return leinProc
 
 -- | Path to the WebPPL project with benchmarks.
 webpplPath :: String
@@ -175,9 +174,9 @@ prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run
     algString (MH n) = "--alg MCMC --samples " ++ show n ++ " --rejuv 0 "
     algString (SMC n) = "--alg SMC --samples " ++ show n ++ " --rejuv 0 "
     algString (RMSMC n t) = "--alg SMC --samples " ++ show n ++ " --rejuv " ++ show t ++ " "
-    dataString (LR dataset) = let (xs, labels) = unzip dataset in "--xs='" ++ javascriptList xs ++ "' --labels='" ++ javascriptList (map (\b -> if b then 1 else 0) labels) ++ "'"
+    dataString (LR dataset) = let (xs, labels) = unzip dataset in "--xs='" ++ javascriptList xs ++ "' --labels='" ++ javascriptList (map (\b -> if b then (1 :: Int) else 0) labels) ++ "'"
     dataString (HMM obs) = "--obs='" ++ javascriptList obs ++ "'"
-    dataString (LDA docs) = unwords $ zipWith (\i doc -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") [1 .. 5] docs
+    dataString (LDA docs) = unwords $ zipWith (\i doc -> "--doc" ++ show (i :: Int) ++ "='" ++ unwords doc ++ "'") [1 .. 5] docs
     run = do
       let command = "node " ++ webpplModelName model ++ ".js " ++ algString alg ++ dataString model
       (_, _, _, process) <- createProcess $ (shell command) {cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
@@ -191,12 +190,14 @@ supported :: (ProbProgSys, Model, Alg) -> Bool
 supported (Anglican, _, RMSMC _ _) = False
 supported _ = True
 
+systems :: [ProbProgSys]
 systems =
   [ MonadBayes
     -- Anglican,
     -- WebPPL
   ]
 
+lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
 lengthBenchmarks e lrData hmmData ldaData = benchmarks
   where
     lrLengths = 10 : map (* 100) [1 .. 10]
@@ -220,6 +221,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
           a <- algs
           return (s, m, a)
 
+samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
 samplesBenchmarks e lrData hmmData ldaData = benchmarks
   where
     lrLengths = [50]
