@@ -8,4 +8,5 @@ let
   haskellNixRev = "fee0922de5e43bd1dc0e8f769e765894242c00a0";
   haskellNix = import (builtins.fetchTarball "https://github.com/input-output-hk/haskell.nix/archive/${haskellNixRev}.tar.gz");
   pkgs = import nixpkgs haskellNix;
-in pkgs
+in
+pkgs

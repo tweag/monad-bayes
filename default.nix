@@ -20,7 +20,8 @@ let
   monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml";
 
   defaultHaskellPackages = pkgs.haskell.packages.ghc865;
-in {
+in
+{
   inherit monad-bayes-ghc84 monad-bayes-ghc86 monad-bayes-ghc88;
   shell = monad-bayes-ghc86.shellFor {
     packages = ps: [
