@@ -42,12 +42,14 @@ trans :: MonadSample m => Int -> m Int
 trans 0 = categorical $ fromList [0.1, 0.4, 0.5]
 trans 1 = categorical $ fromList [0.2, 0.6, 0.2]
 trans 2 = categorical $ fromList [0.15, 0.7, 0.15]
+trans _ = error "unreachable"
 
 -- | The emission model.
 emissionMean :: Int -> Double
 emissionMean 0 = -1
 emissionMean 1 = 1
 emissionMean 2 = 0
+emissionMean _ = error "unreachable"
 
 -- | Initial state distribution
 start :: MonadSample m => m Int

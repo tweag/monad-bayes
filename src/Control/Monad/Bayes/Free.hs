@@ -20,7 +20,6 @@ where
 
 import Control.Monad.Bayes.Class
 import Control.Monad.State
-import Control.Monad.Trans
 import Control.Monad.Trans.Free.Church
 import Control.Monad.Writer
 import Data.Functor.Identity
