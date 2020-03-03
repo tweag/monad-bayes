@@ -13,7 +13,7 @@ param = do
   return (sigmaX, sigmaY)
 
 mean :: Double -> Int -> Double
-mean x n = 0.5 * x + 25 * x / (1 + sq x) + 8 * cos (1.2 * fromIntegral n)
+mean x n = 0.5 * x + 25 * x / (1 + x * x) + 8 * cos (1.2 * fromIntegral n)
 
 -- | A nonlinear series model from Doucet et al. (2000)
 -- "On sequential Monte Carlo sampling methods" section VI.B
