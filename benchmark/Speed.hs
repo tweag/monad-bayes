@@ -177,7 +177,7 @@ prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run
     algString (RMSMC n t) = "--alg SMC --samples " ++ show n ++ " --rejuv " ++ show t ++ " "
     dataString (LR dataset) = let (xs, labels) = unzip dataset in "--xs='" ++ javascriptList xs ++ "' --labels='" ++ javascriptList (map (\b -> if b then 1 else 0) labels) ++ "'"
     dataString (HMM obs) = "--obs='" ++ javascriptList obs ++ "'"
-    dataString (LDA docs) = unwords $ zipWith (\x y -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") [1 .. 5] docs
+    dataString (LDA docs) = unwords $ zipWith (\i doc -> "--doc" ++ show i ++ "='" ++ unwords doc ++ "'") [1 .. 5] docs
     run = do
       let command = "node " ++ webpplModelName model ++ ".js " ++ algString alg ++ dataString model
       (_, _, _, process) <- createProcess $ (shell command) {cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
