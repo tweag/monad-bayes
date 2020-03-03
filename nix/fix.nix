@@ -14,6 +14,7 @@ writeScript "fix.sh" ''
   hlint="${hlint}/bin/hlint"
   nixpkgsfmt="${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
   ormolu="${pkgs.ormolu}/bin/ormolu"
+  prettier="${pkgs.nodePackages.prettier}/bin/prettier"
   refactor="${apply-refact}/bin/refactor"
 
   $git ls-tree -z -r HEAD --name-only | grep -z '\.cabal$' | xargs -0 $cabal format
@@ -21,6 +22,9 @@ writeScript "fix.sh" ''
 
   $git ls-tree -z -r HEAD --name-only | grep -z '\.nix$' | xargs -0 $nixpkgsfmt
   echo 'SUCCESS: Nix files formatted'
+
+  $git ls-tree -z -r HEAD --name-only | grep -z '\.\(yaml\|yml\|json\)$' | xargs -0 $prettier --write
+  echo 'SUCCESS: YAML and JSON files formatted'
 
   function haskell_files {
       $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'
