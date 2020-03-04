@@ -1,7 +1,7 @@
 {
-  "url": "https://github.com/curiousleo/haskell.nix.git",
-  "rev": "e6c233b68953095409ee1d4e09d78a37bfdc9ff7",
-  "date": "2020-03-03T16:33:25+01:00",
-  "sha256": "1ar3lxnnamk88rjx0vrlbz2dzz656z9mzgd0fwdn46h89a07l1xq",
+  "url": "https://github.com/input-output-hk/haskell.nix.git",
+  "rev": "a93486531cdd1044520feec79c9a29af2cb92d8f",
+  "date": "2020-03-03T04:49:45+00:00",
+  "sha256": "0mbfs1cxv83gpfafpnfkf4rihsznnq5mbhfh1r9g9z60qv9llg7z",
   "fetchSubmodules": false
 }
