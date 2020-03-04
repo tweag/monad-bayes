@@ -6,6 +6,8 @@
 }:
 
 writeScript "fix.sh" ''
+  #!/usr/bin/env ${pkgs.bash}/bin/bash
+
   set -euo pipefail
   IFS=$'\n\t'
 

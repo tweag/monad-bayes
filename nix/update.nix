@@ -1,8 +1,11 @@
-{ nix-prefetch-git
+{ bash
+, nix-prefetch-git
 , writeScript
 }:
 
 writeScript "update.sh" ''
+  #!/usr/bin/env ${bash}/bin/bash
+
   set -euo pipefail
   IFS=$'\n\t'
 
