@@ -11,13 +11,27 @@ let
     "^stack.*\.yaml$"
     "^test.*$"
   ];
-  mkMonadBayes = stackYaml: pkgs.haskell-nix.stackProject {
-    inherit stackYaml;
-    src = pkgs.lib.sourceByRegex ./. source;
-  };
-  monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml";
-  monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml";
-  monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml";
+  mkMonadBayes = stackYaml: doBench:
+    let
+      project = pkgs.haskell-nix.stackProject {
+        inherit stackYaml;
+        src = pkgs.lib.sourceByRegex ./. source;
+      };
+      benchmarks = project.monad-bayes.components.benchmarks;
+    in
+      pkgs.recurseIntoAttrs {
+        "lib-and-test" = project.monad-bayes;
+      } // (
+        if doBench
+        then {
+          "ssm-bench" = benchmarks.ssm-bench;
+          "speed-bench" = benchmarks.speed-bench;
+        }
+        else {}
+      );
+  monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml" false;
+  monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml" true;
+  monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml" true;
 
   defaultHaskellPackages = pkgs.haskell.packages.ghc865;
 in
