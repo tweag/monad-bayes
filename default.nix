@@ -17,6 +17,8 @@ let
         inherit stackYaml;
         src = pkgs.lib.sourceByRegex ./. source;
       };
+      # https://github.com/input-output-hk/haskell.nix/issues/470 suggests a
+      # better way to build benchmarks.
       benchmarks = project.monad-bayes.components.benchmarks;
     in
       pkgs.recurseIntoAttrs {
