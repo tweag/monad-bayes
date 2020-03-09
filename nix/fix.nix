@@ -2,6 +2,7 @@
 , cabal-install
 , hlint
 , pkgs
+, python37Packages
 , writeScript
 }:
 
@@ -12,6 +13,7 @@ writeScript "fix.sh" ''
   set -euo pipefail
   IFS=$'\n\t'
 
+  black="${python37Packages.black}/bin/black"
   cabal="${cabal-install}/bin/cabal"
   git="${pkgs.git}/bin/git"
   hlint="${hlint}/bin/hlint"
@@ -28,6 +30,9 @@ writeScript "fix.sh" ''
 
   $git ls-tree -z -r HEAD --name-only | grep -z '\.\(yaml\|yml\|json\)$' | xargs -0 $prettier --write
   echo 'SUCCESS: YAML and JSON files formatted'
+
+  $git ls-tree -z -r HEAD --name-only | grep -z '\.py$' | xargs -0 $black
+  echo 'SUCCESS: Python files formatted'
 
   function haskell_files {
       $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'

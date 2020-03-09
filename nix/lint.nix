@@ -1,6 +1,7 @@
 { cabal-install
 , hlint
 , pkgs
+, python37Packages
 , writeScript
 }:
 
@@ -11,6 +12,7 @@ writeScript "lint.sh" ''
   set -euo pipefail
   IFS=$'\n\t'
 
+  black="${python37Packages.black}/bin/black"
   cabal="${cabal-install}/bin/cabal"
   git="${pkgs.git}/bin/git"
   hlint="${hlint}/bin/hlint"
@@ -48,6 +50,13 @@ writeScript "lint.sh" ''
       exit 1
   fi
   echo 'SUCCESS: YAML and JSON files are formatted correctly'
+
+  if ! $git ls-tree -z -r HEAD --name-only | grep -z '\.py$' | xargs -0 $black --check --diff 2>/dev/null; then
+      echo 'FAILURE: Python files were not formatted correctly'
+      echo "$fixmsg"
+      exit 1
+  fi
+  echo 'SUCCESS: Python files formatted'
 
   # List all generated Bash scripts here.
   bash_files=(
