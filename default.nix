@@ -24,6 +24,7 @@ let
       pkgs.recurseIntoAttrs {
         "shellFor" = project.shellFor;
         "lib-and-test" = project.monad-bayes;
+        "checks" = project.monad-bayes.checks;
       } // (
         if doBench
         then {
