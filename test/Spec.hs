@@ -26,7 +26,7 @@ main = hspec $ do
       TestEnumerator.passed4 `shouldBe` True
   describe "Population" $ do
     context "controlling population" $ do
-      it "preserves the population when not expicitly altered" $ do
+      it "preserves the population when not explicitly altered" $ do
         popSize <- TestPopulation.popSize
         popSize `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" $ do

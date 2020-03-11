@@ -43,7 +43,7 @@ opts = info ((,) <$> trialFlag <*> cacheDir) fullDesc
       strOption
         ( long "cache-dir"
             <> value "cache/lgss/"
-            <> help "Directory to store temporary data that may be reused accross different runs."
+            <> help "Directory to store temporary data that may be reused across different runs."
         )
 
 lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
@@ -128,7 +128,7 @@ randomWalk p0 sdX sdY = linearGaussian (LGSSParam p0 1 0 sdX 1 0 sdY)
 synthesizeData ::
   (MonadDist m, CustomReal m ~ Double) =>
   LGSSParam ->
-  -- | T - length of producted vector
+  -- | T - length of produced vector
   Int ->
   -- | data Y_{1:T} generated from the prior
   m (Vector Double)
