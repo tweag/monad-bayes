@@ -22,6 +22,7 @@ let
       benchmarks = project.monad-bayes.components.benchmarks;
     in
       pkgs.recurseIntoAttrs {
+        "shellFor" = project.shellFor;
         "lib-and-test" = project.monad-bayes;
       } // (
         if doBench
