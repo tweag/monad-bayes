@@ -35,7 +35,7 @@ writeScript "fix.sh" ''
   echo 'SUCCESS: Python files formatted'
 
   function haskell_files {
-      $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$'
+      $git ls-tree -z -r HEAD --name-only | grep -z '\.hs$' | grep -z -v 'Setup.hs'
   }
 
   haskell_files | xargs -0 -I{} $hlint {} --refactor --with-refactor=$refactor --refactor-options="--inplace"

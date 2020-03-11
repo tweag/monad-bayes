@@ -11,25 +11,18 @@
 -- like the following:
 --
 -- @
--- import Control.Monad (when)
--- import Control.Monad.Bayes.Class
---
 -- model :: MonadInfer m => m Bool
 -- model = do
---   rain <- bernoulli 0.3
---   sprinkler <-
---     bernoulli $
---     if rain
---       then 0.1
---       else 0.4
---   let wetProb =
---     case (rain, sprinkler) of
---       (True,  True)  -> 0.98
---       (True,  False) -> 0.80
---       (False, True)  -> 0.90
---       (False, False) -> 0.00
---   score wetProb
---   return rain
+--       rain <- bernoulli 0.3
+--       sprinkler <- bernoulli $ if rain then 0.1 else 0.4
+--       let wetProb =
+--             case (rain, sprinkler) of
+--               (True, True) -> 0.98
+--               (True, False) -> 0.80
+--               (False, True) -> 0.90
+--               (False, False) -> 0.00
+--       score wetProb
+--       return rain
 -- @
 module Control.Monad.Bayes.Class
   ( MonadSample,
@@ -65,7 +58,8 @@ import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG
+import Data.Vector.Generic (Vector, (!))
+import qualified Data.Vector.Generic as VG
 import Numeric.Log
 import Statistics.Distribution
 import Statistics.Distribution.Beta (betaDistr)
@@ -74,6 +68,25 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+
+-- $setup
+-- >>> import Control.Monad.Bayes.Sampler (sampleIOfixed)
+-- >>> import Control.Monad.Bayes.Traced.Basic (mh)
+-- >>> import Control.Monad.Bayes.Weighted (prior)
+-- >>> :{
+-- model :: MonadInfer m => m Bool
+-- model = do
+--       rain <- bernoulli 0.3
+--       sprinkler <- bernoulli $ if rain then 0.1 else 0.4
+--       let wetProb =
+--             case (rain, sprinkler) of
+--               (True, True) -> 0.98
+--               (True, False) -> 0.80
+--               (False, True) -> 0.90
+--               (False, False) -> 0.00
+--       score wetProb
+--       return rain
+-- :}
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
@@ -155,7 +168,7 @@ class Monad m => MonadSample m where
     -- | \(\sim \mathcal{U}\{\mathrm{xs}\}\)
     m a
   uniformD xs = do
-    let n = Prelude.length xs
+    let n = length xs
     i <- categorical $ V.replicate n (1 / fromIntegral n)
     return (xs !! i)
 
@@ -210,6 +223,11 @@ discrete :: (DiscreteDistr d, MonadSample m) => d -> m Int
 discrete = fromPMF . probability
 
 -- | Monads that can score different execution paths.
+--
+-- >>> let london = do { rain <- bernoulli 0.5; score (if rain then 0.55 else 0.45); return rain }
+-- >>> samples <- sampleIOfixed $ prior $ mh 365 london
+-- >>> length $ filter id samples
+-- 173
 class Monad m => MonadCond m where
   -- | Record a likelihood.
   score ::
