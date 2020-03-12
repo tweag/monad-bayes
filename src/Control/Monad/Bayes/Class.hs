@@ -50,6 +50,7 @@ module Control.Monad.Bayes.Class
     factor,
     condition,
     MonadInfer,
+    discrete,
     normalPdf,
   )
 where

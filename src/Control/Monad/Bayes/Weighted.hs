@@ -22,9 +22,9 @@ module Control.Monad.Bayes.Weighted
 where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans
-import Control.Monad.Trans.State
-import Numeric.Log
+import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+import Numeric.Log (Log)
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
@@ -40,9 +40,15 @@ instance MonadSample m => MonadInfer (Weighted m)
 runWeighted :: (Functor m) => Weighted m a -> m (a, Log Double)
 runWeighted (Weighted m) = runStateT m 1
 
+-- | Compute the sample and discard the weight.
+--
+-- This operation introduces bias.
+prior :: Functor m => Weighted m a -> m a
+prior = fmap fst . runWeighted
+
 -- | Compute the weight and discard the sample.
 extractWeight :: Functor m => Weighted m a -> m (Log Double)
-extractWeight m = snd <$> runWeighted m
+extractWeight = fmap snd . runWeighted
 
 -- | Embed a random variable with explicitly given likelihood.
 --
@@ -52,11 +58,6 @@ withWeight m = Weighted $ do
   (x, w) <- lift m
   modify (* w)
   return x
-
--- | Discard the weight.
--- This operation introduces bias.
-prior :: (Functor m) => Weighted m a -> m a
-prior = fmap fst . runWeighted
 
 -- | Combine weights from two different levels.
 flatten :: Monad m => Weighted (Weighted m) a -> Weighted m a

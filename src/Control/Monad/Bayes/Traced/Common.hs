@@ -22,13 +22,17 @@ import Control.Monad.Bayes.Free as FreeSampler
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Trans.Writer
 import Data.Functor.Identity
-import qualified Data.Vector as V
 import Numeric.Log (Log, ln)
+import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
+-- | Collection of random variables sampled during the program's execution.
 data Trace a
   = Trace
-      { variables :: [Double],
+      { -- | Sequence of random variables sampled during the program's execution.
+        variables :: [Double],
+        -- |
         output :: a,
+        -- | The probability of observing this particular sequence.
         density :: Log Double
       }
 
@@ -37,7 +41,12 @@ instance Functor Trace where
 
 instance Applicative Trace where
   pure x = Trace {variables = [], output = x, density = 1}
-  tf <*> tx = Trace {variables = variables tf ++ variables tx, output = output tf (output tx), density = density tf * density tx}
+  tf <*> tx =
+    Trace
+      { variables = variables tf ++ variables tx,
+        output = output tf (output tx),
+        density = density tf * density tx
+      }
 
 instance Monad Trace where
   t >>= f =
@@ -58,17 +67,15 @@ bind dx f = do
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t = do
-  let us = variables t
-      p = density t
+mhTrans m t@Trace {variables = us, density = p} = do
+  let n = length us
   us' <- do
-    let n = length us
-    i <- categorical $ V.replicate n (1 / fromIntegral n)
+    i <- discrete $ discreteUniformAB 0 (n -1)
     u' <- random
     let (xs, _ : ys) = splitAt i us
     return $ xs ++ (u' : ys)
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
-  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length us) / (p * fromIntegral (length vs)))
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
