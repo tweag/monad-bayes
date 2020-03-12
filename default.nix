@@ -34,7 +34,7 @@ let
       );
   monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml" false;
   monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml" true;
-  monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml" true;
+  monad-bayes-ghc88 = mkMonadBayes "stack-ghc882.yaml" true;
 
   defaultHaskellPackages = pkgs.haskell.packages.ghc865;
 in
@@ -59,5 +59,5 @@ in
   };
   lint = defaultHaskellPackages.callPackage ./nix/lint.nix {};
   fix = defaultHaskellPackages.callPackage ./nix/fix.nix {};
-  update = defaultHaskellPackages.callPackage ./nix/update.nix {};
+  update = pkgs.callPackage ./nix/update.nix {};
 }
