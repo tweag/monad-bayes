@@ -21,7 +21,7 @@ documentation. In the meantime, see the [`models` folder][models] for examples.
 
 The basis for the code in this repository is the ICFP 2018 paper [2]. For the
 code associated with the Haskell2015 paper [1], see the [`haskell2015`
-branch][haskell2015-branch].
+tag][haskell2015-tag].
 
 [1] Adam M. Ścibior, Zoubin Ghahramani, and Andrew D. Gordon. 2015. [Practical
 probabilistic programming with monads][haskell2015-doi]. In _Proceedings of the
@@ -65,8 +65,8 @@ stack ghci
 
 [adam-github]: https://github.com/adscib
 [adam-web]: https://www.cs.ubc.ca/~ascibior/
-[haskell2015-branch]: https://github.com/tweag/monad-bayes/tree/haskell2015
 [haskell2015-doi]: https://doi.org/10.1145/2804302.2804317
+[haskell2015-tag]: https://github.com/tweag/monad-bayes/tree/haskell2015
 [icfp2018-doi]: https://doi.org/10.1145/3236778
 [models]: https://github.com/tweag/monad-bayes/tree/master/models
 [stack-install]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
