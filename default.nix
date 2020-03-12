@@ -11,7 +11,7 @@ let
     "^stack.*\.yaml$"
     "^test.*$"
   ];
-  mkMonadBayes = stackYaml: doBench:
+  mkMonadBayes = stackYaml: doBenchAndTest:
     let
       project = pkgs.haskell-nix.stackProject {
         inherit stackYaml;
@@ -25,10 +25,11 @@ let
         "shellFor" = project.shellFor;
         "lib-and-test" = project.monad-bayes;
       } // (
-        if doBench
+        if doBenchAndTest
         then {
           "ssm-bench" = benchmarks.ssm-bench;
           "speed-bench" = benchmarks.speed-bench;
+          "checks" = project.monad-bayes.checks;
         }
         else {}
       );

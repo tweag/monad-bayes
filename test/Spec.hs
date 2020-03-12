@@ -9,9 +9,6 @@ import qualified TestWeighted
 
 main :: IO ()
 main = hspec $ do
-  describe "CI"
-    $ it "is broken - see #88"
-    $ True `shouldBe` False
   describe "Weighted"
     $ it "accumulates likelihood correctly"
     $ do
