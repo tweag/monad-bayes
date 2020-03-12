@@ -19,10 +19,11 @@ module Control.Monad.Bayes.Free
 where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.State
-import Control.Monad.Trans.Free.Church
-import Control.Monad.Writer
-import Data.Functor.Identity
+import Control.Monad.State (evalStateT, get, put)
+import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
+import Control.Monad.Writer (WriterT (..), tell)
+import Data.Functor.Identity (Identity, runIdentity)
 
 -- | Random sampling functor.
 newtype SamF a = Random (Double -> a)
@@ -31,13 +32,10 @@ instance Functor SamF where
   fmap f (Random k) = Random (f . k)
 
 -- | Free monad transformer over random sampling.
-
+--
 -- Uses the Church-encoded version of the free monad for efficiency.
-newtype FreeSampler m a = FreeSampler (FT SamF m a)
+newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT SamF m a}
   deriving (Functor, Applicative, Monad, MonadTrans)
-
-runFreeSampler :: FreeSampler m a -> FT SamF m a
-runFreeSampler (FreeSampler m) = m
 
 instance Monad m => MonadFree SamF (FreeSampler m) where
   wrap = FreeSampler . wrap . fmap runFreeSampler

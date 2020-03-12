@@ -18,17 +18,14 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free as FreeSampler
+import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Trans
+import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Trans (MonadTrans (..))
 
--- | A tracing monad where only a subset of random choices are traced
--- and this subset can be adjusted dynamically.
-newtype Traced m a = Traced (m (Weighted (FreeSampler m) a, Trace a))
-
-runTraced :: Traced m a -> m (Weighted (FreeSampler m) a, Trace a)
-runTraced (Traced c) = c
+-- | A tracing monad where only a subset of random choices are traced and this
+-- subset can be adjusted dynamically.
+newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
 
 pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
 pushM = join . lift . lift
@@ -68,23 +65,27 @@ instance MonadInfer m => MonadInfer (Traced m)
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced c) = Traced (f c)
 
+-- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced c) = fmap (output . snd) c
 
--- | Freeze all traced random choices to their current
--- values and stop tracing them.
+-- | Freeze all traced random choices to their current values and stop tracing
+-- them.
 freeze :: Monad m => Traced m a -> Traced m a
 freeze (Traced c) = Traced $ do
   (_, t) <- c
   let x = output t
   return (return x, pure x)
 
+-- | A single step of the Trace Metropolis-Hastings algorithm.
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced c) = Traced $ do
   (m, t) <- c
   t' <- mhTrans m t
   return (m, t')
 
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
+-- number of steps.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced c) = do
   (m, t) <- c

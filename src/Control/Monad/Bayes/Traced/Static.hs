@@ -17,21 +17,20 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free as FreeSampler
+import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Trans
+import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Trans (MonadTrans (..))
 
 -- | A tracing monad where only a subset of random choices are traced.
--- The random choices that are not to be traced should be lifted
--- from the transformed monad.
-data Traced m a = Traced (Weighted (FreeSampler m) a) (m (Trace a))
-
-traceDist :: Traced m a -> m (Trace a)
-traceDist (Traced _ d) = d
-
-model :: Traced m a -> Weighted (FreeSampler m) a
-model (Traced m _) = m
+--
+-- The random choices that are not to be traced should be lifted from the
+-- transformed monad.
+data Traced m a
+  = Traced
+      { model :: Weighted (FreeSampler m) a,
+        traceDist :: m (Trace a)
+      }
 
 instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
@@ -60,18 +59,21 @@ instance MonadInfer m => MonadInfer (Traced m)
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced m d) = Traced m (f d)
 
+-- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
+-- | A single step of the Trace Metropolis-Hastings algorithm.
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTrans m
 
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
+-- number of steps.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map output) t
+mh n (Traced m d) = fmap (map output) (f n)
   where
-    t = f n
     f 0 = fmap (: []) d
     f k = do
       ~(x : xs) <- f (k -1)

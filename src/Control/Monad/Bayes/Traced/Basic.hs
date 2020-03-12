@@ -17,21 +17,19 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free as FreeSampler
+import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-import Control.Monad.Bayes.Weighted as Weighted
-import Data.Functor.Identity
+import Control.Monad.Bayes.Weighted (Weighted)
+import Data.Functor.Identity (Identity)
 
 -- | Tracing monad that records random choices made in the program.
--- The first component is used to run the program with a modified trace,
--- while the second records a trace and an output value from a run.
-data Traced m a = Traced (Weighted (FreeSampler Identity) a) (m (Trace a))
-
-traceDist :: Traced m a -> m (Trace a)
-traceDist (Traced _ d) = d
-
-model :: Traced m a -> Weighted (FreeSampler Identity) a
-model (Traced m _) = m
+data Traced m a
+  = Traced
+      { -- | Run the program with a modified trace.
+        model :: Weighted (FreeSampler Identity) a,
+        -- | Record trace and output.
+        traceDist :: m (Trace a)
+      }
 
 instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
@@ -61,18 +59,17 @@ hoistT f (Traced m d) = Traced m (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
--- | A single step of the Trace MH algorithm.
+-- | A single step of the Trace Metropolis-Hastings algorithm.
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTrans' m
 
--- | Full run of the Trace MH algorithm with a specified
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map output) t
+mh n (Traced m d) = fmap (map output) (f n)
   where
-    t = f n
     f 0 = fmap (: []) d
     f k = do
       ~(x : xs) <- f (k -1)
