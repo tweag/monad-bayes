@@ -1,3 +1,5 @@
 resolver: lts-12.15 # first lts-12.X which uses ghc844
 packages:
   - "."
+nix:
+  path: [nixpkgs=./nix/nixpkgs-stack.nix]
