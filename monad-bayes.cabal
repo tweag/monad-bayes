@@ -48,15 +48,9 @@ library
         Control.Monad.Bayes.Traced.Static
         Control.Monad.Bayes.Weighted
 
-    hs-source-dirs:     src
-    other-modules:      Control.Monad.Bayes.Traced.Common
-    default-language:   Haskell2010
-    default-extensions:
-        MultiParamTypeClasses RankNTypes FlexibleContexts FlexibleInstances
-        GeneralizedNewtypeDeriving TypeFamilies StandaloneDeriving GADTs
-        TupleSections
-
-    other-extensions:   ScopedTypeVariables DeriveFunctor
+    hs-source-dirs:   src
+    other-modules:    Control.Monad.Bayes.Traced.Common
+    default-language: Haskell2010
     build-depends:
         base >=4.11 && <4.14,
         containers >=0.5.10 && <0.7,
@@ -142,27 +136,25 @@ test-suite monad-bayes-test
         ghc-options: -Wall
 
 benchmark ssm-bench
-    type:               exitcode-stdio-1.0
-    main-is:            SSM.hs
-    hs-source-dirs:     models benchmark
-    other-modules:      NonlinearSSM
-    default-language:   Haskell2010
-    default-extensions: RankNTypes
+    type:             exitcode-stdio-1.0
+    main-is:          SSM.hs
+    hs-source-dirs:   models benchmark
+    other-modules:    NonlinearSSM
+    default-language: Haskell2010
     build-depends:
         base -any,
         monad-bayes -any
 
 benchmark speed-bench
-    type:               exitcode-stdio-1.0
-    main-is:            Speed.hs
-    hs-source-dirs:     models benchmark
+    type:             exitcode-stdio-1.0
+    main-is:          Speed.hs
+    hs-source-dirs:   models benchmark
     other-modules:
         HMM
         LDA
         LogReg
 
-    default-language:   Haskell2010
-    default-extensions: RankNTypes
+    default-language: Haskell2010
     build-depends:
         base -any,
         abstract-par -any,

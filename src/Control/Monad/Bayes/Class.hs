@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Class
 -- Description : Types for probabilistic modelling

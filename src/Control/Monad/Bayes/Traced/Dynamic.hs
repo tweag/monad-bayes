@@ -1,3 +1,6 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
 -- Description : Distributions on execution traces that can be dynamically frozen

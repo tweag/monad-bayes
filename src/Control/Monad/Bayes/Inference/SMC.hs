@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC
 -- Description : Sequential Monte Carlo (SMC)
