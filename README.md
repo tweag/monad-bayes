@@ -35,33 +35,17 @@ the ACM on Programming Languages_ Volume 2, ICFP (July 2018), 83:1–83:29.
 [3] Adam M. Ścibior. 2019. [Formally justified and modular Bayesian inference
 for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
 
-## Installation (using Stack)
+## Hacking
 
-Ensure `stack` is installed by following these [instructions][stack-install].
+1. Install `stack` by following [these instructions][stack-install].
 
-To clone the repo:
+2. Clone the repository using one of these URLs:
+   ```
+   git clone git@github.com:tweag/monad-bayes.git
+   git clone https://github.com/tweag/monad-bayes.git
+   ```
 
-```
-git clone https://github.com/tweag/monad-bayes.git
-```
-
-To run the build:
-
-```
-stack build
-```
-
-To test the code:
-
-```
-stack test
-```
-
-To open an interactive session:
-
-```
-stack ghci
-```
+Now you can use `stack build`, `stack test` and `stack ghci`.
 
 [adam-github]: https://github.com/adscib
 [adam-web]: https://www.cs.ubc.ca/~ascibior/
