@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Helpers
 -- Description : Helper functions for working with inference monads

@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables

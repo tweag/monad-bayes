@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC2
 -- Description : Sequential Monte Carlo squared (SMC²)

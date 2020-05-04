@@ -1,3 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Population
 -- Description : Representation of distributions using multiple samples

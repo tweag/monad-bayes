@@ -1,3 +1,6 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
 -- Description : Pseudo-random sampling monads

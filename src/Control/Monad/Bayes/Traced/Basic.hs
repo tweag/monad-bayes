@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Basic
 -- Description : Distributions on full execution traces of full programs
