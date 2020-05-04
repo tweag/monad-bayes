@@ -45,18 +45,6 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
    git clone https://github.com/tweag/monad-bayes.git
    ```
 
-3. Link `stack.yaml` to one of the GHC version specific configurations using
-   one of the following commands.
-   
-   This is optional, but saves you from having to specify `--stack-yaml`
-   every time you invoke `stack`.
-
-   ```
-   ln -s stack-ghc881.yaml stack.yaml
-   ln -s stack-ghc865.yaml stack.yaml
-   ln -s stack-ghc844.yaml stack.yaml
-   ```
-
 Now you can use `stack build`, `stack test` and `stack ghci`.
 
 [adam-github]: https://github.com/adscib
