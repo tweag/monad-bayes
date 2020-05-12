@@ -1,0 +1,5 @@
+resolver: lts-15.6
+packages:
+  - "."
+nix:
+  path: [nixpkgs=./nix/nixpkgs-stack.nix]

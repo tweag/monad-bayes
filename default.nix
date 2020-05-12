@@ -35,7 +35,7 @@ let
       );
   monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml" false;
   monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml" true;
-  monad-bayes-ghc88 = mkMonadBayes "stack-ghc881.yaml" true;
+  monad-bayes-ghc88 = mkMonadBayes "stack-ghc883.yaml" true;
 
   defaultHaskellPackages = pkgs.haskell.packages.ghc865;
 in

@@ -1,5 +1,0 @@
-resolver: nightly-2020-01-21 # lts-15.0 is not yet available through haskell.nix
-packages:
-  - "."
-nix:
-  path: [nixpkgs=./nix/nixpkgs-stack.nix]
