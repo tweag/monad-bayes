@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
@@ -27,7 +28,7 @@ import Numeric.Log
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
 newtype SMC2 m a = SMC2 (S (T (P m)) a)
-  deriving (Functor, Applicative, Monad)
+  deriving newtype (Functor, Applicative, Monad)
 
 setup :: SMC2 m a -> S (T (P m)) a
 setup (SMC2 m) = m

@@ -1,5 +1,8 @@
 resolver: lts-14.0
 packages:
   - "."
+flags:
+  monad-bayes:
+    dev: True
 nix:
   path: [nixpkgs=./nix/nixpkgs-stack.nix]

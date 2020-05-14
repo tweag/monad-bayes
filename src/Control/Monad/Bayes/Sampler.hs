@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -35,7 +36,7 @@ import qualified System.Random.MWC.Distributions as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
-  deriving (Functor, Applicative, Monad, MonadIO)
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 -- | Initialize a pseudo-random number generator using randomness supplied by
 -- the operating system.

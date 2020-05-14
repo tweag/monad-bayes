@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
@@ -47,14 +48,14 @@ import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
 newtype Population m a = Population (Weighted (ListT m) a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-runPopulation :: Functor m => Population m a -> m [(a, Log Double)]
+runPopulation :: Population m a -> m [(a, Log Double)]
 runPopulation (Population m) = runListT $ runWeighted m
 
 -- | Explicit representation of the weighted sample.
@@ -208,7 +209,7 @@ flatten m = Population $ withWeight $ ListT t
 
 -- | Applies a transformation to the inner monad.
 hoist ::
-  (Monad m, Monad n) =>
+  Monad n =>
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a

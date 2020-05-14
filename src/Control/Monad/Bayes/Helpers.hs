@@ -45,7 +45,7 @@ hoistW :: (forall x. m x -> n x) -> W m a -> W n a
 hoistW = Weighted.hoist
 
 hoistP ::
-  (Monad m, Monad n) =>
+  Monad n =>
   (forall x. m x -> n x) ->
   P m a ->
   P n a
