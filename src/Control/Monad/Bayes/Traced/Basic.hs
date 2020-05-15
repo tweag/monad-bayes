@@ -23,6 +23,8 @@ import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
+import qualified Data.List.NonEmpty as NE (toList)
+import Data.List.NonEmpty as NE (NonEmpty ((:|)))
 
 -- | Tracing monad that records random choices made in the program.
 data Traced m a
@@ -70,10 +72,11 @@ mhStep (Traced m d) = Traced m d'
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map output) (f n)
+mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
-    f 0 = fmap (: []) d
-    f k = do
-      ~(x : xs) <- f (k -1)
-      y <- mhTrans' m x
-      return (y : x : xs)
+    f k
+      | k <= 0 = fmap (:| []) d
+      | otherwise = do
+        (x :| xs) <- f (k -1)
+        y <- mhTrans' m x
+        return (y :| x : xs)

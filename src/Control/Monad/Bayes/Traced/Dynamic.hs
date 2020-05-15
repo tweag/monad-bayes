@@ -25,6 +25,8 @@ import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
+import qualified Data.List.NonEmpty as NE (toList)
+import Data.List.NonEmpty as NE (NonEmpty ((:|)))
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
@@ -92,11 +94,10 @@ mhStep (Traced c) = Traced $ do
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced c) = do
   (m, t) <- c
-  let f 0 = return [t]
-      f k = do
-        ~(x : xs) <- f (k -1)
-        y <- mhTrans m x
-        return (y : x : xs)
-  ts <- f n
-  let xs = map output ts
-  return xs
+  let f k
+        | k <= 0 = return (t :| [])
+        | otherwise = do
+          (x :| xs) <- f (k -1)
+          y <- mhTrans m x
+          return (y :| x : xs)
+  fmap (map output . NE.toList) (f n)
