@@ -68,8 +68,9 @@ library
 
     if flag(dev)
         ghc-options:
-            -Wall -Wcompat -Wincomplete-record-updates
-            -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
+            -Weverything -Wno-missing-local-signatures -Wno-unsafe
+            -Wno-missing-import-lists -Wno-implicit-prelude
+            -Wno-monomorphism-restriction
 
     else
         ghc-options: -Wall
@@ -129,8 +130,8 @@ test-suite monad-bayes-test
 
     if flag(dev)
         ghc-options:
-            -Wall -Wcompat -Wincomplete-record-updates
-            -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
+            -Weverything -Wno-missing-local-signatures -Wno-unsafe
+            -Wno-missing-import-lists -Wno-implicit-prelude
 
     else
         ghc-options: -Wall
@@ -168,8 +169,8 @@ benchmark speed-bench
 
     if flag(dev)
         ghc-options:
-            -Wall -Wcompat -Wincomplete-record-updates
-            -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
+            -Weverything -Wno-missing-local-signatures -Wno-unsafe
+            -Wno-missing-import-lists -Wno-implicit-prelude
 
     else
         ghc-options: -Wall

@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
@@ -33,7 +34,7 @@ import Numeric.Log (Log)
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
-  deriving (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
 
 instance Monad m => MonadCond (Weighted m) where
   score w = Weighted (modify (* w))
@@ -41,7 +42,7 @@ instance Monad m => MonadCond (Weighted m) where
 instance MonadSample m => MonadInfer (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-runWeighted :: (Functor m) => Weighted m a -> m (a, Log Double)
+runWeighted :: Weighted m a -> m (a, Log Double)
 runWeighted (Weighted m) = runStateT m 1
 
 -- | Compute the sample and discard the weight.

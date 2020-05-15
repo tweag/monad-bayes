@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -40,9 +41,9 @@ instance Functor SamF where
 --
 -- Uses the Church-encoded version of the free monad for efficiency.
 newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT SamF m a}
-  deriving (Functor, Applicative, Monad, MonadTrans)
+  deriving newtype (Functor, Applicative, Monad, MonadTrans)
 
-instance Monad m => MonadFree SamF (FreeSampler m) where
+instance MonadFree SamF (FreeSampler m) where
   wrap = FreeSampler . wrap . fmap runFreeSampler
 
 instance Monad m => MonadSample (FreeSampler m) where

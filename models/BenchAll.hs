@@ -19,7 +19,6 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified DPmixture
 import qualified Data.Vector as Vector
-import qualified Dice
 import qualified Gamma
 import Graphics.Rendering.Chart.Backend.Cairo
 import Graphics.Rendering.Chart.Easy

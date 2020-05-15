@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
@@ -36,7 +37,7 @@ import Numeric.Log as Log
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
-  deriving (Functor, Applicative, Monad, Alternative, MonadPlus)
+  deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
 instance MonadSample Enumerator where
   random = error "Infinitely supported random variables not supported in Enumerator"

@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -35,7 +36,7 @@ import Data.Either
 -- All the probabilistic effects are lifted from the transformed monad, but
 -- also `suspend` is inserted after each `factor`.
 newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
+  deriving newtype (Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 extract :: Await () a -> a
 extract (Await f) = f ()

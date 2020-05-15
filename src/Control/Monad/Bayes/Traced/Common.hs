@@ -72,8 +72,9 @@ mhTrans m t@Trace {variables = us, density = p} = do
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n -1)
     u' <- random
-    let (xs, _ : ys) = splitAt i us
-    return $ xs ++ (u' : ys)
+    case splitAt i us of
+      (xs, _ : ys) -> return $ xs ++ (u' : ys)
+      _ -> error "impossible"
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio

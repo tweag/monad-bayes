@@ -1,4 +1,4 @@
-module Dice where
+module Dice (diceHard, diceSoft) where
 
 -- A toy model for dice rolling from http://dl.acm.org/citation.cfm?id=2804317
 -- Exact results can be obtained using Dist monad
