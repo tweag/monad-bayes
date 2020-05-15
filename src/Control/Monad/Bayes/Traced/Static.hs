@@ -23,8 +23,7 @@ import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
-import qualified Data.List.NonEmpty as NE (toList)
-import Data.List.NonEmpty as NE (NonEmpty ((:|)))
+import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --

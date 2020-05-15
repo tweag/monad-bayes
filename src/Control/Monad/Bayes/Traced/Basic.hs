@@ -23,8 +23,7 @@ import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
-import qualified Data.List.NonEmpty as NE (toList)
-import Data.List.NonEmpty as NE (NonEmpty ((:|)))
+import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | Tracing monad that records random choices made in the program.
 data Traced m a
