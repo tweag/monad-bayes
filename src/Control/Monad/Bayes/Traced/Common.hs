@@ -65,20 +65,31 @@ bind dx f = do
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
--- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+-- | a proposal distribution over randomness
+singleVariableProposal :: MonadSample m => [Double] -> m [Double]
+singleVariableProposal us = do
   let n = length us
-  us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
-    u' <- random
-    case splitAt i us of
-      (xs, _ : ys) -> return $ xs ++ (u' : ys)
-      _ -> error "impossible"
+  i <- discrete $ discreteUniformAB 0 (n -1)
+  u' <- random
+  case splitAt i us of
+    (xs, _ : ys) -> return $ xs ++ (u' : ys)
+    _ -> error "impossible"
+
+-- | A single Metropolis-corrected transition of single-site Trace MCMC
+-- | with a proposal distribution p([x_j]^i+1 | [x_j]^i). The x_j correspond
+-- | to the randomness of the sample, defined over the domain [0, 1].
+mhTransWithProposal :: MonadSample m => ([Double] -> m [Double]) -> Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
+mhTransWithProposal proposal m t@Trace {variables = us, density = p} = do
+  let n = length us
+  us' <- proposal us
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
+
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
+mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
+mhTrans = mhTransWithProposal singleVariableProposal
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
