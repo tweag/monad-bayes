@@ -1,6 +1,7 @@
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
+import qualified TestTraced
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
@@ -9,6 +10,11 @@ import qualified TestWeighted
 
 main :: IO ()
 main = hspec $ do
+  describe "Traced"
+    $ it "mh samples discrete uniform dist with correct mean"
+    $ do
+      samples <- TestTraced.result
+      TestTraced.check samples `shouldBe` True
   describe "Weighted"
     $ it "accumulates likelihood correctly"
     $ do
