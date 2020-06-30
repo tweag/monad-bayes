@@ -12,6 +12,9 @@ module Control.Monad.Bayes.Traced.Common
     output,
     scored,
     bind,
+    mhTransWithProposal,
+    normalProposal,
+    singleVariableProposal,
     mhTrans,
     mhTrans',
   )
@@ -64,6 +67,18 @@ bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
+
+-- | a clipped normal proposal
+normalProposal :: MonadSample m => [Double] -> m [Double]
+normalProposal us = do
+  traverse clippedNormal us
+  where
+    clippedNormal mean = do
+      sample <- normal mean sigma
+      if 0 < sample && sample < 1
+      then return sample
+      else clippedNormal mean
+    sigma = 0.1
 
 -- | a proposal distribution over randomness
 singleVariableProposal :: MonadSample m => [Double] -> m [Double]

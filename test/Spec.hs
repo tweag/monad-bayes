@@ -10,11 +10,14 @@ import qualified TestWeighted
 
 main :: IO ()
 main = hspec $ do
-  describe "Traced"
-    $ it "mh samples discrete uniform dist with correct mean"
-    $ do
-      samples <- TestTraced.result
-      TestTraced.check samples `shouldBe` True
+  describe "Traced" $ do
+    context "sample correct mean with mh" $ do
+      it "and singleVariableProposal" $ do
+        samples <- TestTraced.uniformDWithMh
+        TestTraced.check samples `shouldBe` True
+      it "and normalProposal" $ do
+        samples <- TestTraced.uniformWithMhWithNormal
+        TestTraced.check samples `shouldBe` True
   describe "Weighted"
     $ it "accumulates likelihood correctly"
     $ do
