@@ -68,17 +68,17 @@ bind dx f = do
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
--- | a clipped normal proposal
-normalProposal :: MonadSample m => [Double] -> m [Double]
-normalProposal us = do
+-- | a clipped normal proposal that can be configured with
+-- a standard deviation
+normalProposal :: MonadSample m => Double -> [Double] -> m [Double]
+normalProposal sigma us = do
   traverse clippedNormal us
   where
     clippedNormal mean = do
       sample <- normal mean sigma
       if 0 < sample && sample < 1
-      then return sample
-      else clippedNormal mean
-    sigma = 0.1
+        then return sample
+        else clippedNormal mean
 
 -- | a proposal distribution over randomness
 singleVariableProposal :: MonadSample m => [Double] -> m [Double]

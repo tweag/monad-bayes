@@ -1,11 +1,11 @@
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-import qualified TestTraced
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
+import qualified TestTraced
 import qualified TestWeighted
 
 main :: IO ()

@@ -16,7 +16,7 @@ uniformDWithMh = do
 
 uniformWithMhWithNormal :: IO [Double]
 uniformWithMhWithNormal = do
-  let sampler = prior . mhWith normalProposal 10000
+  let sampler = prior . mhWith (normalProposal 0.1) 10000
   samples <- sampleIOfixed $ sampler $ uniform 0 2
   return $ take 9000 samples
 
