@@ -13,6 +13,9 @@ module Control.Monad.Bayes.Traced.Static
     hoistT,
     marginal,
     mhStep,
+    mhWith,
+    singleVariableProposal,
+    normalProposal,
     mh,
   )
 where
@@ -82,4 +85,16 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
       | otherwise = do
         (x :| xs) <- f (k -1)
         y <- mhTrans m x
+        return (y :| x : xs)
+
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
+-- number of steps that additionally takes a proposal distribution
+mhWith :: MonadSample m => ([Double] -> m [Double]) -> Int -> Traced m a -> m [a]
+mhWith proposal n (Traced m d) = fmap (map output . NE.toList) (f n)
+  where
+    f k
+      | k <= 0 = fmap (:| []) d
+      | otherwise = do
+        (x :| xs) <- f (k -1)
+        y <- mhTransWithProposal proposal m x
         return (y :| x : xs)
