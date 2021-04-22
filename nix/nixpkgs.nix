@@ -7,4 +7,4 @@ let
     }
   ) {};
 in
-import haskellNix.sources.nixpkgs-2003 haskellNix.nixpkgsArgs
+import haskellNix.sources.nixpkgs-2009 haskellNix.nixpkgsArgs

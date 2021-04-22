@@ -1,7 +1,10 @@
 {
   "url": "https://github.com/input-output-hk/haskell.nix.git",
-  "rev": "71f31cef4afd36c74d80d7527c7fd6549d1ad9f5",
-  "date": "2020-05-11T23:58:42+12:00",
-  "sha256": "00pwrbqlhy349jdnnjqn2d1577kvy00y70q5b34nk1wspbqyb2mp",
-  "fetchSubmodules": false
+  "rev": "c6f97018201a5affcd20a0da50cc770c943e7173",
+  "date": "2021-04-22T01:16:11+00:00",
+  "path": "/nix/store/8wlf7jr81b9gig9inhali1jbiyqj88hm-haskell.nix",
+  "sha256": "09227sq1hz1dlrdvbfr03ik57md4v4pa3i4150h1d6q0j9c05shn",
+  "fetchSubmodules": false,
+  "deepClone": false,
+  "leaveDotGit": false
 }
