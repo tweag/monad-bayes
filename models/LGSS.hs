@@ -61,13 +61,14 @@ lgssBenchmark cachePath t nRuns ns = do
           return $ abs (trueMean - estMean)
     mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
   let points = zip (map fromIntegral ns) (transpose scores)
-  liftIO $ toFile (fo_format .~ PDF $ def) plotPath $ do
-    layout_title .= "LGSS"
-    errorbarPlot
-      "#samples"
-      "RMSE"
-      [ ("SMC", points)
-      ]
+  liftIO $
+    toFile (fo_format .~ PDF $ def) plotPath $ do
+      layout_title .= "LGSS"
+      errorbarPlot
+        "#samples"
+        "RMSE"
+        [ ("SMC", points)
+        ]
 
 type Mean = Double
 
@@ -75,23 +76,22 @@ type StdDev = Double
 
 type Linear = (Double, Double)
 
-data LGSSParam
-  = LGSSParam
-      { -- | initial state X0 prior
-        p0 :: (Mean, StdDev),
-        -- | transition model slope
-        a :: Double,
-        -- | transition model intercept
-        b :: Double,
-        -- | transition model noise
-        sdX :: StdDev,
-        -- | observation model slope
-        c :: Double,
-        -- | observation model intercept
-        d :: Double,
-        -- | observation model noise
-        sdY :: StdDev
-      }
+data LGSSParam = LGSSParam
+  { -- | initial state X0 prior
+    p0 :: (Mean, StdDev),
+    -- | transition model slope
+    a :: Double,
+    -- | transition model intercept
+    b :: Double,
+    -- | transition model noise
+    sdX :: StdDev,
+    -- | observation model slope
+    c :: Double,
+    -- | observation model intercept
+    d :: Double,
+    -- | observation model noise
+    sdY :: StdDev
+  }
 
 -- \ One-dimensional linear Gaussian state space model.
 linearGaussian ::

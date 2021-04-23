@@ -29,11 +29,10 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 --
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
-data Traced m a
-  = Traced
-      { model :: Weighted (FreeSampler m) a,
-        traceDist :: m (Trace a)
-      }
+data Traced m a = Traced
+  { model :: Weighted (FreeSampler m) a,
+    traceDist :: m (Trace a)
+  }
 
 instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)

@@ -198,6 +198,7 @@ posteriorClustersDist = categorical $ zip ns $ map lookup ns
   where
     ns = [1 .. length obs]
     lookup = exactClusters params obs
+
 --------------------------------------
 -- Instances for memoization
 -- type instance CustomReal (StateCache c m) = CustomReal m

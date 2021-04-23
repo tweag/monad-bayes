@@ -91,7 +91,7 @@ resampleGeneric resampler m = fromWeightedList $ do
       let xvec = V.fromList xs
       let offsprings = map (xvec V.!) ancestors
       return $ map (,z / fromIntegral n) offsprings
-    else-- if all weights are zero do not resample
+    else -- if all weights are zero do not resample
       return pop
 
 -- | Systematic resampling helper.

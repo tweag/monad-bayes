@@ -193,8 +193,8 @@ supported _ = True
 systems :: [ProbProgSys]
 systems =
   [ MonadBayes
-    -- Anglican,
-    -- WebPPL
+  -- Anglican,
+  -- WebPPL
   ]
 
 lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]

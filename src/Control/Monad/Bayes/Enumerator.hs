@@ -27,7 +27,7 @@ import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
 import Control.Monad.Trans.Writer
-import Data.AEq ((===), AEq, (~==))
+import Data.AEq (AEq, (===), (~==))
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid

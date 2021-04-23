@@ -1,5 +1,4 @@
 { pkgs ? (import ./nix/nixpkgs.nix) }:
-
 let
   source = [
     "^.*\.md"
@@ -21,18 +20,19 @@ let
       # better way to build benchmarks.
       benchmarks = project.monad-bayes.components.benchmarks;
     in
-      pkgs.recurseIntoAttrs {
+    pkgs.recurseIntoAttrs
+      {
         "shellFor" = project.shellFor;
         "lib-and-test" = project.monad-bayes;
       } // (
-        if doBenchAndTest
-        then {
-          "ssm-bench" = benchmarks.ssm-bench;
-          "speed-bench" = benchmarks.speed-bench;
-          "checks" = project.monad-bayes.checks;
-        }
-        else {}
-      );
+      if doBenchAndTest
+      then {
+        "ssm-bench" = benchmarks.ssm-bench;
+        "speed-bench" = benchmarks.speed-bench;
+        "checks" = project.monad-bayes.checks;
+      }
+      else { }
+    );
   monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml" false;
   monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml" true;
   monad-bayes-ghc88 = mkMonadBayes "stack-ghc883.yaml" true;
@@ -58,7 +58,7 @@ in
       pkgs.stack
     ];
   };
-  lint = defaultHaskellPackages.callPackage ./nix/lint.nix {};
-  fix = defaultHaskellPackages.callPackage ./nix/fix.nix {};
-  update = defaultHaskellPackages.callPackage ./nix/update.nix {};
+  lint = defaultHaskellPackages.callPackage ./nix/lint.nix { };
+  fix = defaultHaskellPackages.callPackage ./nix/fix.nix { };
+  update = defaultHaskellPackages.callPackage ./nix/update.nix { };
 }
