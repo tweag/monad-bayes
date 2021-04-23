@@ -9,11 +9,11 @@ import qualified TestWeighted
 
 main :: IO ()
 main = hspec $ do
-  describe "Weighted"
-    $ it "accumulates likelihood correctly"
-    $ do
-      passed <- TestWeighted.passed
-      passed `shouldBe` True
+  describe "Weighted" $
+    it "accumulates likelihood correctly" $
+      do
+        passed <- TestWeighted.passed
+        passed `shouldBe` True
   describe "Dist" $ do
     it "sorts samples and aggregates weights" $
       TestEnumerator.passed2 `shouldBe` True
@@ -59,9 +59,9 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticles observations particles
           return $ checkParticles == particles
-  describe "SMC with systematic resampling"
-    $ prop "number of particles is equal to its second parameter"
-    $ \observations particles ->
-      observations >= 0 && particles >= 1 ==> ioProperty $ do
-        checkParticles <- TestInference.checkParticlesSystematic observations particles
-        return $ checkParticles == particles
+  describe "SMC with systematic resampling" $
+    prop "number of particles is equal to its second parameter" $
+      \observations particles ->
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          checkParticles <- TestInference.checkParticlesSystematic observations particles
+          return $ checkParticles == particles

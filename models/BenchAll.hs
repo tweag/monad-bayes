@@ -84,22 +84,24 @@ hmmBenchmark = do
   let mhPriorRes = map (\n -> HMM.hmmKL $ take n $ map (,1) mhPriorSamples) ns
   pimhSamples <- pimh (length HMM.values) 100 1000 HMM.hmm
   let pimhRes = map (\n -> HMM.hmmKL $ take n $ map (,1) pimhSamples) ns
-  liftIO $ toFile (fo_format .~ PDF $ def) "anytime.pdf" $ do
-    layout_title .= "HMM"
-    anytimePlot
-      "#samples"
-      "KL"
-      ns
-      [ ("IS", isRes),
-        -- ("MHtrace", mhRes),
-        ("MHprior", mhPriorRes),
-        ("PIMH", pimhRes)
-      ]
+  liftIO $
+    toFile (fo_format .~ PDF $ def) "anytime.pdf" $ do
+      layout_title .= "HMM"
+      anytimePlot
+        "#samples"
+        "KL"
+        ns
+        [ ("IS", isRes),
+          -- ("MHtrace", mhRes),
+          ("MHprior", mhPriorRes),
+          ("PIMH", pimhRes)
+        ]
   smcRes <- sequence smcResults
-  liftIO $ toFile (fo_format .~ PDF $ def) "smc.pdf" $ do
-    layout_title .= "HMM"
-    oneShotPlot
-      "#particles"
-      "KL"
-      [ ("SMC", zip smcParamsDouble (map (errBars 2) smcRes))
-      ]
+  liftIO $
+    toFile (fo_format .~ PDF $ def) "smc.pdf" $ do
+      layout_title .= "HMM"
+      oneShotPlot
+        "#particles"
+        "KL"
+        [ ("SMC", zip smcParamsDouble (map (errBars 2) smcRes))
+        ]

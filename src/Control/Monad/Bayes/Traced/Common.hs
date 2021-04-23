@@ -26,15 +26,14 @@ import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
 -- | Collection of random variables sampled during the program's execution.
-data Trace a
-  = Trace
-      { -- | Sequence of random variables sampled during the program's execution.
-        variables :: [Double],
-        -- |
-        output :: a,
-        -- | The probability of observing this particular sequence.
-        density :: Log Double
-      }
+data Trace a = Trace
+  { -- | Sequence of random variables sampled during the program's execution.
+    variables :: [Double],
+    -- |
+    output :: a,
+    -- | The probability of observing this particular sequence.
+    density :: Log Double
+  }
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
