@@ -1,0 +1,8 @@
+resolver: lts-17.3 # first lts which uses ghc8104
+packages:
+  - "."
+flags:
+  monad-bayes:
+    dev: True
+nix:
+  path: [nixpkgs=./nix/nixpkgs-stack.nix]

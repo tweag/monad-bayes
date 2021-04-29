@@ -16,3 +16,7 @@ steps:
     command: |
       nix-build -A monad-bayes-ghc88 --no-out-link
     timeout: 100
+  - label: Build and test on GHC 8.10
+    command: |
+      nix-build -A monad-bayes-ghc810 --no-out-link
+    timeout: 100
