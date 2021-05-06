@@ -15,7 +15,8 @@ import qualified LDA
 import qualified LogReg
 import System.Exit
 import System.Process hiding (env)
-import System.Random.MWC (GenIO, createSystemRandom)
+import System.Random.Stateful
+import Control.Monad.ST (stToIO, RealWorld)
 
 -- | Path to the Anglican project with benchmarks.
 anglicanPath :: String
@@ -112,7 +113,7 @@ webpplModelName (HMM _) = "hmm"
 webpplModelName (LDA _) = "lda"
 
 -- | Environment to execute benchmarks in.
-data Env = Env {rng :: GenIO, lein :: LeinProc}
+data Env = Env {rng :: (STGenM StdGen RealWorld), lein :: LeinProc}
 
 data ProbProgSys = MonadBayes | Anglican | WebPPL
   deriving (Show)
@@ -146,7 +147,8 @@ runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
-prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable :: STGenM StdGen RealWorld ->
+                        ProbProgSys -> Model -> Alg -> Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
 prepareBenchmarkable _ Anglican _ _ = error "Anglican benchmarks not available"
 prepareBenchmarkable _ WebPPL _ _ = error "WebPPL benchmarks not available"
@@ -245,7 +247,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 
 main :: IO ()
 main = do
-  g <- createSystemRandom
+  g <- stToIO (newSTGenM (mkStdGen 42))
   l <- startLein
   let e = Env g l
   lrData <- sampleIOwith (LogReg.syntheticData 1000) g

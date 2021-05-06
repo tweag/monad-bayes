@@ -18,9 +18,9 @@ main = sampleIO $ do
   liftIO $ print "SMC"
   smcRes <- runPopulation $ smcMultinomial t 10 (param >>= model ys)
   liftIO $ print $ show smcRes
-  liftIO $ print "RM-SMC"
-  smcrmRes <- runPopulation $ rmsmcLocal t 10 10 (param >>= model ys)
-  liftIO $ print $ show smcrmRes
+  -- liftIO $ print "RM-SMC"
+  -- smcrmRes <- runPopulation $ rmsmcLocal t 10 10 (param >>= model ys)
+  -- liftIO $ print $ show smcrmRes
   liftIO $ print "PMMH"
   pmmhRes <- prior $ pmmh 2 t 3 param (model ys)
   liftIO $ print $ show pmmhRes
