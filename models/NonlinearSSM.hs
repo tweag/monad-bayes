@@ -2,6 +2,9 @@ module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
 
+import qualified Numeric.LinearAlgebra.HMatrix as LA
+import Control.Monad
+
 param :: MonadSample m => m (Double, Double)
 param = do
   let a = 0.01
@@ -55,3 +58,14 @@ generateData t = do
   x0 <- normal 0 (sqrt 5)
   xys <- simulate t x0 []
   return $ reverse xys
+
+sigma1, sigma2, rho :: Double
+sigma1 = 3.0
+sigma2 = 1.0
+rho = 0.5
+
+generateData' :: MonadSample m => m [LA.Vector Double]
+generateData' = replicateM 1000 $
+                mvnormal (LA.fromList [0.0, 0.0])
+                         (LA.sym $ (2 LA.>< 2) [ sigma1, rho * sigma1 * sigma2
+                                               , rho * sigma1 * sigma2, sigma2])

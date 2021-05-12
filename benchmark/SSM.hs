@@ -10,8 +10,13 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.IO.Class
 import NonlinearSSM
 
+import qualified Data.Vector.Storable as VS
+
 main :: IO ()
 main = sampleIO $ do
+  xs <- sampleIO $ generateData'
+  liftIO $ print $ show $
+    sum $ zipWith (*) (map (VS.!0) xs) (map (VS.!1) xs)
   let t = 5
   dat <- generateData t
   let ys = map snd dat

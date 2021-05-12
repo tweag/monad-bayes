@@ -41,10 +41,10 @@ import Control.Monad.Primitive
 import qualified System.Random.Stateful as RS
 import qualified Control.Monad.Reader as MR
 
+import Data.Random.Distribution.MultivariateNormal
 
 
-
--- | An 'IO' based random sampler using the MWC-Random package.
+-- | An 'IO' based random sampler using the @random-fu@ package.
 newtype SamplerIO a = SamplerIO (ReaderT (RS.STGenM RS.StdGen RealWorld) IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
@@ -71,8 +71,9 @@ fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
 instance MonadSample SamplerIO where
   random = fromSamplerST random
+  mvnormal m s = fromSamplerST $ mvnormal m s
 
--- | An 'ST' based random sampler using the @mwc-random@ package.
+-- | An 'ST' based random sampler using the @random-fu@ package.
 newtype SamplerST a = SamplerST (forall s . ReaderT (RS.STGenM RS.StdGen s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (RS.STGenM RS.StdGen s) (ST s) a
@@ -94,21 +95,22 @@ sampleSTfixed (SamplerST s) = runST $ do
   gen <- RS.newSTGenM (RS.mkStdGen 42)
   runReaderT s gen
 
--- | Convert a distribution supplied by @mwc-random@.
-fromMWC :: (forall s . (RS.STGenM RS.StdGen s) -> ST s a) -> SamplerST a
-fromMWC s = SamplerST $ ask >>= lift . s
+-- | Convert a distribution supplied by @random-fu@.
+fromRandomFu :: (forall s . (RS.STGenM RS.StdGen s) -> ST s a) -> SamplerST a
+fromRandomFu s = SamplerST $ ask >>= lift . s
 
 -- FIXME: standard deviation or variance?
 -- FIXME: shape and scale in the right order?
 -- FIXME: beta
 instance MonadSample SamplerST where
-  random = fromMWC $ RS.uniformDoublePositive01M
+  random = fromRandomFu $ RS.uniformDoublePositive01M
 
-  uniform a b       = fromMWC $ \g -> DR.sampleFrom g (DR.uniform a b)
-  normal m s        = fromMWC $ \g -> DR.sampleFrom g (DR.normal m s)
-  gamma shape scale = fromMWC $ \g -> DR.sampleFrom g (DR.gamma shape scale)
-  beta a b          = fromMWC $ \g -> DR.sampleFrom g (DR.beta a b)
+  uniform a b       = fromRandomFu $ \g -> DR.sampleFrom g (DR.uniform a b)
+  normal m s        = fromRandomFu $ \g -> DR.sampleFrom g (DR.normal m s)
+  mvnormal m s      = fromRandomFu $ \g -> DR.sampleFrom g (Normal m s)
+  gamma shape scale = fromRandomFu $ \g -> DR.sampleFrom g (DR.gamma shape scale)
+  beta a b          = fromRandomFu $ \g -> DR.sampleFrom g (DR.beta a b)
 
-  bernoulli p    = fromMWC $ \g -> DR.sampleFrom g (DR.bernoulli p)
-  categorical ps = fromMWC $ \g -> DR.sampleFrom g (DR.categorical (zip (VG.toList ps) [0 ..]))
+  bernoulli p    = fromRandomFu $ \g -> DR.sampleFrom g (DR.bernoulli p)
+  categorical ps = fromRandomFu $ \g -> DR.sampleFrom g (DR.categorical (zip (VG.toList ps) [0 ..]))
   geometric _p   = error "Geometric not implemented in random-fu :("

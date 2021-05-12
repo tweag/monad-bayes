@@ -37,6 +37,7 @@ module Control.Monad.Bayes.Class
   ( MonadSample,
     random,
     uniform,
+    mvnormal,
     normal,
     gamma,
     beta,
@@ -70,13 +71,17 @@ import Control.Monad.Trans.Writer
 import qualified Data.Vector as V
 import Data.Vector.Generic as VG
 import Numeric.Log
-import Statistics.Distribution
+import Statistics.Distribution (ContDistr, DiscreteDistr, quantile, probability, logDensity)
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+
+import qualified Data.Random as R
+import Data.Random.Distribution.MultivariateNormal
+import qualified Numeric.LinearAlgebra.HMatrix as LA
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
@@ -104,6 +109,15 @@ class Monad m => MonadSample m where
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m Double
   normal m s = draw (normalDistr m s)
+
+  -- | Draw from a normal distribution.
+  mvnormal ::
+    -- | mean μ
+    LA.Vector Double ->
+    -- | standard deviation σ
+    LA.Herm Double ->
+    -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
+    m (LA.Vector Double)
 
   -- | Draw from a gamma distribution.
   gamma ::
