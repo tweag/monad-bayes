@@ -45,7 +45,8 @@ in
  let
 
   haskellDeps = ps: with ps; [
-    base criterion free hmatrix log-domain mtl monad-coroutine mwc-random
+    base criterion derive-storable free generic-deriving
+    hmatrix log-domain mtl monad-coroutine mwc-random
     random random-fu random-fu-multivariate
     statistics vector
     # (nixpkgs.haskell.lib.doJailbreak monad-bayes)
