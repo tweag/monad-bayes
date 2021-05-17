@@ -10,7 +10,8 @@ import qualified HMM
 import qualified LDA
 import qualified LogReg
 import Options.Applicative
-import System.Random.MWC (createSystemRandom)
+import System.Random.Stateful
+import Control.Monad.ST (stToIO)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving (Show, Read)
@@ -57,7 +58,7 @@ runAlg model alg =
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do
-  g <- createSystemRandom
+  g <- stToIO (newSTGenM (mkStdGen 42))
   x <- sampleIOwith (runAlg model alg) g
   print x
 

@@ -52,15 +52,19 @@ library
     other-modules:    Control.Monad.Bayes.Traced.Common
     default-language: Haskell2010
     build-depends:
-        base >=4.11 && <4.14,
+        base >=4.11 && <4.15,
         containers >=0.5.10 && <0.7,
         free >=5.0.2 && <5.2,
+        hmatrix,
         ieee754 >=0.8.0 && <0.9,
         log-domain >=0.12 && <0.14,
         math-functions >=0.2.1 && <0.4,
         monad-coroutine >=0.9.0 && <0.10,
         mtl >=2.2.2 && <2.3,
-        mwc-random >=0.13.6 && <0.15,
+        primitive,
+        random,
+        random-fu,
+        random-fu-multivariate,
         safe >=0.3.17 && <0.4,
         statistics >=0.14.0 && <0.16,
         transformers >=0.5.2 && <0.6,
@@ -90,8 +94,8 @@ executable example
         containers -any,
         log-domain -any,
         monad-bayes -any,
-        mwc-random -any,
         optparse-applicative -any,
+        random,
         time -any,
         vector -any
 
@@ -163,8 +167,8 @@ benchmark speed-bench
         criterion -any,
         log-domain -any,
         monad-bayes -any,
-        mwc-random -any,
         process -any,
+        random,
         vector -any
 
     if flag(dev)
