@@ -9,4 +9,4 @@ let
     )
     { };
 in
-import haskellNix.sources.nixpkgs-2009 haskellNix.nixpkgsArgs
+import haskellNix.sources.nixpkgs-2105 haskellNix.nixpkgsArgs
