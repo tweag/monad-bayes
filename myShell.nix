@@ -8,7 +8,7 @@ myHaskellPackageOverlay = self: super: {
       random-fu = self.haskell.lib.addBuildDepends (super.haskell.lib.dontHaddock (super.haskell.lib.dontCheck (
         hself.callCabal2nixWithOptions "random-fu" (builtins.fetchGit {
           url = "https://github.com/lehins/random-fu";
-          rev = "23d4390dbad60ae491b12ebd2cabb7a985302b55";
+          rev = "1eb5c0080618a691cd9fa81ac3d0ea29edeb084f";
           ref = "switch-to-random";
         }) "--subpath random-fu" { }
       ))) [ ];
@@ -16,7 +16,7 @@ myHaskellPackageOverlay = self: super: {
       rvar = self.haskell.lib.addBuildDepends (super.haskell.lib.dontHaddock (super.haskell.lib.dontCheck (
         hself.callCabal2nixWithOptions "rvar" (builtins.fetchGit {
           url = "https://github.com/lehins/random-fu";
-          rev = "23d4390dbad60ae491b12ebd2cabb7a985302b55";
+          rev = "1eb5c0080618a691cd9fa81ac3d0ea29edeb084f";
           ref = "switch-to-random";
         }) "--subpath rvar" { }
       ))) [ ];

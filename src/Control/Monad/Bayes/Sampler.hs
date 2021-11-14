@@ -41,8 +41,6 @@ import Control.Monad.Primitive
 import qualified System.Random.Stateful as RS
 import qualified Control.Monad.Reader as MR
 
-import Data.Random.Distribution.MultivariateNormal
-
 
 -- | An 'IO' based random sampler using the @random-fu@ package.
 newtype SamplerIO a = SamplerIO (ReaderT (RS.STGenM RS.StdGen RealWorld) IO a)
@@ -71,7 +69,6 @@ fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
 instance MonadSample SamplerIO where
   random = fromSamplerST random
-  mvnormal m s = fromSamplerST $ mvnormal m s
 
 -- | An 'ST' based random sampler using the @random-fu@ package.
 newtype SamplerST a = SamplerST (forall s . ReaderT (RS.STGenM RS.StdGen s) (ST s) a)
@@ -107,7 +104,6 @@ instance MonadSample SamplerST where
 
   uniform a b       = fromRandomFu $ \g -> DR.sampleFrom g (DR.uniform a b)
   normal m s        = fromRandomFu $ \g -> DR.sampleFrom g (DR.normal m s)
-  mvnormal m s      = fromRandomFu $ \g -> DR.sampleFrom g (Normal m s)
   gamma shape scale = fromRandomFu $ \g -> DR.sampleFrom g (DR.gamma shape scale)
   beta a b          = fromRandomFu $ \g -> DR.sampleFrom g (DR.beta a b)
 
