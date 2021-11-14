@@ -10,7 +10,6 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.IO.Class
 import NonlinearSSM
 
-import qualified Data.Vector.Storable as VS
 
 main :: IO ()
 main = sampleIO $ do
