@@ -147,7 +147,10 @@ benchmark ssm-bench
     default-language: Haskell2010
     build-depends:
         base -any,
-        monad-bayes -any
+        derive-storable -any,
+        generic-deriving -any,
+        monad-bayes -any,
+        vector -any
 
 benchmark speed-bench
     type:             exitcode-stdio-1.0

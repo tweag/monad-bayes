@@ -4,8 +4,6 @@ module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
 
-import qualified Numeric.LinearAlgebra.HMatrix as LA
-import Numeric.LinearAlgebra.HMatrix ((!), (><))
 import Control.Monad
 import Data.Vector.Storable (Storable, iterateNM, Vector)
 
@@ -69,43 +67,3 @@ generateData t = do
   x0 <- normal 0 (sqrt 5)
   xys <- simulate t x0 []
   return $ reverse xys
-
-g, deltaT :: Double
-deltaT = 0.01
-g  = 9.81
-
-qc1 :: Double
-qc1 = 0.0001
-
-bigQL :: [[Double]]
-bigQL = [[qc1 * deltaT^3 / 3, qc1 * deltaT^2 / 2],
-         [qc1 * deltaT^2/ 2,  qc1 * deltaT      ]]
-
-bigQH :: LA.Herm Double
-bigQH = LA.sym $ (2 >< 2) (concat bigQL)
-
-bigRL :: [[Double]]
-bigRL = [[0.0001]]
-
-bigRH :: LA.Herm Double
-bigRH = LA.sym $ (1><1) (concat bigRL)
-
-data StateObs = StateObs !Double !Double !Double
-  deriving (Read, Show, Generic)
-
-instance GStorable StateObs
-
-oneStep :: MonadSample m => StateObs -> m StateObs
-oneStep (StateObs x1Prev x2Prev _) = do
-  eta <- mvnormal (LA.vector [0.0, 0.0]) bigQH
-  let x1New = x1Prev + x2Prev * deltaT + eta ! 0
-      x2New = x2Prev - g * sin x1Prev * deltaT + eta ! 1
-  epsilon <- mvnormal (LA.vector [0.0]) bigRH
-  let y = sin x1New + (epsilon ! 0)
-  return (StateObs x1New x2New y)
-
-bigT :: Int
-bigT = 500
-
-generateData'' :: MonadSample m => m (Vector StateObs)
-generateData'' = iterateNM bigT oneStep (StateObs 0.01 0.00 (sin 0.01 + 0.0))
