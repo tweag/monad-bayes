@@ -1,18 +1,7 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
 
-import Control.Monad
-import Data.Vector.Storable (Storable, iterateNM, Vector)
-
-import Foreign.Storable
-import Foreign.Storable.Generic
-import Foreign.Ptr
-import Foreign.Marshal.Alloc
-
-import Generics.Deriving
 
 param :: MonadSample m => m (Double, Double)
 param = do
