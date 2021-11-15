@@ -52,7 +52,7 @@ library
     other-modules:    Control.Monad.Bayes.Traced.Common
     default-language: Haskell2010
     build-depends:
-        base >=4.11 && <4.14,
+        base >=4.11 && <4.15,
         containers >=0.5.10 && <0.7,
         free >=5.0.2 && <5.2,
         ieee754 >=0.8.0 && <0.9,
