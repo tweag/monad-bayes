@@ -64,7 +64,8 @@ library
         safe >=0.3.17 && <0.4,
         statistics >=0.14.0 && <0.16,
         transformers >=0.5.2 && <0.6,
-        vector >=0.12.0 && <0.13
+        vector >=0.12.0 && <0.13,
+        integration
 
     if flag(dev)
         ghc-options:
