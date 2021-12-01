@@ -4,7 +4,7 @@ version:            0.1.1.0
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
-maintainer:         leonhard.markert@tweag.io
+maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
 tested-with:        ghc ==8.4.4 ghc ==8.6.5 ghc ==8.8.1
