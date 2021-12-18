@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Guide &mdash; monad-bayes  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="What is probabilistic programming" href="probprog.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> monad-bayes
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="probprog.html">What is probabilistic programming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#motivating-examples">Motivating examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#the-core-typeclasses">The core typeclasses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#interpreters">Interpreters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#enumerator">Enumerator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#samplerio">SamplerIO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#weighted-m">Weighted m</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-more-difficult-inference-transformers">The more difficult inference transformers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#population">Population</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequential">Sequential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#freesampler">FreeSampler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#traced">Traced</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#inference-methods">Inference methods</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#particle-marginal-metropolis-hastings">Particle Marginal Metropolis-Hastings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#resample-move-sequential-monte-carlo">Resample-Move Sequential Monte Carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sequential-monte-carlo-squared">Sequential Monte Carlo squared</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#cheat-sheet">Cheat Sheet</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">monad-bayes</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Developer Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="developer-guide">
+<h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline"></a></h1>
+<p>This document assumes the reader is familiar with:</p>
+<ul class="simple">
+<li><p>the basics of Bayesian probability theory</p></li>
+<li><p>basic Haskell (the syntax, the type system, do-notation, monad transformers)</p></li>
+</ul>
+<p>That’s enough to understand the core ideas, but for the more advanced content, you’ll also want to know about:</p>
+<ul class="simple">
+<li><p>Markov Chain Monte Carlo</p></li>
+<li><p>Sequential Monte Carlo (particle filtering)</p></li>
+<li><p>Free monads and free monad transformers</p></li>
+</ul>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="references">
+<h1>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h1>
+<p>monad-bayes is the codebase accompanying the theory of probabilistic programming described in <a class="reference external" href="https://www.denotational.co.uk/publications/scibior-kammar-ghahramani-funcitonal-programming-for-modular-bayesian-inference.pdf">this paper</a>.</p>
+<p>The paper is part of a research project to define a formal semantics for probabilistic programs, using Fancy Mathematics. Thankfully, it isn’t necessary to know any measure theory or category theory to use monad-bayes.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="the-core-typeclasses">
+<h1>The core typeclasses<a class="headerlink" href="#the-core-typeclasses" title="Permalink to this headline"></a></h1>
+<p>The library relies on two core typeclasses <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> and <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>. A third, called <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code> is simply the union of the two, that is:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>(MonadSample m, MonadCond m) =&gt; MonadInfer m
+</pre></div>
+</div>
+<p>You can find these in <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Class</span></code>. Here is <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code>:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>class Monad m =&gt; MonadSample m where
+  random :: m Double
+</pre></div>
+</div>
+<p>This one method, <code class="docutils literal notranslate"><span class="pre">random</span></code>, represents a uniform distribution over <span class="math notranslate nohighlight">\([0,1]\)</span>. (<code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> actually has a few other distributions, but that’s not essential.)</p>
+<p>What comes next is clever: you can define any other distribution you like in terms of <code class="docutils literal notranslate"><span class="pre">random</span></code>. As an example:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>bernoulli :: MonadSample m =&gt; m Bool
+bernoulli p = fmap (&lt; p) random
+</pre></div>
+</div>
+<p>That one is pretty simple. As a more complex example, here’s how a normal distribution is defined:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>normal m s = fmap (quantile (normalDistr m s)) random
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">normalDistr</span></code> comes from a separate library <code class="docutils literal notranslate"><span class="pre">Statistics.Distribution.Normal</span></code> and <code class="docutils literal notranslate"><span class="pre">quantile</span> <span class="pre">(normalDistr</span> <span class="pre">m</span> <span class="pre">s)</span> <span class="pre">::</span> <span class="pre">Double</span> <span class="pre">-&gt;</span> <span class="pre">Double</span></code> is the inverse CDF of the normal, a deterministic function.</p>
+<p>Again, to emphasize: <strong>all of our randomness can be reduced to draws from a uniform distribution over the interval <span class="math notranslate nohighlight">\([0,1]\)</span></strong>.</p>
+<p>So we now have a way of constructing distributions in a monadic fashion. As a simple example:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>example1 :: MonadSample m =&gt; m Double
+example1 = do
+    x &lt;- random
+    y &lt;- random
+    return (x&gt;y)
+</pre></div>
+</div>
+<p>I’d say by symmetry that the distribution should be equal to <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>. But to verify that, we need to actually take <code class="docutils literal notranslate"><span class="pre">example1</span></code>, of type <code class="docutils literal notranslate"><span class="pre">MonadSample</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code>, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with <em>interpreting</em> <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> as something more concrete, namely an inference algorithm.</p>
+<p>The core philosophy of monad-bayes is that we specify distributions (probabilistic programs, that is) in this abstract monadic typeclass, and then cash it out in a variety of concrete ways which allow for convenient inference algorithms.</p>
+<p>Before getting to that, here’s <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>.</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>class Monad m =&gt; MonadCond m where
+  score :: Log Double -&gt; m ()
+</pre></div>
+</div>
+<p>First, <code class="docutils literal notranslate"><span class="pre">Log</span> <span class="pre">Double</span></code> is defined in <code class="docutils literal notranslate"><span class="pre">Numeric.Log</span></code>, and is a wrapper for <code class="docutils literal notranslate"><span class="pre">Double</span></code>s which does multiplication in log-space. It comes with <code class="docutils literal notranslate"><span class="pre">Exp</span> <span class="pre">::</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">Log</span> <span class="pre">a</span></code> and <code class="docutils literal notranslate"><span class="pre">ln</span> <span class="pre">::</span> <span class="pre">Log</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">a</span></code>. This is because we don’t want numerical problems when multiplying tiny probabilities, and we want clean typesafe separation of doubles and log-doubles.</p>
+<p><code class="docutils literal notranslate"><span class="pre">score</span></code> is less intuitive than <code class="docutils literal notranslate"><span class="pre">random</span></code>. It will become clearer when we discuss more concrete interpretations of <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>, but what’s important to know here is that it is used to allow us to do the Bayesian part of probability, as exemplified by the following probabilistic program:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>bayesianExample = do
+    x &lt;- prior
+    score (likelihood x)
+    return x
+</pre></div>
+</div>
+<p>TODO: explain <code class="docutils literal notranslate"><span class="pre">score</span></code> as a soft factor statement: downweights the probability of that program trace
+The most intuitive way to understand <code class="docutils literal notranslate"><span class="pre">score</span></code> is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a <code class="docutils literal notranslate"><span class="pre">score</span> <span class="pre">x</span></code> statement, where the value of <code class="docutils literal notranslate"><span class="pre">x</span></code> depends on the previous choices. This statement multiplies the weight of this “trace” by the score.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="interpreters">
+<h1>Interpreters<a class="headerlink" href="#interpreters" title="Permalink to this headline"></a></h1>
+<p>Now core idea of monad-bayes is that various monads will be made to be instances of <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code>, <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> or both (i.e. an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>), and different inference algorithms will operate using instances. This separates the specification of the model (which happens abstractly in <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed “inference transformers” to emphasize that it doesn’t really matter whether they satisfy the monad laws.</p>
+<p>For example, to run weighted rejection sampling on a probabilistic program <code class="docutils literal notranslate"><span class="pre">p</span></code>, we can write <code class="docutils literal notranslate"><span class="pre">(sampleIO</span> <span class="pre">.</span> <span class="pre">runWeighted)</span> <span class="pre">p</span></code>. Here, <code class="docutils literal notranslate"><span class="pre">(sampleIO</span> <span class="pre">.</span> <span class="pre">runWeighted)</span> <span class="pre">::</span> <span class="pre">Weighted</span> <span class="pre">SamplerIO</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">IO</span> <span class="pre">a</span></code>. So <code class="docutils literal notranslate"><span class="pre">p</span></code> gets understood as being of type <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code>, a type we’ll encounter soon.</p>
+<p>Some of these transformers are easy to understand (like <code class="docutils literal notranslate"><span class="pre">StateT</span> <span class="pre">Double</span></code>, while others (like the Church transformed Free monad transformer) lie on the more advanced side of things. Accordingly, the following tour of these types goes from easy to hard.</p>
+<section id="enumerator">
+<h2>Enumerator<a class="headerlink" href="#enumerator" title="Permalink to this headline"></a></h2>
+<p>This interpreter is in <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Enumerator</span></code>. Here is the core datatype:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype Enumerator a = 
+    Enumerator (WriterT (Product (Log Double)) [] a)
+</pre></div>
+</div>
+<p>This merits a little unpacking. First, <code class="docutils literal notranslate"><span class="pre">Product</span></code> as a wrapper which makes the semigroup operator for numbers be multiplication, so that:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>Product 2 &lt;&gt; Product 3 == Product 6`
+</pre></div>
+</div>
+<p>Unpacking the defition of <code class="docutils literal notranslate"><span class="pre">Enumerator</span> <span class="pre">a</span></code>, it is isomorphic to:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>[(a, (Product (Log Double)))]
+</pre></div>
+</div>
+<p>So, a value of type <code class="docutils literal notranslate"><span class="pre">Enumerator</span> <span class="pre">Bool</span></code>, for instance, is a list of pairs of booleans along with a double, like:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>[(False,0.8914),(True,0.1086)]
+</pre></div>
+</div>
+<p>Also in <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Enumerator</span></code> is a function <code class="docutils literal notranslate"><span class="pre">enumerate</span></code>, which has type:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>enumerate :: Ord a =&gt; Enumerator a -&gt; [(a, Double)]
+</pre></div>
+</div>
+<p>We can write <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">sprinkler</span></code>. Why is this well typed? The idea is that <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> has type <code class="docutils literal notranslate"><span class="pre">forall</span> <span class="pre">m.</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Bool</span></code>, and we <em>instantiate</em> that <code class="docutils literal notranslate"><span class="pre">m</span></code> as <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code>.</p>
+<p>But for this to be well-typed, we need <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> to be an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>. For that, we need <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> to be a <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code>, and a <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>. For that, we need it to be a <code class="docutils literal notranslate"><span class="pre">Monad</span></code>, and in turn, a <code class="docutils literal notranslate"><span class="pre">Functor</span></code>. In understanding these instance definition, we’ll understand what what <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> is doing for us.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> is a monad automatically, because <code class="docutils literal notranslate"><span class="pre">WriterT</span> <span class="pre">a</span> <span class="pre">m</span></code> is a monad for <code class="docutils literal notranslate"><span class="pre">a</span></code> a monoid and <code class="docutils literal notranslate"><span class="pre">m</span></code> a monad. As needed, <code class="docutils literal notranslate"><span class="pre">[]</span></code> is a monad and <code class="docutils literal notranslate"><span class="pre">Log</span> <span class="pre">Double</span></code> is a monoid. But what does that monad actually <strong>do</strong>?</p>
+<p>For instance, if I have a weighted list <code class="docutils literal notranslate"><span class="pre">l</span></code> like <code class="docutils literal notranslate"><span class="pre">[(False,0.8914),(True,0.1086)]</span></code> and a function <code class="docutils literal notranslate"><span class="pre">f</span> <span class="pre">::</span> <span class="pre">Bool</span> <span class="pre">-&gt;</span> <span class="pre">Enumerator</span> <span class="pre">a</span></code>, what is <code class="docutils literal notranslate"><span class="pre">l</span> <span class="pre">&gt;&gt;=</span> <span class="pre">f</span></code>? It takes each element in <code class="docutils literal notranslate"><span class="pre">l</span></code>, and passes it through <code class="docutils literal notranslate"><span class="pre">f</span></code>, to obtain a weighted list of weighted lists. Then it flattens it, by including each element in the inner lists in the resulting list, with the weight of the list multiplied by the weight of the element.</p>
+<p>This is the essence of propagating probability forward.</p>
+<!-- This is of course a representation of a discrete distribution, and as we might expect, `Enumerator` is only going to be useful when we are dealing with discrete distributions. -->
+<p>What remains is to define the <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> and <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> instances:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>instance MonadSample Enumerator where
+  random = error &quot;Infinitely supported random variables not supported in Enumerator&quot;
+  bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
+
+instance MonadCond Enumerator where
+  score w = fromList [((), w)]
+
+</pre></div>
+</div>
+<p>The first thing to notice is that <code class="docutils literal notranslate"><span class="pre">random</span></code> is actually not defined for <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code>, and consequently, you can’t handle any continuous distributions. This makes sense, because you can’t represent continuous distributions (whose support is uncountably infinite) as a list of samples.</p>
+<p>So really <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> isn’t very general purpose. It’s best understood as a didactic tool, rather than a real world inference algorithm.</p>
+<p>But it can handle discrete distributions. It does this via <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code> (as well as <code class="docutils literal notranslate"><span class="pre">categorical</span></code>, which I’ve omitted). <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">p</span></code> constructs the weighted list corresponding to a <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code> distribution with parameter <code class="docutils literal notranslate"><span class="pre">p</span></code>.</p>
+<p>Finally, <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>.</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>example2 = do
+    x &lt;- bernoulli 0.5
+    y &lt;- bernoulli $ if x then 0.6 else 0.5
+    return (y &amp;&amp; x)
+</pre></div>
+</div>
+</section>
+<section id="samplerio">
+<h2>SamplerIO<a class="headerlink" href="#samplerio" title="Permalink to this headline"></a></h2>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
+</pre></div>
+</div>
+<p>There are various different implementations of samplers that you could write, and several are in monad-bayes. This is the simplest. The idea is that we have a function <code class="docutils literal notranslate"><span class="pre">sampleIO</span> <span class="pre">::</span> <span class="pre">SamperIO</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">IO</span> <span class="pre">a</span></code>, then:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>print =&lt;&lt; sampleIO random
+</pre></div>
+</div>
+<p>will give us a sample from <code class="docutils literal notranslate"><span class="pre">random</span></code>. Similarly for other distributions. This works via:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>instance MonadSample SamplerST where
+  random = fromMWC System.Random.MWC.uniform
+
+  bernoulli p = fromMWC $ MWC.bernoulli p
+</pre></div>
+</div>
+<p>But note that <code class="docutils literal notranslate"><span class="pre">SamplerIO</span></code> only has a <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance. This means that if you do <code class="docutils literal notranslate"><span class="pre">sampleIO</span> <span class="pre">sprinkler</span></code>, you will get:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>No instance for (MonadInfer SamplerIO)
+</pre></div>
+</div>
+<p>This is to be expected. <code class="docutils literal notranslate"><span class="pre">SamplerIO</span></code> has no instance for <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>. To obtain sampler based interpretation of probabilistic programs with factor statements, we need to continue.</p>
+</section>
+<section id="weighted-m">
+<h2>Weighted m<a class="headerlink" href="#weighted-m" title="Permalink to this headline"></a></h2>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype Weighted m a = Weighted (StateT (Log Double) m a)
+</pre></div>
+</div>
+<p>A <strong>key</strong> difference to <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> and <code class="docutils literal notranslate"><span class="pre">SamplerIO</span></code> is the <strong>kind</strong> of <code class="docutils literal notranslate"><span class="pre">Weighted</span></code>. It takes not just a type <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">::</span> <span class="pre">Type</span></code> as argument, but also a type <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">::</span> <span class="pre">Type</span> <span class="pre">-&gt;</span> <span class="pre">Type</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Weighted</span></code> is isomorphic to:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>Log Double -&gt; m (a, Log Double)
+</pre></div>
+</div>
+<p>This is not, at least to me, very intuitive. So let’s look at the instances:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>instance Monad m =&gt; MonadCond (Weighted m) where
+  score w = Weighted (modify (* w))
+</pre></div>
+</div>
+<p>So if we write:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>ex :: MonadSample m =&gt; Weighted m Bool
+ex = do
+    x &lt;- bernoulli 0.5
+    score (if b then 1 else 0)
+    return x
+</pre></div>
+</div>
+<p>then the result is that first, we draw a sample from a Bernoulli distribution from the <strong>underlying</strong> distribution <code class="docutils literal notranslate"><span class="pre">m</span></code>, and then multiply the state (which is a <code class="docutils literal notranslate"><span class="pre">Log</span> <span class="pre">Double</span></code>) by a number which depends on that sample. For convenience, we write <code class="docutils literal notranslate"><span class="pre">condition</span> <span class="pre">b</span> <span class="pre">=</span> <span class="pre">score</span> <span class="pre">(if</span> <span class="pre">b</span> <span class="pre">then</span> <span class="pre">1</span> <span class="pre">else</span> <span class="pre">0)</span></code>.</p>
+<p>To unpack from <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">m</span> <span class="pre">a</span></code>, we use:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>runWeighted :: Weighted m a -&gt; m (a, Log Double)
+runWeighted (Weighted m) = runStateT m 1
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">m</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code>, but only as instance of <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> (and that, only when <code class="docutils literal notranslate"><span class="pre">m</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">Monad</span></code>). However, since <code class="docutils literal notranslate"><span class="pre">StateT</span></code> is a monad transformer, there is a function <code class="docutils literal notranslate"><span class="pre">lift</span> <span class="pre">::</span> <span class="pre">m</span> <span class="pre">Double</span> <span class="pre">-&gt;</span> <span class="pre">Weighted</span> <span class="pre">m</span> <span class="pre">Double</span></code>.</p>
+<p>So if we take a <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance like <code class="docutils literal notranslate"><span class="pre">SamplerIO</span></code>, then <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code> is an instance of both <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> and <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>. Which means it is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>.</p>
+<p>So we can successfully write <code class="docutils literal notranslate"><span class="pre">(sampleIO</span> <span class="pre">.</span> <span class="pre">runWeighted)</span> <span class="pre">sprinkler</span></code> and get a program of type <code class="docutils literal notranslate"><span class="pre">IO</span> <span class="pre">(Bool,</span> <span class="pre">Log</span> <span class="pre">Double)</span></code>. When run, this will draw a sample from <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> along with an <strong>unnormalized</strong> density for that sample.</p>
+<p>It’s worth stopping here to remark on what’s going on. What has happened is that the <code class="docutils literal notranslate"><span class="pre">m</span></code> in <code class="docutils literal notranslate"><span class="pre">forall</span> <span class="pre">m.</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Bool</span></code> has been <em>instantiated</em> as <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code>. This is an example of how the interpreters for inference can be composed in modular ways.</p>
+<p>Finally, there’s a function</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>hoist :: (forall x. m x -&gt; n x) -&gt; Weighted m a -&gt; Weighted n a
+</pre></div>
+</div>
+<p>This takes a natural transformation <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">~&gt;</span> <span class="pre">n</span></code> and lifts it into a natural transformation <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">m</span> <span class="pre">~&gt;</span> <span class="pre">Weighted</span> <span class="pre">n</span></code>. Most of the inference transformers have a <code class="docutils literal notranslate"><span class="pre">hoist</span></code> function.</p>
+</section>
+<section id="the-more-difficult-inference-transformers">
+<h2>The more difficult inference transformers<a class="headerlink" href="#the-more-difficult-inference-transformers" title="Permalink to this headline"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Weighted</span></code> and <code class="docutils literal notranslate"><span class="pre">SamplerIO</span></code> are on the simpler side, but illustrate the key principles of monad-bayes, namely:</p>
+<p><strong>composable stack of inference transformers, implemented as instances of <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> and <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> typeclasses.</strong></p>
+<p>In a similar vein, <code class="docutils literal notranslate"><span class="pre">Population</span></code> and <code class="docutils literal notranslate"><span class="pre">Sequential</span></code> go together to handle Sequential Monte Carlo (SMC), and <code class="docutils literal notranslate"><span class="pre">Traced</span></code> is associated with Markov Chain Monte Carlo (MCMC).</p>
+<section id="population">
+<h3>Population<a class="headerlink" href="#population" title="Permalink to this headline"></a></h3>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype Population m a = Population (Weighted (ListT m) a)
+</pre></div>
+</div>
+<p>So:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>Population m a ~ [Log Double -&gt; (a, Log Double)]
+</pre></div>
+</div>
+<p>Note that while <code class="docutils literal notranslate"><span class="pre">ListT</span></code> isn’t in general a valid monad transformer, we’re not requiring it to be one here.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Population</span></code> is used to represent a collection of particles (in the statistical sense), along with their weights.</p>
+<p>There are several useful functions associated with it:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>spawn :: Monad m =&gt; Int -&gt; Population m ()
+spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
+
+pushEvidence ::
+  MonadCond m =&gt;
+  Population m a -&gt;
+  Population m a
+
+resampleGeneric ::
+  MonadSample m =&gt;
+  -- | resampler
+  (V.Vector Double -&gt; m [Int]) -&gt;
+  Population m a -&gt;
+  Population m a
+
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">spawn</span></code> spawns new particles. As an example:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>enumerate (spawn 2 &gt;&gt; bernoulli 0.5)
+</pre></div>
+</div>
+<p>gives</p>
+<p>TODO</p>
+<p><code class="docutils literal notranslate"><span class="pre">resampleGeneric</span></code> takes a function to select a set of indices from a vector, and makes a new population by selecting those indices.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pushEvidence</span></code>  “normalizes the weights in the population, while at the same time incorporating the sum of the weights as a score in m.”</p>
+</section>
+<section id="sequential">
+<h3>Sequential<a class="headerlink" href="#sequential" title="Permalink to this headline"></a></h3>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype Sequential m a = 
+    Sequential {runSequential :: Coroutine (Await ()) m a}
+</pre></div>
+</div>
+<p>This is a wrapper for the <code class="docutils literal notranslate"><span class="pre">Coroutine</span></code> type applied to the <code class="docutils literal notranslate"><span class="pre">Await</span></code> function from <code class="docutils literal notranslate"><span class="pre">Control.Monad.Coroutine</span></code>, which are defined thus:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype Coroutine s m r = Coroutine {
+   resume :: m (Either (s (Coroutine s m r)) r)
+   }
+
+newtype Await x y = Await (x -&gt; y)
+</pre></div>
+</div>
+<p>Unpacking that:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>Sequential m a ~ m (Either (() -&gt; Sequential m a) a)
+</pre></div>
+</div>
+<p>As usual, <code class="docutils literal notranslate"><span class="pre">m</span></code> is going to be some other probability monad, so understand <code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">m</span> <span class="pre">a</span></code> as representing a program which, after making a random choice or doing conditioning, we either obtain an <code class="docutils literal notranslate"><span class="pre">a</span></code> value, or a paused computation, which when resumed gets us back to a new <code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">m</span> <span class="pre">a</span></code>.</p>
+<p>(For more on coroutines, see the final article in: https://themonadreader.files.wordpress.com/2011/10/issue19.pdf.)</p>
+<p>The monad instance for coroutines is as follows:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>instance (Functor s, Monad m) =&gt; Monad (Coroutine s m) where
+   return = pure
+   t &gt;&gt;= f = Coroutine (resume t &gt;&gt;= apply f)
+      where apply fc (Right x) = resume (fc x)
+            apply fc (Left s) = return (Left (fmap (&gt;&gt;= fc) s))
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance follows from <code class="docutils literal notranslate"><span class="pre">lift</span> <span class="pre">:</span> <span class="pre">m</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">Coroutine</span> <span class="pre">(Await</span> <span class="pre">())</span> <span class="pre">m</span> <span class="pre">a</span></code>, defined as:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>instance Functor s =&gt; MonadTrans (Coroutine s) where
+   lift = Coroutine . liftM Right
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> instance has less trivial content:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>-- | Execution is &#39;suspend&#39;ed after each &#39;score&#39;.
+instance MonadCond m =&gt; MonadCond (Sequential m) where
+  score w = lift (score w) &gt;&gt; suspend
+</pre></div>
+</div>
+<p>First you take a <code class="docutils literal notranslate"><span class="pre">score</span></code> in the underlying <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code> instance, and then you <code class="docutils literal notranslate"><span class="pre">suspend</span></code>, which means:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>-- | A point where the computation is paused.
+suspend :: Monad m =&gt; Sequential m ()
+suspend = Sequential (Coroutine (return (Left (Await return))))
+</pre></div>
+</div>
+<p>TODO: double check</p>
+<p>We can move to the next suspension point with:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>advance :: Monad m =&gt; Sequential m a -&gt; Sequential m a
+advance = Sequential . bounce extract . runSequential
+
+</pre></div>
+</div>
+<p>and move through all with:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>-- | Remove the remaining suspension points.
+finish :: Monad m =&gt; Sequential m a -&gt; m a
+finish = pogoStick extract . runSequential
+</pre></div>
+</div>
+<p>But most importantly, we can apply a natural transformer over the underlying monad <code class="docutils literal notranslate"><span class="pre">m</span></code> to only the current suspension.</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>hoistFirst :: (forall x. m x -&gt; m x) -&gt; Sequential m a -&gt; Sequential m a
+hoistFirst f = Sequential . Coroutine . f . resume . runSequential
+</pre></div>
+</div>
+<p>As an example, consider:</p>
+<p>TODO: Enumerator example with <code class="docutils literal notranslate"><span class="pre">trace</span></code></p>
+<p>When <code class="docutils literal notranslate"><span class="pre">m</span></code> is <code class="docutils literal notranslate"><span class="pre">Population</span> <span class="pre">n</span></code> for some other <code class="docutils literal notranslate"><span class="pre">n</span></code>, then <code class="docutils literal notranslate"><span class="pre">resampleGeneric</span></code> gives us one example of the natural transformation we want. In other words, operating in <code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">(Population</span> <span class="pre">n)</span></code> works, and not only works but does something statistically interesting: particle filtering (aka SMC).</p>
+</section>
+<section id="freesampler">
+<h3>FreeSampler<a class="headerlink" href="#freesampler" title="Permalink to this headline"></a></h3>
+<p>(<em>Difficulty: high</em>)</p>
+<p>As with <code class="docutils literal notranslate"><span class="pre">Population</span> <span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">FreeSampler</span> <span class="pre">m</span></code> is not often going to be used on its own, but instead as part of the Markov Chain Monte Carlo (MCMC) inference method.</p>
+<p><code class="docutils literal notranslate"><span class="pre">FreeSampler</span> <span class="pre">m</span></code> is best understood if you’re familiar with the standard use of a free monad to construct a domain specific language. For probability in particular, see this <a class="reference external" href="https://jtobin.io/simple-probabilistic-programming">blog post</a>. Here’s the definition:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>newtype SamF a = Random (Double -&gt; a)
+newtype FreeSampler m a = 
+    FreeSampler {runFreeSampler :: FT SamF m a}
+    
+instance Monad m =&gt; MonadSample (FreeSampler m) where
+  random = FreeSampler $ liftF (Random id)
+</pre></div>
+</div>
+<p>The monad-bayes implementation uses a more efficient implementation of <code class="docutils literal notranslate"><span class="pre">FreeT</span></code>, from the <code class="docutils literal notranslate"><span class="pre">free</span></code> package, known as the <em>Church transformed Free monad</em>. But that only changes the operational semantics - performance aside, it works just the same as the standard <code class="docutils literal notranslate"><span class="pre">FreeT</span></code> datatype.</p>
+<p>If you unpack the definition, you get:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>
+FreeSampler m a ~ m (Either a (Double -&gt; (FreeSampler m a)))
+</pre></div>
+</div>
+<p>As you can see, this is rather like <code class="docutils literal notranslate"><span class="pre">Coroutine</span></code>.</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">FreeT</span></code> is a transformer, we can use <code class="docutils literal notranslate"><span class="pre">lift</span></code> to get a <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance.</p>
+<p>A <em>trace</em> of a program of type <code class="docutils literal notranslate"><span class="pre">MonadSample</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> is an execution of the program, so a choice for each of the random values. Recall that<code class="docutils literal notranslate"><span class="pre">random</span></code> underlies all of the random values in a program, a trace for a program is fully specified by a list of <code class="docutils literal notranslate"><span class="pre">Double</span></code>s, giving the value of each call to <code class="docutils literal notranslate"><span class="pre">random</span></code>.</p>
+<p>Given a probabilistic program interpreted in <code class="docutils literal notranslate"><span class="pre">FreeSampler</span> <span class="pre">m</span></code>, we can “run” it to produce a program in the underlying monad <code class="docutils literal notranslate"><span class="pre">m</span></code>. For simplicity, consider the case of a program <code class="docutils literal notranslate"><span class="pre">x</span></code> of type <code class="docutils literal notranslate"><span class="pre">FreeSampler</span> <span class="pre">Identity</span> <span class="pre">Bool</span></code>. We can then use the following function:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>withRandomness :: Monad m =&gt; [Double] -&gt; FreeSampler m a -&gt; m a
+</pre></div>
+</div>
+<p>This takes a list of <code class="docutils literal notranslate"><span class="pre">Double</span></code>s (a trace), and gives us:</p>
+<p>TODO double check: do withPartialRandomness</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>runIdentity $ withRandomness listOfDoubles x :: a
+</pre></div>
+</div>
+<p>The intuition here is that given a list of doubles in <span class="math notranslate nohighlight">\([0,1]\)</span>, you can evaluate any probabilistic program. If your list of numbers is shorter than the number of calls to <code class="docutils literal notranslate"><span class="pre">random</span></code> in the program, the remaining calls are made in the underlying <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance <code class="docutils literal notranslate"><span class="pre">m</span></code>.</p>
+<!-- This uses `iterTM`, one of the rather expressive folding patterns in `Control.Monad.Trans.Free` (from the *free* package) and a clever use of the state monad transformer. The upshot is that you supply a  -->
+</section>
+<section id="traced">
+<h3>Traced<a class="headerlink" href="#traced" title="Permalink to this headline"></a></h3>
+<p>(<em>Difficulty: hard</em>)</p>
+<p><code class="docutils literal notranslate"><span class="pre">Traced</span> <span class="pre">m</span></code> is actually several related interpretations, each built on top of <code class="docutils literal notranslate"><span class="pre">FreeSampler</span></code>. These range in complexity and power.</p>
+<!-- Control flow is stochastic in a probabilistic program, which is to say that whether we draw from some variable may depend on a draw from some variable earlier. This means that we don't have a fixed structure like a Bayes net corresponding to a probabilistic program. -->
+<p>The reason traces are relevant here is that monad-bayes implements a version of Markov Chain Monte Carlo (MCMC) that operates on arbitrary probabilistic programs TODO LINK. The idea is that the MCMC chain takes place on traces of the program. A step consitutes a change to this trace, i.e. to the list of <code class="docutils literal notranslate"><span class="pre">Double</span></code>s. For instance, the algorithm for an MH step goes as follows:</p>
+<ul class="simple">
+<li><p>propose a new trace by randomly redrawing a single <code class="docutils literal notranslate"><span class="pre">Double</span></code> in the trace</p></li>
+<li><p>accept or reject with the MH criterion</p></li>
+</ul>
+<p>It’s convenient to specify a trace not just as a <code class="docutils literal notranslate"><span class="pre">[Double]</span></code> but also with the resulting output, and the density of that output. This is what monad-bayes does:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>data Trace a = Trace
+  { 
+    variables :: [Double],
+    output :: a,
+    density :: Log Double
+  }
+</pre></div>
+</div>
+<p>We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what <code class="docutils literal notranslate"><span class="pre">FreeSampler</span></code> is for. In particular, we</p>
+<p>run a trace on a freesampler program</p>
+<p>The simplest is in <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Traced.Basic</span></code></p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>Traced m a ~ (FreeSampler Identity a, Log Double), m (Trace a))
+</pre></div>
+</div>
+<p>A <code class="docutils literal notranslate"><span class="pre">Traced</span></code> interpretation of a model is a particular run of the model with its corresponding probability, alongside a distribution over <code class="docutils literal notranslate"><span class="pre">Trace</span></code> info, which records: the value of each call to <code class="docutils literal notranslate"><span class="pre">random</span></code>, the value of the final output, and the density of this program trace.</p>
+<p>This machinery allows us to implement MCMC. In particular, this version of MCMC performs its random walk on program traces of type <code class="docutils literal notranslate"><span class="pre">Trace</span> <span class="pre">a</span></code>. A single step in this chain (in Metropolis Hasting MCMC) looks like this:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>mhTrans :: MonadSample m =&gt; 
+    Weighted (FreeSampler m) a -&gt; Trace a -&gt; m (Trace a)
+mhTrans m t@Trace {variables = us, density = p} = do
+  let n = length us
+  us&#39; &lt;- do
+    i &lt;- discrete $ discreteUniformAB 0 (n -1)
+    u&#39; &lt;- random
+    case splitAt i us of
+      (xs, _ : ys) -&gt; return $ xs ++ (u&#39; : ys)
+      _ -&gt; error &quot;impossible&quot;
+  ((b, q), vs) &lt;- 
+      runWriterT $ runWeighted 
+      $ Weighted.hoist (WriterT . withPartialRandomness us&#39;) m
+  let ratio = (exp . ln) $ min 1 
+      (q * fromIntegral n / (p * fromIntegral (length vs)))
+  accept &lt;- bernoulli ratio
+  return $ if accept then Trace vs b q else t
+</pre></div>
+</div>
+<p>Our probabilistic program is interpreted in the type <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">(FreeSampler</span> <span class="pre">m)</span> <span class="pre">a</span></code>, which is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>. We use this to define our kernel on traces. We begin by perturbing the list of doubles contained in the trace by selecting a random position in the list and resampling there. We could do this <em>proposal</em> in a variety of ways, but here, we do so by choosing a double from the list at random and resampling it (hence, <em>single site</em> trace MCMC). We then run the program on this new list of doubles; <code class="docutils literal notranslate"><span class="pre">((b,q),</span> <span class="pre">vs)</span></code> is the outcome, probability, and result of all calls to <code class="docutils literal notranslate"><span class="pre">random</span></code>, respectively (recalling that the list of doubles may be shorter than the number of calls to <code class="docutils literal notranslate"><span class="pre">random</span></code>). The value of these is probabilistic in the underlying monad <code class="docutils literal notranslate"><span class="pre">m</span></code>. We then use the MH criterion to decide whether to accept the new list of doubles as our trace.</p>
+<p>MH is then easily defined as taking steps with this kernel, in the usual fashion. Note that it works for any probabilistic program whatsoever.</p>
+</section>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="inference-methods">
+<h1>Inference methods<a class="headerlink" href="#inference-methods" title="Permalink to this headline"></a></h1>
+<section id="particle-marginal-metropolis-hastings">
+<h2>Particle Marginal Metropolis-Hastings<a class="headerlink" href="#particle-marginal-metropolis-hastings" title="Permalink to this headline"></a></h2>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>pmmh t k n param model =
+  mh t (param &gt;&gt;= runPopulation . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
+</pre></div>
+</div>
+<p>(Note that this uses the version of <code class="docutils literal notranslate"><span class="pre">mh</span></code> from <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Traced.Static</span></code>.)</p>
+<p>This is remarkably direct and simple given the complexity of the PMMH algorithm, but there’s a lot to unpack here.</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>pmmh ::
+  MonadInfer m =&gt;
+  -- | number of Metropolis-Hastings steps
+  Int -&gt;
+  -- | number of time steps
+  Int -&gt;
+  -- | number of particles
+  Int -&gt;
+  -- | model parameters prior
+  Traced m b -&gt;
+  -- | model
+  (b -&gt; Sequential (Population m) a) -&gt;
+  m [[(a, Log Double)]]
+pmmh t k n param model =
+  (mh t :: Traced m [(a, Log Double)] -&gt; m [[(a, Log Double)]])
+  ((param :: Traced m b) 
+      &gt;&gt;= 
+      (runPopulation :: Population (Traced m) a -&gt; Traced m [(a, Log Double)]) 
+      . (pushEvidence :: Population (Traced m) a -&gt; Population (Traced m) a) 
+      . Pop.hoist (lift :: forall x. m x -&gt; Traced m x) 
+      . (smcSystematic k n :: Sequential (Population m) a -&gt; Population m a) 
+      . (model :: b -&gt; Sequential (Population m) a))
+</pre></div>
+</div>
+<p>The idea is that the act of running a particle filter is itself traced. We then run MCMC to obtain a good run of this process.</p>
+<p>“The idea is to do MH on the parameters of the model. Recall that for MH we need to compute the likelihood for the particular values of parameters but that involves integrating over the remaining random variables in the model which is intractable. Fortunately to obtain valid MH it is sufficient to have an unbiased estimator for the likelihood which is produced by a single sample from W. MH with such an estimator is referred to as pseudo-marginal MH. If instead of taking a single weight from W we take the sum of weights from Pop we obtain an unbiased estimator with lower variance. In particular if such a Pop is a result of smc the resulting algorithm is known as PMMH.”</p>
+</section>
+<section id="resample-move-sequential-monte-carlo">
+<h2>Resample-Move Sequential Monte Carlo<a class="headerlink" href="#resample-move-sequential-monte-carlo" title="Permalink to this headline"></a></h2>
+<p>This is pretty complicated to think about, but again, the key is to think smart, not hard, and rely on the modularity of the architecture.</p>
+<p>“
+A common problem with particle filters is that of particle degeneracy, where after resampling
+many particles are the same, effectively reducing the sample size. One way to ameliorate this
+problem is to introduce rejuvenation moves, where after each resampling we apply a number of
+MCMC transitions to each particle independently, thus spreading them around the space. If we
+use an MCMC kernel that preserves the target distribution at a given step, the resulting algorithm
+is correct…
+a program is interpreted
+as a population of traced coroutines. It allows us to apply MH transitions to partially executed
+coroutines, which is exactly what we require for the rejuvenation steps.
+“</p>
+</section>
+<section id="sequential-monte-carlo-squared">
+<h2>Sequential Monte Carlo squared<a class="headerlink" href="#sequential-monte-carlo-squared" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="cheat-sheet">
+<h1>Cheat Sheet<a class="headerlink" href="#cheat-sheet" title="Permalink to this headline"></a></h1>
+<p>Assume <code class="docutils literal notranslate"><span class="pre">m</span></code> is a monad, but nothing more:</p>
+<p>Basic instances of <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code>:</p>
+<ul class="simple">
+<li><p>Enumerator</p></li>
+<li><p>SamplerIO</p></li>
+<li><p>Traced m</p></li>
+<li><p>Sequential m</p></li>
+</ul>
+<p>Basic instances of <code class="docutils literal notranslate"><span class="pre">MonadCond</span></code>:</p>
+<ul class="simple">
+<li><p>Enumerator</p></li>
+<li><p>Weighted m</p></li>
+<li><p>Population m</p></li>
+</ul>
+<p>Basic instances of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>:</p>
+<ul class="simple">
+<li><p>Enumerator (inference method for exact enumeration, discrete distributions only)</p></li>
+</ul>
+<p>Composed instances of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code> (for importance sampling)</p></li>
+<li><p>Markov Chain Monte Carlo: <code class="docutils literal notranslate"><span class="pre">Traced</span> <span class="pre">(Weighted</span> <span class="pre">SamplerIO)</span></code></p></li>
+<li><p>Sequential Monte Carlo (Particle filtering): <code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">(Population</span> <span class="pre">(Weighted</span> <span class="pre">SamplerIO)</span></code></p></li>
+<li><p>Particle Marginal MH: todo</p></li>
+<li><p>Resample Move: todo</p></li>
+<li><p>SMC<span class="math notranslate nohighlight">\(^2\)</span>: todo</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="probprog.html" class="btn btn-neutral float-left" title="What is probabilistic programming" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Adam Scibior.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
