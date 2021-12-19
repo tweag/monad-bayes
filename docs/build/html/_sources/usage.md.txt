@@ -3,21 +3,17 @@
 This document assumes the reader is familiar with:
 - the basics of Bayesian probability theory
 - basic Haskell (the syntax, the type system, do-notation, monad transformers)
+- how to specify distributions in monad-bayes (see docs/probprog.md)
 
-That's enough to understand the core ideas, but for the more advanced content, you'll also want to know about:
-- Markov Chain Monte Carlo
-- Sequential Monte Carlo (particle filtering)
-- Free monads and free monad transformers
+That's enough to understand the core ideas, but for the more advanced content, you'll also want to feel comfortable enough with Haskell's type system that free monads, free monad transformers, and coroutines aren't a barrier to entry. And of course, to understand how inference methods like MCMC and SMC are implemented, it doesn't hurt to understand how they work in a statistical sense.
 
-# References
+## References
 
 monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://www.denotational.co.uk/publications/scibior-kammar-ghahramani-funcitonal-programming-for-modular-bayesian-inference.pdf).
 
-The paper is part of a research project to define a formal semantics for probabilistic programs, using Fancy Mathematics. Thankfully, it isn't necessary to know any measure theory or category theory to use monad-bayes.
+## The core typeclasses
 
-# The core typeclasses
-
-The library relies on two core typeclasses `MonadSample` and `MonadCond`. A third, called `MonadInfer` is simply the union of the two, that is:
+The library relies on two core typeclasses `MonadSample` and `MonadCond`. `MonadInfer` is simply the union of the two, that is:
 
 ```haskell=
 (MonadSample m, MonadCond m) => MonadInfer m
@@ -55,15 +51,18 @@ So we now have a way of constructing distributions in a monadic fashion. As a si
 example1 :: MonadSample m => m Double
 example1 = do
     x <- random
-    y <- random
-    return (x>y)
+    y <- uniform 0 x
+    return (x + y > 1.5)
 ```
 
-I'd say by symmetry that the distribution should be equal to `bernoulli 0.5`. But to verify that, we need to actually take `example1`, of type `MonadSample m => m Double`, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with *interpreting* `MonadSample` as something more concrete, namely an inference algorithm.
+Think of this as the procedure of first sampling uniformly from $[0,1]$, then from $[0,x]$, and then returning the Boolean $x + y > 1.5$. More precisely, this is the **marginal** probability of $x + y > 1.5$. 
+
+Inference is TODO
+ `example1`, of type `MonadSample m => m Double`, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with *interpreting* `MonadSample` as something more concrete, namely an inference algorithm.
 
 The core philosophy of monad-bayes is that we specify distributions (probabilistic programs, that is) in this abstract monadic typeclass, and then cash it out in a variety of concrete ways which allow for convenient inference algorithms.
 
-Before getting to that, here's `MonadCond`. 
+Here's `MonadCond`. 
 
 ```haskell=
 class Monad m => MonadCond m where
@@ -85,9 +84,9 @@ TODO: explain `score` as a soft factor statement: downweights the probability of
 The most intuitive way to understand `score` is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a `score x` statement, where the value of `x` depends on the previous choices. This statement multiplies the weight of this "trace" by the score.
 
 
-# Interpreters
+## Inference transformers
 
-Now core idea of monad-bayes is that various monads will be made to be instances of `MonadSample`, `MonadCond` or both (i.e. an instance of `MonadInfer`), and different inference algorithms will operate using instances. This separates the specification of the model (which happens abstractly in `MonadInfer`) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed "inference transformers" to emphasize that it doesn't really matter whether they satisfy the monad laws.
+Now core idea of monad-bayes is that various monads will be made to be instances of `MonadSample`, `MonadCond` or both (i.e. an instance of `MonadInfer`), and different inference algorithms will operate using instances. This separates the specification of the model (which happens abstractly in `MonadInfer`) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed *inference transformers* to emphasize that it doesn't really matter whether they satisfy the monad laws.
 
 For example, to run weighted rejection sampling on a probabilistic program `p`, we can write `(sampleIO . runWeighted) p`. Here, `(sampleIO . runWeighted) :: Weighted SamplerIO a -> IO a`. So `p` gets understood as being of type `Weighted SamplerIO`, a type we'll encounter soon.
 
@@ -103,13 +102,13 @@ newtype Enumerator a =
     Enumerator (WriterT (Product (Log Double)) [] a)
 ```
 
-This merits a little unpacking. First, `Product` as a wrapper which makes the semigroup operator for numbers be multiplication, so that:
+This merits a little unpacking. First, `Product` as a wrapper from TODO which makes the semigroup operator for numbers be multiplication, so that:
 
 ```haskell=
 Product 2 <> Product 3 == Product 6`
 ```
 
-Unpacking the defition of `Enumerator a`, it is isomorphic to:
+Unpacking the definition of `Enumerator a`, it is isomorphic to:
 
 ```haskell=
 [(a, (Product (Log Double)))]
@@ -256,13 +255,11 @@ hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
 This takes a natural transformation `m ~> n` and lifts it into a natural transformation `Weighted m ~> Weighted n`. Most of the inference transformers have a `hoist` function.
 
 
-## The more difficult inference transformers
-
-`Weighted` and `SamplerIO` are on the simpler side, but illustrate the key principles of monad-bayes, namely:
+<!-- `Weighted` and `SamplerIO` are on the simpler side, but illustrate the key principles of monad-bayes, namely:
 
 **composable stack of inference transformers, implemented as instances of `MonadSample` and `MonadCond` typeclasses.**
 
-In a similar vein, `Population` and `Sequential` go together to handle Sequential Monte Carlo (SMC), and `Traced` is associated with Markov Chain Monte Carlo (MCMC).
+In a similar vein, `Population` and `Sequential` go together to handle Sequential Monte Carlo (SMC), and `Traced` is associated with Markov Chain Monte Carlo (MCMC). -->
 
 
 ### Population
@@ -526,9 +523,9 @@ Our probabilistic program is interpreted in the type `Weighted (FreeSampler m) a
 
 MH is then easily defined as taking steps with this kernel, in the usual fashion. Note that it works for any probabilistic program whatsoever.
 
-# Inference methods
+## Implementations of inference methods
 
-## Particle Marginal Metropolis-Hastings 
+**PMMH**
 
 ```haskell=
 pmmh t k n param model =
@@ -568,7 +565,7 @@ The idea is that the act of running a particle filter is itself traced. We then 
 
 "The idea is to do MH on the parameters of the model. Recall that for MH we need to compute the likelihood for the particular values of parameters but that involves integrating over the remaining random variables in the model which is intractable. Fortunately to obtain valid MH it is sufficient to have an unbiased estimator for the likelihood which is produced by a single sample from W. MH with such an estimator is referred to as pseudo-marginal MH. If instead of taking a single weight from W we take the sum of weights from Pop we obtain an unbiased estimator with lower variance. In particular if such a Pop is a result of smc the resulting algorithm is known as PMMH."
 
-## Resample-Move Sequential Monte Carlo
+**Resample-Move Sequential Monte Carlo**
 
 This is pretty complicated to think about, but again, the key is to think smart, not hard, and rely on the modularity of the architecture. 
 
@@ -584,33 +581,30 @@ as a population of traced coroutines. It allows us to apply MH transitions to pa
 coroutines, which is exactly what we require for the rejuvenation steps.
 "
 
-## Sequential Monte Carlo squared 
+**Sequential Monte Carlo squared ($SMC^2$)**
 
-# Cheat Sheet
+todo
 
-Assume `m` is a monad, but nothing more:
+## Cheat Sheet
+
 
 Basic instances of `MonadSample`:
-- Enumerator
-- SamplerIO
-- Traced m
-- Sequential m
+- `SamplerIO`
+- `Traced m`
+- `Sequential m`
 
 Basic instances of `MonadCond`:
-- Enumerator
-- Weighted m
-- Population m
+- `Weighted m`
+- `Population m`
 
 Basic instances of `MonadInfer`:
-- Enumerator (inference method for exact enumeration, discrete distributions only)
+- `Enumerator` (discrete distributions only)
 
 Composed instances of `MonadInfer`:
 
-- `Weighted SamplerIO` (for importance sampling)
-- Markov Chain Monte Carlo: `Traced (Weighted SamplerIO)` 
-- Sequential Monte Carlo (Particle filtering): `Sequential (Population (Weighted SamplerIO)`
-- Particle Marginal MH: todo
-- Resample Move: todo
-- SMC$^2$: todo
+- `Weighted SamplerIO` (used in weighted sampling)
+- `Traced (Weighted SamplerIO)` (used in MCMC)
+- `Sequential (Population (Weighted SamplerIO)` (used in SMC)
+- todo: more
 
 

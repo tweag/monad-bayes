@@ -1,4 +1,4 @@
-## What is probabilistic programming
+# User Guide
 
 Probabilistic programming is all about being able to write programs like:
 
@@ -30,7 +30,92 @@ to get
 
 `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above.
 
-`sprinkler` is a distribution. But it's a distribution specified as a program with randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then do inference. To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete.
+`sprinkler` is a distribution. But it's a distribution specified as a program with randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
+
+## Specifying distributions
+
+
+
+A distribution in monad-bayes over a set $X$, is of type:
+
+```haskell=
+MonadInfer m => m X
+```
+### Basic distributions
+
+monad-bayes provides these basic distributions:
+
+- `random :: MonadInfer m => m Double` : sample uniformly from $[0,1]$
+TODO: more distributions
+
+### Constructing distributions monadically
+
+monad-bayes also lets us construct new distributions out of these. `MonadInfer` instances are also `Functor` and `Monad` instances, so we can do the following:
+
+```haskell=
+fmap (> 0.5) random :: MonadInfer m => m Bool
+```
+
+This is the distribution over TODO
+
+As an important special case, if `x :: MonadInfer m => m (a,b)` is a joint distribution over two variables, then `fmap fst a` marginalized out the second variable.
+
+```haskell=
+bernoulli 0.5 >>= (\x -> if x then random else normal 0 1)
+```
+
+It's easiest to understand this distribution as a program: it's the distribution you get by first sampling from `bernoulli 0.5`, then checking the result. If the result is `True`, then sample from `random`, else from `normal 0 1`. As a distribution, this has a PDF:
+
+$$ \int\_{[0,1]} 1[x>0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx $$
+
+We can also use do-notation, as in:
+
+sprinkler
+
+## Performing inference
+
+To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.
+
+All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.
+
+**The challenge of inference** is that most distributions that are of interest are not as simple as `sprinkler`. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.
+
+Designing a language in which you can specify arbitrarily complex models as probabilistic programs turns out to be a largely solved problem. The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.
+
+Two of the large classes of inference methods are **sampling based methods** and **gradient based methods**. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.
+
+For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on. 
+
+### Exact inference
+
+```haskell=
+enumerate :: Ord a => Enumerator a -> [(a, Double)]
+```
+
+So `enumerate dist` gives you each element in the support of `dist`, and its mass.
+
+**Only works on finite discrete distributions**
+
+
+things you can do:
+    distribution of functions
+    distribution of unshowable values 
+
+### Weighted sampling
+
+(sampleIO . runWeighted) 
+
+### Markov Chain Monte Carlo
+
+sampleIO . prior . mh n
+
+### Sequential Monte Carlo (Particle Filtering)
+
+smc
+
+### Particle Marginal Metropolis Hastings
+
+### Resample Move Sequential Monte Carlo
 
 <!-- " -->
 
@@ -39,11 +124,7 @@ to get
 
 <!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerate` does. -->
 
-The thing about inference is that most distributions that are of interest are not as simple as `sprinkler`. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.
 
-Designing a language in which you can specify arbitrarily complex models as probabilistic programs turns out to be a largely solved problem. The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.
-
-That's really the focus of monad-bayes. It's a surprising and beautiful library, but like most of Haskell, merits a lot of unpacking. As such, the goal of this document is to walk through how it works. 
 
 
 <!-- It feels natural that a pure, functional, strongly typed language like Haskell should have a good story for Bayesian probability, inference, and probabilistic programming.  -->
@@ -58,10 +139,10 @@ That's really the focus of monad-bayes. It's a surprising and beautiful library,
 
 <!-- *The interpretation of your model is the program which performs inference on it* -->
 
-## Motivating examples
+# Example Gallery
 
 
-`sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
+<!-- `sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
 
 ```haskell=
 example = do
@@ -83,9 +164,13 @@ betaBernoulli n = do
   replicateM n toss
 ```
 
+ -->
 
+## Interoperating with other Haskell code
 
-And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples:
+Probabilistic programs in monad-bayes are Haskell programs. This constrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
+
+<!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
 
 
 ```haskell=

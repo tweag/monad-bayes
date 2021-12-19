@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>What is probabilistic programming &mdash; monad-bayes  documentation</title>
+  <title>User Guide &mdash; monad-bayes  documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -15,6 +15,8 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -39,14 +41,29 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">What is probabilistic programming</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#motivating-examples">Motivating examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#api-docs">API docs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#specifying-distributions">Specifying distributions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-distributions">Basic distributions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constructing-distributions-monadically">Constructing distributions monadically</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performing-inference">Performing inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#exact-inference">Exact inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#weighted-sampling">Weighted sampling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#markov-chain-monte-carlo">Markov Chain Monte Carlo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-monte-carlo-particle-filtering">Sequential Monte Carlo (Particle Filtering)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resample-move-sequential-monte-carlo">Resample Move Sequential Monte Carlo</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#example-gallery">Example Gallery</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#interoperating-with-other-haskell-code">Interoperating with other Haskell code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-docs">API docs</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#references">References</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#the-core-typeclasses">The core typeclasses</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#interpreters">Interpreters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#cheat-sheet">Cheat Sheet</a></li>
 </ul>
 
         </div>
@@ -63,7 +80,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>What is probabilistic programming</li>
+      <li>User Guide</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/probprog.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -73,8 +90,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="what-is-probabilistic-programming">
-<h1>What is probabilistic programming<a class="headerlink" href="#what-is-probabilistic-programming" title="Permalink to this headline"></a></h1>
+  <section class="tex2jax_ignore mathjax_ignore" id="user-guide">
+<h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline"></a></h1>
 <p>Probabilistic programming is all about being able to write programs like:</p>
 <div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>sprinkler :: MonadInfer m =&gt; m Bool
 sprinkler = do
@@ -98,38 +115,114 @@ sprinkler = do
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution over values for the Boolean <code class="docutils literal notranslate"><span class="pre">rain</span></code> variable given the likelihood and observation specified above.</p>
-<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution. But it’s a distribution specified as a program with randomness (e.g. <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code>) and scoring (e.g. <code class="docutils literal notranslate"><span class="pre">condition</span></code>). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then do inference. To quote <a class="reference external" href="https://webppl.readthedocs.io/en/master/inference/">this page</a>, “marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.”. That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution. But it’s a distribution specified as a program with randomness (e.g. <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code>) and scoring (e.g. <code class="docutils literal notranslate"><span class="pre">condition</span></code>). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.</p>
+<section id="specifying-distributions">
+<h2>Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permalink to this headline"></a></h2>
+<p>A distribution in monad-bayes over a set <span class="math notranslate nohighlight">\(X\)</span>, is of type:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>MonadInfer m =&gt; m X
+</pre></div>
+</div>
+<section id="basic-distributions">
+<h3>Basic distributions<a class="headerlink" href="#basic-distributions" title="Permalink to this headline"></a></h3>
+<p>monad-bayes provides these basic distributions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code> : sample uniformly from <span class="math notranslate nohighlight">\([0,1]\)</span>
+TODO: more distributions</p></li>
+</ul>
+</section>
+<section id="constructing-distributions-monadically">
+<h3>Constructing distributions monadically<a class="headerlink" href="#constructing-distributions-monadically" title="Permalink to this headline"></a></h3>
+<p>monad-bayes also lets us construct new distributions out of these. <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code> instances are also <code class="docutils literal notranslate"><span class="pre">Functor</span></code> and <code class="docutils literal notranslate"><span class="pre">Monad</span></code> instances, so we can do the following:</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>fmap (&gt; 0.5) random :: MonadInfer m =&gt; m Bool
+</pre></div>
+</div>
+<p>This is the distribution over TODO</p>
+<p>As an important special case, if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">(a,b)</span></code> is a joint distribution over two variables, then <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span></code> marginalized out the second variable.</p>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>bernoulli 0.5 &gt;&gt;= (\x -&gt; if x then random else normal 0 1)
+</pre></div>
+</div>
+<p>It’s easiest to understand this distribution as a program: it’s the distribution you get by first sampling from <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>, then checking the result. If the result is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then sample from <code class="docutils literal notranslate"><span class="pre">random</span></code>, else from <code class="docutils literal notranslate"><span class="pre">normal</span> <span class="pre">0</span> <span class="pre">1</span></code>. As a distribution, this has a PDF:</p>
+<div class="math notranslate nohighlight">
+\[ \int\_{[0,1]} 1[x&gt;0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx \]</div>
+<p>We can also use do-notation, as in:</p>
+<p>sprinkler</p>
+</section>
+</section>
+<section id="performing-inference">
+<h2>Performing inference<a class="headerlink" href="#performing-inference" title="Permalink to this headline"></a></h2>
+<p>To quote <a class="reference external" href="https://webppl.readthedocs.io/en/master/inference/">this page</a>, “marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.”. That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.</p>
+<p>All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.</p>
+<p><strong>The challenge of inference</strong> is that most distributions that are of interest are not as simple as <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code>. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.</p>
+<p>Designing a language in which you can specify arbitrarily complex models as probabilistic programs turns out to be a largely solved problem. The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
+<p>Two of the large classes of inference methods are <strong>sampling based methods</strong> and <strong>gradient based methods</strong>. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.</p>
+<p>For the purposes of this section, let <code class="docutils literal notranslate"><span class="pre">dist</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> be the distribution you want to perform inference on.</p>
+<section id="exact-inference">
+<h3>Exact inference<a class="headerlink" href="#exact-inference" title="Permalink to this headline"></a></h3>
+<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>enumerate :: Ord a =&gt; Enumerator a -&gt; [(a, Double)]
+</pre></div>
+</div>
+<p>So <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">dist</span></code> gives you each element in the support of <code class="docutils literal notranslate"><span class="pre">dist</span></code>, and its mass.</p>
+<p><strong>Only works on finite discrete distributions</strong></p>
+<p>things you can do:
+distribution of functions
+distribution of unshowable values</p>
+</section>
+<section id="weighted-sampling">
+<h3>Weighted sampling<a class="headerlink" href="#weighted-sampling" title="Permalink to this headline"></a></h3>
+<p>(sampleIO . runWeighted)</p>
+</section>
+<section id="markov-chain-monte-carlo">
+<h3>Markov Chain Monte Carlo<a class="headerlink" href="#markov-chain-monte-carlo" title="Permalink to this headline"></a></h3>
+<p>sampleIO . prior . mh n</p>
+</section>
+<section id="sequential-monte-carlo-particle-filtering">
+<h3>Sequential Monte Carlo (Particle Filtering)<a class="headerlink" href="#sequential-monte-carlo-particle-filtering" title="Permalink to this headline"></a></h3>
+<p>smc</p>
+</section>
+<section id="particle-marginal-metropolis-hastings">
+<h3>Particle Marginal Metropolis Hastings<a class="headerlink" href="#particle-marginal-metropolis-hastings" title="Permalink to this headline"></a></h3>
+</section>
+<section id="resample-move-sequential-monte-carlo">
+<h3>Resample Move Sequential Monte Carlo<a class="headerlink" href="#resample-move-sequential-monte-carlo" title="Permalink to this headline"></a></h3>
 <!-- " -->
 <!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerate`, the mass of each element of the support. -->
 <!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerate` does. -->
-<p>The thing about inference is that most distributions that are of interest are not as simple as <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code>. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.</p>
-<p>Designing a language in which you can specify arbitrarily complex models as probabilistic programs turns out to be a largely solved problem. The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
-<p>That’s really the focus of monad-bayes. It’s a surprising and beautiful library, but like most of Haskell, merits a lot of unpacking. As such, the goal of this document is to walk through how it works.</p>
 <!-- It feels natural that a pure, functional, strongly typed language like Haskell should have a good story for Bayesian probability, inference, and probabilistic programming.  -->
 <!-- denotation of probabilistic programs, which we then are free to interpret in myriad ways: as weighted lists, samplers, or a variety of more sophisticated programs for performing inference -->
 <!-- In particular, these interpretations can be combined, and by so doing, you can built up really rather complex inference algorithms while being sure that your method is sound. And also intelligible.  -->
 <!-- *The interpretation of your model is the program which performs inference on it* -->
 </section>
-<section id="motivating-examples">
-<h1>Motivating examples<a class="headerlink" href="#motivating-examples" title="Permalink to this headline"></a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> above is a great example of the two new things you can do in a probabilistic program that you can’t do in other programs: you can draw from distributions, and you can <em>condition</em> on observations. For example:</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>example = do
-    ind &lt;- fmap not (bernoulli 0.9)
-    val &lt;- if ind then gaussian 0 1 else poisson 0.5
-    condition (val &gt; 1)
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="example-gallery">
+<h1>Example Gallery<a class="headerlink" href="#example-gallery" title="Permalink to this headline"></a></h1>
+<!-- `sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
+
+```haskell=
+example = do
+    ind <- fmap not (bernoulli 0.9)
+    val <- if ind then gaussian 0 1 else poisson 0.5
+    condition (val > 1)
     return ind
-</pre></div>
-</div>
-<p>This example is contrived, in order to show a few things. First, <code class="docutils literal notranslate"><span class="pre">m</span></code> in distributions like <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.9</span> <span class="pre">::</span> <span class="pre">MonadSample</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Bool</span></code> (the distribution <code class="docutils literal notranslate"><span class="pre">{True</span> <span class="pre">:</span> <span class="pre">0.9,</span> <span class="pre">False:</span> <span class="pre">0.1}</span></code>) are functors, so we can fmap over them, e.g. with <code class="docutils literal notranslate"><span class="pre">not</span></code> to get the distribution <code class="docutils literal notranslate"><span class="pre">{True</span> <span class="pre">:</span> <span class="pre">0.1,</span> <span class="pre">False:</span> <span class="pre">0.9}</span></code>. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a <code class="docutils literal notranslate"><span class="pre">condition</span></code> function, which throws out all values of <code class="docutils literal notranslate"><span class="pre">ind</span></code> which would result in <code class="docutils literal notranslate"><span class="pre">val</span> <span class="pre">&lt;=</span> <span class="pre">1</span></code>.</p>
-<p>The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the <code class="docutils literal notranslate"><span class="pre">models</span></code> folder (TODO LINK) for examples.</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>betaBernoulli :: MonadSample m =&gt; Int -&gt; m [Bool]
+```
+
+This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadSample m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
+
+The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the `models` folder (TODO LINK) for examples.
+
+```haskell=
+betaBernoulli :: MonadSample m => Int -> m [Bool]
 betaBernoulli n = do
-  weight &lt;- uniform 0 1
+  weight <- uniform 0 1
   let toss = bernoulli weight
   replicateM n toss
-</pre></div>
-</div>
-<p>And, because we’re programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples:</p>
+```
+
+ -->
+<section id="interoperating-with-other-haskell-code">
+<h2>Interoperating with other Haskell code<a class="headerlink" href="#interoperating-with-other-haskell-code" title="Permalink to this headline"></a></h2>
+<p>Probabilistic programs in monad-bayes are Haskell programs. This constrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language.</p>
+<!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
 <div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>model :: (MonadError String m, MonadInfer m) =&gt; m Int
 model = do
     x &lt;- uniformD [0..10]
@@ -155,8 +248,9 @@ main = enumerate $ runExceptT model
 </div>
 </section>
 <section id="api-docs">
-<h1>API docs<a class="headerlink" href="#api-docs" title="Permalink to this headline"></a></h1>
+<h2>API docs<a class="headerlink" href="#api-docs" title="Permalink to this headline"></a></h2>
 <p>For API docs, see <a class="reference external" href="https://hackage.haskell.org/package/monad-bayes">hackage</a>.</p>
+</section>
 </section>
 
 

@@ -18,7 +18,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="What is probabilistic programming" href="probprog.html" /> 
+    <link rel="next" title="User Guide" href="probprog.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -38,15 +38,9 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html">What is probabilistic programming</a></li>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html#motivating-examples">Motivating examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#example-gallery">Example Gallery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#references">References</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#the-core-typeclasses">The core typeclasses</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#interpreters">Interpreters</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#inference-methods">Inference methods</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#cheat-sheet">Cheat Sheet</a></li>
 </ul>
 
         </div>
@@ -78,48 +72,60 @@
 <p>Monad-bayes is a library for doing probabilistic programming in Haskell, using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.</p>
 <p>This documentation is for:</p>
 <ul class="simple">
-<li><p>users: to understand how to write probabilistic programs and run inference methods</p></li>
-<li><p>developers: to understand how the inference methods work and how to extend them</p></li>
+<li><p><strong>users</strong>: to understand how to write probabilistic programs and run inference methods</p></li>
+<li><p><strong>developers</strong>: to understand how the inference methods work and how to extend them</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html">What is probabilistic programming</a></li>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html#motivating-examples">Motivating examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#references">References</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#the-core-typeclasses">The core typeclasses</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#interpreters">Interpreters</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#enumerator">Enumerator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#samplerio">SamplerIO</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#weighted-m">Weighted m</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#the-more-difficult-inference-transformers">The more difficult inference transformers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#specifying-distributions">Specifying distributions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#basic-distributions">Basic distributions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#constructing-distributions-monadically">Constructing distributions monadically</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#inference-methods">Inference methods</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#particle-marginal-metropolis-hastings">Particle Marginal Metropolis-Hastings</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#resample-move-sequential-monte-carlo">Resample-Move Sequential Monte Carlo</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#sequential-monte-carlo-squared">Sequential Monte Carlo squared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#performing-inference">Performing inference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#exact-inference">Exact inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#weighted-sampling">Weighted sampling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#markov-chain-monte-carlo">Markov Chain Monte Carlo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#sequential-monte-carlo-particle-filtering">Sequential Monte Carlo (Particle Filtering)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="probprog.html#resample-move-sequential-monte-carlo">Resample Move Sequential Monte Carlo</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html#cheat-sheet">Cheat Sheet</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#example-gallery">Example Gallery</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#interoperating-with-other-haskell-code">Interoperating with other Haskell code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#the-core-typeclasses">The core typeclasses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#inference-transformers">Inference transformers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#enumerator">Enumerator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#samplerio">SamplerIO</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#weighted-m">Weighted m</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#population">Population</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#sequential">Sequential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#freesampler">FreeSampler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#traced">Traced</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#implementations-of-inference-methods">Implementations of inference methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#cheat-sheet">Cheat Sheet</a></li>
+</ul>
+</li>
 </ul>
 </div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline"></a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="probprog.html" class="btn btn-neutral float-right" title="What is probabilistic programming" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="probprog.html" class="btn btn-neutral float-right" title="User Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
