@@ -42,9 +42,11 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#specifying-distributions">Specifying distributions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#basic-distributions">Basic distributions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#constructing-distributions-monadically">Constructing distributions monadically</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#constructing-distributions-as-programs">Constructing distributions as programs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hard-and-soft-conditioning">Hard and soft conditioning</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#performing-inference">Performing inference</a><ul>
@@ -52,8 +54,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#weighted-sampling">Weighted sampling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#markov-chain-monte-carlo">Markov Chain Monte Carlo</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sequential-monte-carlo-particle-filtering">Sequential Monte Carlo (Particle Filtering)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#resample-move-sequential-monte-carlo">Resample Move Sequential Monte Carlo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
 </ul>
 </li>
 </ul>
@@ -93,17 +95,17 @@
   <section class="tex2jax_ignore mathjax_ignore" id="user-guide">
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline"></a></h1>
 <p>Probabilistic programming is all about being able to write programs like:</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>sprinkler :: MonadInfer m =&gt; m Bool
-sprinkler = do
-  rain &lt;- bernoulli 0.3
-  sprinkler &lt;- bernoulli $ if rain then 0.1 else 0.4
-  wet &lt;- bernoulli $ case (rain, sprinkler) of
-    (True, True) -&gt; 0.98
-    (True, False) -&gt; 0.8
-    (False, True) -&gt; 0.9
-    (False, False) -&gt; 0.0
-  condition (not wet)
-  return rain
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">sprinkler</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
+<span class="nf">sprinkler</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">rain</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.3</span>
+  <span class="n">sprinkler</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="o">$</span> <span class="kr">if</span> <span class="n">rain</span> <span class="kr">then</span> <span class="mf">0.1</span> <span class="kr">else</span> <span class="mf">0.4</span>
+  <span class="n">wet</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="o">$</span> <span class="kr">case</span> <span class="p">(</span><span class="n">rain</span><span class="p">,</span> <span class="n">sprinkler</span><span class="p">)</span> <span class="kr">of</span>
+    <span class="p">(</span><span class="kt">True</span><span class="p">,</span> <span class="kt">True</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="mf">0.98</span>
+    <span class="p">(</span><span class="kt">True</span><span class="p">,</span> <span class="kt">False</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="mf">0.8</span>
+    <span class="p">(</span><span class="kt">False</span><span class="p">,</span> <span class="kt">True</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="mf">0.9</span>
+    <span class="p">(</span><span class="kt">False</span><span class="p">,</span> <span class="kt">False</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="mf">0.0</span>
+  <span class="n">condition</span> <span class="p">(</span><span class="n">not</span> <span class="n">wet</span><span class="p">)</span>
+  <span class="n">return</span> <span class="n">rain</span>
 </pre></div>
 </div>
 <p>and doing then do inference like this:</p>
@@ -114,38 +116,112 @@ sprinkler = do
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">False</span><span class="p">,</span><span class="mf">0.8914</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">0.1086</span><span class="p">)]</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution over values for the Boolean <code class="docutils literal notranslate"><span class="pre">rain</span></code> variable given the likelihood and observation specified above.</p>
-<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution. But it’s a distribution specified as a program with randomness (e.g. <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code>) and scoring (e.g. <code class="docutils literal notranslate"><span class="pre">condition</span></code>). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution over values for the Boolean <code class="docutils literal notranslate"><span class="pre">rain</span></code> variable given the likelihood and observation specified above. <code class="docutils literal notranslate"><span class="pre">enumerate</span></code> is a function which performs <strong>inference</strong>: it takes the abstract distribution <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> and calculates something concrete - in this case, the probability mass function.</p>
+<p><code class="docutils literal notranslate"><span class="pre">sprinkler</span></code> is a distribution specified as a program with randomness (e.g. <code class="docutils literal notranslate"><span class="pre">bernoulli</span></code>) and scoring (e.g. <code class="docutils literal notranslate"><span class="pre">condition</span></code>). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.</p>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<p>Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to WebPPL is an excellent resource for learning about probabilistic programming: https://probmods.org/. The tutorials for Gen are also very good, particularly for learning about traces: https://github.com/probcomp/gen-quickstart/blob/master/tutorials/A%20Bottom-Up%20Introduction%20to%20Gen.ipynb.</p>
+</section>
 <section id="specifying-distributions">
 <h2>Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permalink to this headline"></a></h2>
 <p>A distribution in monad-bayes over a set <span class="math notranslate nohighlight">\(X\)</span>, is of type:</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>MonadInfer m =&gt; m X
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">X</span>
 </pre></div>
 </div>
 <section id="basic-distributions">
 <h3>Basic distributions<a class="headerlink" href="#basic-distributions" title="Permalink to this headline"></a></h3>
-<p>monad-bayes provides these basic distributions:</p>
+<p>monad-bayes provides standard distributions, such as:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code> : sample uniformly from <span class="math notranslate nohighlight">\([0,1]\)</span>
-TODO: more distributions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code> : sample uniformly from <span class="math notranslate nohighlight">\([0,1]\)</span></p></li>
 </ul>
+<p>The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html</p>
+<p>Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over <code class="docutils literal notranslate"><span class="pre">(+)</span> <span class="pre">::</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span></code> and <code class="docutils literal notranslate"><span class="pre">(-)</span> <span class="pre">::</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span></code>:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">bizarreDistribution</span> <span class="ow">=</span> <span class="n">uniformD</span> <span class="p">[(</span><span class="o">+</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="p">)]</span>
+</pre></div>
+</div>
 </section>
-<section id="constructing-distributions-monadically">
-<h3>Constructing distributions monadically<a class="headerlink" href="#constructing-distributions-monadically" title="Permalink to this headline"></a></h3>
-<p>monad-bayes also lets us construct new distributions out of these. <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code> instances are also <code class="docutils literal notranslate"><span class="pre">Functor</span></code> and <code class="docutils literal notranslate"><span class="pre">Monad</span></code> instances, so we can do the following:</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>fmap (&gt; 0.5) random :: MonadInfer m =&gt; m Bool
+<section id="constructing-distributions-as-programs">
+<h3>Constructing distributions as programs<a class="headerlink" href="#constructing-distributions-as-programs" title="Permalink to this headline"></a></h3>
+<p>monad-bayes also lets us construct new distributions out of these. <code class="docutils literal notranslate"><span class="pre">MonadInfer</span> <span class="pre">m</span></code> implies <code class="docutils literal notranslate"><span class="pre">Monad</span> <span class="pre">m</span></code> and in turn <code class="docutils literal notranslate"><span class="pre">Functor</span> <span class="pre">m</span></code>, so we can do the following:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">fmap</span> <span class="p">(</span><span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span> <span class="n">random</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
 </pre></div>
 </div>
-<p>This is the distribution over TODO</p>
-<p>As an important special case, if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">(a,b)</span></code> is a joint distribution over two variables, then <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span></code> marginalized out the second variable.</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>bernoulli 0.5 &gt;&gt;= (\x -&gt; if x then random else normal 0 1)
+<p>This is the uniform distribution over <span class="math notranslate nohighlight">\((0.5, 1]\)</span>.</p>
+<p>As an important special case, if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">(a,b)</span></code> is a joint distribution over two variables, then <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> <strong>marginalizes</strong> out the second variable. That is to say, <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span></code> is the distribution <span class="math notranslate nohighlight">\(p(a)\)</span>, where <span class="math notranslate nohighlight">\(p(a) = \int_b p(a,b)\)</span></p>
+<p>The above example use only the functor instance for <code class="docutils literal notranslate"><span class="pre">m</span></code>, but we also have the monad instance, as used in:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="n">bernoulli</span> <span class="mf">0.5</span> <span class="o">&gt;&gt;=</span> <span class="p">(</span><span class="nf">\</span><span class="n">x</span> <span class="ow">-&gt;</span> <span class="kr">if</span> <span class="n">x</span> <span class="kr">then</span> <span class="n">random</span> <span class="kr">else</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>It’s easiest to understand this distribution as a program: it’s the distribution you get by first sampling from <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>, then checking the result. If the result is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then sample from <code class="docutils literal notranslate"><span class="pre">random</span></code>, else from <code class="docutils literal notranslate"><span class="pre">normal</span> <span class="pre">0</span> <span class="pre">1</span></code>. As a distribution, this has a PDF:</p>
+<p>It’s easiest to understand this distribution as a probabilistic program: it’s the distribution you get by first sampling from <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>, then checking the result. If the result is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then sample from <code class="docutils literal notranslate"><span class="pre">random</span></code>, else from <code class="docutils literal notranslate"><span class="pre">normal</span> <span class="pre">0</span> <span class="pre">1</span></code>. As a distribution, this has a PDF:</p>
 <div class="math notranslate nohighlight">
-\[ \int\_{[0,1]} 1[x&gt;0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx \]</div>
-<p>We can also use do-notation, as in:</p>
-<p>sprinkler</p>
+\[ f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  \]</div>
+<!-- $$ \int\_{[0,1]} 1[x>0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx $$ -->
+<p>Equivalently, we could write this in do-notation as:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">bool</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="kr">if</span> <span class="n">bool</span> <span class="kr">then</span> <span class="n">random</span> <span class="kr">else</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><strong>A technical note</strong>: it is often tempting to read the line <code class="docutils literal notranslate"><span class="pre">bool</span> <span class="pre">&lt;-</span> <span class="pre">bernoulli</span> <span class="pre">0.5</span></code> as saying “take a sample from <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>. But although we’ll see below that <code class="docutils literal notranslate"><span class="pre">example</span></code> can be interpreted as a sampler, there are many other interpretations, not least as a mathematical specification of a particular distribution.</p>
+<p>That said, it is often useful to think of probabilistic programs as specifying distributions over <strong>program executation traces</strong>. For example, one trace of <code class="docutils literal notranslate"><span class="pre">example</span></code> as defined above is (informally): <code class="docutils literal notranslate"><span class="pre">{bernoulli</span> <span class="pre">0.5</span> <span class="pre">:</span> <span class="pre">True,</span> <span class="pre">random</span> <span class="pre">:</span> <span class="pre">0.7}</span></code>.</p>
+</section>
+<section id="hard-and-soft-conditioning">
+<h3>Hard and soft conditioning<a class="headerlink" href="#hard-and-soft-conditioning" title="Permalink to this headline"></a></h3>
+<p>monad-bayes provides a function <code class="docutils literal notranslate"><span class="pre">score</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">Log</span> <span class="pre">Double</span> <span class="pre">-&gt;</span> <span class="pre">m</span> <span class="pre">()</span></code>. (<strong>Note</strong>: <code class="docutils literal notranslate"><span class="pre">Log</span> <span class="pre">Double</span></code> is a wrapper for <code class="docutils literal notranslate"><span class="pre">Double</span></code> which stores doubles as their logarithm, and does multiplication by addition of logarithms.)</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">bool</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="n">number</span> <span class="ow">&lt;-</span> <span class="kr">if</span> <span class="n">bool</span> <span class="kr">then</span> <span class="n">random</span> <span class="kr">else</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">1</span>
+  <span class="n">score</span> <span class="n">number</span> 
+  <span class="n">return</span> <span class="n">bool</span>
+</pre></div>
+</div>
+<p>It’s easiest to understand this in terms of the “program execution trace” perspective described above. What the score statement does is to multiple every trace by the value of <code class="docutils literal notranslate"><span class="pre">number</span></code> in that particular trace.</p>
+<p><code class="docutils literal notranslate"><span class="pre">condition</span></code> in then defined as follows:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">condition</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="kt">Bool</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="nb">()</span>
+<span class="nf">condition</span> <span class="n">b</span> <span class="ow">=</span> <span class="n">score</span> <span class="o">$</span> <span class="kr">if</span> <span class="n">b</span> <span class="kr">then</span> <span class="mi">1</span> <span class="kr">else</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>So <code class="docutils literal notranslate"><span class="pre">condition</span> <span class="pre">b</span></code> throws away every trace in which <code class="docutils literal notranslate"><span class="pre">b</span></code> is False, and keeps all traces in which <code class="docutils literal notranslate"><span class="pre">b</span></code> is True. For example:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Int</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">n</span> <span class="ow">&lt;-</span> <span class="n">poisson</span> <span class="mf">0.5</span>
+  <span class="n">condition</span> <span class="p">(</span><span class="n">n</span><span class="o">%</span><span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">return</span> <span class="n">n</span>
+</pre></div>
+</div>
+<p>This describes a poisson distribution in which all even values of the random variable are marginalized out.</p>
+<!-- Another use case is Bayesian inference as in:
+
+<!-- The most intuitive way to understand `score` is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a `score x` statement, where the value of `x` depends on the previous choices. This statement multiplies the weight of this "trace" by the score. -->
+<!-- ```haskell
+bayesianExample :: (Eq a, MonadInfer m) => m a -> (a -> m b) -> (b -> m a)
+bayesianExample prior likelihood b = do
+    a <- prior
+    b' <- likelihood a
+    condition (b==b')
+    return a
+```
+
+Note that operationally speaking, this approach is only going to work well for discrete distributions, since `b==b'` is going to be zero-measure in the continuous case. But in the discrete case, we could for example do: -->
+<!-- ```haskell
+example :: MonadInfer 
+example =  bayesianExample (bernoulli 0.5) (\x -> if x then bernoulli 0.8 else bernoulli 0.9) True 
+``` 
+-->
+<!-- ```haskell
+example :: MonadInfer m => m Bool
+example = do 
+  x <- normal 0 1
+  y <- normal 0 2
+  z <- normal 0 3
+  return (x > y)
+```
+
+Note that in this example, commenting out the line `z <- normal 0 3` would not change the distribution at all. **But**, there is no guarantee in theory that the inference method you use knows this. More generally,  -->
+<!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 </section>
 </section>
 <section id="performing-inference">
@@ -153,37 +229,107 @@ TODO: more distributions</p></li>
 <p>To quote <a class="reference external" href="https://webppl.readthedocs.io/en/master/inference/">this page</a>, “marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.”. That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.</p>
 <p>All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.</p>
 <p><strong>The challenge of inference</strong> is that most distributions that are of interest are not as simple as <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code>. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.</p>
-<p>Designing a language in which you can specify arbitrarily complex models as probabilistic programs turns out to be a largely solved problem. The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
+<p>Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given about are sufficient for that.</p>
+<p>The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
 <p>Two of the large classes of inference methods are <strong>sampling based methods</strong> and <strong>gradient based methods</strong>. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.</p>
-<p>For the purposes of this section, let <code class="docutils literal notranslate"><span class="pre">dist</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> be the distribution you want to perform inference on.</p>
+<!-- For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on.  -->
 <section id="exact-inference">
 <h3>Exact inference<a class="headerlink" href="#exact-inference" title="Permalink to this headline"></a></h3>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>enumerate :: Ord a =&gt; Enumerator a -&gt; [(a, Double)]
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerate</span> <span class="ow">::</span> <span class="kt">Ord</span> <span class="n">a</span> <span class="ow">=&gt;</span> <span class="kt">Enumerator</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span>
 </pre></div>
 </div>
-<p>So <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">dist</span></code> gives you each element in the support of <code class="docutils literal notranslate"><span class="pre">dist</span></code>, and its mass.</p>
-<p><strong>Only works on finite discrete distributions</strong></p>
-<p>things you can do:
-distribution of functions
-distribution of unshowable values</p>
+<p>So <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(bernoulli</span> <span class="pre">0.7)</span></code> gives you</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">False</span><span class="p">,</span><span class="mf">0.3</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">0.7</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p><strong>Note: enumerate only works on finite discrete distributions</strong></p>
+<p>It will run forever on infinite distributions like <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(poisson</span> <span class="pre">0.7)</span></code> and will throw the following <strong>runtime</strong> error on continuous distributions as in <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(normal</span> <span class="pre">0</span> <span class="pre">1)</span></code>:</p>
+<p><em>“Exception: Infinitely supported random variables not supported in Enumerator”</em></p>
+<p><strong>However</strong>, it’s totally fine to have the elements of the support be an instance of <code class="docutils literal notranslate"><span class="pre">Ord</span></code>, as in:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">fmap</span> <span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span><span class="n">p</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">take</span> <span class="mi">4</span> <span class="n">ls</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span> <span class="o">$</span> <span class="n">enumerate</span> <span class="o">$</span> <span class="n">uniformD</span> <span class="p">[[</span><span class="mi">1</span><span class="o">..</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="o">..</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>which gives</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span><span class="mf">0.5</span><span class="p">),([</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span><span class="mf">0.5</span><span class="p">)]</span>
+</pre></div>
+</div>
 </section>
 <section id="weighted-sampling">
 <h3>Weighted sampling<a class="headerlink" href="#weighted-sampling" title="Permalink to this headline"></a></h3>
-<p>(sampleIO . runWeighted)</p>
+<p>To perform weighted sampling, use:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runWeighted</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Weighted</span> <span class="kt">SamplerIO</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this to any distribution. For example, suppose we have the distribution:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="n">condition</span> <span class="n">x</span>
+  <span class="n">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>Then:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runWeighted</span><span class="p">)</span> <span class="n">example</span>
+</pre></div>
+</div>
+<p>is an IO operation which when run, will display either <code class="docutils literal notranslate"><span class="pre">(False,</span> <span class="pre">0.0)</span></code> or <code class="docutils literal notranslate"><span class="pre">(True,</span> <span class="pre">1.0)</span></code></p>
 </section>
 <section id="markov-chain-monte-carlo">
 <h3>Markov Chain Monte Carlo<a class="headerlink" href="#markov-chain-monte-carlo" title="Permalink to this headline"></a></h3>
-<p>sampleIO . prior . mh n</p>
+<p>There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">prior</span> <span class="o">.</span> <span class="n">mh</span> <span class="n">numSteps</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Traced</span> <span class="p">(</span><span class="kt">Weighted</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Traced</span> <span class="pre">(Weighted</span> <span class="pre">SamplerIO)</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this to any distribution. For instance:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="n">condition</span> <span class="n">x</span>
+  <span class="n">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>Then</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[</span><span class="kt">Bool</span><span class="p">]</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">prior</span> <span class="o">.</span> <span class="n">mh</span> <span class="mi">10</span><span class="p">)</span> <span class="n">example</span>
+</pre></div>
+</div>
+<p>produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you’d get:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">,</span><span class="kc">True</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The end of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.</p>
 </section>
 <section id="sequential-monte-carlo-particle-filtering">
 <h3>Sequential Monte Carlo (Particle Filtering)<a class="headerlink" href="#sequential-monte-carlo-particle-filtering" title="Permalink to this headline"></a></h3>
-<p>smc</p>
-</section>
-<section id="particle-marginal-metropolis-hastings">
-<h3>Particle Marginal Metropolis Hastings<a class="headerlink" href="#particle-marginal-metropolis-hastings" title="Permalink to this headline"></a></h3>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span><span class="o">.</span> <span class="n">runPopulation</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="n">numSteps</span> <span class="n">numParticles</span><span class="p">)</span> 
+  <span class="ow">::</span> <span class="kt">Sequential</span> <span class="p">(</span><span class="kt">Population</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Numeric</span><span class="o">.</span><span class="kt">Log</span><span class="o">.</span><span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">(Population</span> <span class="pre">SamplerIO)</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this to any distribution. For instance, to use our now familiar <code class="docutils literal notranslate"><span class="pre">example</span></code>:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
+<span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="n">condition</span> <span class="n">x</span>
+  <span class="n">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>Then</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[</span><span class="kt">Bool</span><span class="p">]</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runPopulation</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>Each of these is a particle with a weight.</p>
 </section>
 <section id="resample-move-sequential-monte-carlo">
 <h3>Resample Move Sequential Monte Carlo<a class="headerlink" href="#resample-move-sequential-monte-carlo" title="Permalink to this headline"></a></h3>
+</section>
+<section id="particle-marginal-metropolis-hastings">
+<h3>Particle Marginal Metropolis Hastings<a class="headerlink" href="#particle-marginal-metropolis-hastings" title="Permalink to this headline"></a></h3>
+<p>This inference method takes a prior and a model separately.</p>
 <!-- " -->
 <!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerate`, the mass of each element of the support. -->
 <!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerate` does. -->
@@ -198,7 +344,7 @@ distribution of unshowable values</p>
 <h1>Example Gallery<a class="headerlink" href="#example-gallery" title="Permalink to this headline"></a></h1>
 <!-- `sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
 
-```haskell=
+```haskell
 example = do
     ind <- fmap not (bernoulli 0.9)
     val <- if ind then gaussian 0 1 else poisson 0.5
@@ -210,7 +356,7 @@ This example is contrived, in order to show a few things. First, `m` in distribu
 
 The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the `models` folder (TODO LINK) for examples.
 
-```haskell=
+```haskell
 betaBernoulli :: MonadSample m => Int -> m [Bool]
 betaBernoulli n = do
   weight <- uniform 0 1
@@ -221,31 +367,49 @@ betaBernoulli n = do
  -->
 <section id="interoperating-with-other-haskell-code">
 <h2>Interoperating with other Haskell code<a class="headerlink" href="#interoperating-with-other-haskell-code" title="Permalink to this headline"></a></h2>
-<p>Probabilistic programs in monad-bayes are Haskell programs. This constrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language.</p>
+<p>Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language.</p>
+<p>For example, we can use ordinary monadic combinators, as in:</p>
+<p>DICE EXAMPLE TODO</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
+  <span class="n">when</span> <span class="n">x</span> <span class="p">(</span><span class="n">score</span> <span class="mf">0.8</span><span class="p">)</span>
+  <span class="n">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">whileM</span>
+  <span class="kt">TODO</span>
+</pre></div>
+</div>
+<p>We can use libraries like Pipes, to specify lazy distributions like:</p>
+<p>TODO example</p>
+<p>We can define models like PCFGs and HMMs using recursion schemes:</p>
+<p>TODO example</p>
+<p>We can write probabilistic parsers:</p>
+<p>TODO</p>
+<p>We can use monad transformers on top of our probability monad <code class="docutils literal notranslate"><span class="pre">m</span></code>, as in:</p>
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>model :: (MonadError String m, MonadInfer m) =&gt; m Int
-model = do
-    x &lt;- uniformD [0..10]
-    conditionAllowingForFailure (x &lt; 0)
-    return x
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">model</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadError</span> <span class="kt">String</span> <span class="n">m</span><span class="p">,</span> <span class="kt">MonadInfer</span> <span class="n">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Int</span>
+<span class="nf">model</span> <span class="ow">=</span> <span class="kr">do</span>
+    <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">uniformD</span> <span class="p">[</span><span class="mi">0</span><span class="o">..</span><span class="mi">10</span><span class="p">]</span>
+    <span class="n">conditionAllowingForFailure</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">return</span> <span class="n">x</span>
 
-conditionAllowingForFailure :: (MonadSample m, MonadError [Char] m, MonadCond m) 
-    =&gt; Bool -&gt; m ()
-conditionAllowingForFailure b = do 
-    fail &lt;- bernoulli 0.1
-    when fail $ throwError &quot;fail&quot;
-    condition b
+<span class="nf">conditionAllowingForFailure</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadSample</span> <span class="n">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="p">[</span><span class="kt">Char</span><span class="p">]</span> <span class="n">m</span><span class="p">,</span> <span class="kt">MonadCond</span> <span class="n">m</span><span class="p">)</span> 
+    <span class="ow">=&gt;</span> <span class="kt">Bool</span> <span class="ow">-&gt;</span> <span class="n">m</span> <span class="nb">()</span>
+<span class="nf">conditionAllowingForFailure</span> <span class="n">b</span> <span class="ow">=</span> <span class="kr">do</span> 
+    <span class="n">fail</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.1</span>
+    <span class="n">when</span> <span class="n">fail</span> <span class="o">$</span> <span class="n">throwError</span> <span class="s">&quot;fail&quot;</span>
+    <span class="n">condition</span> <span class="n">b</span>
 
-main :: [(Either String Int, Double)]
-main = enumerate $ runExceptT model
--- &gt;&gt;&gt; main
--- [(Left &quot;fail&quot;,1.0),(Right 0,0.0),(Right 1,0.0),(Right 2,0.0),(Right 3,0.0),(Right 4,0.0),(Right 5,0.0),(Right 6,0.0),(Right 7,0.0),(Right 8,0.0),(Right 9,0.0),(Right 10,0.0)]
+<span class="nf">main</span> <span class="ow">::</span> <span class="p">[(</span><span class="kt">Either</span> <span class="kt">String</span> <span class="kt">Int</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span>
+<span class="nf">main</span> <span class="ow">=</span> <span class="n">enumerate</span> <span class="o">$</span> <span class="n">runExceptT</span> <span class="n">model</span>
+<span class="c1">-- &gt;&gt;&gt; main</span>
+<span class="c1">-- [(Left &quot;fail&quot;,1.0),(Right 0,0.0),(Right 1,0.0),(Right 2,0.0),(Right 3,0.0),(Right 4,0.0),(Right 5,0.0),(Right 6,0.0),(Right 7,0.0),(Right 8,0.0),(Right 9,0.0),(Right 10,0.0)]</span>
 </pre></div>
 </div>
 <p>Here, I’ve added <code class="docutils literal notranslate"><span class="pre">ExceptT</span></code> to my probability monad, which allows me to throw errors. The result is that I can write a version of <code class="docutils literal notranslate"><span class="pre">condition</span></code> which results in a safe failure when I condition on something that is always false.</p>
-<div class="highlight-haskell= notranslate"><div class="highlight"><pre><span></span>recursion scheme example: pcfg
-</pre></div>
-</div>
 </section>
 <section id="api-docs">
 <h2>API docs<a class="headerlink" href="#api-docs" title="Permalink to this headline"></a></h2>
