@@ -18,5 +18,5 @@ steps:
     timeout_in_minutes: 100
   - label: Build a shell environment
     command: |
-      nix-shell
+      nix-shell --run "echo OK"
     timeout_in_minutes: 100
