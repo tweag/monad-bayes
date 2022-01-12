@@ -16,3 +16,7 @@ steps:
     command: |
       nix-build -A monad-bayes-ghc9 --no-out-link
     timeout_in_minutes: 100
+  - label: Build a shell environment
+    command: |
+      nix-shell
+    timeout_in_minutes: 100
