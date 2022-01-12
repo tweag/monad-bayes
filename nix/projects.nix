@@ -17,7 +17,8 @@ let
     inherit stackYaml;
     src = pkgs.lib.sourceByRegex ./.. source;
   };
-in {
+in
+{
   monad-bayes-ghc88 = mkProject "stack-ghc884.yaml";
   monad-bayes-ghc810 = mkProject "stack-ghc8107.yaml";
   monad-bayes-ghc9 = mkProject "stack-ghc902.yaml";

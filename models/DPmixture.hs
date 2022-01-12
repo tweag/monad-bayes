@@ -54,7 +54,7 @@ dp concentration base = do
 -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
 dpMixture :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
 dpMixture =
-  let --lazily generate clusters
+  let -- lazily generate clusters
       clusters = do
         let atoms = [1 ..]
         breaks <- sequence $ repeat $ beta 1 1
@@ -63,9 +63,9 @@ dpMixture =
         means <- mapM (normal m) vars
         return (classgen, vars, means)
       n = length obs
-      --start with no data points
+      -- start with no data points
       start = fmap (,[]) clusters
-      --add points one by one
+      -- add points one by one
       points = foldl build start obs
       build d y = do
         (clusters, rest) <- d
@@ -76,7 +76,7 @@ dpMixture =
         let point = (cluster, var, mean)
         observe (normalDist mean (sqrt var)) y
         return (clusters, point : rest)
-   in --exctract cluster assignments
+   in -- exctract cluster assignments
       fmap (reverse . map (\(x, _, _) -> x) . snd) points
 
 -- | 'dpMixture' restricted to the number of clusters only
@@ -127,13 +127,13 @@ posterior (m, k, a, b) xs = (m', k', a', b')
     m' = (k * m + n * x) / k'
     k' = k + n
     a' = a + n / 2
-    b' = b + (m * m * k + x2 - m' * m' * k') / 2 --s / 2 + (k * n * (x - m) ^ 2) / (2 * (k + n))
+    b' = b + (m * m * k + x2 - m' * m' * k') / 2 -- s / 2 + (k * n * (x - m) ^ 2) / (2 * (k + n))
     n = fromIntegral $ length xs
     x = sum xs / n -- mean xs
     x2 = sum $ zipWith (*) xs xs -- sum xs^2
     s = sum $ zipWith (*) d d -- pvar xs
       where
-        d = map (+ (- x)) xs
+        d = map (+ (-x)) xs
 
 -- | Model evidence for a cluster
 evidence :: NormalInvGamma -> [Double] -> Double
@@ -189,7 +189,7 @@ partitions n = generate n 1
     generate n k = do
       x <- range (1, k) -- range is inclusive on both ends
       let k' = max k (x + 1) -- next empty cluster
-      xs <- generate (n -1) k'
+      xs <- generate (n - 1) k'
       return (x : xs)
 
 -- | Posterior over the number of clusters
