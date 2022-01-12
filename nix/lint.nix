@@ -64,9 +64,8 @@ writeScript "lint.sh" ''
 
   # List all generated Bash scripts here.
   bash_files=(
-    "$(nix-build . -A lint)"
-    "$(nix-build . -A fix)"
-    "$(nix-build . -A update)"
+    "$(nix-build . -A lint --no-out-link)"
+    "$(nix-build . -A fix --no-out-link)"
   )
   if ! $shellcheck "$($git ls-tree -r HEAD --name-only | grep '\.sh')" "''${bash_files[@]}"; then
       echo 'FAILURE: Bash files failed checks'
