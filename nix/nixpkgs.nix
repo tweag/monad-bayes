@@ -1,12 +1,9 @@
+{ system ? builtins.currentSystem
+, inputs ? import ./inputs.nix { inherit system; }
+}:
+
 let
-  haskellNixSrc = builtins.fromJSON (builtins.readFile ./haskell-nix.json);
-  haskellNix = import
-    (
-      builtins.fetchTarball {
-        url = "https://github.com/input-output-hk/haskell.nix/archive/${haskellNixSrc.rev}.tar.gz";
-        inherit (haskellNixSrc) sha256;
-      }
-    )
-    { };
+  pkgs = import inputs.nixpkgs { inherit system pkgs; };
+  haskellNix = import inputs.haskellNix { inherit pkgs; };
 in
-import haskellNix.sources.nixpkgs-2009 haskellNix.nixpkgsArgs
+import inputs.nixpkgs (haskellNix.nixpkgsArgs // { inherit system; })

@@ -1,12 +1,16 @@
 { cabal-install
+, git
 , hlint
-, pkgs
+, nixpkgs-fmt
+, nodePackages
+, ormolu
 , python37Packages
+, shellcheck
 , writeScript
 }:
 
 writeScript "lint.sh" ''
-  #!/usr/bin/env ${pkgs.bash}/bin/bash
+  #!/usr/bin/env bash
   # shellcheck shell=bash
 
   set -euo pipefail
@@ -14,12 +18,12 @@ writeScript "lint.sh" ''
 
   black="${python37Packages.black}/bin/black"
   cabal="${cabal-install}/bin/cabal"
-  git="${pkgs.git}/bin/git"
+  git="${git}/bin/git"
   hlint="${hlint}/bin/hlint"
-  nixpkgsfmt="${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
-  ormolu="${pkgs.ormolu}/bin/ormolu"
-  prettier="${pkgs.nodePackages.prettier}/bin/prettier"
-  shellcheck="${pkgs.shellcheck}/bin/shellcheck"
+  nixpkgsfmt="${nixpkgs-fmt}/bin/nixpkgs-fmt"
+  ormolu="${ormolu}/bin/ormolu"
+  prettier="${nodePackages.prettier}/bin/prettier"
+  shellcheck="${shellcheck}/bin/shellcheck"
 
   fixmsg="Run 'eval \$(nix-build . -A fix)' to fix this"
 

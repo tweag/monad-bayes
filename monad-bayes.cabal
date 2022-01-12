@@ -52,7 +52,7 @@ library
     other-modules:    Control.Monad.Bayes.Traced.Common
     default-language: Haskell2010
     build-depends:
-        base >=4.11 && <4.15,
+        base >=4.11 && <4.17,
         containers >=0.5.10 && <0.7,
         free >=5.0.2 && <5.2,
         ieee754 >=0.8.0 && <0.9,
@@ -86,14 +86,14 @@ executable example
 
     default-language: Haskell2010
     build-depends:
-        base -any,
-        containers -any,
-        log-domain -any,
-        monad-bayes -any,
-        mwc-random -any,
-        optparse-applicative -any,
-        time -any,
-        vector -any
+        base,
+        containers,
+        log-domain,
+        monad-bayes,
+        mwc-random,
+        optparse-applicative,
+        time,
+        vector
 
     if flag(dev)
         ghc-options:
@@ -117,16 +117,16 @@ test-suite monad-bayes-test
 
     default-language: Haskell2010
     build-depends:
-        base -any,
-        QuickCheck -any,
-        hspec -any,
-        ieee754 -any,
-        log-domain -any,
-        math-functions -any,
-        monad-bayes -any,
-        mtl -any,
-        transformers -any,
-        vector -any
+        base,
+        QuickCheck,
+        hspec,
+        ieee754,
+        log-domain,
+        math-functions,
+        monad-bayes,
+        mtl,
+        transformers,
+        vector
 
     if flag(dev)
         ghc-options:
@@ -143,8 +143,8 @@ benchmark ssm-bench
     other-modules:    NonlinearSSM
     default-language: Haskell2010
     build-depends:
-        base -any,
-        monad-bayes -any
+        base,
+        monad-bayes
 
 benchmark speed-bench
     type:             exitcode-stdio-1.0
@@ -157,15 +157,15 @@ benchmark speed-bench
 
     default-language: Haskell2010
     build-depends:
-        base -any,
-        abstract-par -any,
-        containers -any,
-        criterion -any,
-        log-domain -any,
-        monad-bayes -any,
-        mwc-random -any,
-        process -any,
-        vector -any
+        base,
+        abstract-par,
+        containers,
+        criterion,
+        log-domain,
+        monad-bayes,
+        mwc-random,
+        process,
+        vector
 
     if flag(dev)
         ghc-options:
