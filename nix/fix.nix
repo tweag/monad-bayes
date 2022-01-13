@@ -14,7 +14,7 @@ writeScript "fix.sh" ''
   #!/usr/bin/env ${pkgs.bash}/bin/bash
   # shellcheck shell=bash
 
-  set -xeuo pipefail
+  set -euo pipefail
   IFS=$'\n\t'
 
   black="${python37Packages.black}/bin/black"

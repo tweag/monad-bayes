@@ -89,14 +89,14 @@ executable example
 
     default-language: Haskell2010
     build-depends:
-        base -any,
-        containers -any,
-        log-domain -any,
-        monad-bayes -any,
-        optparse-applicative -any,
+        base,
+        containers,
+        log-domain,
+        monad-bayes,
+        optparse-applicative,
         random,
-        time -any,
-        vector -any
+        time,
+        vector
 
     if flag(dev)
         ghc-options:
@@ -160,15 +160,15 @@ benchmark speed-bench
 
     default-language: Haskell2010
     build-depends:
-        base -any,
-        abstract-par -any,
-        containers -any,
-        criterion -any,
-        log-domain -any,
-        monad-bayes -any,
-        process -any,
+        base,
+        abstract-par,
+        containers,
+        criterion,
+        log-domain,
+        monad-bayes,
+        process,
         random,
-        vector -any
+        vector
 
     if flag(dev)
         ghc-options:

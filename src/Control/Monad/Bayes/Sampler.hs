@@ -1,8 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
-
-{-# OPTIONS_GHC -Wall              #-}
+{-# OPTIONS_GHC -Wall #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -29,18 +28,17 @@ module Control.Monad.Bayes.Sampler
 where
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Primitive
+import qualified Control.Monad.Reader as MR
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import qualified Data.Random as DR
-import qualified Data.Random.Distribution.Beta as DR
 import qualified Data.Random.Distribution.Bernoulli as DR
+import qualified Data.Random.Distribution.Beta as DR
 import qualified Data.Random.Distribution.Categorical as DR
 import qualified Data.Vector.Generic as VG
-import Control.Monad.Primitive
 import qualified System.Random.Stateful as RS
-import qualified Control.Monad.Reader as MR
-
 
 -- | An 'IO' based random sampler using the @random-fu@ package.
 newtype SamplerIO a = SamplerIO (ReaderT (RS.STGenM RS.StdGen RealWorld) IO a)
@@ -71,7 +69,7 @@ instance MonadSample SamplerIO where
   random = fromSamplerST random
 
 -- | An 'ST' based random sampler using the @random-fu@ package.
-newtype SamplerST a = SamplerST (forall s . ReaderT (RS.STGenM RS.StdGen s) (ST s) a)
+newtype SamplerST a = SamplerST (forall s. ReaderT (RS.STGenM RS.StdGen s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (RS.STGenM RS.StdGen s) (ST s) a
 runSamplerST (SamplerST s) = s
@@ -93,20 +91,20 @@ sampleSTfixed (SamplerST s) = runST $ do
   runReaderT s gen
 
 -- | Convert a distribution supplied by @random-fu@.
-fromRandomFu :: (forall s . (RS.STGenM RS.StdGen s) -> ST s a) -> SamplerST a
+fromRandomFu :: (forall s. RS.STGenM RS.StdGen s -> ST s a) -> SamplerST a
 fromRandomFu s = SamplerST $ ask >>= lift . s
 
 -- FIXME: standard deviation or variance?
 -- FIXME: shape and scale in the right order?
 -- FIXME: beta
 instance MonadSample SamplerST where
-  random = fromRandomFu $ RS.uniformDoublePositive01M
+  random = fromRandomFu RS.uniformDoublePositive01M
 
-  uniform a b       = fromRandomFu $ \g -> DR.sampleFrom g (DR.uniform a b)
-  normal m s        = fromRandomFu $ \g -> DR.sampleFrom g (DR.normal m s)
+  uniform a b = fromRandomFu $ \g -> DR.sampleFrom g (DR.uniform a b)
+  normal m s = fromRandomFu $ \g -> DR.sampleFrom g (DR.normal m s)
   gamma shape scale = fromRandomFu $ \g -> DR.sampleFrom g (DR.gamma shape scale)
-  beta a b          = fromRandomFu $ \g -> DR.sampleFrom g (DR.beta a b)
+  beta a b = fromRandomFu $ \g -> DR.sampleFrom g (DR.beta a b)
 
-  bernoulli p    = fromRandomFu $ \g -> DR.sampleFrom g (DR.bernoulli p)
+  bernoulli p = fromRandomFu $ \g -> DR.sampleFrom g (DR.bernoulli p)
   categorical ps = fromRandomFu $ \g -> DR.sampleFrom g (DR.categorical (zip (VG.toList ps) [0 ..]))
-  geometric _p   = error "Geometric not implemented in random-fu :("
+  geometric _p = error "Geometric not implemented in random-fu :("

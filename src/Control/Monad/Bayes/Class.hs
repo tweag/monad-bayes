@@ -67,18 +67,17 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
+import qualified Data.Random as R
 import qualified Data.Vector as V
 import Data.Vector.Generic as VG
 import Numeric.Log
-import Statistics.Distribution (ContDistr, DiscreteDistr, quantile, probability, logDensity)
+import Statistics.Distribution (ContDistr, DiscreteDistr, logDensity, probability, quantile)
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
-
-import qualified Data.Random as R
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where

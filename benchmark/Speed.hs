@@ -9,6 +9,7 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
+import Control.Monad.ST (RealWorld, stToIO)
 import Criterion.Main
 import Criterion.Types
 import qualified HMM
@@ -17,10 +18,9 @@ import qualified LogReg
 import System.Exit
 import System.Process hiding (env)
 import System.Random.Stateful
-import Control.Monad.ST (stToIO, RealWorld)
 
 -- | Environment to execute benchmarks in.
-data Env = Env {rng :: (STGenM StdGen RealWorld), lein :: LeinProc}
+data Env = Env {rng :: STGenM StdGen RealWorld, lein :: LeinProc}
 
 data ProbProgSys = MonadBayes
   deriving (Show)
@@ -54,8 +54,12 @@ runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
-prepareBenchmarkable :: STGenM StdGen RealWorld ->
-                        ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable ::
+  STGenM StdGen RealWorld ->
+  ProbProgSys ->
+  Model ->
+  Alg ->
+  Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark

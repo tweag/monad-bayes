@@ -10,7 +10,6 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.IO.Class
 import NonlinearSSM
 
-
 main :: IO ()
 main = sampleIO $ do
   let t = 5

@@ -5,13 +5,13 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
+import Control.Monad.ST (stToIO)
 import Data.Time
 import qualified HMM
 import qualified LDA
 import qualified LogReg
 import Options.Applicative
 import System.Random.Stateful
-import Control.Monad.ST (stToIO)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving (Show, Read)

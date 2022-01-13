@@ -2,7 +2,6 @@ module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
 
-
 param :: MonadSample m => m (Double, Double)
 param = do
   let a = 0.01
