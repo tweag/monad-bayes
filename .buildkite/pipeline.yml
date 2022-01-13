@@ -7,7 +7,7 @@ steps:
   - label: Build and test on GHC 8.8
     command: |
       nix-build -A monad-bayes-ghc88 --no-out-link
-      # timeout_in_minutes: 100
+      timeout_in_minutes: 100
   - label: Build and test on GHC 8.10
     command: |
       nix-build -A monad-bayes-ghc810 --no-out-link
@@ -15,7 +15,7 @@ steps:
   - label: Build and test on GHC 9
     command: |
       nix-build -A monad-bayes-ghc9 --no-out-link
-      # timeout_in_minutes: 100
+      timeout_in_minutes: 100
   - label: Build a shell environment
     command: |
       nix-shell --run "echo OK"
