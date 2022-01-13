@@ -20,7 +20,7 @@ import System.Process hiding (env)
 import System.Random.Stateful
 
 -- | Environment to execute benchmarks in.
-data Env = Env {rng :: STGenM StdGen RealWorld, lein :: LeinProc}
+data Env = Env {rng :: STGenM StdGen RealWorld }
 
 data ProbProgSys = MonadBayes
   deriving (Show)
@@ -128,8 +128,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 main :: IO ()
 main = do
   g <- stToIO (newSTGenM (mkStdGen 42))
-  l <- startLein
-  let e = Env g l
+  let e = Env g
   lrData <- sampleIOwith (LogReg.syntheticData 1000) g
   hmmData <- sampleIOwith (HMM.syntheticData 1000) g
   ldaData <- sampleIOwith (LDA.syntheticData 5 1000) g

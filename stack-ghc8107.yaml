@@ -6,3 +6,11 @@ flags:
     dev: True
 nix:
   path: [nixpkgs=./nix/nixpkgs-stack.nix]
+
+extra-deps:
+  - git: https://github.com/lehins/random-fu
+    commit: 1eb5c0080618a691cd9fa81ac3d0ea29edeb084f
+    # nix-sha256: 1325vmgq72waky0iqv8r5snp46vljszmd3m15gk7i4hwn6jyf45x
+    subdirs:
+      - random-fu
+      - rvar

@@ -48,6 +48,7 @@ in
     tools = {
       ghcid = "latest";
       hindent = "latest";
+      haskell-language-server = "latest";
     };
     buildInputs = [
       cabal-install
