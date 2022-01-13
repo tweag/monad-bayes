@@ -1,4 +1,7 @@
-import Control.Monad (unless)
+{-# OPTIONS_GHC -Wall #-}
+
+module Main (main) where
+
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
@@ -8,8 +11,6 @@ import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Criterion.Main
 import Criterion.Types
-import GHC.IO.Handle
--- import NonlinearSSM
 import qualified HMM
 import qualified LDA
 import qualified LogReg
@@ -18,104 +19,10 @@ import System.Process hiding (env)
 import System.Random.Stateful
 import Control.Monad.ST (stToIO, RealWorld)
 
--- | Path to the Anglican project with benchmarks.
-anglicanPath :: String
-anglicanPath = "/scratch/ams240/repos/anglican-white-paper/experiments"
-
--- | Running Leiningen repl process.
--- Leiningen takes a lot of time to start so we keep a repl
--- running to speed up benchmarking.
--- Contains in order input handle, output handle, and process handle.
-data LeinProc = LeinProc Handle Handle ProcessHandle
-
-anglicanModelName :: Model -> String
-anglicanModelName (LR _) = "logisticRegression"
-anglicanModelName (HMM _) = "hmm"
-anglicanModelName (LDA _) = "lda"
-
-clojureBool :: Bool -> String
-clojureBool False = "false"
-clojureBool True = "true"
-
--- | Format Haskell [Bool] as a Clojure Boolean vector.
-clojureBoolVector :: [Bool] -> String
-clojureBoolVector = clojureVector . map clojureBool
-
--- | Format a Haskell list as a Clojure vector.
-clojureVector :: [String] -> String
-clojureVector xs = "[" ++ unwords xs ++ "]"
-
--- | Format a Haskell list as a Clojure vector.
-clojureShowVector :: Show a => [a] -> String
-clojureShowVector xs = clojureVector $ map show xs
-
--- | Insert data into an Anglican model.
-anglicanData :: LeinProc -> Model -> IO ()
-anglicanData leinProc model = do
-  anglican leinProc ["(use 'nstools.ns)\n"]
-  anglican leinProc ["(ns+ " ++ anglicanModelName model ++ ")\n"]
-  case model of
-    LR dataset -> do
-      let (xs, labels) = unzip dataset
-      anglican leinProc ["(ns-unmap *ns* 'xs)\n"]
-      anglican leinProc ["(def xs " ++ clojureShowVector xs ++ ")\n", "nil\n"]
-      anglican leinProc ["(ns-unmap *ns* 'labels)\n"]
-      anglican leinProc ["(def labels " ++ clojureBoolVector labels ++ ")\n", "nil\n"]
-    HMM observations -> do
-      anglican leinProc ["(ns-unmap *ns* 'observations)\n"]
-      anglican leinProc ["(def observations " ++ clojureShowVector observations ++ ")\n", "nil\n"]
-    LDA docs -> do
-      anglican leinProc ["(ns-unmap *ns* 'docs)\n"]
-      anglican leinProc ["(def docs " ++ clojureVector (map clojureShowVector docs) ++ ")\n", "nil\n"]
-  anglican leinProc ["(use 'nstools.ns)\n"]
-  anglican leinProc ["(ns+ anglican.core)\n"]
-
-anglican :: LeinProc -> [String] -> IO ()
-anglican (LeinProc input output _) cmds = do
-  -- execute command
-  mapM_ (hPutStr input) cmds
-  hFlush input
-  -- wait until all samples are produced
-  waitForAnglican output
-
--- | Wait until an Anglican program finishes
-waitForAnglican :: Handle -> IO ()
-waitForAnglican handle = run
-  where
-    run = do
-      l <- hGetLine handle
-      -- traceIO l
-      -- We recognize that Anglican is finished when the repl emits a line "nil"
-      unless (l == "nil") run
-
--- | Start a Leiningen process in a directory that contains benchmarks.
-startLein :: IO LeinProc
-startLein = do
-  let setup = (shell "lein repl") {cwd = Just anglicanPath, std_in = CreatePipe, std_out = CreatePipe}
-  (Just input, Just output, _, process) <- createProcess setup
-  -- wait until Leiningen starts producing output to make sure it's ready
-  _ <- hWaitForInput output (-1) -- wait for output indefinitely
-  let leinProc = LeinProc input output process
-  anglican leinProc ["(use 'nstools.ns)\n"]
-  return leinProc
-
--- | Path to the WebPPL project with benchmarks.
-webpplPath :: String
-webpplPath = "/scratch/ams240/repos/anglican-white-paper/experiments/WebPPL"
-
--- | Format Haskell list as a Javascript list.
-javascriptList :: Show a => [a] -> String
-javascriptList xs = unwords (map show xs)
-
-webpplModelName :: Model -> String
-webpplModelName (LR _) = "logisticRegression"
-webpplModelName (HMM _) = "hmm"
-webpplModelName (LDA _) = "lda"
-
 -- | Environment to execute benchmarks in.
 data Env = Env {rng :: (STGenM StdGen RealWorld), lein :: LeinProc}
 
-data ProbProgSys = MonadBayes | Anglican | WebPPL
+data ProbProgSys = MonadBayes
   deriving (Show)
 
 data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
@@ -150,8 +57,6 @@ runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model
 prepareBenchmarkable :: STGenM StdGen RealWorld ->
                         ProbProgSys -> Model -> Alg -> Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
-prepareBenchmarkable _ Anglican _ _ = error "Anglican benchmarks not available"
-prepareBenchmarkable _ WebPPL _ _ = error "WebPPL benchmarks not available"
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
 prepareBenchmark e MonadBayes model alg =
@@ -159,44 +64,15 @@ prepareBenchmark e MonadBayes model alg =
     prepareBenchmarkable (rng e) MonadBayes model alg
   where
     sep = "_"
-prepareBenchmark e Anglican model alg = env prepareData (const $ bench name $ whnfIO collect)
-  where
-    name = show Anglican ++ sep ++ show model ++ sep ++ show alg
-    sep = "_"
-    algString (MH n) = "-a lmh -n " ++ show n
-    algString (SMC n) = "-a smc -n " ++ show n
-    algString (RMSMC _ _) = error "Anglican does not support resample-move SMC"
-    prepareData = anglicanData (lein e) model
-    collect =
-      anglican (lein e) ["(time (m! " ++ anglicanModelName model ++ " " ++ algString alg ++ "))\n"]
-prepareBenchmark _ WebPPL model alg = bench name $ whnfIO run
-  where
-    name = show WebPPL ++ sep ++ show model ++ sep ++ show alg
-    sep = "_"
-    algString (MH n) = "--alg MCMC --samples " ++ show n ++ " --rejuv 0 "
-    algString (SMC n) = "--alg SMC --samples " ++ show n ++ " --rejuv 0 "
-    algString (RMSMC n t) = "--alg SMC --samples " ++ show n ++ " --rejuv " ++ show t ++ " "
-    dataString (LR dataset) = let (xs, labels) = unzip dataset in "--xs='" ++ javascriptList xs ++ "' --labels='" ++ javascriptList (map (\b -> if b then (1 :: Int) else 0) labels) ++ "'"
-    dataString (HMM obs) = "--obs='" ++ javascriptList obs ++ "'"
-    dataString (LDA docs) = unwords $ zipWith (\i doc -> "--doc" ++ show (i :: Int) ++ "='" ++ unwords doc ++ "'") [1 .. 5] docs
-    run = do
-      let command = "node " ++ webpplModelName model ++ ".js " ++ algString alg ++ dataString model
-      (_, _, _, process) <- createProcess $ (shell command) {cwd = Just webpplPath, std_out = NoStream, std_err = NoStream}
-      exitCode <- waitForProcess process
-      case exitCode of
-        ExitSuccess -> return ()
-        ExitFailure i -> error $ "WebPPL terminated with exit code " ++ show i
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (Anglican, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = False
 supported _ = True
 
 systems :: [ProbProgSys]
 systems =
   [ MonadBayes
-  -- Anglican,
-  -- WebPPL
   ]
 
 lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]

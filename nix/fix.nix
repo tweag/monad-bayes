@@ -1,6 +1,10 @@
-{ apply-refact
+{ refactor
 , cabal-install
+, git
 , hlint
+, nixpkgs-fmt
+, nodePackages
+, ormolu
 , pkgs
 , python37Packages
 , writeScript
@@ -10,17 +14,17 @@ writeScript "fix.sh" ''
   #!/usr/bin/env ${pkgs.bash}/bin/bash
   # shellcheck shell=bash
 
-  set -euo pipefail
+  set -xeuo pipefail
   IFS=$'\n\t'
 
   black="${python37Packages.black}/bin/black"
   cabal="${cabal-install}/bin/cabal"
-  git="${pkgs.git}/bin/git"
+  git="${git}/bin/git"
   hlint="${hlint}/bin/hlint"
-  nixpkgsfmt="${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt"
-  ormolu="${pkgs.ormolu}/bin/ormolu"
-  prettier="${pkgs.nodePackages.prettier}/bin/prettier"
-  refactor="${apply-refact}/bin/refactor"
+  nixpkgsfmt="${nixpkgs-fmt}/bin/nixpkgs-fmt"
+  ormolu="${ormolu}/bin/ormolu"
+  prettier="${nodePackages.prettier}/bin/prettier"
+  refactor="${refactor}/bin/refactor"
 
   $git ls-tree -z -r HEAD --name-only | grep -z '\.cabal$' | xargs -0 $cabal format
   echo 'SUCCESS: Cabal files formatted'

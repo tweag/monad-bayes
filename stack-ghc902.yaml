@@ -1,4 +1,4 @@
-resolver: lts-12.15 # first lts-12.X which uses ghc844
+resolver: nightly-2022-01-10
 packages:
   - "."
 flags:

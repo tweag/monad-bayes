@@ -10,7 +10,7 @@ module HMM
   )
 where
 
---Hidden Markov Models
+-- Hidden Markov Models
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
