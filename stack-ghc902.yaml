@@ -6,3 +6,10 @@ flags:
     dev: True
 nix:
   path: [nixpkgs=./nix/nixpkgs-stack.nix]
+
+extra-deps:
+  - git: https://github.com/haskell-numerics/random-fu
+    commit: 18a6ba6b29c7ca3b3ff34ea6ca0eca910da72726
+    subdirs:
+      - random-fu
+      - rvar
