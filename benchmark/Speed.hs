@@ -20,7 +20,7 @@ import System.Process hiding (env)
 import System.Random.Stateful
 
 -- | Environment to execute benchmarks in.
-newtype Env = Env { rng :: STGenM StdGen RealWorld }
+newtype Env = Env {rng :: STGenM StdGen RealWorld}
 
 data ProbProgSys = MonadBayes
   deriving (Show)
