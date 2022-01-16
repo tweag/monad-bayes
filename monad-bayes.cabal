@@ -64,7 +64,8 @@ library
         safe >=0.3.17 && <0.4,
         statistics >=0.14.0 && <0.16,
         transformers >=0.5.2 && <0.6,
-        vector >=0.12.0 && <0.13
+        vector >=0.12.0 && <0.13,
+        pipes
 
     if flag(dev)
         ghc-options:
@@ -93,7 +94,8 @@ executable example
         mwc-random -any,
         optparse-applicative -any,
         time -any,
-        vector -any
+        vector -any,
+        pipes
 
     if flag(dev)
         ghc-options:
@@ -126,7 +128,8 @@ test-suite monad-bayes-test
         monad-bayes -any,
         mtl -any,
         transformers -any,
-        vector -any
+        vector -any,
+        pipes
 
     if flag(dev)
         ghc-options:
@@ -165,7 +168,8 @@ benchmark speed-bench
         monad-bayes -any,
         mwc-random -any,
         process -any,
-        vector -any
+        vector -any,
+        pipes
 
     if flag(dev)
         ghc-options:

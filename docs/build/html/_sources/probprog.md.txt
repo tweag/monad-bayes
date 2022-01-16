@@ -32,6 +32,22 @@ to get
 
 `sprinkler` is a distribution specified as a program with randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
 
+## monad-bayes vs other libraries
+
+monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling an important subset well.
+
+There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
+
+Advantage of these other libraries/languages:
+
+- a lot of engineering work has been put into these libraries and languages to make them practical for real-world problems. The same is not true for monad-bayes. While its core is very nice, it doesn't come with a lot of the batteries you might want. Adam Scibior's thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on. We believe these are largely orthogonal to the core design, so excluding them makes for a clearer and more accessible presentation of the main ideas."
+
+Advantages of monad-bayes: 
+
+- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is totally pure. You can make use of laziness. The types are invaluable. There's no new special syntax to learn, which makes use and development much easier.
+
+- inference algorithms are modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces.
+
 ## References
 
 Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to WebPPL is an excellent resource for learning about probabilistic programming: https://probmods.org/. The tutorials for Gen are also very good, particularly for learning about traces: https://github.com/probcomp/gen-quickstart/blob/master/tutorials/A%20Bottom-Up%20Introduction%20to%20Gen.ipynb.
@@ -43,7 +59,6 @@ A distribution in monad-bayes over a set $X$, is of type:
 ```haskell
 MonadInfer m => m X
 ```
-### Basic distributions
 
 monad-bayes provides standard distributions, such as:
 
@@ -54,9 +69,8 @@ The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.
 Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over `(+) :: Int -> Int -> Int` and `(-) :: Int -> Int -> Int`:
 
 ```haskell
-bizarreDistribution = uniformD [(+), (-)]
+distributionOverFunctions = uniformD [(+), (-)]
 ```
-
 
 ### Constructing distributions as programs
 
@@ -211,7 +225,23 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-### Weighted sampling
+### Independent forward sampling
+
+For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampleIO p` or `sampleSTfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
+
+```haskell
+example = do
+  x <- bernoulli 0.5
+  if x then normal 0 1 else normal 1 2
+```
+
+`sampleIO example` will produce a sample from a Bernoulli distribution with $p=0.5$, and if it is $True$, return a sample from a standard normal, else from a normal with mean 1 and std 2. '
+
+`(replicateM n . sampleIO) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampleIO . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
+
+Because `sampleIO example` is totally pure, it is parallelizable. 
+
+### Independent weighted sampling
 
 To perform weighted sampling, use:
 
@@ -308,12 +338,14 @@ Each of these is a particle with a weight.
 
 ### Resample Move Sequential Monte Carlo
 
+<!-- todo -->
+
 ### Particle Marginal Metropolis Hastings
 
 This inference method takes a prior and a model separately.
 
 
-<!-- " -->
+<!-- todo -->
 
 <!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerate`, the mass of each element of the support. -->
 
@@ -337,6 +369,7 @@ This inference method takes a prior and a model separately.
 
 # Example Gallery
 
+<!-- todo: link to monad-bayes examples, with graphs and how to run -->
 
 <!-- `sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
 
@@ -368,8 +401,6 @@ Probabilistic programs in monad-bayes are Haskell programs. This contrasts to ma
 
 For example, we can use ordinary monadic combinators, as in:
 
-DICE EXAMPLE TODO
-
 ```haskell
 example = do
   x <- bernoulli 0.5
@@ -380,49 +411,20 @@ example = do
 or 
 
 ```haskell
-example = do
-  whileM
-  TODO
+example = whileM (bernoulli 0.99) (normal 0 1)
 ```
 
-We can use libraries like Pipes, to specify lazy distributions like:
+We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 
-TODO example
+We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
 
-We can define models like PCFGs and HMMs using recursion schemes:
+We can define models like PCFGs using recursion schemes, as in models/PCFG.hs.
 
-TODO example
+We can write probabilistic parsers, as in models/Parser.hs.
 
-We can write probabilistic parsers:
-
-TODO
-
-We can use monad transformers on top of our probability monad `m`, as in:
+We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs.
 
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
-
-
-```haskell
-model :: (MonadError String m, MonadInfer m) => m Int
-model = do
-    x <- uniformD [0..10]
-    conditionAllowingForFailure (x < 0)
-    return x
-
-conditionAllowingForFailure :: (MonadSample m, MonadError [Char] m, MonadCond m) 
-    => Bool -> m ()
-conditionAllowingForFailure b = do 
-    fail <- bernoulli 0.1
-    when fail $ throwError "fail"
-    condition b
-
-main :: [(Either String Int, Double)]
-main = enumerate $ runExceptT model
--- >>> main
--- [(Left "fail",1.0),(Right 0,0.0),(Right 1,0.0),(Right 2,0.0),(Right 3,0.0),(Right 4,0.0),(Right 5,0.0),(Right 6,0.0),(Right 7,0.0),(Right 8,0.0),(Right 9,0.0),(Right 10,0.0)]
-```
-
-Here, I've added `ExceptT` to my probability monad, which allows me to throw errors. The result is that I can write a version of `condition` which results in a safe failure when I condition on something that is always false. 
 
 
 ## API docs
