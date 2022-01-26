@@ -39,7 +39,7 @@ getModel model = (size model, program model)
 data Alg = SMC | MH | RMSMC
   deriving (Read, Show)
 
-runAlg :: Model -> Alg -> SamplerIO String
+runAlg :: RandomGen g => Model -> Alg -> SamplerIO g String
 runAlg model alg =
   case alg of
     SMC ->

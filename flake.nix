@@ -20,7 +20,7 @@
         pkgs = import ./nix/nixpkgs.nix { inherit system inputs; };
         projects = import ./nix/projects.nix { inherit system pkgs; };
         flakes = pkgs.lib.mapAttrs (_: p: p.flake { }) projects;
-        prefixPkgNames = prefix: pkgs.lib.mapAttrs' (n: pkgs.lib.nameValuePair "${prefix}.${n}");
+        prefixPkgNames = prefix: pkgs.lib.mapAttrs' (n: pkgs.lib.nameValuePair "${prefix}:${n}");
         prefixed = ghc: attr: prefixPkgNames ghc flakes."monad-bayes-${ghc}".${attr};
         combined = attr: prefixed "ghc88" attr // prefixed "ghc810" attr // prefixed "ghc9" attr;
       in
