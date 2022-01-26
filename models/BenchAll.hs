@@ -53,7 +53,7 @@ main = do
   hSetBuffering stdout LineBuffering
   trial <- execParser opts
   when trial $ putStrLn "Trial run"
-  sampleIO hmmBenchmark
+  sampleIOStdGen hmmBenchmark
 
 meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
 meanVar n d = do

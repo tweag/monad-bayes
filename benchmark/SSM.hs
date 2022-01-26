@@ -11,7 +11,7 @@ import Control.Monad.IO.Class
 import NonlinearSSM
 
 main :: IO ()
-main = sampleIO $ do
+main = sampleIOStdGen $ do
   let t = 5
   dat <- generateData t
   let ys = map snd dat

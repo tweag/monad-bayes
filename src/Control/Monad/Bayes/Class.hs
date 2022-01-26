@@ -67,7 +67,6 @@ import Control.Monad.Trans.RWS hiding (tell)
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
-import qualified Data.Random as R
 import qualified Data.Vector as V
 import Data.Vector.Generic as VG
 import Numeric.Log

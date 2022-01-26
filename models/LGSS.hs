@@ -28,8 +28,8 @@ main = do
   (trial, cachePath) <- execParser opts
   when trial $ putStrLn "Trial run"
   if not trial
-    then sampleIO $ lgssBenchmark cachePath 50 100 (map (2 ^) [1 .. 10])
-    else sampleIO $ lgssBenchmark cachePath 5 10 [10, 20, 40]
+    then sampleIOStdGen $ lgssBenchmark cachePath 50 100 (map (2 ^) [1 .. 10])
+    else sampleIOStdGen $ lgssBenchmark cachePath 5 10 [10, 20, 40]
 
 opts :: ParserInfo (Bool, FilePath)
 opts = info ((,) <$> trialFlag <*> cacheDir) fullDesc
