@@ -6,11 +6,10 @@
 , ormolu
 , python37Packages
 , shellcheck
-, writeScript
+, writeShellScriptBin
 }:
 
-writeScript "lint.sh" ''
-  #!/usr/bin/env bash
+writeShellScriptBin "lint.sh" ''
   # shellcheck shell=bash
 
   set -euo pipefail
