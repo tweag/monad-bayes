@@ -1,7 +1,8 @@
 { system ? builtins.currentSystem
-, pkgs ? import ./nix/nixpkgs.nix { inherit system; }
 }:
 let
+  flake = builtins.getFlake (toString ./.);
+  pkgs = flake.legacyPackages.${system};
   mkMonadBayes = project:
     let
       # https://github.com/input-output-hk/haskell.nix/issues/470 suggests a
@@ -15,56 +16,12 @@ let
       "checks" = project.monad-bayes.checks;
     };
 
-  projects = import ./nix/projects.nix { inherit pkgs; };
-  monad-bayes-ghc88 = mkMonadBayes projects.monad-bayes-ghc88;
-  monad-bayes-ghc810 = mkMonadBayes projects.monad-bayes-ghc810;
-  monad-bayes-ghc9 = mkMonadBayes projects.monad-bayes-ghc9;
-
-  defaultProject = projects.monad-bayes-ghc810;
-  defaultHsPkgs = defaultProject.hsPkgs;
-
-
-  cabal-install = defaultProject.tool "cabal-install" "latest";
-  hlint = defaultProject.tool "hlint" "latest";
-  ormolu = defaultProject.tool "ormolu" {
-    version = "latest";
-    modules = [
-      ({ lib, ... }: {
-        options.nonReinstallablePkgs =
-          lib.mkOption { apply = lib.remove "Cabal"; };
-      })
-    ];
-  };
-
-  inherit (defaultHsPkgs.ShellCheck.components.exes) shellcheck;
-
-  inherit (defaultHsPkgs.apply-refact.components.exes) refactor;
+  monad-bayes-ghc88 = mkMonadBayes pkgs.monad-bayes.ghc88;
+  monad-bayes-ghc810 = mkMonadBayes pkgs.monad-bayes.ghc810;
+  monad-bayes-ghc9 = mkMonadBayes pkgs.monad-bayes.ghc9;
 in
 {
   inherit monad-bayes-ghc88 monad-bayes-ghc810 monad-bayes-ghc9;
 
-  shell = defaultProject.shellFor {
-    tools = {
-      ghcid = "latest";
-      hindent = "latest";
-    };
-    buildInputs = [
-      cabal-install
-      hlint
-      pkgs.nixpkgs-fmt
-      pkgs.python37
-      pkgs.python37Packages.matplotlib
-      pkgs.python37Packages.pandas
-      ormolu
-      refactor
-      shellcheck
-      pkgs.stack
-    ];
-  };
-  lint = pkgs.callPackage ./nix/lint.nix {
-    inherit cabal-install hlint ormolu shellcheck;
-  };
-  fix = pkgs.callPackage ./nix/fix.nix {
-    inherit cabal-install hlint ormolu refactor;
-  };
+  inherit (pkgs.monad-bayes) lint fix;
 }

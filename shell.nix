@@ -1,1 +1,3 @@
-(import ./default.nix { }).shell
+{ system ? builtins.currentSystem }:
+
+(builtins.getFlake (toString ./.)).devShell

@@ -7,11 +7,10 @@
 , ormolu
 , pkgs
 , python37Packages
-, writeScript
+, writeShellScriptBin
 }:
 
-writeScript "fix.sh" ''
-  #!/usr/bin/env ${pkgs.bash}/bin/bash
+writeShellScriptBin "fix.sh" ''
   # shellcheck shell=bash
 
   set -xeuo pipefail
