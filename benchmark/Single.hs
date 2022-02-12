@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
@@ -5,7 +7,7 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
-import Control.Monad.ST (stToIO)
+import Control.Monad.ST (ST, RealWorld, stToIO)
 import Data.Time
 import qualified HMM
 import qualified LDA
@@ -39,7 +41,7 @@ getModel model = (size model, program model)
 data Alg = SMC | MH | RMSMC
   deriving (Read, Show)
 
-runAlg :: RandomGen g => Model -> Alg -> SamplerIO g String
+runAlg :: StatefulGen g (ST RealWorld) => Model -> Alg -> SamplerIO g String
 runAlg model alg =
   case alg of
     SMC ->

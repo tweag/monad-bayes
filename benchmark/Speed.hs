@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main (main) where
@@ -9,7 +10,7 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
-import Control.Monad.ST (RealWorld, stToIO)
+import Control.Monad.ST (ST, RealWorld, stToIO)
 import Criterion.Main
 import Criterion.Types
 import qualified HMM
@@ -47,7 +48,7 @@ instance Show Alg where
   show (SMC n) = "SMC" ++ show n
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
-runAlg :: RandomGen g => Model -> Alg -> SamplerIO g String
+runAlg :: StatefulGen g (ST RealWorld) => Model -> Alg -> SamplerIO g String
 runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))

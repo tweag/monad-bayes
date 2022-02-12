@@ -1,6 +1,9 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 
 -- |
@@ -23,7 +26,6 @@ module Control.Monad.Bayes.Sampler
     -- Seed,
     SamplerST (SamplerST),
     runSamplerST,
-    -- sampleST,
     sampleSTfixed,
   )
 where
@@ -42,11 +44,11 @@ import qualified Data.Vector.Generic as VG
 import qualified System.Random.Stateful as RS
 
 -- | An 'IO' based random sampler using the @random-fu@ package.
-newtype SamplerIO g a = SamplerIO (ReaderT (RS.STGenM g RealWorld) IO a)
+newtype SamplerIO g a = SamplerIO (ReaderT g IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 sampleIO :: SamplerIO g a -> g -> IO a
-sampleIO m g = stToIO (RS.newSTGenM g) >>= sampleIOwith m
+sampleIO m = sampleIOwith m
 
 -- | Initialize a pseudo-random number generator using randomness supplied by
 -- the operating system.
@@ -54,28 +56,28 @@ sampleIO m g = stToIO (RS.newSTGenM g) >>= sampleIOwith m
 -- once per program.
 
 -- FIXME: A lie
-sampleIOStdGen :: SamplerIO RS.StdGen a -> IO a
-sampleIOStdGen m = sampleIO m (RS.mkStdGen 42)
+sampleIOStdGen :: SamplerIO (RS.STGenM RS.StdGen RealWorld) a -> IO a
+sampleIOStdGen m = sampleIO m =<< stToIO (RS.newSTGenM (RS.mkStdGen 42))
 
 -- | Like 'sampleIO', but with a fixed random seed.
 -- Useful for reproducibility.
-sampleIOfixed :: SamplerIO RS.StdGen a -> IO a
-sampleIOfixed m = sampleIO m (RS.mkStdGen 42)
+sampleIOfixed :: SamplerIO (RS.STGenM RS.StdGen RealWorld) a -> IO a
+sampleIOfixed m = sampleIO m =<< stToIO (RS.newSTGenM (RS.mkStdGen 42))
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO g a -> RS.STGenM g RealWorld -> IO a
+sampleIOwith :: SamplerIO g a -> g -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
-fromSamplerST :: RS.RandomGen g => SamplerST a -> SamplerIO g a
+fromSamplerST :: RS.StatefulGen g (ST RealWorld) => SamplerST a -> SamplerIO g a
 fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
-instance RS.RandomGen g => MonadSample (SamplerIO g) where
+instance RS.StatefulGen g (ST RealWorld) => MonadSample (SamplerIO g) where
   random = fromSamplerST random
 
 -- | An 'ST' based random sampler using the @random-fu@ package.
-newtype SamplerST a = SamplerST (forall s g. RS.RandomGen g => ReaderT (RS.STGenM g s) (ST s) a)
+newtype SamplerST a = SamplerST (forall s g. RS.StatefulGen g (ST s) => ReaderT g (ST s) a)
 
-runSamplerST :: RS.RandomGen g => SamplerST a -> ReaderT (RS.STGenM g s) (ST s) a
+runSamplerST :: RS.StatefulGen g (ST s) => SamplerST a -> ReaderT g (ST s) a
 runSamplerST (SamplerST s) = s
 
 instance Functor SamplerST where
@@ -95,7 +97,7 @@ sampleSTfixed (SamplerST s) = runST $ do
   runReaderT s gen
 
 -- | Convert a distribution supplied by @random-fu@.
-fromRandomFu :: (forall s g. RS.RandomGen g => RS.STGenM g s -> ST s a) -> SamplerST a
+fromRandomFu :: (forall s g. RS.StatefulGen g (ST s) => g -> ST s a) -> SamplerST a
 fromRandomFu s = SamplerST $ ask >>= lift . s
 
 -- FIXME: standard deviation or variance?
