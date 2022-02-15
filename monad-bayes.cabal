@@ -61,6 +61,7 @@ library
         math-functions >=0.2.1 && <0.4,
         monad-coroutine >=0.9.0 && <0.10,
         mtl >=2.2.2 && <2.3,
+        mwc-random,
         primitive,
         random,
         random-fu,
