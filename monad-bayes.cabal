@@ -35,6 +35,8 @@ library
         Control.Monad.Bayes.Enumerator
         Control.Monad.Bayes.Free
         Control.Monad.Bayes.Helpers
+        Control.Monad.Bayes.Inference.MH
+        Control.Monad.Bayes.Inference.Sampling
         Control.Monad.Bayes.Inference.PMMH
         Control.Monad.Bayes.Inference.RMSMC
         Control.Monad.Bayes.Inference.SMC
@@ -64,6 +66,7 @@ library
         safe >=0.3.17 && <0.4,
         statistics >=0.14.0 && <0.16,
         transformers >=0.5.2 && <0.6,
+        pipes,
         vector >=0.12.0 && <0.13
 
     if flag(dev)
