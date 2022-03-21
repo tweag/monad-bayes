@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -34,43 +35,47 @@
 --   return rain
 -- @
 module Control.Monad.Bayes.Class
-  ( MonadSample,
-    random,
-    uniform,
-    normal,
-    gamma,
-    beta,
-    bernoulli,
-    categorical,
-    logCategorical,
-    uniformD,
-    geometric,
-    poisson,
-    dirichlet,
-    MonadCond,
-    score,
-    factor,
-    condition,
-    MonadInfer,
-    discrete,
-    normalPdf,
-  )
+  -- ( MonadSample,
+  --   random,
+  --   uniform,
+  --   normal,
+  --   gamma,
+  --   beta,
+  --   bernoulli,
+  --   categorical,
+  --   logCategorical,
+  --   uniformD,
+  --   geometric,
+  --   poisson,
+  --   dirichlet,
+  --   MonadCond,
+  --   score,
+  --   factor,
+  --   condition,
+  --   MonadInfer,
+  --   discrete,
+  --   normalPdf,
+  --   BayesianModel(BayesianModel), prior, generative,
+  --   post,
+  --   predictive
+  -- )
 where
 
 import Control.Monad (when)
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Class ( MonadTrans(lift) )
+import Control.Monad.Trans.Cont ( ContT )
+import Control.Monad.Trans.Identity ( IdentityT )
+import Control.Monad.Trans.List ( ListT )
+import Control.Monad.Trans.Maybe ( MaybeT )
+import Control.Monad.Trans.RWS ( RWST )
+import Control.Monad.Trans.Reader ( ReaderT )
+import Control.Monad.Trans.State ( StateT )
+import Control.Monad.Trans.Writer ( WriterT )
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG
-import Numeric.Log
+import Data.Vector.Generic as VG ( Vector, (!), map, mapM, sum )
+import Numeric.Log ( Log(..) )
 import Statistics.Distribution
+    ( DiscreteDistr(probability), ContDistr(logDensity, quantile) )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
@@ -321,3 +326,25 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
+
+
+
+data BayesianModel m a b = BayesianModel {getPrior :: m a, generative :: a -> m b}
+
+post :: (Foldable f, MonadInfer m, Eq b) => BayesianModel m a b -> f b -> m a
+post bm dat = do
+  pr <- getPrior bm
+  mapM_ (\obs -> do obs' <- generative bm pr ; condition (obs' == obs )) dat
+  return pr
+  -- mapM_ (observe bm) obs
+
+predictive :: (Foldable f, MonadInfer m, Eq b) => BayesianModel m a b -> f b -> m b
+predictive bm dat = let p = post bm dat in generative bm =<< p
+
+-- observe :: (MonadCond m, Eq a) => BayesianModel m b a -> a -> m b
+-- observe bm a = do
+--   pr <- getPrior bm
+--   obs' <- generative bm pr
+--   condition (a==obs')
+--   return pr
+

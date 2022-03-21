@@ -14,6 +14,7 @@ module Control.Monad.Bayes.Traced.Common
     bind,
     mhTrans,
     mhTrans',
+    burnIn
   )
 where
 
@@ -82,3 +83,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
+
+-- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
+burnIn :: Int -> [a] -> [a]
+burnIn n ls = let len = length ls in take (len - n) ls
