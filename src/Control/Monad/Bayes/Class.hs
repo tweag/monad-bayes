@@ -35,30 +35,27 @@
 --   return rain
 -- @
 module Control.Monad.Bayes.Class
-  -- ( MonadSample,
-  --   random,
-  --   uniform,
-  --   normal,
-  --   gamma,
-  --   beta,
-  --   bernoulli,
-  --   categorical,
-  --   logCategorical,
-  --   uniformD,
-  --   geometric,
-  --   poisson,
-  --   dirichlet,
-  --   MonadCond,
-  --   score,
-  --   factor,
-  --   condition,
-  --   MonadInfer,
-  --   discrete,
-  --   normalPdf,
-  --   BayesianModel(BayesianModel), prior, generative,
-  --   post,
-  --   predictive
-  -- )
+  ( MonadSample,
+    random,
+    uniform,
+    normal,
+    gamma,
+    beta,
+    bernoulli,
+    categorical,
+    logCategorical,
+    uniformD,
+    geometric,
+    poisson,
+    dirichlet,
+    MonadCond,
+    score,
+    factor,
+    condition,
+    MonadInfer,
+    discrete,
+    normalPdf
+  )
 where
 
 import Control.Monad (when)
@@ -66,7 +63,6 @@ import Control.Monad.Trans.Class ( MonadTrans(lift) )
 import Control.Monad.Trans.Cont ( ContT )
 import Control.Monad.Trans.Identity ( IdentityT )
 import Control.Monad.Trans.List ( ListT )
-import Control.Monad.Trans.Maybe ( MaybeT )
 import Control.Monad.Trans.RWS ( RWST )
 import Control.Monad.Trans.Reader ( ReaderT )
 import Control.Monad.Trans.State ( StateT )
@@ -82,6 +78,7 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+import Control.Monad.Except (ExceptT)
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
@@ -264,13 +261,13 @@ instance MonadCond m => MonadCond (IdentityT m) where
 
 instance MonadInfer m => MonadInfer (IdentityT m)
 
-instance MonadSample m => MonadSample (MaybeT m) where
+instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
 
-instance MonadCond m => MonadCond (MaybeT m) where
+instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (MaybeT m)
+instance MonadInfer m => MonadInfer (ExceptT e m)
 
 instance MonadSample m => MonadSample (ReaderT r m) where
   random = lift random
@@ -326,25 +323,3 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
-
-
-
-data BayesianModel m a b = BayesianModel {getPrior :: m a, generative :: a -> m b}
-
-post :: (Foldable f, MonadInfer m, Eq b) => BayesianModel m a b -> f b -> m a
-post bm dat = do
-  pr <- getPrior bm
-  mapM_ (\obs -> do obs' <- generative bm pr ; condition (obs' == obs )) dat
-  return pr
-  -- mapM_ (observe bm) obs
-
-predictive :: (Foldable f, MonadInfer m, Eq b) => BayesianModel m a b -> f b -> m b
-predictive bm dat = let p = post bm dat in generative bm =<< p
-
--- observe :: (MonadCond m, Eq a) => BayesianModel m b a -> a -> m b
--- observe bm a = do
---   pr <- getPrior bm
---   obs' <- generative bm pr
---   condition (a==obs')
---   return pr
-
