@@ -213,7 +213,7 @@ It will run forever on infinite distributions like `enumerate (poisson 0.7)` and
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
-**However**, it's totally fine to have the elements of the support be an instance of `Ord`, as in:
+**However**, it's totally fine to have the elements of the support to be infinite but discrete, as in:
 
 ```haskell
 fmap (\(ls,p) -> (take 4 ls, p)) $ enumerate $ uniformD [[1..], [2..]]
@@ -395,7 +395,8 @@ betaBernoulli n = do
 
  -->
 
-## Interoperating with other Haskell code
+
+# Interoperating with other Haskell code
 
 Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
 
@@ -414,7 +415,7 @@ or
 example = whileM (bernoulli 0.99) (normal 0 1)
 ```
 
-We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
+<!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 
 We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
 
@@ -422,9 +423,75 @@ We can define models like PCFGs using recursion schemes, as in models/PCFG.hs.
 
 We can write probabilistic parsers, as in models/Parser.hs.
 
-We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs.
+We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs. -->
 
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
+
+# Tips on writing good probabilistic programs
+
+There are many ways to specify the same distribution, and some will lend themselves more readily to efficient inference than others. For instance,
+
+```haskell
+mixture1 point = do
+    cluster <- uniformD [1,5]
+    prediction <- normal cluster 1
+    condition (prediction == point )
+    return cluster
+```
+
+is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
+
+However, the same conditional distribution is represented by 
+
+```haskell
+mixture2 point = do
+    cluster <- uniformD [1,5]
+    factor (normalPdf cluster 1 point)
+    return cluster
+```
+
+This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
+
+```haskell
+enumerate $ mixture2 2
+```
+
+yields
+
+```haskell
+[(1.0, 0.98...), (5.0, 0.017...)]
+```
+
+as well as sampling methods. 
+
+The local lesson here is that you shouldn't `condition` on samples from a continuous distribution and expect a sampling based inference method to work. But the more general lesson is that you aren't exempted from thinking about inference when specifying your model. Alas.
+
+As a second example of this general point, consider:
+
+```haskell
+allAtOnce = do
+    x <- bernoulli 0.5
+    y <- bernoulli 0.5
+    condition (x && y)
+    return (x && y)
+```
+
+and
+
+```haskell
+incremental = do
+    x <- bernoulli 0.5
+    condition x
+    y <- bernoulli 0.5
+    condition y
+    return (x && y)
+```
+
+Like in the previous example, `allAtOnce` and `incremental` denote the same distribution, namely `[(True, 1.0), (False, 0.0)]`. However, any inference algorithm for `allAtOnce` will have to explore all 4 possible variable assignments (`[(True,True), (True, False), (False, True), (False, False)]`). Meanwhile, `incremental` opens the possibility for inference algorithms to first determine the value of `x` and then of `y`.
+
+In this example, the performance difference is negligible, but it's easy to extend this to models where it's the difference between something tractable and something intractable. 
+
+<!-- todo: similar lesson about incremental factors: compare two models -->
 
 ## Executables
 
