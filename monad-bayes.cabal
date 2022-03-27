@@ -47,6 +47,7 @@ library
         Control.Monad.Bayes.Traced.Dynamic
         Control.Monad.Bayes.Traced.Static
         Control.Monad.Bayes.Weighted
+        Control.Monad.Bayes.Analytic
 
     hs-source-dirs:   src
     other-modules:    Control.Monad.Bayes.Traced.Common

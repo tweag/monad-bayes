@@ -2,10 +2,11 @@
 {-# LANGUAGE LambdaCase #-}
 module Control.Monad.Bayes.Analytic where
 import Control.Monad.Trans.Cont
-import Control.Monad.Bayes.Class (MonadSample (random, normal, bernoulli), MonadCond (score), MonadInfer, condition)
-import qualified Statistics.Distribution.Normal as Statistics
+    ( cont, runCont, Cont, ContT(ContT) )
+import Control.Monad.Bayes.Class (MonadSample (random, normal), MonadInfer, condition)
 import Statistics.Distribution (density)
 import Numeric.Integration.TanhSinh
+    ( everywhere, trap, Result(result), absolute )
 import Control.Monad.Bayes.Weighted (runWeighted)
 import qualified Statistics.Distribution.Uniform as Statistics
 import Numeric.Log (Log(ln))
@@ -13,8 +14,11 @@ import Numeric.Log (Log(ln))
 
 newtype Measure a = Measure (Cont Double a) deriving (Functor, Applicative, Monad)
 
+runMeasure :: (a -> Double) -> Measure a -> Double
+runMeasure f (Measure a) = runCont a f
+
 instance MonadSample Measure where
-    normal m s = fromDensityFunction $ density $ Statistics.normalDistr m s
+    -- normal m s = fromDensityFunction $ density $ Statistics.normalDistr m s
     random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
 
 
@@ -22,15 +26,22 @@ fromDensityFunction :: (Double -> Double) -> Measure Double
 fromDensityFunction d = Measure $ cont $ \f ->
     quadratureTanhSinh (\x -> f x * d x)
   where
-    quadratureTanhSinh = result . last . everywhere trap
+    quadratureTanhSinh = result . absolute 1e-6 . (\z -> trap z 0 1)
 
-model :: MonadSample m => m Bool
+model :: MonadInfer m => m Double
 model = do
-    x <- bernoulli 0.5
-    return x
+    x <- normal 0 1
+    -- y <- bernoulli x
+    condition (x > 0.7)
+    return (x)
 
--- baz = runMeasure (\x -> if x<0.0 then 1.0 else 0.0) $ normal 0 1
--- baz = runMeasure (fst) $ runWeighted model
+-- baz = runMeasure (\(x) -> if x then 1 else 0) $ model
+-- baz = runMeasure (\(x,d) -> if x<0.7 && x  > 0.5 then exp $ ln d else 0) (runWeighted $ model)
+
+probability (lower, upper) = runMeasure (\(x,d) -> if x<upper && x  > lower then exp $ ln d else 0) . runWeighted
+
+baz = probability (-100,100.0) model
+
 
 -- >>> baz
 -- 0.0
