@@ -55,7 +55,7 @@ main = do
   when trial $ putStrLn "Trial run"
   sampleIO hmmBenchmark
 
-meanVar :: (MonadDist m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
+meanVar :: (MonadSample m, CustomReal m ~ Double) => Int -> m Double -> m (Double, Double)
 meanVar n d = do
   xs <- Vector.replicateM n d
   return $ meanVariance xs
@@ -70,7 +70,7 @@ ns = [10, 20 .. 1000]
 smcParamsDouble :: [Double]
 smcParamsDouble = map fromIntegral smcParams
 
-smcResults :: (MonadDist m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
+smcResults :: (MonadSample m, CustomReal m ~ Double) => [m (Vector.Vector Double)]
 smcResults = map (\p -> Vector.replicateM 10 $ fmap HMM.hmmKL $ explicitPopulation $ smcMultinomial (length HMM.values) p HMM.hmm) smcParams
 
 hmmBenchmark :: SamplerIO ()

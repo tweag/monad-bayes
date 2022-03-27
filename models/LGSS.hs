@@ -95,7 +95,7 @@ data LGSSParam = LGSSParam
 
 -- \ One-dimensional linear Gaussian state space model.
 linearGaussian ::
-  (MonadBayes m, CustomReal m ~ Double) =>
+  (MonadInfer m, CustomReal m ~ Double) =>
   LGSSParam ->
   -- | observed sequence Y_{1:T}
   Vector Double ->
@@ -112,7 +112,7 @@ linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
 
 -- | One-dimensional random walk with Gaussian diffusion.
 randomWalk ::
-  (MonadBayes m, CustomReal m ~ Double) =>
+  (MonadInfer m, CustomReal m ~ Double) =>
   -- | initial state X0 prior
   (Mean, StdDev) ->
   -- | transition model noise
@@ -126,7 +126,7 @@ randomWalk p0 sdX sdY = linearGaussian (LGSSParam p0 1 0 sdX 1 0 sdY)
 
 -- | Generate observed sequence from the prior.
 synthesizeData ::
-  (MonadDist m, CustomReal m ~ Double) =>
+  (MonadSample m, CustomReal m ~ Double) =>
   LGSSParam ->
   -- | T - length of produced vector
   Int ->

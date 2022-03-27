@@ -10,7 +10,7 @@ let
     "^stack.*\.yaml$"
     "^test.*$"
   ];
-  mkMonadBayes = stackYaml: doBenchAndTest:
+  mkMonadInfer = stackYaml: doBenchAndTest:
     let
       project = pkgs.haskell-nix.stackProject {
         inherit stackYaml;
@@ -33,9 +33,9 @@ let
       }
       else { }
     );
-  monad-bayes-ghc84 = mkMonadBayes "stack-ghc844.yaml" false;
-  monad-bayes-ghc86 = mkMonadBayes "stack-ghc865.yaml" true;
-  monad-bayes-ghc88 = mkMonadBayes "stack-ghc883.yaml" true;
+  monad-bayes-ghc84 = mkMonadInfer "stack-ghc844.yaml" false;
+  monad-bayes-ghc86 = mkMonadInfer "stack-ghc865.yaml" true;
+  monad-bayes-ghc88 = mkMonadInfer "stack-ghc883.yaml" true;
 
   defaultHaskellPackages = pkgs.haskell.packages.ghc865;
 in
