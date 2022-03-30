@@ -18,6 +18,8 @@ import qualified Control.Monad.Bayes.Traced.Static as Static
 import Control.Monad.Bayes.Sampler (sampleIO, SamplerIO)
 import Data.Either (isRight, isLeft)
 import qualified Pipes as P
+import Brick
+import Brick.Widgets.ProgressBar (progressBar)
 
 -- | Trace MH (as defined in Control.Monad.Bayes.Traced) works for any probabilistic program, 
 -- | but this comes at the cost of expressive power, where proposals are concerned.
@@ -71,3 +73,10 @@ try = P.hoist sampleIO undefined
 -- | that makes use of monad-bayes's Traced inference transformer.
 traceMH :: MonadSample m => Int -> Static.Traced m a -> m [a]
 traceMH = Static.mh
+
+
+ui :: Widget ()
+ui = progressBar (Just "foo") 20
+
+br :: IO ()
+br = simpleMain ui
