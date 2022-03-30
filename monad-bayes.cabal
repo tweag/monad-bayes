@@ -36,7 +36,7 @@ library
         Control.Monad.Bayes.Free
         Control.Monad.Bayes.Helpers
         Control.Monad.Bayes.Inference.MH
-        Control.Monad.Bayes.Inference.Sampling
+        Control.Monad.Bayes.Inference.Rejection
         Control.Monad.Bayes.Inference.PMMH
         Control.Monad.Bayes.Inference.RMSMC
         Control.Monad.Bayes.Inference.SMC
@@ -68,12 +68,19 @@ library
         transformers >=0.5.2 && <0.6,
         pipes,
         vector >=0.12.0 && <0.13
+    
+    default-extensions: 
+        BlockArguments
+        TupleSections
+        FlexibleContexts
 
     if flag(dev)
         ghc-options:
             -Weverything -Wno-missing-local-signatures -Wno-unsafe
             -Wno-missing-import-lists -Wno-implicit-prelude
             -Wno-monomorphism-restriction
+        
+
 
     else
         ghc-options: -Wall

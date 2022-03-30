@@ -9,12 +9,12 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Static
-  ( Traced,
-    hoistT,
-    marginal,
-    mhStep,
-    mh,
-  )
+  -- ( Traced,
+  --   hoistT,
+  --   marginal,
+  --   mhStep,
+  --   mh,
+  -- )
 where
 
 import Control.Applicative (liftA2)
@@ -22,8 +22,12 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
-import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.Trans (MonadTrans (..), MonadIO)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Pipes (Producer, (>->), runEffect)
+import qualified Pipes.Prelude as P hiding (print)
+import Control.Monad.Bayes.Sampler
+import Pipes.Prelude hiding (print, map)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -82,3 +86,12 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k -1)
         y <- mhTrans m x
         return (y :| x : xs)
+
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
+-- number of steps.
+mhP :: Int -> Traced SamplerIO a -> Producer a IO ()
+mhP n (Traced m d) = (P.unfoldr (fmap (Right . (\a -> (a,a))) . sampleIO . mhTrans m) =<< lift (sampleIO d))
+    >-> P.map output  -- fmap (map output . NE.toList) (f n)
+
+testMH :: IO ()
+testMH = runEffect $ (mhP 0 (bernoulli 0.5) >-> P.take 100000) >-> P.mapM_ (\x -> print x)

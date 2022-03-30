@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -58,19 +58,20 @@ module Control.Monad.Bayes.Class
 where
 
 import Control.Monad (when)
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Class ( MonadTrans(lift) )
+import Control.Monad.Trans.Cont ( ContT )
+import Control.Monad.Trans.Identity ( IdentityT )
+import Control.Monad.Trans.List ( ListT )
+import Control.Monad.Trans.Maybe ( MaybeT )
+import Control.Monad.Trans.RWS ( RWST )
+import Control.Monad.Trans.Reader ( ReaderT )
+import Control.Monad.Trans.State ( StateT )
+import Control.Monad.Trans.Writer ( WriterT )
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG
-import Numeric.Log
+import Data.Vector.Generic as VG ( Vector, sum, mapM, map, (!) )
+import Numeric.Log ( Log(..) )
 import Statistics.Distribution
+    ( DiscreteDistr(probability), ContDistr(logDensity, quantile) )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
@@ -131,7 +132,10 @@ class Monad m => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
-  bernoulli p = fmap (< p) random
+  bernoulli p = 
+    if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
+    then fmap (< p) random 
+    else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- | Draw from a categorical distribution.
   categorical ::

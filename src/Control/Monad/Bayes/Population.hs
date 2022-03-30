@@ -1,8 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Population
@@ -26,12 +25,9 @@ module Control.Monad.Bayes.Population
     pushEvidence,
     proper,
     evidence,
-    collapse,
-    mapPopulation,
-    normalize,
-    popAvg,
-    flatten,
     hoist,
+    collapse,
+    popAvg,
   )
 where
 
@@ -177,17 +173,17 @@ collapse ::
 collapse = applyWeight . proper
 
 -- | Applies a random transformation to a population.
-mapPopulation ::
-  (Monad m) =>
-  ([(a, Log Double)] -> m [(a, Log Double)]) ->
-  Population m a ->
-  Population m a
-mapPopulation f m = fromWeightedList $ runPopulation m >>= f
+-- mapPopulation ::
+--   (Monad m) =>
+--   ([(a, Log Double)] -> m [(a, Log Double)]) ->
+--   Population m a ->
+--   Population m a
+-- mapPopulation f m = fromWeightedList $ runPopulation m >>= f
 
 -- | Normalizes the weights in the population so that their sum is 1.
 -- This transformation introduces bias.
-normalize :: (Monad m) => Population m a -> Population m a
-normalize = hoist prior . extractEvidence
+-- normalize :: (Monad m) => Population m a -> Population m a
+-- normalize = hoist prior . extractEvidence
 
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
@@ -198,14 +194,14 @@ popAvg f p = do
   return t
 
 -- | Combine a population of populations into a single population.
-flatten :: Monad m => Population (Population m) a -> Population m a
-flatten m = Population $ withWeight $ ListT t
-  where
-    t = f <$> (runPopulation . runPopulation) m
-    f d = do
-      (x, p) <- d
-      (y, q) <- x
-      return (y, p * q)
+-- flatten :: Monad m => Population (Population m) a -> Population m a
+-- flatten m = Population $ withWeight $ ListT t
+--   where
+--     t = f <$> (runPopulation . runPopulation) m
+--     f d = do
+--       (x, p) <- d
+--       (y, q) <- x
+--       return (y, p * q)
 
 -- | Applies a transformation to the inner monad.
 hoist ::

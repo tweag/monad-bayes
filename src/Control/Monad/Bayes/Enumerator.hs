@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables
@@ -32,6 +33,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Vector.Generic as V
+import qualified Data.Vector as VV
 import Numeric.Log as Log
 
 -- | An exact inference transformer that integrates
@@ -119,3 +121,15 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
+
+
+-- | The empirical distribution of a set of weighted samples
+empirical :: Ord a => [(a, Double)] -> [(a, Double)]
+empirical samples = enumerate $ do
+    let (support, probs) = unzip samples
+    i <- categorical $ VV.fromList probs
+    return $ support !! i
+
+-- | histogram of a set of samples
+histogram :: Ord a => [a] -> [(a, Double)]
+histogram = empirical . (`zip` repeat 1)

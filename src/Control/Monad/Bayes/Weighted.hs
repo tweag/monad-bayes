@@ -1,5 +1,4 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -20,7 +19,6 @@ module Control.Monad.Bayes.Weighted
     runWeighted,
     extractWeight,
     prior,
-    flatten,
     applyWeight,
     hoist,
   )
@@ -63,10 +61,6 @@ withWeight m = Weighted $ do
   (x, w) <- lift m
   modify (* w)
   return x
-
--- | Combine weights from two different levels.
-flatten :: Monad m => Weighted (Weighted m) a -> Weighted m a
-flatten m = withWeight $ (\((x, p), q) -> (x, p * q)) <$> runWeighted (runWeighted m)
 
 -- | Use the weight as a factor in the transformed monad.
 applyWeight :: MonadCond m => Weighted m a -> m a
