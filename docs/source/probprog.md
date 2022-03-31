@@ -1,6 +1,6 @@
 # User Guide
 
-Probabilistic programming is all about being able to write programs like:
+Probabilistic programming is all about being able to write arbitrary probabilistic models as programs, like:
 
 ```haskell
 sprinkler :: MonadInfer m => m Bool
@@ -16,7 +16,7 @@ sprinkler = do
   return rain
 ```
 
-and doing then do inference like this:
+and then doing inference like this:
 
 ```haskell   
 enumerate sprinkler
@@ -30,23 +30,26 @@ to get
 
 `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
 
-`sprinkler` is a distribution specified as a program with randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
+`sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
 
 ## monad-bayes vs other libraries
 
-monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling an important subset well.
+
+monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
 There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
 
-Advantage of these other libraries/languages:
+**What other approaches have that monad-bayes lacks**:
 
-- a lot of engineering work has been put into these libraries and languages to make them practical for real-world problems. The same is not true for monad-bayes. While its core is very nice, it doesn't come with a lot of the batteries you might want. Adam Scibior's thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on. We believe these are largely orthogonal to the core design, so excluding them makes for a clearer and more accessible presentation of the main ideas."
+- a lot of engineering work has been put into these libraries and languages to make them practical for real-world problems. While monad-bayes' core is very expressive and abstract, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
-Advantages of monad-bayes: 
+**What monad-bayes has that is unique**: 
 
-- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is totally pure. You can make use of laziness. The types are invaluable. There's no new special syntax to learn, which makes use and development much easier.
+- models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
-- inference algorithms are modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces.
+- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
+
+These advantages are pretty unique to monad-bayes, at least in the writer's experience.
 
 ## References
 
@@ -325,7 +328,7 @@ example = do
 Then 
 
 ```haskell
-run :: IO [Bool]
+run :: IO [(Bool, Log Double)]
 run = (sampleIO . runPopulation. smcSystematic 4 4) example
 ```
 
