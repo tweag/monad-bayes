@@ -44,7 +44,7 @@ import Brick.Widgets.Border.Style
 import Brick.Widgets.Border
 import Brick.Widgets.Center
 import Numeric.Log
-import Graphics.Vty (yellow)
+import Graphics.Vty (yellow, backgroundFill, charFill)
 
 -- | Trace MH (as defined in Control.Monad.Bayes.Traced) works for any probabilistic program, 
 -- | but this comes at the cost of expressive power, where proposals are concerned.
@@ -77,7 +77,7 @@ explicitMH numSteps initial proposal likelihood =
         >-> P.take i
   in walk numSteps initial proposal
 
-data MCMCData a = MCMCData {numSteps :: Int, numSuccesses :: Int, samples :: [a], lk :: Double} deriving (Show)
+data MCMCData a = MCMCData {numSteps :: Int, numSuccesses :: Int, samples :: [a], lk :: [Double]} deriving (Show)
 
 runExplicitMH :: Show a =>
   Int
@@ -88,8 +88,8 @@ runExplicitMH :: Show a =>
 runExplicitMH numSteps initial proposal likelihood = runEffect $
   -- samples <- P.fold (\ls x -> fst x : ls) [] id $
     (P.hoist sampleIO (explicitMH numSteps initial proposal likelihood)
-    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a })
-      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = 0}) id) >-> P.take numSteps
+    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a : lk })
+      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = []}) id) >-> P.take numSteps
     >-> P.mapM_ print
 
 thd3 :: (a, Bool, Double) -> Double
@@ -122,7 +122,7 @@ br :: IO ()
 br = simpleMain ui
 
 
-data MyAppState n = MyAppState { x :: Float, y :: Int, l :: Double, len :: Int }
+data MyAppState n = MyAppState { x :: Float, y :: Int, l :: [Double], len :: Int }
 
 drawUI :: MyAppState () -> [Widget ()]
 drawUI p = [ui]
@@ -139,12 +139,21 @@ drawUI p = [ui]
       a = withBorderStyle unicode $
             borderWithLabel (str "Successes and failures") $
             (center (str (show $ y p)) <+> vBorder <+> center (str (show ((len p) - y p))))
-      ui = (str "X: " <+> xBar) <=>
+      ui = 
+        
+           
+          graph (mean $ take 100 $ l p) <+> ((str "X: " <+> xBar) <=>
            str "\n" <=> 
            a <=>
            (if y p > 1000 
              then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good." else str "") <=>
-           str ("Model likelihood: " <> show (l p))
+           str ("Model likelihood: " <> show (l p)))
+
+mean ls = Prelude.sum ls / fromIntegral (length ls)
+
+graph n = withBorderStyle unicode $
+            borderWithLabel (str "Plot") $
+            (raw (charFill (fg yellow) 'O' 2 $ round $ 30 * n))
 
 type E = MCMCData Double
 
@@ -160,7 +169,7 @@ appEvent p (T.VtyEvent e) =
 appEvent p (AppEvent d) = M.continue $ p { x = fromIntegral (numSteps d) / (fromIntegral $ len p), y = numSuccesses d, l = lk d }
 
 initialState :: Int -> MyAppState ()
-initialState l = MyAppState 0.25 0 0.0 l
+initialState l = MyAppState 0.25 0 [] l
 
 theBaseAttr :: A.AttrName
 theBaseAttr = A.attrName "theBase"
@@ -201,7 +210,7 @@ prog = void do
 chain :: BChan E -> Int -> IO ()
 chain chan numSteps = runEffect $
   -- samples <- P.fold (\ls x -> fst3 x : ls) [] id $
-    (P.hoist sampleIO (explicitMH numSteps 0.0 (`normal` 1) (exp . ln . normalPdf 0 1))
-    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a })
-      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = 0}) id) >-> P.take numSteps
+    (P.hoist sampleIO (explicitMH numSteps 0.0 (`normal` 1) (exp . ln . normalPdf 100 1))
+    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a : lk })
+      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = []}) id) >-> P.take numSteps
     >-> P.mapM_ (writeBChan chan)
