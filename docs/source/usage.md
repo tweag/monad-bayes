@@ -349,19 +349,6 @@ There are several useful functions associated with it:
 ```haskell
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
-
-pushEvidence ::
-  MonadCond m =>
-  Population m a ->
-  Population m a
-
-resampleGeneric ::
-  MonadSample m =>
-  -- | resampler
-  (V.Vector Double -> m [Int]) ->
-  Population m a ->
-  Population m a
-
 ```
 
 `spawn` spawns new particles. As an example:
@@ -483,7 +470,7 @@ finish :: Monad m => Sequential m a -> m a
 finish = pogoStick extract . runSequential
 ```
 
-But most importantly, we can apply a natural transformer over the underlying monad `m` to only the current suspension.
+But most importantly, we can apply a natural transformation over the underlying monad `m` to only the current suspension.
 
 ```haskell
 hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
@@ -509,7 +496,7 @@ Summary of key info on `FreeSampler`:
 - `instance MonadSample (FreeSampler m)`
 -  **No** instance for `MonadCond`
 
-`FreeSampler m` is not often going to be used on its own, but instead as part of the Markov Chain Monte Carlo (MCMC) inference method.
+`FreeSampler m` is not often going to be used on its own, but instead as part of the `Traced` type, defined below. A `FreeSampler m a` represents a reified execution of the program.
 
 `FreeSampler m` is best understood if you're familiar with the standard use of a free monad to construct a domain specific language. For probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming). Here's the definition:
 
@@ -535,7 +522,7 @@ As you can see, this is rather like `Coroutine`, except to "resume", you must pr
 Since `FreeT` is a transformer, we can use `lift` to get a `MonadSample` instance.
 
 
-A *trace* of a program of type `MonadSample m => m a` is an execution of the program, so a choice for each of the random values. Recall that`random` underlies all of the random values in a program, a trace for a program is fully specified by a list of `Double`s, giving the value of each call to `random`.
+A *trace* of a program of type `MonadSample m => m a` is an execution of the program, so a choice for each of the random values. Recall that `random` underlies all of the random values in a program, so a trace for a program is fully specified by a list of `Double`s, giving the value of each call to `random`.
 
 Given a probabilistic program interpreted in `FreeSampler m`, we can "run" it to produce a program in the underlying monad `m`. For simplicity, consider the case of a program `bernoulli 0.5 :: FreeSampler SamplerIO Bool`. We can then use the following function:
 
@@ -694,6 +681,7 @@ Our probabilistic program is interpreted in the type `Weighted (FreeSampler m) a
 
 MH is then easily defined as taking steps with this kernel, in the usual fashion. Note that it works for any probabilistic program whatsoever.
 
+**Warning**: the default proposal is single site, meaning that you change one random number in the trace at a time. As a result, the proposal may not be ergodic for models with hard constraints. As a simple example, suppose that you're doing a random walk, and trying to get from a trace corresponding to the output `(True, True)` to a trace corresponding to `(False, False)`. But if `(False, True)` and `(True, False)` have no probability, you have no hope of getting there. **Don't expect MCMC to be efficient without designing your own proposal, or even correct when the proposal is not ergodic**.
 
 ### Sequential Importance Sampling
 
@@ -794,7 +782,7 @@ pmmh t k n param model =
 
 (Note that this uses the version of `mh` from `Control.Monad.Bayes.Traced.Static`.)
 
-To understand this, note that the outer algorithm is just `mh`. But the probabilistic program that we pass to `mh` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is visible to `mh`.
+To understand this, note that the outer algorithm is just `mh`. But the probabilistic program that we pass to `mh` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is "visible" to `mh`.
 
 
 ### Resample-Move Sequential Monte Carlo
@@ -839,7 +827,7 @@ So the algorithm works by creating `n` particles, and at each of the first `k` c
 
 This combines RMSMC and PMMH. That is, it is RMSMC, but for the MCMC rejuvenation procedure, PMMH is used instead of MH.
 
-There is one slight complication here, related to the fact that the MTL effect system approach doesn't generally work well when more than one of a given effect appears in a stack.
+There is one slight complication here, related to the fact that the MTL style effect system approach requires newtypes when more than one of a given effect appears in a stack, in order to differentiate them.
 
 <!-- todo: finish -->
 

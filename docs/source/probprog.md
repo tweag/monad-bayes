@@ -41,15 +41,13 @@ There is a variety of universal probabilistic programming libraries and/or langu
 
 **What other approaches have that monad-bayes lacks**:
 
-- a lot of engineering work has been put into these libraries and languages to make them practical for real-world problems. While monad-bayes' core is very expressive and abstract, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
+- a lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
 **What monad-bayes has that is unique**: 
 
 - models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
 - probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
-
-These advantages are pretty unique to monad-bayes, at least in the writer's experience.
 
 ## References
 
