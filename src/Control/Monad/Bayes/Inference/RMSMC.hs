@@ -17,11 +17,13 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Helpers
+import Control.Monad.Bayes.Class ( MonadSample )
+import Control.Monad.Bayes.Helpers ( hoistT, hoistS )
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sequential as Seq
-import Control.Monad.Bayes.Traced as Tr
+    ( resampleSystematic, spawn, Population )
+import Control.Monad.Bayes.Sequential as Seq ( sis, Sequential )
+import Control.Monad.Bayes.Traced.Static as Tr
+    ( marginal, mhStep, Traced )
 import qualified Control.Monad.Bayes.Traced.Basic as TrBas
 import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
 

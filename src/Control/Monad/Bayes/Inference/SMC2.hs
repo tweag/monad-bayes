@@ -19,12 +19,13 @@ module Control.Monad.Bayes.Inference.SMC2
 where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Helpers
-import Control.Monad.Bayes.Inference.RMSMC
-import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population as Pop
-import Control.Monad.Trans
-import Numeric.Log
+    ( MonadCond(..), MonadInfer, MonadSample(random) )
+import Control.Monad.Bayes.Helpers ( P, S, T )
+import Control.Monad.Bayes.Inference.RMSMC ( rmsmc )
+import Control.Monad.Bayes.Inference.SMC ( smcSystematicPush )
+import Control.Monad.Bayes.Population as Pop ( runPopulation )
+import Control.Monad.Trans ( MonadTrans(..) )
+import Numeric.Log ( Log )
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
 newtype SMC2 m a = SMC2 (S (T (P m)) a)

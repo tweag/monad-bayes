@@ -1,11 +1,13 @@
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
+import Test.Hspec ( hspec, context, describe, it, shouldBe )
+import Test.Hspec.QuickCheck ( prop )
+import Test.QuickCheck ( Testable(property), (==>), ioProperty )
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
+import Control.Monad.Bayes.Enumerator (empirical)
+import Control.Monad ((>=>))
 
 main :: IO ()
 main = hspec $ do
@@ -14,13 +16,20 @@ main = hspec $ do
       do
         passed <- TestWeighted.passed
         passed `shouldBe` True
-  describe "Dist" $ do
+  describe "Enumerator" $ do
     it "sorts samples and aggregates weights" $
       TestEnumerator.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $
       TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $
       TestEnumerator.passed4 `shouldBe` True
+  describe "Empirical" $
+      prop "converts weighted list of samples to distribution correctly" $
+        \observations ->
+          property $ 
+            (empirical >=> empirical) (observations :: [(Bool, Double)]) 
+            == 
+            empirical observations
   describe "Population" $ do
     context "controlling population" $ do
       it "preserves the population when not explicitly altered" $ do
@@ -65,3 +74,4 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticlesSystematic observations particles
           return $ checkParticles == particles
+    

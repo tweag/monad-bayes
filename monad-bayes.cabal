@@ -35,7 +35,6 @@ library
         Control.Monad.Bayes.Enumerator
         Control.Monad.Bayes.Free
         Control.Monad.Bayes.Helpers
-        Control.Monad.Bayes.Inference.MH
         Control.Monad.Bayes.Inference.Rejection
         Control.Monad.Bayes.Inference.PMMH
         Control.Monad.Bayes.Inference.RMSMC
@@ -66,13 +65,14 @@ library
         safe >=0.3.17 && <0.4,
         statistics >=0.14.0 && <0.16,
         transformers >=0.5.2 && <0.6,
-        pipes,
-        vector >=0.12.0 && <0.13
+        vector >=0.12.0 && <0.13,
+        text
     
     default-extensions: 
         BlockArguments
         TupleSections
         FlexibleContexts
+        OverloadedStrings
 
     if flag(dev)
         ghc-options:
@@ -145,6 +145,9 @@ test-suite monad-bayes-test
 
     else
         ghc-options: -Wall
+
+    default-extensions: 
+        BlockArguments
 
 benchmark ssm-bench
     type:             exitcode-stdio-1.0

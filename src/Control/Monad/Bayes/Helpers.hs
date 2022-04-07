@@ -25,11 +25,12 @@ module Control.Monad.Bayes.Helpers
   )
 where
 
-import Control.Monad.Bayes.Free as Free
-import Control.Monad.Bayes.Population as Pop
+import Control.Monad.Bayes.Free as Free ( hoist, FreeSampler )
+import Control.Monad.Bayes.Population as Pop ( hoist, Population )
 import Control.Monad.Bayes.Sequential as Seq
-import Control.Monad.Bayes.Traced as Tr
-import Control.Monad.Bayes.Weighted as Weighted
+    ( hoistFirst, Sequential )
+import Control.Monad.Bayes.Traced.Static as Tr ( hoistT, Traced )
+import Control.Monad.Bayes.Weighted as Weighted ( hoist, Weighted )
 
 type W = Weighted
 

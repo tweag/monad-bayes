@@ -1,10 +1,11 @@
 module TestSequential where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Enumerator as Dist
-import Control.Monad.Bayes.Sequential
-import Data.AEq
-import Sprinkler
+    ( factor, MonadInfer, MonadSample(uniformD) )
+import Control.Monad.Bayes.Enumerator as Dist ( enumerate, mass )
+import Control.Monad.Bayes.Sequential ( advance, finish, finished )
+import Data.AEq ( AEq((~==)) )
+import Sprinkler ( soft )
 
 twoSync :: MonadInfer m => m Int
 twoSync = do
