@@ -139,6 +139,3 @@ empirical samples = runExcept $ do
     return $ enumerate do
       i <- categorical $ VV.fromList probs
       return $ support !! i
-
-bin :: Num n => Int -> (a, b) -> (n,n)
-bin numBins (min,max) = let intervals = [(lower,lower + undefined) | lower <- undefined] in (1,2)
