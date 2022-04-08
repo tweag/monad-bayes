@@ -41,11 +41,11 @@ type F = FreeSampler
 
 type T = Traced
 
-hoistW :: (forall x. m x -> n x) -> W m a -> W n a
+hoistW :: Monad n => (forall x. m x -> n x) -> W m a -> W n a
 hoistW = Weighted.hoist
 
 hoistP ::
-  Monad n =>
+  (Monad n, Monad m) =>
   (forall x. m x -> n x) ->
   P m a ->
   P n a

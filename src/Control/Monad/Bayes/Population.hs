@@ -55,7 +55,7 @@ instance MonadTrans Population where
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-runPopulation :: Population m a -> m [(a, Log Double)]
+runPopulation :: Functor m => Population m a -> m [(a, Log Double)]
 runPopulation (Population m) = runListT $ runWeighted m
 
 -- | Explicit representation of the weighted sample.
@@ -209,7 +209,7 @@ flatten m = Population $ withWeight $ ListT t
 
 -- | Applies a transformation to the inner monad.
 hoist ::
-  Monad n =>
+  (Monad n, Monad m) =>
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a

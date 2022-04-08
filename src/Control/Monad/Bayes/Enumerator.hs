@@ -26,7 +26,7 @@ import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Writer.CPS
 import Data.AEq (AEq, (===), (~==))
 import qualified Data.Map as Map
 import Data.Maybe
@@ -51,7 +51,7 @@ instance MonadInfer Enumerator
 
 -- | Construct Enumerator from a list of values and associated weights.
 fromList :: [(a, Log Double)] -> Enumerator a
-fromList = Enumerator . WriterT . map (second Product)
+fromList = Enumerator . writerT . map (second Product)
 
 -- | Returns the posterior as a list of weight-value pairs without any post-processing,
 -- such as normalization or aggregation

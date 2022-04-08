@@ -28,22 +28,28 @@ where
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
-import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+-- import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
 import Numeric.Log (Log)
+import Control.Monad.Writer (Product (Product, getProduct))
+import Control.Monad.Trans.Writer.CPS
+import Data.Bifunctor (Bifunctor(second))
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
-newtype Weighted m a = Weighted (StateT (Log Double) m a)
+newtype Weighted m a = Weighted (WriterT (Product (Log Double)) m a)
   -- StateT is more efficient than WriterT
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans)
 
+
+instance MonadSample m => MonadSample (Weighted m) where
+  random = lift random
 instance Monad m => MonadCond (Weighted m) where
-  score w = Weighted (modify (* w))
+  score w = Weighted (tell $ Product w)
 
 instance MonadSample m => MonadInfer (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-runWeighted :: Weighted m a -> m (a, Log Double)
-runWeighted (Weighted m) = runStateT m 1
+runWeighted :: Functor m => Weighted m a -> m (a, Log Double)
+runWeighted (Weighted m) = second getProduct <$> runWriterT m
 
 -- | Compute the sample and discard the weight.
 --
@@ -61,7 +67,7 @@ extractWeight = fmap snd . runWeighted
 withWeight :: (Monad m) => m (a, Log Double) -> Weighted m a
 withWeight m = Weighted $ do
   (x, w) <- lift m
-  modify (* w)
+  tell $ Product w
   return x
 
 -- | Combine weights from two different levels.
@@ -76,5 +82,5 @@ applyWeight m = do
   return x
 
 -- | Apply a transformation to the transformed monad.
-hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
-hoist t (Weighted m) = Weighted $ mapStateT t m
+hoist :: Monad n => (forall x. m x -> n x) -> Weighted m a -> Weighted n a
+hoist t (Weighted m) = Weighted $ mapWriterT t m
