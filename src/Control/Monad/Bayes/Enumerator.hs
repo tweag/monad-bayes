@@ -40,7 +40,7 @@ newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
 instance MonadSample Enumerator where
-  random = error "Infinitely supported random variables not supported in Enumerator"
+  random = error "Continuous random variables not supported in Enumerator"
   bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
   categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
 

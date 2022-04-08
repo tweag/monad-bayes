@@ -36,12 +36,23 @@ import Data.Bifunctor (Bifunctor(second))
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (WriterT (Product (Log Double)) m a)
-  -- StateT is more efficient than WriterT
+  -- use an efficient version of Writer
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans)
 
 
 instance MonadSample m => MonadSample (Weighted m) where
   random = lift random
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+  logCategorical = lift . logCategorical
+  uniformD = lift . uniformD
+  uniform a b = lift $ uniform a b
+  normal a b = lift $ uniform a b
+  gamma a b = lift $ gamma a b
+  beta a b = lift $ beta a b
+  geometric = lift . geometric
+  poisson = lift . poisson
+  dirichlet = lift . dirichlet
 instance Monad m => MonadCond (Weighted m) where
   score w = Weighted (tell $ Product w)
 
