@@ -19,7 +19,7 @@ logisticRegression dat = do
   b <- normal 0 1
   sigma <- gamma 1 1
   let y x = normal (m * x + b) sigma
-      sigmoid x = y x >>= \t -> return $ 1 / (1 + exp (-t))
+      sigmoid x = y x >>= \t -> return $ 1 / (1 + exp (- t))
       obs x label = do
         p <- sigmoid x
         factor $ (Exp . log) $ if label then p else 1 - p

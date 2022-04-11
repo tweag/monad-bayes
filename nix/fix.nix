@@ -1,4 +1,4 @@
-{ refactor
+{ apply-refact
 , cabal-install
 , git
 , hlint
@@ -23,7 +23,7 @@ writeShellScriptBin "fix.sh" ''
   nixpkgsfmt="${nixpkgs-fmt}/bin/nixpkgs-fmt"
   ormolu="${ormolu}/bin/ormolu"
   prettier="${nodePackages.prettier}/bin/prettier"
-  refactor="${refactor}/bin/refactor"
+  refactor="${apply-refact}/bin/refactor"
 
   $git ls-tree -z -r HEAD --name-only | grep -z '\.cabal$' | xargs -0 $cabal format
   echo 'SUCCESS: Cabal files formatted'

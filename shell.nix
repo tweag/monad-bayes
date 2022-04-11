@@ -1,3 +1,5 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem
+, compiler ? "default"
+}:
 
-(builtins.getFlake (toString ./.)).devShell
+(builtins.getFlake (toString ./.)).devShells.${system}.${compiler}
