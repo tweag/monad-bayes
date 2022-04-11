@@ -133,13 +133,15 @@ empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
 empirical samples = runExcept $ do
     let (support, probs) = unzip samples
     when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
-    return $ enumerate $ do
-      i <- categorical $ VV.fromList probs
-      return $ support !! i
+    return $ enumerate $ fromList (second (log . Exp) <$> samples)
+    -- do
+    --   i <- categorical $ VV.fromList probs
+    --   return $ support !! i
 
 
 type Bin = (Double, Double)
-
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
 toBin :: Double -- ^ bin size 
   -> Double -- ^ number
   -> Bin
