@@ -31,6 +31,10 @@
 
         inherit (flakes.ghc9) devShell;
 
+        devShells = builtins.mapAttrs (_: x: x.devShell) flakes // {
+          default = flakes.ghc9.devShell;
+        };
+
         packages = combined "packages" // {
           inherit (pkgs.monad-bayes) lint fix;
         };
