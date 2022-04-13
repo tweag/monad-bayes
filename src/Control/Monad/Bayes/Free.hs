@@ -32,10 +32,7 @@ import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
 
 -- | Random sampling functor.
-newtype SamF a = Random (Double -> a)
-
-instance Functor SamF where
-  fmap f (Random k) = Random (f . k)
+newtype SamF a = Random (Double -> a) deriving Functor
 
 -- | Free monad transformer over random sampling.
 --
