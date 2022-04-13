@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 
 -- |
@@ -20,21 +21,28 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
+    empirical,
+    bin
   )
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
-import Control.Monad (MonadPlus)
+import Control.Monad (MonadPlus, when)
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans.Writer
+    ( MonadCond(..),
+      MonadInfer,
+      MonadSample(categorical, bernoulli, random) )
+import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
 import qualified Data.Map as Map
-import Data.Maybe
-import Data.Monoid
+import Data.Maybe ( fromMaybe )
+import Data.Monoid ( Product(..) )
 import qualified Data.Vector.Generic as V
 import qualified Data.Vector as VV
-import Numeric.Log as Log
+import Numeric.Log as Log ( Log(..), sum )
+import qualified Data.Text as T
+import Control.Monad.Except (runExcept, MonadError (throwError))
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -124,12 +132,10 @@ instance Ord a => AEq (Enumerator a) where
 
 
 -- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> [(a, Double)]
-empirical samples = enumerate $ do
+empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
+empirical samples = runExcept $ do
     let (support, probs) = unzip samples
-    i <- categorical $ VV.fromList probs
-    return $ support !! i
-
--- | histogram of a set of samples
-histogram :: Ord a => [a] -> [(a, Double)]
-histogram = empirical . (`zip` repeat 1)
+    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
+    return $ enumerate do
+      i <- categorical $ VV.fromList probs
+      return $ support !! i

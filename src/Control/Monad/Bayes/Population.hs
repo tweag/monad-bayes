@@ -34,12 +34,17 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
-import Control.Monad.Trans
-import Control.Monad.Trans.List
+    ( MonadInfer,
+      MonadCond,
+      MonadSample(logCategorical, random, categorical),
+      factor )
+import Control.Monad.Bayes.Weighted
+    ( Weighted, runWeighted, extractWeight, withWeight, applyWeight )
+import Control.Monad.Trans ( MonadIO, MonadTrans(..) )
+import Control.Monad.Trans.List ( ListT(..) )
 import qualified Data.List
 import qualified Data.Vector as V
-import Numeric.Log
+import Numeric.Log ( sum, Log(ln) )
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
@@ -172,19 +177,6 @@ collapse ::
   m a
 collapse = applyWeight . proper
 
--- | Applies a random transformation to a population.
--- mapPopulation ::
---   (Monad m) =>
---   ([(a, Log Double)] -> m [(a, Log Double)]) ->
---   Population m a ->
---   Population m a
--- mapPopulation f m = fromWeightedList $ runPopulation m >>= f
-
--- | Normalizes the weights in the population so that their sum is 1.
--- This transformation introduces bias.
--- normalize :: (Monad m) => Population m a -> Population m a
--- normalize = hoist prior . extractEvidence
-
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
 popAvg f p = do
@@ -192,16 +184,6 @@ popAvg f p = do
   let ys = map (\(x, w) -> f x * w) xs
   let t = Data.List.sum ys
   return t
-
--- | Combine a population of populations into a single population.
--- flatten :: Monad m => Population (Population m) a -> Population m a
--- flatten m = Population $ withWeight $ ListT t
---   where
---     t = f <$> (runPopulation . runPopulation) m
---     f d = do
---       (x, p) <- d
---       (y, q) <- x
---       return (y, p * q)
 
 -- | Applies a transformation to the inner monad.
 hoist ::

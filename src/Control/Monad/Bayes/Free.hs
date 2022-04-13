@@ -23,7 +23,7 @@ module Control.Monad.Bayes.Free
   )
 where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class ( MonadSample(random) )
 import Control.Monad.State (evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)

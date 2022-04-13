@@ -13,19 +13,27 @@
 --
 -- Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
 module Control.Monad.Bayes.Inference.SMC
-  -- ( sir,
-  --   smcMultinomial,
-  --   smcSystematic,
-  --   smcMultinomialPush,
-  --   smcSystematicPush,
-  -- )
+  ( sir,
+    smcMultinomial,
+    smcSystematic,
+    smcMultinomialPush,
+    smcSystematicPush,
+  )
 where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
+  ( Population,
+    pushEvidence,
+    resampleMultinomial,
+    resampleSystematic,
+    spawn,
+  )
 import Control.Monad.Bayes.Sequential as Seq
-import Control.Monad (when)
-import Control.Monad.Bayes.Sampler (sampleIOfixed, sampleIO)
+  ( Sequential,
+    hoistFirst,
+    sis,
+  )
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
@@ -95,11 +103,3 @@ smcSystematicPush ::
   Sequential (Population m) a ->
   Population m a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)
-
-
-tes = sampleIO $ fmap length $ runPopulation $ smcMultinomial 2 2 do
-  rain <- bernoulli 0.3
-  when rain (factor 0.2)
-  sprinkler <- bernoulli $ if rain then 0.1 else 0.4
-  when sprinkler (factor 0.1)
-  return rain

@@ -27,11 +27,21 @@ module Control.Monad.Bayes.Sampler
 where
 
 import Control.Monad.Bayes.Class
+    ( MonadSample(geometric, categorical, bernoulli, beta, gamma,
+                  normal, uniform, random) )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import System.Random.MWC
+    ( Seed,
+      GenST,
+      GenIO,
+      create,
+      createSystemRandom,
+      restore,
+      save,
+      Variate(uniformR, uniform) )
 import qualified System.Random.MWC.Distributions as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.

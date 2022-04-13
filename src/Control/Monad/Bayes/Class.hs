@@ -58,20 +58,21 @@ module Control.Monad.Bayes.Class
 where
 
 import Control.Monad (when)
-import Control.Monad.Trans.Class ( MonadTrans(lift) )
-import Control.Monad.Trans.Cont ( ContT )
-import Control.Monad.Trans.Identity ( IdentityT )
-import Control.Monad.Trans.List ( ListT )
-import Control.Monad.Trans.Maybe ( MaybeT )
-import Control.Monad.Trans.RWS ( RWST )
-import Control.Monad.Trans.Reader ( ReaderT )
-import Control.Monad.Trans.State ( StateT )
-import Control.Monad.Trans.Writer ( WriterT )
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Cont (ContT)
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.List (ListT)
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.State (StateT)
+import Control.Monad.Trans.Writer (WriterT)
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG ( Vector, sum, mapM, map, (!) )
-import Numeric.Log ( Log(..) )
+import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
+import Numeric.Log (Log (..))
 import Statistics.Distribution
-    ( DiscreteDistr(probability), ContDistr(logDensity, quantile) )
+  ( ContDistr (logDensity, quantile),
+    DiscreteDistr (probability),
+  )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
@@ -132,10 +133,10 @@ class Monad m => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
-  bernoulli p = 
+  bernoulli p =
     if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
-    then fmap (< p) random 
-    else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
+      then fmap (< p) random
+      else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- | Draw from a categorical distribution.
   categorical ::
@@ -263,13 +264,13 @@ instance MonadCond m => MonadCond (IdentityT m) where
 
 instance MonadInfer m => MonadInfer (IdentityT m)
 
-instance MonadSample m => MonadSample (MaybeT m) where
+instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
 
-instance MonadCond m => MonadCond (MaybeT m) where
+instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (MaybeT m)
+instance MonadInfer m => MonadInfer (ExceptT e m)
 
 instance MonadSample m => MonadSample (ReaderT r m) where
   random = lift random
@@ -299,14 +300,6 @@ instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (StateT s m)
-
-instance (MonadSample m, Monoid w) => MonadSample (RWST r w s m) where
-  random = lift random
-
-instance (MonadCond m, Monoid w) => MonadCond (RWST r w s m) where
-  score = lift . score
-
-instance (MonadInfer m, Monoid w) => MonadInfer (RWST r w s m)
 
 instance MonadSample m => MonadSample (ListT m) where
   random = lift random
