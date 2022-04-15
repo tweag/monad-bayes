@@ -9,11 +9,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Static
-  ( Traced,
+  ( Traced(Traced),
     hoistT,
     marginal,
     mhStep,
     mh,
+    model,
+    traceDist
   )
 where
 

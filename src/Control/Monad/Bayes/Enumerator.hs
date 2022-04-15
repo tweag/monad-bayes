@@ -20,9 +20,7 @@ module Control.Monad.Bayes.Enumerator
     compact,
     enumerate,
     expectation,
-    normalForm,
-    empirical,
-    bin
+    normalForm
   )
 where
 
@@ -129,13 +127,3 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
-
-
--- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
-empirical samples = runExcept $ do
-    let (support, probs) = unzip samples
-    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
-    return $ enumerate do
-      i <- categorical $ VV.fromList probs
-      return $ support !! i

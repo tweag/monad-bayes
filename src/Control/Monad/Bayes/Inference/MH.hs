@@ -1,4 +1,14 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+
+
+
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+
+
+
 -- |
 -- Module      : Control.Monad.Bayes.Inference.MH
 -- Description :  Metropolis-Hastings (MH)
@@ -11,12 +21,6 @@
 module Control.Monad.Bayes.Inference.MH where
 
 
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
-
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
 import Control.Monad (void)
 -- #if !(MIN_VERSION_base(4,11,0))
 -- import Data.Monoid
@@ -24,193 +28,224 @@ import Control.Monad (void)
 import qualified Graphics.Vty as V
 
 import qualified Brick.AttrMap as A
-import qualified Brick.Main as M
+import qualified Brick.Main as B
 import qualified Brick.Types as T
 import qualified Brick.Widgets.ProgressBar as P
 
 
-import Control.Monad.Bayes.Class (MonadSample (bernoulli, normal), normalPdf)
+import Control.Monad.Bayes.Class (MonadSample (bernoulli, normal, random), normalPdf, MonadInfer, condition)
 import qualified Pipes.Prelude as P
 import Pipes.Core (Producer)
-import Pipes ((>->), runEffect)
+import Pipes ((>->), runEffect, MonadTrans (lift), (<-<))
 import qualified Control.Monad.Bayes.Traced.Static as Static
-import Control.Monad.Bayes.Sampler (sampleIO, SamplerIO)
+import Control.Monad.Bayes.Sampler (sampleIO)
 import qualified Pipes as P
 import Brick
-import Brick.Widgets.ProgressBar (progressBar)
-import Brick.BChan (newBChan, BChan, writeBChan)
+import Brick.BChan (newBChan, writeBChan)
 import Control.Concurrent (forkIO)
 import Brick.Widgets.Border.Style
 import Brick.Widgets.Border
 import Brick.Widgets.Center
 import Numeric.Log
-import Graphics.Vty (yellow, backgroundFill, charFill)
+import Graphics.Vty (yellow)
+import GHC.Float (double2Float)
+import Control.Monad.Bayes.Traced.Common (mhTrans, Trace (Trace, variables, density), mhTransWithBool)
+import Control.Monad.Bayes.Traced.Static
+import Control.Monad.Bayes.Weighted (runWeighted, prior)
+import Control.Monad.Bayes.Free (withPartialRandomness)
 
 -- | Trace MH (as defined in Control.Monad.Bayes.Traced) works for any probabilistic program, 
--- | but this comes at the cost of expressive power, where proposals are concerned.
--- | If instead you can specify an explicit proposal and scoring function, you can use explicitMH. 
--- | This explicitly runs a Markov Chain andis implemented using Pipes, which is a library
--- | for handling effectful lists lazily.
+-- but this comes at the cost of expressive power, where proposals are concerned.
+-- If instead you can specify a proposal and scoring function manually, you can use manualMH. 
+-- This explicitly runs a Markov Chain on the return value of your probabilistic program
+
 
 -- The Metropolis-Hastings criterion 
 -- (see https://ermongroup.github.io/cs228-notes/inference/sampling/)
-mhStep :: MonadSample m => (a -> m a) -> (a -> Double) -> (a -> m (a, Bool, Double))
-mhStep proposal likelihood currentState = do
+manualMhStep :: MonadSample m => (a -> m a) -> (a -> Double) -> (a -> m (MHResult a))
+manualMhStep proposal likelihood currentState = do
   proposed <- proposal currentState
   let score = likelihood proposed
       oldScore = likelihood currentState
       ratio = min 1 (score / oldScore)
   accept <- bernoulli $ clamp 0 1 ratio
-  return (if accept then (proposed, True, score) else (currentState, False, oldScore))
+  return (if accept then MHResult proposed True score else MHResult currentState False oldScore)
 
-walk :: Monad m => Int -> a -> (a -> m a) -> Producer a m ()
-walk i initial transition =
-    P.unfoldr (fmap (Right . (\a -> (a,a))) . transition) initial
-    >-> P.take i
+data MHResult a = MHResult {value :: a, success :: Bool, likelihood :: Double}
 
-fst3 :: (a, b, c) -> a
-fst3 (a,_,_) = a
+manualMH :: MonadSample m => Int -> a -> (a -> m a) -> (a -> Double) -> Producer (MHResult a) m ()
+manualMH i initial proposal likelihood =
+  P.unfoldr (fmap (Right . (\a -> (a, value a))) . manualMhStep proposal likelihood) initial
+   >-> P.take i
 
-explicitMH :: MonadSample m => Int -> a -> (a -> m a) -> (a -> Double) -> Producer (a, Bool, Double) m ()
-explicitMH numSteps initial proposal likelihood =
-  let walk i initial transition = P.unfoldr (fmap (Right . (\a -> (a, fst3 a))) . mhStep transition likelihood) initial
-        >-> P.take i
-  in walk numSteps initial proposal
-
-data MCMCData a = MCMCData {numSteps :: Int, numSuccesses :: Int, samples :: [a], lk :: [Double]} deriving (Show)
-
-runExplicitMH :: Show a =>
-  Int
-  -> a
-  -> (a -> SamplerIO a)
-  -> (a -> Double)
-  -> IO ()
-runExplicitMH numSteps initial proposal likelihood = runEffect $
-  -- samples <- P.fold (\ls x -> fst x : ls) [] id $
-    (P.hoist sampleIO (explicitMH numSteps initial proposal likelihood)
-    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a : lk })
-      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = []}) id) >-> P.take numSteps
-    >-> P.mapM_ print
-
-thd3 :: (a, Bool, Double) -> Double
-thd3 (_,_,c) = c
-
-snd3 :: (a, Bool, Double) -> Bool
-snd3 (_,b,_) = b
-  -- print (length samples)
-  -- return samples
-te = runExplicitMH 10 0 (`normal` 1) (\x -> x * 0.00000001)
-
-try :: Producer a IO b
-try = P.hoist sampleIO undefined
+data MCMCData a = MCMCData {
+  numSteps :: Int,
+  numSuccesses :: Int,
+  samples :: [a],
+  lk :: [Double],
+  totalSteps :: Int
+  } deriving (Show)
 
 -- todo: make an effort to initialize by sampling, and if it fails, report informative error
 -- stop the mcmc once there's convergence: concurrency, so that you can hit a button and stop
 -- the chain when it looks good
--- GOOD: use brick to display nice command line stuff
 
 -- | This is the more general version of MH MCMC
 -- | that makes use of monad-bayes's Traced inference transformer.
-traceMH :: MonadSample m => Int -> Static.Traced m a -> m [a]
-traceMH = Static.mh
+-- traceMH :: MonadSample m => Int -> Static.Traced m a -> m [a]
+-- traceMH = Static.mh
+
+-- independentSamples :: MonadInfer m => Traced m a -> P.Producer a (Traced m) ()
+-- independentSamples :: MonadSample m =>
+--   (MonadInfer m => m a)
+--   -> P.Producer
+--       ((a, Log Double), [Double])
+--       m
+--       (( a, Log Double), [Double])
+-- independentSamples :: MonadInfer m =>
+--   m (Traced m a)
+--   -> P.Producer ((a, Log Double), [Double]) m ()
+search m = 
+  P.unfoldr step m where
+    step x = do
+      x' <- x
+      al <- traceDist x'
+      return if density al > 0 
+        then Left al
+        else Right (al, m)
+
+foo m@(Traced w d) = P.map (\(Trace variables output density,b) -> MHResult output b (exp $ ln density)) <-< do
+  tr <- search (return m) >-> P.map (, True)
+  let step x = Right . (\k -> (  k, (fst k))) <$> mhTransWithBool w x
+  P.unfoldr step tr
+
+independentSamples m =
+  P.repeatM m 
+  >-> P.mapM traceDist  -- (withPartialRandomness [] . runWeighted . model)
+  >-> P.dropWhile ((== 0) . density)
+  >-> P.map variables
+  >-> P.take 10
+
+a m = P.runEffect $ independentSamples m >-> P.print
 
 
-ui :: Widget ()
-ui = progressBar (Just "foo") 20
+b = sampleIO $ runWeighted $ a $ return do
+  x <- bernoulli 0.1
+  condition x
+  return x
 
-br :: IO ()
-br = simpleMain ui
+-- traceMH :: MonadSample m => Int -> a -> (a -> m a) -> (a -> Double) -> Producer (MHResult a) m ()
+-- traceMH i p =
+--   P.unfoldr (fmap (Right . (\a -> (a, a))) . mhTrans p) initial
+--    >-> P.take i
 
 
-data MyAppState n = MyAppState { x :: Float, y :: Int, l :: [Double], len :: Int }
 
-drawUI :: MyAppState () -> [Widget ()]
-drawUI p = [ui]
-    where
-      -- use mapAttrNames
-      xBar = updateAttrMap
-             (A.mapAttrNames [ (xDoneAttr, P.progressCompleteAttr)
-                             , (xToDoAttr, P.progressIncompleteAttr)
-                             ]
-             ) $ bar $ x p
-      -- or use individual mapAttrName calls
-      lbl c = Just $ "Step " <> (show $ fromEnum $ c * (fromIntegral $ len p))
-      bar v = P.progressBar (lbl v) v
-      a = withBorderStyle unicode $
-            borderWithLabel (str "Successes and failures") $
-            (center (str (show $ y p)) <+> vBorder <+> center (str (show ((len p) - y p))))
-      ui = 
-        
-           
-          graph (mean $ take 100 $ l p) <+> ((str "X: " <+> xBar) <=>
-           str "\n" <=> 
-           a <=>
-           (if y p > 1000 
-             then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good." else str "") <=>
-           str ("Model likelihood: " <> show (l p)))
+drawUI :: MCMCData Double -> [Widget ()]
+drawUI state = [ui] where
 
+  completionBar = updateAttrMap
+          (A.mapAttrNames [ (doneAttr, P.progressCompleteAttr)
+                          , (toDoAttr, P.progressIncompleteAttr)
+                          ]
+          ) $ toBar $ fromIntegral $ numSteps state
+
+  likelihoodBar = updateAttrMap
+          (A.mapAttrNames [ (doneAttr, P.progressCompleteAttr)
+                          , (toDoAttr, P.progressIncompleteAttr)
+                          ]
+          ) $ P.progressBar (Just $ "Mean likelihood for last 1000 samples: " <> take 10 (show (head $ lk state <> [0])))
+              (double2Float (mean $ take 1000 $ lk state) / double2Float (maximum $ 0 : lk state))
+
+  displayStep c = Just $ "Step " <> show (fromEnum $ c * fromIntegral (numSteps state))
+  numFailures = numSteps state - numSuccesses state
+  toBar v = P.progressBar (displayStep v) (v / fromIntegral (totalSteps state  ))
+  displaySuccessesAndFailures = withBorderStyle unicode $
+        borderWithLabel (str "Successes and failures") $
+        center (str (show $ numSuccesses state))
+        <+>
+        vBorder
+        <+>
+        center (str (show numFailures))
+  warning = if numSteps state > 1000 && (fromIntegral (numSuccesses state) / fromIntegral (numSteps state)) < 0.1
+      then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good."
+      else str ""
+
+  ui =
+
+      (str "Progress: " <+> completionBar)
+      <=>
+      (str "Likelihood: " <+> likelihoodBar)
+      <=>
+      str "\n"
+      <=>
+      displaySuccessesAndFailures
+      <=>
+      warning
+
+mean :: (Fractional a, Foldable t) => t a -> a
 mean ls = Prelude.sum ls / fromIntegral (length ls)
 
-graph n = withBorderStyle unicode $
-            borderWithLabel (str "Plot") $
-            (raw (charFill (fg yellow) 'O' 2 $ round $ 30 * n))
 
-type E = MCMCData Double
 
-appEvent :: MyAppState () -> T.BrickEvent () E -> T.EventM () (T.Next (MyAppState ()))
+appEvent :: MCMCData Double -> T.BrickEvent () (MCMCData Double) -> T.EventM () (T.Next (MCMCData Double))
 appEvent p (T.VtyEvent e) =
-    let valid = clamp (0.0 :: Float) 1.0
-    in case e of
-        --  V.EvKey (V.KChar 'x') [] -> do
-        --    y <- liftIO $ print 4
-        --    M.continue $ p { x = valid $ x p + 0.05 }
-         V.EvKey (V.KChar 'q') [] -> M.halt p
-         _ -> M.continue p
-appEvent p (AppEvent d) = M.continue $ p { x = fromIntegral (numSteps d) / (fromIntegral $ len p), y = numSuccesses d, l = lk d }
+    case e of
+         V.EvKey (V.KChar 'q') [] -> B.halt p
+         _ -> B.continue p
+appEvent _ (AppEvent d) = B.continue d
+appEvent _ _ = undefined
 
-initialState :: Int -> MyAppState ()
-initialState l = MyAppState 0.25 0 [] l
 
-theBaseAttr :: A.AttrName
+
+doneAttr, toDoAttr, theBaseAttr :: A.AttrName
 theBaseAttr = A.attrName "theBase"
-
-xDoneAttr, xToDoAttr :: A.AttrName
-xDoneAttr = theBaseAttr <> A.attrName "X:done"
-xToDoAttr = theBaseAttr <> A.attrName "X:remaining"
+doneAttr = theBaseAttr <> A.attrName "done"
+toDoAttr = theBaseAttr <> A.attrName "remaining"
 
 theMap :: A.AttrMap
 theMap = A.attrMap V.defAttr
-         [ (theBaseAttr,               bg V.brightBlack)
-         , (xDoneAttr,                 V.black `on` V.white)
-         , (xToDoAttr,                 V.white `on` V.black)
-         , (attrName "highlight", fg yellow)
-
-        --  , (P.progressIncompleteAttr,  fg V.yellow)
+         [ (theBaseAttr,                bg V.brightBlack)
+         , (doneAttr,                   V.black `on` V.white)
+         , (toDoAttr,                   V.white `on` V.black)
+         , (attrName "highlight",       fg yellow)
          ]
 
-theApp :: M.App (MyAppState ()) E ()
-theApp =
-    M.App { M.appDraw = drawUI
-          , M.appChooseCursor = M.showFirstCursor
-          , M.appHandleEvent = appEvent
-          , M.appStartEvent = return
-          , M.appAttrMap = const theMap
+mcmcTUI :: B.App (MCMCData Double) (MCMCData Double) ()
+mcmcTUI =
+    B.App { B.appDraw = drawUI
+          , B.appChooseCursor = B.showFirstCursor
+          , B.appHandleEvent = appEvent
+          , B.appStartEvent = return
+          , B.appAttrMap = const theMap
           }
 
-prog :: IO ()
-prog = void do
-  eventChan <- newBChan 10
+tui :: IO ()
+tui = void do
   let buildVty = V.mkVty V.defaultConfig
+      n = 100000
+      -- model = manualMH n 0.0 (`normal` 1) (exp . ln . normalPdf 20 1)
+  eventChan <- newBChan 10
   initialVty <- buildVty
+  _ <- forkIO $ run (foo $ random) eventChan n
+  B.customMain initialVty buildVty (Just eventChan) mcmcTUI (initialState n)
 
-  let numSteps = 100000
-  forkIO $ chain eventChan numSteps
-  M.customMain initialVty buildVty (Just eventChan) theApp (initialState numSteps)
+  where
+    run prod chan i = runEffect $
+        P.hoist sampleIO prod
+        >-> P.scan
+          (\mcmcdata@(MCMCData ns nsc smples lk _) a ->
+            mcmcdata {
+              numSteps = ns + 1,
+              numSuccesses = nsc + if success a then 1 else 0,
+              samples = value a : smples, lk = likelihood a : lk
+               })
+          (initialState i) 
+          id 
+        >-> P.take i
+        >-> P.mapM_ (writeBChan chan)
 
-chain :: BChan E -> Int -> IO ()
-chain chan numSteps = runEffect $
-  -- samples <- P.fold (\ls x -> fst3 x : ls) [] id $
-    (P.hoist sampleIO (explicitMH numSteps 0.0 (`normal` 1) (exp . ln . normalPdf 100 1))
-    >-> P.scan (\(MCMCData ns nsc smples lk) a -> MCMCData {numSteps = ns + 1, numSuccesses = nsc + (if snd3 a then 1 else 0), samples = fst3 a : smples, lk = thd3 a : lk })
-      (MCMCData {numSteps = 0, numSuccesses = 0, samples = [], lk = []}) id) >-> P.take numSteps
-    >-> P.mapM_ (writeBChan chan)
+initialState :: Int -> MCMCData Double
+initialState n = MCMCData {numSteps = 0, samples = [], lk = [], numSuccesses = 0, totalSteps = n}
+
+

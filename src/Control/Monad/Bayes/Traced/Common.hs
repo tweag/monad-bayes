@@ -7,12 +7,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
+  ( Trace(Trace, variables, output, density),
     singleton,
     output,
     scored,
     bind,
     mhTrans,
+    mhTransWithBool,
     mhTrans',
   )
 where
@@ -69,7 +70,11 @@ bind dx f = do
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+mhTrans m t = fst <$> mhTransWithBool m t
+
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
+mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a, Bool)
+mhTransWithBool m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n -1)
@@ -80,7 +85,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
-  return $ if accept then Trace vs b q else t
+  return $ if accept then (Trace vs b q, True) else (t, False)
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
