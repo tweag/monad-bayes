@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables
@@ -20,7 +19,9 @@ module Control.Monad.Bayes.Enumerator
     compact,
     enumerate,
     expectation,
-    normalForm
+    normalForm,
+    toBin,
+    empirical
   )
 where
 
@@ -41,6 +42,11 @@ import qualified Data.Vector as VV
 import Numeric.Log as Log ( Log(..), sum )
 import qualified Data.Text as T
 import Control.Monad.Except (runExcept, MonadError (throwError))
+import Numeric.Log as Log
+import qualified Data.Text as T
+import qualified Data.Vector as VV
+import Control.Monad.Except (runExcept, MonadError (throwError))
+import Data.Fixed (mod')
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -127,3 +133,23 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
+
+
+-- | The empirical distribution of a set of weighted samples
+empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
+empirical samples = runExcept $ do
+    let (support, probs) = unzip samples
+    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
+    return $ enumerate $ fromList (second (log . Exp) <$> samples)
+    -- do
+    --   i <- categorical $ VV.fromList probs
+    --   return $ support !! i
+
+
+type Bin = (Double, Double)
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
+toBin :: Double -- ^ bin size 
+  -> Double -- ^ number
+  -> Bin
+toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 

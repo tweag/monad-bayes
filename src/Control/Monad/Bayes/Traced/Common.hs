@@ -28,6 +28,7 @@ import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
 import Data.Functor.Identity ( Identity(runIdentity) )
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+import Debug.Trace (traceM, trace)
 
 -- | Collection of random variables sampled during the program's execution.
 data Trace a = Trace
@@ -84,7 +85,9 @@ mhTransWithBool m t@Trace {variables = us, density = p} = do
       _ -> error "impossible"
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
+  -- error $ show q
   accept <- bernoulli ratio
+  -- if not accept then error $ show ratio else return ()
   return $ if accept then (Trace vs b q, True) else (t, False)
 
 -- | A variant of 'mhTrans' with an external sampling monad.

@@ -6,6 +6,7 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# LANGUAGE LambdaCase #-}
 
 
 
@@ -33,12 +34,12 @@ import qualified Brick.Types as T
 import qualified Brick.Widgets.ProgressBar as P
 
 
-import Control.Monad.Bayes.Class (MonadSample (bernoulli, normal, random), normalPdf, MonadInfer, condition)
+import Control.Monad.Bayes.Class (MonadSample (bernoulli, normal, random, poisson, beta, gamma), normalPdf, MonadInfer, condition, factor)
 import qualified Pipes.Prelude as P
 import Pipes.Core (Producer)
 import Pipes ((>->), runEffect, MonadTrans (lift), (<-<))
 import qualified Control.Monad.Bayes.Traced.Static as Static
-import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Sampler (sampleIO, SamplerIO)
 import qualified Pipes as P
 import Brick
 import Brick.BChan (newBChan, writeBChan)
@@ -46,13 +47,18 @@ import Control.Concurrent (forkIO)
 import Brick.Widgets.Border.Style
 import Brick.Widgets.Border
 import Brick.Widgets.Center
-import Numeric.Log
-import Graphics.Vty (yellow)
+import Numeric.Log hiding (sum)
+import Graphics.Vty (yellow, charFill, pad, crop, cropTop, horizJoin, horizCat)
 import GHC.Float (double2Float)
 import Control.Monad.Bayes.Traced.Common (mhTrans, Trace (Trace, variables, density), mhTransWithBool)
 import Control.Monad.Bayes.Traced.Static
-import Control.Monad.Bayes.Weighted (runWeighted, prior)
+import Control.Monad.Bayes.Weighted (runWeighted, prior, Weighted)
 import Control.Monad.Bayes.Free (withPartialRandomness)
+import Control.Monad.Bayes.Enumerator (toBin)
+import qualified Data.Map as M
+import Data.Maybe
+import Debug.Trace (trace)
+import Data.List (sort)
 
 -- | Trace MH (as defined in Control.Monad.Bayes.Traced) works for any probabilistic program, 
 -- but this comes at the cost of expressive power, where proposals are concerned.
@@ -114,11 +120,15 @@ search m =
         then Left al
         else Right (al, m)
 
-foo m@(Traced w d) = P.map (\(Trace variables output density,b) -> MHResult output b (exp $ ln density)) <-< do
-  tr <- search (return m) >-> P.map (, True)
+foo :: MonadSample m => Traced m a -> P.Producer (MHResult a) m r
+foo m@(Traced w d) = 
+  P.map (\(Trace variables output density,b) -> MHResult output b (exp $ ln density)) <-< do
+  -- tr <- search (return m) >-> P.map (, True) 
+  tr <- lift d
   let step x = Right . (\k -> (  k, (fst k))) <$> mhTransWithBool w x
   P.unfoldr step tr
 
+independentSamples :: Monad m => m (Traced m a1) -> P.Proxy a' a2 () [Double] m ()
 independentSamples m =
   P.repeatM m 
   >-> P.mapM traceDist  -- (withPartialRandomness [] . runWeighted . model)
@@ -126,6 +136,7 @@ independentSamples m =
   >-> P.map variables
   >-> P.take 10
 
+a :: P.MonadIO m => m (Traced m a) -> m ()
 a m = P.runEffect $ independentSamples m >-> P.print
 
 
@@ -157,7 +168,7 @@ drawUI state = [ui] where
           ) $ P.progressBar (Just $ "Mean likelihood for last 1000 samples: " <> take 10 (show (head $ lk state <> [0])))
               (double2Float (mean $ take 1000 $ lk state) / double2Float (maximum $ 0 : lk state))
 
-  displayStep c = Just $ "Step " <> show (fromEnum $ c * fromIntegral (numSteps state))
+  displayStep c = Just $ "Step " <> show c
   numFailures = numSteps state - numSuccesses state
   toBar v = P.progressBar (displayStep v) (v / fromIntegral (totalSteps state  ))
   displaySuccessesAndFailures = withBorderStyle unicode $
@@ -171,6 +182,10 @@ drawUI state = [ui] where
       then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good."
       else str ""
 
+  dict = mapInto (toBin 0.05 <$> take 10000 (samples state) )
+  valSum = fromIntegral $ sum $ M.elems dict
+  bins = M.keys dict
+  ndict = M.map ((/valSum) . fromIntegral) dict
   ui =
 
       (str "Progress: " <+> completionBar)
@@ -182,6 +197,18 @@ drawUI state = [ui] where
       displaySuccessesAndFailures
       <=>
       warning
+      <=>
+      withBorderStyle unicode (
+          raw $ 
+            horizCat [makeBar bin ndict | bin <- sort bins ])
+        
+
+makeBar bin dict = cropTop 10 $
+            pad 0 10 0 0 $
+            charFill (fg yellow) '.' 1 ( (* 1) $ fromMaybe 0 ((round . (*100)) <$> M.lookup bin dict))
+
+mapInto :: Foldable t => t (Double, Double) -> M.Map (Double, Double) Int
+mapInto = foldr (M.alter (\case Nothing -> Just 0; Just i -> Just (i + 1) )) (M.empty :: M.Map (Double, Double) Int )
 
 mean :: (Fractional a, Foldable t) => t a -> a
 mean ls = Prelude.sum ls / fromIntegral (length ls)
@@ -220,6 +247,16 @@ mcmcTUI =
           , B.appAttrMap = const theMap
           }
 
+-- example :: MonadInfer m => m Double
+-- example = do
+--   y <- normal 0 1
+--   factor $ log $ Exp y
+--   return y
+
+-- running = sampleIO $ prior $ Static.mh 10 example 
+
+
+
 tui :: IO ()
 tui = void do
   let buildVty = V.mkVty V.defaultConfig
@@ -227,12 +264,12 @@ tui = void do
       -- model = manualMH n 0.0 (`normal` 1) (exp . ln . normalPdf 20 1)
   eventChan <- newBChan 10
   initialVty <- buildVty
-  _ <- forkIO $ run (foo $ random) eventChan n
+  _ <- forkIO $ run (foo $ distribution) eventChan n
   B.customMain initialVty buildVty (Just eventChan) mcmcTUI (initialState n)
 
   where
     run prod chan i = runEffect $
-        P.hoist sampleIO prod
+        P.hoist (sampleIO . prior) prod
         >-> P.scan
           (\mcmcdata@(MCMCData ns nsc smples lk _) a ->
             mcmcdata {
@@ -249,3 +286,11 @@ initialState :: Int -> MCMCData Double
 initialState n = MCMCData {numSteps = 0, samples = [], lk = [], numSuccesses = 0, totalSteps = n}
 
 
+
+
+-- distribution :: Traced SamplerIO Double
+distribution :: Traced (Weighted SamplerIO) Double
+distribution = do
+  y <- gamma 1 1 
+  condition (y < 2) 
+  return y
