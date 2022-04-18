@@ -84,6 +84,12 @@ executable example
         HMM
         LDA
         LogReg
+        NestedInference
+        LinearOutliers
+        Sprinkler
+        StrictlySmallerSupport
+        Gamma
+        BetaBin
 
     default-language: Haskell2010
     build-depends:
@@ -95,7 +101,9 @@ executable example
         optparse-applicative -any,
         time -any,
         vector -any,
-        pipes
+        pipes,
+        ieee754 >=0.8.0 && <0.9,
+        mtl >=2.2.2 && <2.3
 
     if flag(dev)
         ghc-options:

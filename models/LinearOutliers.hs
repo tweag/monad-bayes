@@ -15,12 +15,12 @@ regressionWithOutliers xs ys = do
     probOutlier <- uniform 0 1 
 
     let observation (x, y) = do
-        is_outlier <- bernoulli probOutlier
-        let (mu, std) = if is_outlier
-            then (0, 10)
-            else (x*slope + intercept, noise)
-        factor $ normalPdf mu std y
-        return is_outlier
+                is_outlier <- bernoulli probOutlier
+                let (mu, std) = if is_outlier
+                    then (0, 10)
+                    else (x*slope + intercept, noise)
+                factor $ normalPdf mu std y
+                return is_outlier
     
     outliers <- mapM observation $ zip xs ys
     return (slope, intercept, noise, probOutlier, outliers)

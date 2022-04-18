@@ -15,7 +15,7 @@ where
 
 -- Dirichlet Process mixture of Gaussians
 
-import Control.Applictive ((<$>))
+import Control.Applicative ((<$>))
 -- import Control.Monad.Memo (memo, startEvalMemoT)
 -- import Control.Monad.Trans.Memo.StateCache
 
