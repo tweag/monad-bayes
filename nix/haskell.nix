@@ -80,7 +80,7 @@ let
 
   shellcheck = ghc9.tool "ShellCheck" "latest";
 
-  refactor = ghc9.tool "apply-refact" {
+  apply-refact = ghc9.tool "apply-refact" {
     version = "latest";
     modules = [ nonReinstallablePkgsModule ];
   };
@@ -97,25 +97,20 @@ let
       };
       buildInputs = [
         cabal-install
+        self.git
         hlint
         self.nixpkgs-fmt
+        self.nodePackages.prettier
         self.python37
+        self.python37Packages.black
         self.python37Packages.matplotlib
         self.python37Packages.pandas
         ormolu
-        refactor
+        apply-refact
         shellcheck
         self.stack
-        fix
-        lint
       ];
     };
-  };
-  lint = self.callPackage ./lint.nix {
-    inherit cabal-install hlint ormolu shellcheck;
-  };
-  fix = self.callPackage ./fix.nix {
-    inherit cabal-install hlint ormolu refactor;
   };
 in
 {
@@ -127,7 +122,7 @@ in
   };
 
   monad-bayes = {
-    inherit ghc9 fix lint;
+    inherit ghc9;
     ghc88 = mkProject "stack-ghc884.yaml" { };
     ghc810 = mkProject "stack-ghc8107.yaml" { };
   };

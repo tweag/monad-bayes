@@ -20,8 +20,7 @@
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system config overlays; };
-        flakes = pkgs.lib.mapAttrs (_: p: p.flake { })
-          (builtins.removeAttrs pkgs.monad-bayes [ "fix" "lint" ]);
+        flakes = pkgs.lib.mapAttrs (_: p: p.flake { }) pkgs.monad-bayes;
         prefixPkgNames = prefix: pkgs.lib.mapAttrs' (n: pkgs.lib.nameValuePair "${prefix}:${n}");
         prefixed = ghc: attr: prefixPkgNames ghc flakes.${ghc}.${attr};
         combined = attr: prefixed "ghc88" attr // prefixed "ghc810" attr // prefixed "ghc9" attr;
