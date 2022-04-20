@@ -34,9 +34,7 @@
           default = flakes.ghc9.devShell;
         };
 
-        packages = combined "packages" // {
-          inherit (pkgs.monad-bayes) lint fix;
-        };
+        packages = combined "packages";
         checks = combined "checks";
       }
     );
