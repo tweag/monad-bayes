@@ -18,6 +18,6 @@ jobs:
           name: tweag
           authToken: "${{ secrets.TWEAG_CACHIX_AUTH_TOKEN }}"
       - run: nix --print-build-logs flake check
-      - run: nix --print-build-logs develop --command echo Ready
-      - run: nix --print-build-logs develop .#ghc810 --command echo Ready
-      - run: nix --print-build-logs develop .#ghc88 --command echo Ready
+        # - run: nix --print-build-logs develop --command echo Ready
+        # - run: nix --print-build-logs develop .#ghc810 --command echo Ready
+        # - run: nix --print-build-logs develop .#ghc88 --command echo Ready
