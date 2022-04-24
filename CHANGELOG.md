@@ -1,6 +1,8 @@
 # Unreleased
 
-- No unreleased changes so far.
+## 0.1.2 (2021-04-24)
+
+- Use the continuation passing style writer monad for `Control.Monad.Bayes.Weighted`
 
 # 0.1.1.0 (2020-04-08)
 
