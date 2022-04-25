@@ -69,7 +69,8 @@ library
         brick,
         vty,
         vector >=0.12.0 && <0.13,
-        text
+        text,
+        foldl
     
     default-extensions: 
         BlockArguments
