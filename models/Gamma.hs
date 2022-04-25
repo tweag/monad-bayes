@@ -4,6 +4,13 @@ module Gamma where
 
 import Control.Monad.Bayes.Class
 import Prelude 
+import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad (replicateM)
+import Control.Foldl (mean, fold, variance)
+import Control.Applicative (Applicative(liftA2))
+import Control.Monad.Bayes.Weighted (runWeighted, prior)
+import Control.Monad.Bayes.Traced (mh)
+
 
 -- | A sequence of i.i.d. normal variables with Gamma prior on precision.
 points :: [Double]
@@ -27,3 +34,6 @@ exact = gamma a b
   where
     a = 1 + fromIntegral (length points) / 2
     b = 1 + sum (map (^ (2 :: Int)) points) / 2
+
+tg = fold (liftA2 (,) mean variance) <$> (fmap (take 5000) . sampleIO  . prior . mh 20000) (exact)
+tg2 = fold (liftA2 (,) mean variance) <$> (fmap (take 5000) . sampleIO  . prior . mh 20000) (model)
