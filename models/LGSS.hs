@@ -1,55 +1,52 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module Main where
+module LGSS where
 
 import Control.Monad (replicateM, unless, when)
-import Control.Monad.Bayes.Inference
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Prior
 import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Simple hiding (normalize)
 import Control.Monad.Trans
 import Data.Bifunctor (second)
 import Data.List (transpose)
 import Data.Semigroup ((<>))
 import Data.Vector (Vector, foldM, fromList, postscanl)
 import qualified Data.Vector as Vector
-import Graphics.Rendering.Chart.Backend.Cairo (FileFormat (PDF), fo_format, toFile)
-import Graphics.Rendering.Chart.Easy hiding (Vector)
-import Options.Applicative
-import Plotting
-import System.Directory
 import System.IO
+import Numeric.Log
+import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
+import Control.Monad.Bayes.Population (normalize)
 
-main = do
-  -- make sure `putStrLn` prints to console immediately
-  hSetBuffering stdout LineBuffering
-  (trial, cachePath) <- execParser opts
-  when trial $ putStrLn "Trial run"
-  if not trial
-    then sampleIO $ lgssBenchmark cachePath 50 100 (map (2 ^) [1 .. 10])
-    else sampleIO $ lgssBenchmark cachePath 5 10 [10, 20, 40]
+-- main = do
+--   -- make sure `putStrLn` prints to console immediately
+--   hSetBuffering stdout LineBuffering
+--   (trial, cachePath) <- execParser opts
+--   when trial $ putStrLn "Trial run"
+--   if not trial
+--     then sampleIO $ lgssBenchmark cachePath 50 100 (map (2 ^) [1 .. 10])
+--     else sampleIO $ lgssBenchmark cachePath 5 10 [10, 20, 40]
 
-opts :: ParserInfo (Bool, FilePath)
-opts = info ((,) <$> trialFlag <*> cacheDir) fullDesc
-  where
-    trialFlag =
-      switch
-        ( long "trial"
-            <> help "Run a quick version of benchmarks to check that all is working correctly."
-        )
-    cacheDir =
-      strOption
-        ( long "cache-dir"
-            <> value "cache/lgss/"
-            <> help "Directory to store temporary data that may be reused across different runs."
-        )
+-- opts :: ParserInfo (Bool, FilePath)
+-- opts = info ((,) <$> trialFlag <*> cacheDir) fullDesc
+--   where
+--     trialFlag =
+--       switch
+--         ( long "trial"
+--             <> help "Run a quick version of benchmarks to check that all is working correctly."
+--         )
+--     cacheDir =
+--       strOption
+--         ( long "cache-dir"
+--             <> value "cache/lgss/"
+--             <> help "Directory to store temporary data that may be reused across different runs."
+--         )
 
-lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
-lgssBenchmark cachePath t nRuns ns = do
+-- lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
+lgssBenchmark t nRuns ns = do
   liftIO $ putStrLn "running LGSS benchmark"
-  let plotPath = "lgss.pdf"
+  -- let plotPath = "lgss.pdf"
   let param = LGSSParam (0, 1) 1 0 1 1 0 1
   scores <- replicateM nRuns $ do
     ys <- synthesizeData param t
@@ -61,14 +58,15 @@ lgssBenchmark cachePath t nRuns ns = do
           return $ abs (trueMean - estMean)
     mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
   let points = zip (map fromIntegral ns) (transpose scores)
-  liftIO $
-    toFile (fo_format .~ PDF $ def) plotPath $ do
-      layout_title .= "LGSS"
-      errorbarPlot
-        "#samples"
-        "RMSE"
-        [ ("SMC", points)
-        ]
+  liftIO $ print points
+  -- liftIO $
+  --   toFile (fo_format .~ PDF $ def) plotPath $ do
+  --     layout_title .= "LGSS"
+  --     errorbarPlot
+  --       "#samples"
+  --       "RMSE"
+  --       [ ("SMC", points)
+  --       ]
 
 type Mean = Double
 
@@ -95,16 +93,16 @@ data LGSSParam = LGSSParam
 
 -- \ One-dimensional linear Gaussian state space model.
 linearGaussian ::
-  (MonadInfer m, CustomReal m ~ Double) =>
+  MonadInfer m =>
   LGSSParam ->
   -- | observed sequence Y_{1:T}
   Vector Double ->
   -- | latent sequence posterior X_{1:T}
   m (Vector Double)
-linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
+linearGaussian LGSSParam {..} ys = do
   let step xs y = do
         x' <- normal (a * head xs + b) sdX
-        observe (normalDist (c * x' + d) sdY) y
+        factor $ normalPdf (c * x' + d) sdY y
         return (x' : xs)
   x0 <- uncurry normal p0
   ps <- foldM step [x0] ys
@@ -112,7 +110,7 @@ linearGaussian (LGSSParam p0 a b sdX c d sdY) ys = do
 
 -- | One-dimensional random walk with Gaussian diffusion.
 randomWalk ::
-  (MonadInfer m, CustomReal m ~ Double) =>
+  MonadInfer m =>
   -- | initial state X0 prior
   (Mean, StdDev) ->
   -- | transition model noise
@@ -126,7 +124,7 @@ randomWalk p0 sdX sdY = linearGaussian (LGSSParam p0 1 0 sdX 1 0 sdY)
 
 -- | Generate observed sequence from the prior.
 synthesizeData ::
-  (MonadSample m, CustomReal m ~ Double) =>
+  MonadSample m =>
   LGSSParam ->
   -- | T - length of produced vector
   Int ->
