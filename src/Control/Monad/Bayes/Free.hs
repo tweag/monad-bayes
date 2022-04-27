@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -15,13 +16,13 @@
 --
 -- 'FreeSampler' is a free monad transformer over random sampling.
 module Control.Monad.Bayes.Free
-  ( FreeSampler,
-    hoist,
-    interpret,
-    withRandomness,
-    withPartialRandomness,
-    runWith,
-  )
+  -- ( FreeSampler,
+  --   hoist,
+  --   interpret,
+  --   withRandomness,
+  --   withPartialRandomness,
+  --   runWith,
+  -- )
 where
 
 import Control.Monad.Bayes.Class
@@ -30,6 +31,10 @@ import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
+import Data.Map
+import Data.Text
+import Control.Monad.State
+import Control.Monad.Bayes.Sampler
 
 -- | Random sampling functor.
 newtype SamF a = Random (Double -> a)
@@ -90,3 +95,32 @@ withPartialRandomness randomness (FreeSampler m) =
 -- | Like 'withPartialRandomness', but use an arbitrary sampling monad.
 runWith :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
 runWith randomness m = withPartialRandomness randomness $ hoist (return . runIdentity) m
+
+
+-- | For choice maps
+withPartialRandomnessCM :: MonadSample m => Map Text Double -> FreeSampler (StateT Text m) a -> m (a, [Double])
+withPartialRandomnessCM randomness (FreeSampler m) = flip evalStateT "" $
+  runWriterT $ (iterTM f m)
+  where
+    f (Random k) = do
+      -- let (Random k, _) = _ $ evalStateT p -- evalStateT p ""
+      -- This block runs in StateT [Double] (WriterT [Double]) m.
+      -- StateT propagates consumed randomness while WriterT records
+      -- randomness used, whether old or new.
+      g <- get
+      x <- case Data.Map.lookup g randomness of
+        Nothing -> random
+        Just y -> return y -- y : ys -> put ys >> return y
+      tell [x]
+      k x
+
+ex :: MonadSample m => FreeSampler (StateT Text m)  (Bool, Bool)
+ex = do
+  x <- lift (put ("x" :: Text)) >> bernoulli 0.5
+  y <- lift (put ("y" :: Text)) >> bernoulli 0.5 <* lift (put ("" :: Text))
+  z <- bernoulli 0.5
+  return (x,y)
+
+te = sampleIO $ withPartialRandomnessCM mp ex
+
+mp = Data.Map.fromList [("y", 0.5), ("x", 0.8)]
