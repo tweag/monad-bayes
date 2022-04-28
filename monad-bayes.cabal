@@ -89,7 +89,7 @@ executable example
         LinearOutliers
         Sprinkler
         StrictlySmallerSupport
-        Gamma
+        ConjugatePriors
         BetaBin
 
     default-language: Haskell2010
@@ -105,7 +105,8 @@ executable example
         pipes,
         ieee754 >=0.8.0 && <0.9,
         mtl >=2.2.2 && <2.3,
-        foldl
+        foldl,
+        profunctors
 
     if flag(dev)
         ghc-options:
@@ -121,6 +122,7 @@ test-suite monad-bayes-test
     hs-source-dirs:   test models
     other-modules:
         Sprinkler
+        ConjugatePriors
         TestEnumerator
         TestInference
         TestPopulation
@@ -139,7 +141,9 @@ test-suite monad-bayes-test
         mtl -any,
         transformers -any,
         vector -any,
-        pipes
+        pipes,
+        foldl,
+        profunctors
 
     if flag(dev)
         ghc-options:

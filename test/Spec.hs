@@ -67,7 +67,13 @@ main = hspec do
         observations >= 0 && particles >= 1 ==> ioProperty do
           checkParticles <- TestInference.checkParticlesSystematic observations particles
           return $ checkParticles == particles
+  describe "Equivalent Expectations" do  
+      prop "Gamma Normal" $
+        \num -> True ==> ioProperty $ TestInference.testGammaNormal num
+      prop "Normal Normal" $
+        \num -> True ==> ioProperty $ TestInference.testNormalNormal num
+      prop "Beta Bernoulli" $
+        \num -> True ==> ioProperty $ TestInference.testBetaBernoulli num
   describe "Pipes" do
-    it "Models are equivalent" do
+    it "Distributions are equivalent" do
       TestPipes.urns 10 `shouldBe` True
-      True `shouldBe` False
