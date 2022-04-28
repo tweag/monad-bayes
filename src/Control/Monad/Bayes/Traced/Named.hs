@@ -1,4 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Static
@@ -9,12 +13,12 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Named
-  ( Traced,
-    hoistT,
-    marginal,
-    mhStep,
-    mh,
-  )
+  -- ( Traced,
+  --   hoistT,
+  --   marginal,
+  --   mhStep,
+  --   mh,
+  -- )
 where
 
 import Control.Applicative (liftA2)
@@ -32,9 +36,13 @@ import Control.Monad.Bayes.Free as FreeSampler
 import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Trans.Writer
 import Data.Functor.Identity
-import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 import Control.Monad.State
+import Control.Monad.Bayes.Sampler (sampleIO, SamplerIO)
+import Debug.Trace (trace)
+import Lens.Micro ((^.), ix)
+import Lens.Micro.GHC
+import Data.Monoid (Ap (getAp))
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -72,8 +80,9 @@ instance Monad ChoiceMap where
     let t' = f (output t)
      in t' {cm = cm t <> cm t', density = density t * density t'}
 
-singleton :: Double -> ChoiceMap Double
-singleton u = ChoiceMap {cm = empty, output = u, density = 1}
+singleton :: Maybe Text -> Double -> ChoiceMap Double
+singleton (Just v) u = ChoiceMap {cm = fromList [(v, u)], output = u, density = 1}
+singleton Nothing u = ChoiceMap {cm = empty, output = u, density = 1}
 
 scored :: Log Double -> ChoiceMap ()
 scored w = ChoiceMap {cm = empty, output = (), density = w}
@@ -96,18 +105,25 @@ instance Monad m => Monad (Traced m) where
   (Traced mx dx) >>= f = Traced my dy
     where
       my = mx >>= model . f
-      dy = undefined -- dx `bind` (traceDist . f)
+      dy = dx `bind` (traceDist . f)
+
+
 
 instance MonadTrans Traced where
   lift m = Traced (lift $ lift m) (fmap pure m)
 
-instance MonadSample m => MonadSample (Traced m) where
-  random = Traced random (singleton <$> random)
+-- instance MonadSample m => MonadSample (Traced m) where
+--   random = Traced random (singleton <$> random)
+
+instance MonadSample m => MonadSample (Traced (StateT Text m)) where
+  random = Traced random $ do
+      v <- get
+      singleton (case v of "" -> Nothing; x -> Just x) <$> random
 
 instance MonadCond m => MonadCond (Traced m) where
   score w = Traced (score w) (score w >> pure (scored w))
 
-instance MonadInfer m => MonadInfer (Traced m)
+instance MonadInfer m => MonadInfer (Traced (StateT Text m))
 
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced m d) = Traced m (f d)
@@ -117,34 +133,85 @@ marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => (Map Text Double -> m (Map Text Double)) -> Traced m a -> Traced m a
+mhStep :: MonadSample m => (Map Text Double -> m (Map Text Double)) -> Traced (StateT Text m) a -> Traced (StateT Text m) a
 mhStep prop (Traced m d) = Traced m d'
   where
-    d' = d >>= undefined -- mhTrans prop m
+    d' = d >>= lift . mhTrans prop m
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadSample m => 
+mhTrans :: MonadSample m =>
   (Map Text Double -> m (Map Text Double)) ->
   Weighted (FreeSampler (StateT Text m)) a -> ChoiceMap a -> m (ChoiceMap a)
 mhTrans prop m t@ChoiceMap {cm = us, density = p} = do
-  let n = length us
-  us' <- prop us 
+  let n = 1 -- length us
+  us' <- prop us
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT .  withPartialRandomnessCM us') m
-  let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
-  accept <- bernoulli ratio
+  let ratio = exp . ln $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
+  accept <- bernoulli $ ratio -- trace (show (q, p, us')) ratio
   return $ if accept then ChoiceMap us' b q else t
 
+traceIt x = trace (show x) x
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: MonadSample m => (Map Text Double -> m (Map Text Double)) -> Int -> Traced m a -> m [a]
-mh prop n (Traced m d) = undefined
-  
-  -- fmap (map output . NE.toList) (f n)
-  -- where
-  --   f k
-  --     | k <= 0 = fmap (:| []) d
-  --     | otherwise = do
-  --       (x :| xs) <- f (k -1)
-  --       y <- mhTrans prop m x
-  --       return (y :| x : xs)
+mh :: MonadSample m => (Map Text Double -> m (Map Text Double)) -> Int -> Traced (StateT Text m) a -> StateT Text m [a] -- StateT Text m [Map Text Double]
+mh prop n (Traced m d) =
+
+  fmap (map output . NE.toList) (f n)
+  where
+    f k
+      | k <= 0 = fmap (:| []) d
+      | otherwise = do
+        (x :| xs) <- f (k -1)
+        y <- lift $ mhTrans prop m x
+        return (y :| x : xs)
+
+-- example :: MonadSample m => StateT Text m [Bool]
+example = fmap reverse $ sampleIO $ prior $ flip evalStateT "" $ mh
+  (prop2)
+  -- ((ix "x") (const $ random) >=> (ix "y") (const $ random))
+  1000 ex2
+
+prop2 k = do
+  key <- uniformD ["x", "y"]
+  ((ix key) (const $ random)) k
+
+up :: Applicative m =>
+  ( Double -> m Double) ->
+  Map Text Double ->
+    m (Map Text Double)
+up = ((ix "x"))
+
+-- up' :: Applicative m =>
+--   ( Double -> Ap m Double) ->
+--   Map Text Double ->
+--     Ap m (Map Text Double)
+-- up' f = ((ix "y") f <> ix "x" f)
+
+-- instance Applicative m => Semigroup (m (Map Text Double))
+
+
+
+  -- x <- normal 0 
+
+-- example = sampleIO $ prior $ flip evalStateT "" $ fmap cm $ traceDist $ mhStep (const $ return cmp) $ ex2
+
+-- example = sampleIO $ prior $ flip evalStateT "" $ fmap cm $ traceDist ex2
+
+cmp = Data.Map.fromList [("x", 0.8)]
+
+-- ex :: MonadSample m => FreeSampler (StateT Text m)  (Bool, Bool)
+-- ex2 :: MonadInfer m => Traced
+--   (StateT Text m) (Double, Double)
+-- ex2 :: MonadInfer m => StateT Text m Bool
+ex2 :: (MonadTrans t, MonadState Text m, MonadSample (t m),
+ MonadCond (t m)) =>
+  t m (Double, Double)
+ex2 = do
+  x <-  lift (put ("x" :: Text)) >> random
+  y <- lift (put ("y" :: Text)) >> random <* lift (put ("" :: Text))
+  condition (x > 0.7 && y > 0.7)
+  z <- bernoulli 0.5
+  -- return (x,y)
+  return (x,y)
+
