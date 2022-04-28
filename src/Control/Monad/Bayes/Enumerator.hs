@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BlockArguments #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -19,12 +20,13 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
+    empirical
   )
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
-import Control.Monad (MonadPlus)
+import Control.Monad (MonadPlus, when)
 import Control.Monad.Bayes.Class
 import Control.Monad.Trans.Writer
 import Data.AEq (AEq, (===), (~==))
@@ -33,6 +35,9 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Vector.Generic as V
 import Numeric.Log as Log
+import qualified Data.Vector as VV
+import Control.Monad.Error (MonadError(..))
+import Control.Monad.Except (runExcept)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -119,3 +124,13 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
+
+
+-- | The empirical distribution of a set of weighted samples
+empirical :: Ord a => [(a, Double)] -> Either String [(a, Double)]
+empirical samples = runExcept $ do
+    let (support, probs) = unzip samples
+    when (any (< 0) probs || Prelude.sum probs == 0) (throwError "Probabilities are not all positive")
+    return $ enumerate do
+          i <- categorical $ VV.fromList probs
+          return $ support !! i
