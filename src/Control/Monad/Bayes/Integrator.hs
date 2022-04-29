@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- This is heavily inspired by https://jtobin.io/giry-monad-implementation
@@ -14,19 +15,20 @@ module Control.Monad.Bayes.Integrator where
 
 import Control.Monad.Trans.Cont
     ( cont, runCont, Cont, ContT(ContT) )
-import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, uniformD), condition)
+import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, uniformD), condition, MonadCond (score))
 import Statistics.Distribution (density)
 import Numeric.Integration.TanhSinh
     ( trap, Result(result) )
-import Control.Monad.Bayes.Weighted (runWeighted, Weighted)
+import Control.Monad.Bayes.Weighted (runWeighted, Weighted, applyWeight)
 import qualified Statistics.Distribution.Uniform as Statistics
-import Numeric.Log (Log(ln))
+import Numeric.Log (Log(ln, Exp))
 import Data.Set (Set, fromList, elems)
 import qualified Control.Foldl as Foldl
 import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
 import qualified Control.Monad.Bayes.Enumerator as Enumerator
 import Data.Foldable (Foldable(foldl'))
+import Debug.SimpleReflect
 
 
 newtype Integrator a = Integrator (Cont Double a) 
@@ -40,6 +42,9 @@ instance MonadSample Integrator where
     bernoulli p = Integrator $ cont (\f -> p * f True + (1 -p) * f False)
     uniformD = fromMassFunction (const 1)
 
+-- instance MonadCond Integrator where
+--   score d = Integrator $ cont (\f -> f () * (ln $ exp d))
+
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $ cont $ \f ->
     integralWithQuadrature (\x -> f x * d x)
@@ -51,7 +56,7 @@ fromMassFunction f support = Integrator $ cont \g ->
     foldl' (\acc x -> acc + f x * g x) 0 support
 
 empirical :: Foldable f => f a -> Integrator a
-empirical = Integrator . ContT . flip weightedAverage where
+empirical = Integrator . cont . flip weightedAverage where
 
     weightedAverage :: (Foldable f, Fractional r) => (a -> r) -> f a -> r
     weightedAverage f = Foldl.fold (weightedAverageFold f)
@@ -106,6 +111,7 @@ probability :: Ord a => (a, a) -> Weighted Integrator a -> Double
 probability (lower, upper) = runIntegrator (\(x,d) -> if x<upper && x  > lower then exp $ ln d else 0) . runWeighted
 
 
+
 enumerate :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
 enumerate ls meas =
     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
@@ -118,7 +124,11 @@ enumerate ls meas =
 
 
 example :: Either String [(Bool, Double)]
-example = enumerate (fromList [True, False]) $ do
+example = enumerate (fromList [True, False]) $ model 
+
+
+model :: Weighted Integrator Bool
+model = do
 
     x <- normal 0 1
     y <- bernoulli x
@@ -126,4 +136,58 @@ example = enumerate (fromList [True, False]) $ do
     return (x > 0)
 
 
+
+
+
+-- example' :: Either String [(Bool, Double)]
+-- example' = enumerate' (fromList [True, False]) $ model2
+
+-- enumerate' :: Ord a => Set a -> Integrator a -> Either String [(a, Double)]
+-- enumerate' ls meas =
+--     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
+--     Enumerator.empirical [(val, runIntegrator (\(x) ->
+--             if x == val
+--                 then 1
+--                 else 0)
+--                 ( meas)) | val <- elems ls]
+
+
+
+-- model2 :: Integrator Bool
+-- model2 = do
+
+--     x <- normal 0 1
+--     y <- bernoulli x
+--     condition (not y)
+--     return (x > 0)
+
+
 -- TODO: function to make an integrator from a sampling functor
+
+
+newtype SymbolicIntegrator a = SymbolicIntegrator (Cont Expr a) 
+  deriving newtype (Functor, Applicative, Monad)
+
+runSymbolicIntegrator :: (a -> Expr) -> SymbolicIntegrator a -> Expr
+runSymbolicIntegrator f (SymbolicIntegrator a) = runCont a f
+
+instance MonadSample SymbolicIntegrator where
+    random = SymbolicIntegrator $ cont (\f -> ($ undefined) (\x -> fun "|" (f x ⊗ fun "d" (x)))) -- f x * d x) -- fromDensityFunction $ density $ Statistics.uniformDistr 0 1
+--     bernoulli p = SymbolicIntegrator $ cont (\f -> p * f True + (1 -p) * f False)
+--     uniformD = fromMassFunction (const 1)
+
+-- -- instance MonadCond SymbolicIntegrator where
+-- --   score d = SymbolicIntegrator $ cont (\f -> f () * (ln $ exp d))
+
+-- fromDensityFunction :: (Double -> Double) -> SymbolicIntegrator Double
+-- fromDensityFunction d = SymbolicIntegrator $ cont $ \f ->
+--     integralWithQuadrature (\x -> f x * d x)
+--   where
+--     integralWithQuadrature = result . last . (\z -> trap z 0 1)
+
+-- fromMassFunction :: Foldable f => (a -> Double) -> f a -> SymbolicIntegrator a
+-- fromMassFunction f support = SymbolicIntegrator $ cont \g ->
+--     foldl' (\acc x -> acc + f x * g x) 0 support
+ex = runSymbolicIntegrator id (var . show <$> (random >> random))
+
+foo = a
