@@ -17,6 +17,7 @@ jobs:
         with:
           name: tweag
           authToken: "${{ secrets.TWEAG_CACHIX_AUTH_TOKEN }}"
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix --print-build-logs flake check
         # - run: nix --print-build-logs develop --command echo Ready
         # - run: nix --print-build-logs develop .#ghc810 --command echo Ready
