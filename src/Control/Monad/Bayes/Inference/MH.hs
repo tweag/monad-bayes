@@ -165,7 +165,7 @@ drawUI state = [ui] where
       then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good."
       else str ""
 
-  dict = fold (foldByKeyMap Fold.sum) ((,1) . toBin 0.05 <$> take 10000 (samples state) )
+  dict = fold (foldByKeyMap Fold.sum) ((,1) . toBin 0.1 <$> take 10000 (samples state) )
   valSum = fromIntegral $ sum $ M.elems dict
   bins = M.keys dict
   ndict = M.map ((/valSum) . fromIntegral) dict
@@ -249,7 +249,7 @@ tui = void do
       -- model = manualMH n 0.0 (`normal` 1) (exp . ln . normalPdf 20 1)
   eventChan <- newBChan 10
   initialVty <- buildVty
-  _ <- forkIO $ run (runTraced exact) eventChan n
+  _ <- forkIO $ run (runTraced distribution) eventChan n
   B.customMain initialVty buildVty (Just eventChan) mcmcTUI (initialState n)
 
   where
@@ -276,8 +276,8 @@ tui = void do
 
 distribution :: Traced (Weighted SamplerIO) Double
 distribution = do
-  y <- gamma 1 1 
-  condition (y < 2) 
+  y <- normal 0 1
+  -- condition (y > s2) 
   return y
 
 
@@ -285,31 +285,5 @@ points :: [Double]
 points = [0.8, 0.2, -0.6, 0.45, -0.3]
 
 
--- model :: (MonadBayes m, CustomReal m ~ Double) => m Double
-approx :: MonadInfer m => m Double
-approx = do
-  prec <- gamma 1 1
-  let stddev = sqrt (1 / prec)
-  let noise = normalPdf 0 stddev
-  mapM_ (factor . noise) points
-  return prec
-
--- | Exact posterior for the model.
--- For derivation see Kevin Murphy's
--- "Conjugate Bayesian analysis of the Gaussian distribution"
--- section 4.
--- exact :: (MonadDist m, CustomReal m ~ Double) => m Double
-exact :: MonadInfer m => m Double
-exact = gamma a b
-  where
-    a = 1 + fromIntegral (length points) / 2
-    b = 1 + sum (map (^ (2 :: Int)) points) / 2
 
 
--- example :: MonadInfer m => m Double
--- example = do
---   y <- normal 0 1
---   factor $ log $ Exp y
---   return y
-
--- running = sampleIO $ prior $ Static.mh 10 example 
