@@ -32,6 +32,7 @@ type NormalInvGamma = (Double, Double, Double, Double)
 params :: NormalInvGamma
 params = (0, 1 / 10, 1, 10)
 
+m, k, a, b :: Double
 (m, k, a, b) = params
 
 obs :: [Double]

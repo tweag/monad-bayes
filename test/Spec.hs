@@ -8,6 +8,7 @@ import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
 import qualified TestPipes
+import TestPipes (hmms)
 
 main :: IO ()
 main = hspec do
@@ -69,11 +70,14 @@ main = hspec do
           return $ checkParticles == particles
   describe "Equivalent Expectations" do  
       prop "Gamma Normal" $
-        \num -> True ==> ioProperty $ TestInference.testGammaNormal num
+        ioProperty . TestInference.testGammaNormal
       prop "Normal Normal" $
-        \num -> True ==> ioProperty $ TestInference.testNormalNormal num
+        ioProperty . TestInference.testNormalNormal
       prop "Beta Bernoulli" $
-        \num -> True ==> ioProperty $ TestInference.testBetaBernoulli num
-  describe "Pipes" do
+        ioProperty . TestInference.testBetaBernoulli
+  describe "Pipes: Urn" do
     it "Distributions are equivalent" do
       TestPipes.urns 10 `shouldBe` True
+  describe "Pipes: HMM" do
+      prop "pipe model is equivalent to standard model" $
+        \num -> property $ hmms $ take 5 num

@@ -5,15 +5,13 @@
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
 module HMM
-  ( values,
-    hmm,
-    syntheticData,
-  )
+  -- ( values,
+  --   hmm,
+  --   syntheticData,
+  -- )
 where
 
---Hidden Markov Models
 
---Hidden Markov Models
 import Control.Monad (replicateM, when)
 import Control.Monad.Bayes.Class
 import Data.Vector (fromList)
@@ -23,12 +21,15 @@ import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Sampler (sampleSTfixed, SamplerIO)
 import Pipes.Core
 import qualified Pipes.Prelude as Pipes
-import Pipes (MonadTrans(lift), (>->), each, yield)
+import Pipes (MonadTrans(lift), (>->), each, yield, MFunctor (hoist))
 import Pipes.Prelude (toListM)
 import Numeric.Log
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (prior)
 import Data.Maybe
+import Data.AEq ((~==))
+import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
+import Control.Monad.Bayes.Sampler
 -- | Observed values
 values :: [Double]
 values =
@@ -79,22 +80,6 @@ hmm dataset = f dataset (const . return)
     f [] k = start >>= k []
     f (y : ys) k = f ys (\xs x -> expand x y >>= k (x : xs))
 
-forward :: MonadSample m => Producer Int m b
-forward = do
-      x <- lift start
-      yield x
-      Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
-
-observe :: MonadCond f => (Int, Maybe Double) -> f ()
-observe (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
-
-backward :: (MonadInfer m) => [Double] -> Producer (Int, Maybe Double) m ()
-backward dataset = zipWithM observe forward (each (Nothing : (Just <$> dataset)))
-
--- zipWithM :: (MonadInfer m) => [Double] -> Producer (Int, Maybe Double) m ()
-zipWithM :: Monad m => ((a1, b) -> m ()) -> Producer a1 m r -> Producer b m r -> Proxy a' a2 () (a1, b) m r
-zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f
-
 
 syntheticData :: MonadSample m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
@@ -102,20 +87,35 @@ syntheticData n = replicateM n syntheticPoint
     syntheticPoint = uniformD [0, 1, 2]
 
 
-run = enumerate $ hmm obs
+-- | Equivalent model, but using pipes for simplicity
 
-obs = [2,2,2]
-runPipes = enumerate $ reverse . take (length obs) <$> toListM (backward obs >-> Pipes.map fst)
+-- | Prior expressed as a stream
+hmmPrior :: MonadSample m => Producer Int m b
+hmmPrior = do
+      x <- lift start
+      yield x
+      Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
 
--- ooh :: Enumerator ()
-ooh :: MonadInfer m => Producer [(Bool, Double)] m r
-ooh = Pipes.unfoldr (\x -> return (Right (enumerate x, do x' <- x; condition x'; return x'))) (bernoulli 0.5 :: Enumerator Bool)
+-- | Observations expressed as a stream
+hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
+hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
 
-r = enumerate $ toListM $ ooh >-> Pipes.take 3
+-- | Posterior expressed as a stream
+hmmPosterior :: (MonadInfer m) => [Double] -> Producer Int m ()
+hmmPosterior dataset = zipWithM hmmLikelihood
+    hmmPrior
+    (hmmObservations dataset)
 
-  -- runEffect $ backward [] >-> undefined 
+  where
 
--- run2 :: SamplerIO String
-run2 = sampleSTfixed $ prior (mh 100 $ hmm values)
+  hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
+  hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
 
-run3 = sampleSTfixed $ runPopulation (rmsmcBasic 10 20 1 $ hmm values)
+  zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
+
+hmmPosteriorPredictive :: MonadSample m => [Double] -> Producer Double m ()
+hmmPosteriorPredictive dataset =
+  Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
+  >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
+
+hmmWithPipe = sampleIO $ reverse . init <$> toListM (hmmPosteriorPredictive (replicate 1000 1) >-> Pipes.take 3)

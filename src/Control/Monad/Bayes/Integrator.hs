@@ -19,7 +19,7 @@ import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, unifor
 import Statistics.Distribution (density)
 import Numeric.Integration.TanhSinh
     ( trap, Result(result) )
-import Control.Monad.Bayes.Weighted (runWeighted, Weighted, applyWeight)
+import Control.Monad.Bayes.Weighted (runWeighted, Weighted, applyWeight, prior)
 import qualified Statistics.Distribution.Uniform as Statistics
 import Numeric.Log (Log(ln, Exp))
 import Data.Set (Set, fromList, elems)
@@ -29,7 +29,7 @@ import Control.Applicative (Applicative(..))
 import qualified Control.Monad.Bayes.Enumerator as Enumerator
 import Data.Foldable (Foldable(foldl'))
 
-newtype Integrator a = Integrator (Cont Double a) 
+newtype Integrator a = Integrator (Cont Double a)
   deriving newtype (Functor, Applicative, Monad)
 
 runIntegrator :: (a -> Double) -> Integrator a -> Double
@@ -65,12 +65,22 @@ empirical = Integrator . cont . flip weightedAverage where
     averageFold :: Fractional a => Fold a a
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
 
+-- | push the weights into the measure
+normalize :: Weighted Integrator Double -> Integrator Double
+normalize m = let 
+    m' = runWeighted m
+    z = runIntegrator (ln . exp . snd) m'
+    in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
 
 expectation :: Integrator Double -> Double
 expectation = runIntegrator id
+  -- let 
+  --   m' = runWeighted m
+  --   z = runIntegrator (ln . exp . snd) m'
+  -- in runIntegrator (\(x, w) -> x * (ln (exp w)/z)) m'
 
-variance :: Integrator Double -> Double
-variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
+variance :: Weighted Integrator Double -> Double
+variance nu = undefined -- runIntegrator (^ 2) nu - expectation nu ^ 2
 
 momentGeneratingFunction :: Integrator Double -> Double -> Double
 momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
@@ -127,3 +137,7 @@ model = do
     condition (not y)
     return (x > 0)
 
+-- testI = expectation do
+--   x <- normal 0 1
+--   condition (x > 1)
+--   return x

@@ -77,6 +77,7 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+import Debug.Trace (traceM)
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
@@ -140,7 +141,7 @@ class Monad m => MonadSample m where
     v Double ->
     -- | outcome category
     m Int
-  categorical ps = fromPMF (ps !)
+  categorical ps = if VG.null ps then error "empty input list" else fromPMF (ps !)
 
   -- | Draw from a categorical distribution in the log domain.
   logCategorical ::
@@ -203,6 +204,7 @@ fromPMF p = f 0 1
   where
     f i r = do
       when (r < 0) $ error "fromPMF: total PMF above 1"
+      traceM $ show i
       let q = p i
       when (q < 0 || q > 1) $ error "fromPMF: invalid probability value"
       b <- bernoulli (q / r)

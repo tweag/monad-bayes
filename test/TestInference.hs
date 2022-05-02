@@ -8,10 +8,14 @@ import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Traced.Static
 import Data.AEq
 import Numeric.Log
 import Sprinkler
 import ConjugatePriors
+import qualified Control.Monad.Bayes.Integrator as Integrator
+import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Traced.Static (estimateMeanVarianceMH)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -34,32 +38,40 @@ checkPreserveSMC =
     ~== enumerate sprinkler
 
 expectationNear x y = do
-    (e1, var1) <- estimateMeanVarianceMH x
-    (e2, var2) <- estimateMeanVarianceMH y
-    return (abs (e1 - e2), abs (var1 - var2))
+    (e1) <- estimateMeanEmpirical x
+    (e2) <- estimateMeanEmpirical y
+    return (abs (e1 - e2))
+
+-- expectationNearAnalytic :: Monad m =>
+--   Weighted Integrator.Integrator Double
+--   -> Weighted Integrator.Integrator Double -> m Double
+expectationNearAnalytic x y = do
+    let e1 = Integrator.expectation $ Integrator.normalize x
+        e2 = Integrator.expectation $ Integrator.normalize y
+    return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
-  (e,_) <- expectationNear
-    (posterior (normalNormal' 1 (1,1)) [1.0])
-    (normalNormalAnalytic 1 (1,1) [1.0])
+  e <- expectationNear
+    (posterior (normalNormal' 1 (1,1)) n)
+    (normalNormalAnalytic 1 (1,1) n)
 
-  return (e < 1e-1)
+  return (e < 1e-0)
 
 testGammaNormal :: [Double] -> IO Bool
 testGammaNormal n = do
 
-  (e, _) <- expectationNear
+  e <- expectationNearAnalytic
     (posterior (gammaNormal' (1,1)) n)
     (gammaNormalAnalytic (1,1) n)
   return (e < 1e-1)
 
-testBetaBernoulli :: [Double] -> IO Bool
-testBetaBernoulli n = do
+testBetaBernoulli :: [Bool] -> IO Bool
+testBetaBernoulli bs = do
 
-  (e,_) <- expectationNear
-    (posterior (betaBernoulli' (1,1)) [True])
-    (betaBernoulliAnalytic (1,1) [1])
+  e <- expectationNearAnalytic
+    (posterior (betaBernoulli' (1,1)) bs)
+    (betaBernoulliAnalytic (1,1) bs)
   
   return (e < 1e-1)

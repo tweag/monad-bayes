@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 
 module ConjugatePriors where
 
@@ -16,6 +17,8 @@ import Control.Monad.Bayes.Weighted (prior, runWeighted, Weighted)
 import Data.Profunctor (Profunctor (lmap))
 import Numeric.Log (Log (Exp, ln))
 import Prelude
+import Control.Monad.Bayes.Integrator (expectation)
+import Control.Monad.Bayes.Integrator (normalize)
 
 data Bayesian m z o = Bayesian {
   latent :: m z,
@@ -60,7 +63,7 @@ gammaNormalAnalytic (a, b) points = gamma a' (recip b')
 
 
 -- | Posterior on beta after the bernoulli sample
-betaBernoulliAnalytic :: (MonadInfer m, Foldable t) => BetaParams -> t Double -> m Double
+betaBernoulliAnalytic :: (MonadInfer m, Foldable t) => BetaParams -> t Bool -> m Double
 -- betaBernoulli (a, b) points = do
 --   p <- beta a b
 --   let observe x = factor $ Exp $ log (p ** x * (1 - p) ** (1 - x))
@@ -68,7 +71,7 @@ betaBernoulliAnalytic :: (MonadInfer m, Foldable t) => BetaParams -> t Double ->
 --   return p
 betaBernoulliAnalytic (a, b) points = beta a' b'
   where
-    (n, s) = fold (liftA2 (,) F.length F.sum) points
+    (n, s) = fold (liftA2 (,) F.length (lmap (\case True -> 1; False -> 0) F.sum)) points
     a' = a + s
     b' = b + fromIntegral n - s
 
@@ -82,16 +85,6 @@ simpleTest2 = do
   return ((x + 1) / 2)
 
 
--- | Posterior on the precision of the normal after the points are observed
-normalNormalAnalytic ::
-    (MonadInfer m, Foldable t, Functor t) =>
-    Double -> NormalParams ->
-    t Double -> m Double
--- normalNormal sigma_2 (mu0, sigma0) points = do
---   mu <- normal mu0 sigma0
---   let observe = factor . normalPdf mu (sqrt sigma_2)
---   mapM_ observe points
---   return mu
 
 
 
@@ -113,19 +106,25 @@ gammaNormal' (a,b) = Bayesian (gamma a (recip b)) (normal 0 . sqrt . recip) (nor
 -- For derivation see Kevin Murphy's
 -- "Conjugate Bayesian analysis of the Gaussian distribution"
 -- section 4.
+-- | Posterior on the precision of the normal after the points are observed
+normalNormalAnalytic ::
+    (MonadInfer m, Foldable t, Functor t) =>
+    Double -> NormalParams ->
+    t Double -> m Double
+-- normalNormal sigma_2 (mu0, sigma0) points = do
+--   mu <- normal mu0 sigma0
+--   let observe = factor . normalPdf mu (sqrt sigma_2)
+--   mapM_ observe points
+--   return mu
 normalNormalAnalytic sigma_2 (mu0, sigma0_2) points = normal mu' (sqrt sigma_2')
   where
     (n, s) = fold (liftA2 (,) F.length F.sum) points
     mu' = sigma_2' * (mu0 / sigma0_2 + s / sigma_2)
     sigma_2' = recip (recip sigma0_2 + fromIntegral n / sigma_2)
 
-estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)
-estimateMeanVarianceMH s = fold (liftA2 (,) mean variance) <$> (fmap (take 2000) . sampleIO . prior . mh 5000) s
-
-estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
-estimateMeanEmpirical s =
-  fold (liftA2 (/) (lmap (\(x, y) -> x * ln (exp y)) F.sum) (lmap (ln . exp . snd) F.sum))
-    <$> (sampleIO . replicateM 1000 . runWeighted) s
 
 
-
+testC = do
+  print $ expectation $ normalize $ normalNormalAnalytic 1 (1,1) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
+  print $ expectation $ normalize $ posterior (normalNormal' 1 (1,1)) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
+  -- normalNormalAnalytic (1) (1,1) [-1]

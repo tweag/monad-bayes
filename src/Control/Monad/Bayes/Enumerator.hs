@@ -18,6 +18,7 @@ module Control.Monad.Bayes.Enumerator
     mass,
     compact,
     enumerate,
+    enumerateToDistribution,
     expectation,
     normalForm,
     empirical
@@ -38,6 +39,7 @@ import Numeric.Log as Log
 import qualified Data.Vector as VV
 import Control.Monad.Error (MonadError(..))
 import Control.Monad.Except (runExcept)
+import Debug.Trace (traceM)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -134,3 +136,16 @@ empirical samples = runExcept $ do
     return $ enumerate do
           i <- categorical $ VV.fromList probs
           return $ support !! i
+
+-- | 
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = explicit model
+  let (support, probs) = unzip samples
+  traceM (show probs)
+  traceM (show $ enumerate $ categorical $ VV.fromList probs)
+  i <- categorical $ VV.fromList probs
+  traceM "bar"
+  return $ support !! i
+
+testF = enumerate $ categorical $ VV.fromList [8.098644976978212e-3,0.2792595962810029,3.62956086778715e-2]
