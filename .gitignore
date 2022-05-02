@@ -10,7 +10,6 @@
 *.o
 *.prof
 .HTF/
-.vscode
 .cabal-sandbox/
 .ghc.environment.*
 .hpc

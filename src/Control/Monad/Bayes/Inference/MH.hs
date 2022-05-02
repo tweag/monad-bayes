@@ -135,8 +135,8 @@ runTraced (Traced w d) =
 -- which we use to display inference algorithms in progress
 
 -- | draw the brick app
-drawUI :: MCMCData Double -> [Widget ()]
-drawUI state = [ui] where
+drawUI :: ([a] -> Widget n) -> MCMCData a -> [Widget n]
+drawUI handleSamples state = [ui] where
 
   completionBar = updateAttrMap
           (A.mapAttrNames [ (doneAttr, P.progressCompleteAttr)
@@ -165,10 +165,10 @@ drawUI state = [ui] where
       then  withAttr (attrName "highlight") $ str "Warning: acceptance rate is rather low. This probably means that your proposal isn't good."
       else str ""
 
-  dict = fold (foldByKeyMap Fold.sum) ((,1) . toBin 0.1 <$> take 10000 (samples state) )
-  valSum = fromIntegral $ sum $ M.elems dict
-  bins = M.keys dict
-  ndict = M.map ((/valSum) . fromIntegral) dict
+  -- dict = fold (foldByKeyMap Fold.sum) ((,1) . toBin 0.1 <$> take 10000 (samples state) )
+  -- valSum = fromIntegral $ sum $ M.elems dict
+  -- bins = M.keys dict
+  -- ndict = M.map ((/valSum) . fromIntegral) dict
   ui =
 
       (str "Progress: " <+> completionBar)
@@ -180,11 +180,18 @@ drawUI state = [ui] where
       displaySuccessesAndFailures
       <=>
       warning
-      <=>
-      withBorderStyle unicode (
+      <=> handleSamples (samples state)
+
+makeHistogram :: [Double] -> Widget n
+makeHistogram samples = 
+  let dict = fold (foldByKeyMap Fold.sum) ((,1) . toBin 0.1 <$> take 10000 (samples) )
+      valSum = fromIntegral $ sum $ M.elems dict
+      bins = M.keys dict
+      ndict = M.map ((/valSum) . fromIntegral) dict
+  in withBorderStyle unicode (
           raw $ 
             horizCat [makeBar bin ndict | bin <- sort bins ])
-        
+
 -- TODO: once foldl is updated to latest version, this function will be in its library
 foldByKeyMap :: forall k a b. Ord k => Fold a b -> Fold (k, a) (Map k b)
 foldByKeyMap f = case f of
@@ -213,7 +220,8 @@ makeBar bin dict =
 
 
 -- | handler for events received by the TUI
-appEvent :: MCMCData Double -> T.BrickEvent () (MCMCData Double) -> T.EventM () (T.Next (MCMCData Double))
+-- appEvent :: MCMCData Double -> T.BrickEvent () (MCMCData Double) -> T.EventM () (T.Next (MCMCData Double))
+appEvent :: s -> BrickEvent n1 s -> EventM n2 (Next s)
 appEvent p (T.VtyEvent e) =
     case e of
          V.EvKey (V.KChar 'q') [] -> B.halt p
@@ -233,9 +241,10 @@ theMap = A.attrMap V.defAttr
          , (attrName "highlight",       fg yellow)
          ]
 
-mcmcTUI :: B.App (MCMCData Double) (MCMCData Double) ()
-mcmcTUI =
-    B.App { B.appDraw = drawUI
+-- mcmcTUI :: B.App (MCMCData Double) (MCMCData Double) ()
+mcmcTUI :: ([a] -> Widget ()) -> App (MCMCData a) (MCMCData a) ()
+mcmcTUI handleSamples =
+    B.App { B.appDraw = drawUI handleSamples
           , B.appChooseCursor = B.showFirstCursor
           , B.appHandleEvent = appEvent
           , B.appStartEvent = return
@@ -243,14 +252,19 @@ mcmcTUI =
           }
 
 
-tui :: IO ()
-tui = void do
+tui :: Traced (Weighted SamplerIO) Double -> IO ()
+tui distribution = void do
 
       -- model = manualMH n 0.0 (`normal` 1) (exp . ln . normalPdf 20 1)
   eventChan <- newBChan 10
   initialVty <- buildVty
   _ <- forkIO $ run (runTraced distribution) eventChan n
-  B.customMain initialVty buildVty (Just eventChan) mcmcTUI (initialState n)
+  B.customMain 
+    initialVty 
+    buildVty 
+    (Just eventChan) 
+    (mcmcTUI makeHistogram) 
+    (initialState n)
 
   where
     
@@ -277,7 +291,7 @@ tui = void do
 distribution :: Traced (Weighted SamplerIO) Double
 distribution = do
   y <- normal 0 1
-  -- condition (y > s2) 
+  condition (y > 0.5) 
   return y
 
 

@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -38,14 +37,9 @@ import qualified Data.Map as Map
 import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
 import qualified Data.Vector.Generic as V
-import qualified Data.Vector as VV
-import Numeric.Log as Log ( Log(..), sum )
 import qualified Data.Text as T
 import Control.Monad.Except (runExcept, MonadError (throwError))
 import Numeric.Log as Log
-import qualified Data.Text as T
-import qualified Data.Vector as VV
-import Control.Monad.Except (runExcept, MonadError (throwError))
 import Data.Fixed (mod')
 
 -- | An exact inference transformer that integrates
