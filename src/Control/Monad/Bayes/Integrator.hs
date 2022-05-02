@@ -28,8 +28,6 @@ import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
 import qualified Control.Monad.Bayes.Enumerator as Enumerator
 import Data.Foldable (Foldable(foldl'))
-import Debug.SimpleReflect
-
 
 newtype Integrator a = Integrator (Cont Double a) 
   deriving newtype (Functor, Applicative, Monad)
