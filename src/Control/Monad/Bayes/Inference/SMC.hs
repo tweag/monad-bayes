@@ -12,18 +12,17 @@
 -- Sequential Monte Carlo (SMC) sampling.
 --
 -- Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
-module Control.Monad.Bayes.Inference.SMC
-  ( sir,
-    smcMultinomial,
-    smcSystematic,
-    smcMultinomialPush,
-    smcSystematicPush,
-  )
-where
+module Control.Monad.Bayes.Inference.SMC where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class ( MonadInfer, MonadSample )
 import Control.Monad.Bayes.Population
+    ( Population,
+      spawn,
+      resampleSystematic,
+      resampleMultinomial,
+      pushEvidence )
 import Control.Monad.Bayes.Sequential as Seq
+    ( Sequential, hoistFirst, sis )
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
@@ -93,3 +92,4 @@ smcSystematicPush ::
   Sequential (Population m) a ->
   Population m a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)
+

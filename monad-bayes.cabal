@@ -47,6 +47,7 @@ library
         Control.Monad.Bayes.Traced.Dynamic
         Control.Monad.Bayes.Traced.Static
         Control.Monad.Bayes.Weighted
+        Control.Monad.Bayes.Integrator
 
     hs-source-dirs:   src
     other-modules:    Control.Monad.Bayes.Traced.Common
@@ -66,6 +67,7 @@ library
         transformers >=0.5.2 && <0.6,
         vector >=0.12.0 && <0.13,
         pipes,
+        integration,
         foldl
 
     if flag(dev)

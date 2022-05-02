@@ -290,6 +290,7 @@ instance MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score
