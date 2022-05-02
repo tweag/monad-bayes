@@ -67,8 +67,7 @@ library
         transformers >=0.5.2 && <0.6,
         vector >=0.12.0 && <0.13,
         integration,
-        foldl,
-        simple-reflect
+        foldl
 
     if flag(dev)
         ghc-options:

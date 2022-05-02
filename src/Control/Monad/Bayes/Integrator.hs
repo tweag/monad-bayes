@@ -121,12 +121,6 @@ enumerate ls meas =
                 else 0)
                 (runWeighted meas)) | val <- elems ls]
 
-
-
-example :: Either String [(Bool, Double)]
-example = enumerate (fromList [True, False]) $ model 
-
-
 model :: Weighted Integrator Bool
 model = do
 
@@ -135,59 +129,3 @@ model = do
     condition (not y)
     return (x > 0)
 
-
-
-
-
--- example' :: Either String [(Bool, Double)]
--- example' = enumerate' (fromList [True, False]) $ model2
-
--- enumerate' :: Ord a => Set a -> Integrator a -> Either String [(a, Double)]
--- enumerate' ls meas =
---     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
---     Enumerator.empirical [(val, runIntegrator (\(x) ->
---             if x == val
---                 then 1
---                 else 0)
---                 ( meas)) | val <- elems ls]
-
-
-
--- model2 :: Integrator Bool
--- model2 = do
-
---     x <- normal 0 1
---     y <- bernoulli x
---     condition (not y)
---     return (x > 0)
-
-
--- TODO: function to make an integrator from a sampling functor
-
-
-newtype SymbolicIntegrator a = SymbolicIntegrator (Cont Expr a) 
-  deriving newtype (Functor, Applicative, Monad)
-
-runSymbolicIntegrator :: (a -> Expr) -> SymbolicIntegrator a -> Expr
-runSymbolicIntegrator f (SymbolicIntegrator a) = runCont a f
-
-instance MonadSample SymbolicIntegrator where
-    random = SymbolicIntegrator $ cont (\f -> ($ undefined) (\x -> fun "|" (f x ⊗ fun "d" (x)))) -- f x * d x) -- fromDensityFunction $ density $ Statistics.uniformDistr 0 1
---     bernoulli p = SymbolicIntegrator $ cont (\f -> p * f True + (1 -p) * f False)
---     uniformD = fromMassFunction (const 1)
-
--- -- instance MonadCond SymbolicIntegrator where
--- --   score d = SymbolicIntegrator $ cont (\f -> f () * (ln $ exp d))
-
--- fromDensityFunction :: (Double -> Double) -> SymbolicIntegrator Double
--- fromDensityFunction d = SymbolicIntegrator $ cont $ \f ->
---     integralWithQuadrature (\x -> f x * d x)
---   where
---     integralWithQuadrature = result . last . (\z -> trap z 0 1)
-
--- fromMassFunction :: Foldable f => (a -> Double) -> f a -> SymbolicIntegrator a
--- fromMassFunction f support = SymbolicIntegrator $ cont \g ->
---     foldl' (\acc x -> acc + f x * g x) 0 support
-ex = runSymbolicIntegrator id (var . show <$> (random >> random))
-
-foo = a
