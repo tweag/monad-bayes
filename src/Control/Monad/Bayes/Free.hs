@@ -99,16 +99,16 @@ runWith randomness m = withPartialRandomness randomness $ hoist (return . runIde
 
 -- | For choice maps
 withPartialRandomnessCM :: MonadSample m => Map Text Double -> FreeSampler (StateT Text m) a -> m (a, [Double])
-withPartialRandomnessCM randomness (FreeSampler m) = flip evalStateT "" $
+withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT "" $
   runWriterT $ (iterTM f m)
   where
     f (Random k) = do
       -- let (Random k, _) = _ $ evalStateT p -- evalStateT p ""
       -- This block runs in StateT [Double] (WriterT [Double]) m.
-      -- StateT propagates consumed randomness while WriterT records
-      -- randomness used, whether old or new.
+      -- StateT tracks the name of the variable while WriterT records
+      -- random choices used, whether old or new.
       g <- get
-      x <- case Data.Map.lookup g randomness of
+      x <- case Data.Map.lookup g choicemap of
         Nothing -> random
         Just y -> return y -- y : ys -> put ys >> return y
       tell [x]
