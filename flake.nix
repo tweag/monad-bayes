@@ -8,8 +8,18 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = {
+    self,
+    nixpkgs,
+    flake-compat,
+    flake-utils,
+  }:
+    flake-utils.lib.eachSystem
+    [
+      flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.aarch64-linux
+    ]
+    (system:
       let
         pkgs = import nixpkgs { inherit system; };
         src = pkgs.lib.sourceByRegex self [
