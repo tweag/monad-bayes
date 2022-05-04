@@ -21,8 +21,9 @@
     ]
     (system:
       let
+        inherit (nixpkgs) lib;
         pkgs = nixpkgs.legacyPackages.${system};
-        src = pkgs.lib.sourceByRegex self [
+        src = lib.sourceByRegex self [
           "^benchmark.*$"
           "^models.*$"
           "^monad-bayes\.cabal$"
