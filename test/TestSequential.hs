@@ -18,7 +18,7 @@ finishedTwoSync :: MonadInfer m => Int -> m Bool
 finishedTwoSync n = finished (run n twoSync)
   where
     run 0 d = d
-    run k d = run (k - 1) (advance d)
+    run k d = run (k -1) (advance d)
 
 checkTwoSync :: Int -> Bool
 checkTwoSync 0 = mass (finishedTwoSync 0) False ~== 1
@@ -42,7 +42,7 @@ isFinished :: MonadInfer m => Int -> m Bool
 isFinished n = finished (run n sprinkler)
   where
     run 0 d = d
-    run k d = run (k - 1) (advance d)
+    run k d = run (k -1) (advance d)
 
 checkSync :: Int -> Bool
 checkSync n = mass (isFinished n) True ~== pFinished n

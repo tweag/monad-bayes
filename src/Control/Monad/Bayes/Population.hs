@@ -104,7 +104,7 @@ systematic u ps = f 0 (u / fromIntegral n) 0 0 []
     f i _ _ _ acc | i == n = acc
     f i v j q acc =
       if v < q
-        then f (i + 1) (v + inc) j q (j - 1 : acc)
+        then f (i + 1) (v + inc) j q (j -1 : acc)
         else f i v (j + 1) (q + prob j) acc
 
 -- | Resample the population using the underlying monad and a systematic resampling scheme.
