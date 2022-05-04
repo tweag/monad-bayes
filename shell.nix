@@ -1,3 +1,4 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem
+}:
 
-(builtins.getFlake (toString ./.)).devShell
+(builtins.getFlake (toString ./.)).devShells.${system}.default

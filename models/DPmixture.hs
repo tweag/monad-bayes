@@ -133,7 +133,7 @@ posterior (m, k, a, b) xs = (m', k', a', b')
     x2 = sum $ zipWith (*) xs xs -- sum xs^2
     s = sum $ zipWith (*) d d -- pvar xs
       where
-        d = map (+ (-x)) xs
+        d = map (+ (- x)) xs
 
 -- | Model evidence for a cluster
 evidence :: NormalInvGamma -> [Double] -> Double

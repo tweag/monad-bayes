@@ -60,9 +60,9 @@ library
         math-functions >=0.2.1 && <0.4,
         monad-coroutine >=0.9.0 && <0.10,
         mtl >=2.2.2 && <2.3,
-        mwc-random >=0.13.6 && <0.15,
+        mwc-random >=0.13.6 && <0.16,
         safe >=0.3.17 && <0.4,
-        statistics >=0.14.0 && <0.16,
+        statistics >=0.14.0 && <0.17,
         transformers >=0.5.2 && <0.6,
         vector >=0.12.0 && <0.13
 

@@ -3,39 +3,33 @@
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-
-    haskellNix.url = "github:input-output-hk/haskell.nix";
-
-    nixpkgs.follows = "haskellNix/nixpkgs";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, haskellNix, ... }:
-    let
-      inherit (haskellNix) config;
-      overlays = [
-        haskellNix.overlay
-        (import ./nix/haskell.nix)
-      ];
-    in
+  outputs = inputs@{ self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
-        pkgs = import nixpkgs { inherit system config overlays; };
-        flakes = pkgs.lib.mapAttrs (_: p: p.flake { }) pkgs.monad-bayes;
-        prefixPkgNames = prefix: pkgs.lib.mapAttrs' (n: pkgs.lib.nameValuePair "${prefix}:${n}");
-        prefixed = ghc: attr: prefixPkgNames ghc flakes.${ghc}.${attr};
-        combined = attr: prefixed "ghc88" attr // prefixed "ghc810" attr // prefixed "ghc9" attr;
+        pkgs = import nixpkgs { inherit system; };
+        src = pkgs.lib.sourceByRegex ./. [
+          "^benchmark.*$"
+          "^models.*$"
+          "^monad-bayes\.cabal$"
+          "^src.*$"
+          "^test.*$"
+          "^.*\.md"
+        ];
+        monad-bayes = pkgs.haskell.packages.ghc922.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
+        devShell = pkgs.mkShell {
+          inputsFrom = [ monad-bayes.env ];
+        };
       in
       {
-        legacyPackages = pkgs;
+        defaultPackage = monad-bayes;
+        packages.default = monad-bayes;
 
-        inherit (flakes.ghc9) devShell;
+        checks = { inherit monad-bayes; };
 
-        devShells = builtins.mapAttrs (_: x: x.devShell) flakes // {
-          default = flakes.ghc9.devShell;
-        };
-
-        packages = combined "packages";
-        checks = combined "checks";
+        inherit devShell;
+        devShells.default = devShell;
       }
     );
 }
