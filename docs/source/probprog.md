@@ -308,11 +308,11 @@ The end of the chain is the head of the list, so you can drop samples from the e
 ### Sequential Monte Carlo (Particle Filtering)
 
 ```haskell
-(sampleIO. runPopulation. smcSystematic numSteps numParticles) 
+(sampleIO. runPopulation . smcSystematic numSteps numParticles) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ```
 
-`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance, to use our now familiar `example`:
+`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`:
 
 
 ```haskell
@@ -334,16 +334,47 @@ run = (sampleIO . runPopulation. smcSystematic 4 4) example
 [(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
 ```
 
-Each of these is a particle with a weight.
+Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
+
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 
 ### Resample Move Sequential Monte Carlo
+
+This is a fancier variant of SMC, which has the particles take an MCMC walk through the solution space in order to spread out. This can avoid a common failure mode of SMC, where the population concentrates its weight too heavily on one mode.
+
+```haskell
+rmsmcBasic ::
+  MonadSample m =>
+  -- | number of timesteps
+  Int ->
+  -- | number of particles
+  Int ->
+  -- | number of Metropolis-Hastings transitions after each resampling
+  Int ->
+  -- | model
+  Sequential (Traced (Population m)) a ->
+  Population m a
+```
+
+```haskell
+run :: IO [(Bool, Log Double)]
+run = (sampleIO . runPopulation. smcSystematic 4 4 4) example
+```
+
+What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.
+
+
 
 <!-- todo -->
 
 ### Particle Marginal Metropolis Hastings
 
-This inference method takes a prior and a model separately.
+This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
+
+<!-- Run it like this: -->
+
+
 
 
 <!-- todo -->
@@ -368,7 +399,7 @@ This inference method takes a prior and a model separately.
 
 <!-- *The interpretation of your model is the program which performs inference on it* -->
 
-# Example Gallery
+<!-- # Example Gallery -->
 
 <!-- todo: link to monad-bayes examples, with graphs and how to run -->
 
