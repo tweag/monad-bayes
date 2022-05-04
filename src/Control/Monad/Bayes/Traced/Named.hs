@@ -23,27 +23,24 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free (FreeSampler)
+    ( MonadSample(random, bernoulli), MonadInfer, MonadCond(..) )
 -- import Control.Monad.Bayes.Traced.Common (mhTrans)
-import Control.Monad.Bayes.Weighted (Weighted)
-import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
-import Data.Map hiding (singleton, map)
+import Data.Map ( fromList, Map, empty )
 import Data.Text (Text)
-import Numeric.Log
+import Numeric.Log ( Log(ln) )
 
 import Control.Monad.Bayes.Free as FreeSampler
+    ( withPartialRandomnessCM, FreeSampler )
 import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Trans.Writer
-import Data.Functor.Identity
-import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+    ( Weighted, runWeighted, hoist )
+import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
 import Control.Monad.State
-import Control.Monad.Bayes.Sampler (sampleIO, SamplerIO)
-import Debug.Trace (trace)
-import Lens.Micro ((^.), ix)
-import Lens.Micro.GHC
-import Data.Monoid (Ap (getAp))
+    ( MonadState(get), StateT, MonadTrans(..) )
 import qualified Data.Text as T
+import Data.Text (Text)
+import Control.Monad.State.Class
+import qualified Data.Map as M
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -64,7 +61,6 @@ data ChoiceMap a = ChoiceMap
     -- | The probability of observing this particular sequence.
     density :: Log Double
   }
-
 instance Functor ChoiceMap where
   fmap f t = t {output = f (output t)}
 
@@ -77,7 +73,6 @@ instance Applicative ChoiceMap where
         output = output tf (output tx),
         density = density tf * density tx
       }
-
 instance Monad ChoiceMap where
   t >>= f =
     let t' = f (output t)
@@ -95,8 +90,6 @@ bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {cm = cm t1 <> cm t2, variables = variables t1 <> variables t2, density = density t1 * density t2}
-
-
 instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
 
@@ -109,9 +102,6 @@ instance Monad m => Monad (Traced m) where
     where
       my = mx >>= model . f
       dy = dx `bind` (traceDist . f)
-
-
-
 instance MonadTrans Traced where
   lift m = Traced (lift $ lift m) (fmap pure m)
 
@@ -135,15 +125,18 @@ hoistT f (Traced m d) = Traced m (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
+type Proposal m = M.Map T.Text Double -> m ( M.Map T.Text Double)
+
+
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => (Map Text Double -> m (Map Text Double)) -> Traced (StateT Text m) a -> Traced (StateT Text m) a
+mhStep :: MonadSample m => Proposal m -> Traced (StateT Text m) a -> Traced (StateT Text m) a
 mhStep prop (Traced m d) = Traced m d'
   where
     d' = d >>= lift . mhTrans prop m
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m =>
-  (Map Text Double -> m (Map Text Double)) ->
+  Proposal m ->
   Weighted (FreeSampler (StateT Text m)) a -> ChoiceMap a -> m (ChoiceMap a)
 mhTrans prop m t@ChoiceMap {cm = us, variables = allUs, density = p} = do
   us' <- prop us
@@ -159,7 +152,7 @@ mhTrans prop m t@ChoiceMap {cm = us, variables = allUs, density = p} = do
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
 mh :: MonadSample m =>
-  (Map Text Double -> m (Map Text Double)) -> Int -> Traced (StateT Text m) a -> StateT Text m [a]
+  Proposal m -> Int -> Traced (StateT Text m) a -> StateT Text m [a]
 mh prop n (Traced m d) =
 
   fmap (map output . NE.toList) (f n)
@@ -170,43 +163,6 @@ mh prop n (Traced m d) =
         (x :| xs) <- f (k -1)
         y <- lift $ mhTrans prop m x
         return (y :| x : xs)
-
-example = fmap reverse $ sampleIO $ prior $ flip evalStateT "" $ mh
-  prop2
-  -- ((ix "x") (const $ random) >=> (ix "y") (const $ random))
-  1000 ex2
-
-prop2 k = do
-  key <- uniformD ["x", "y"]
-  (ix key) (const $ random) k
-
-up :: Applicative m =>
-  ( Double -> m Double) ->
-  Map Text Double ->
-    m (Map Text Double)
-up = ix "x"
-
-thing = sampleIO $ prior $ flip evalStateT "" $ fmap cm $ traceDist ex2
-
-cmp = Data.Map.fromList [("x", 0.6), ("y", 0.6)]
-
-
-ex2 :: (MonadTrans t, MonadState Text m, MonadSample (t m),
- MonadCond (t m)) =>
-  t m (Double, Double)
-ex2 = do
-  x <-  traced "x" (random >> traced "i" (random >> traced "j" random))
-  y <- traced "y" random
-  condition (x > 0.7 && y > 0.7)
-  z <- bernoulli 0.5
-  return (x,y)
-
-test1 = do
-  choiceMap <- sampleIO $ prior $ flip evalStateT "" $ cm <$> traceDist ex2
-  print $ keys choiceMap == ["x","xi","xij","y"]
-
-  s <- sampleIO $ prior $ flip evalStateT "" $ mh (const $ return cmp) 3 ex2
-  print s
 
 traced :: (MonadState Text m, Monad (t m), MonadTrans t) => Text -> t m b -> t m b
 traced name program = lift (modify (<> name)) >> program <* lift (modify T.init)

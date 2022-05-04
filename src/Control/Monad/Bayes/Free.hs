@@ -103,24 +103,10 @@ withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT "" $
   runWriterT $ (iterTM f m)
   where
     f (Random k) = do
-      -- let (Random k, _) = _ $ evalStateT p -- evalStateT p ""
-      -- This block runs in StateT [Double] (WriterT [Double]) m.
-      -- StateT tracks the name of the variable while WriterT records
-      -- random choices used, whether old or new.
       g <- get
       x <- case Data.Map.lookup g choicemap of
         Nothing -> random
-        Just y -> return y -- y : ys -> put ys >> return y
+        Just y -> return y
       tell [x]
       k x
 
-ex :: MonadSample m => FreeSampler (StateT Text m)  (Bool, Bool)
-ex = do
-  x <- lift (put ("x" :: Text)) >> bernoulli 0.5
-  y <- lift (put ("y" :: Text)) >> bernoulli 0.5 <* lift (put ("" :: Text))
-  z <- bernoulli 0.5
-  return (x,y)
-
-te = sampleIO $ withPartialRandomnessCM mp ex
-
-mp = Data.Map.fromList [("y", 0.5), ("x", 0.8)]

@@ -118,6 +118,7 @@ test-suite monad-bayes-test
         TestPopulation
         TestSequential
         TestWeighted
+        TestNamed
 
     default-language: Haskell2010
     build-depends:
@@ -130,7 +131,11 @@ test-suite monad-bayes-test
         monad-bayes -any,
         mtl -any,
         transformers -any,
-        vector -any
+        vector -any,
+        text -any,
+        containers -any,
+        microlens -any,
+        microlens-ghc -any
 
     if flag(dev)
         ghc-options:
