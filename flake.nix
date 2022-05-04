@@ -12,7 +12,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
-        src = pkgs.lib.sourceByRegex ./. [
+        src = pkgs.lib.sourceByRegex self [
           "^benchmark.*$"
           "^models.*$"
           "^monad-bayes\.cabal$"
