@@ -27,6 +27,7 @@ module Control.Monad.Bayes.Weighted
 where
 
 import Control.Monad.Bayes.Class
+    ( factor, MonadInfer, MonadCond(..), MonadSample )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
 import Numeric.Log (Log)

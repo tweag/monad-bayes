@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Population

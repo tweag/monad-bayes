@@ -11,11 +11,13 @@ module HMM
 where
 
 --Hidden Markov Models
-
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
+    ( factor,
+      normalPdf,
+      MonadInfer,
+      MonadSample(uniformD, categorical) )
 import Data.Vector (fromList)
-
 -- | Observed values
 values :: [Double]
 values =
@@ -65,6 +67,7 @@ hmm dataset = f dataset (const . return)
       return x'
     f [] k = start >>= k []
     f (y : ys) k = f ys (\xs x -> expand x y >>= k (x : xs))
+
 
 syntheticData :: MonadSample m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
