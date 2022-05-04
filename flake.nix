@@ -21,7 +21,7 @@
     ]
     (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = nixpkgs.legacyPackages.${system};
         src = pkgs.lib.sourceByRegex self [
           "^benchmark.*$"
           "^models.*$"
