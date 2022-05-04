@@ -29,8 +29,12 @@
   }:
     flake-utils.lib.eachSystem
     [
+      # Tier 1 - Tested in CI
       flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.x86_64-darwin
+      # Tier 2 - Not tested in CI (at least for now)
       flake-utils.lib.system.aarch64-linux
+      flake-utils.lib.system.aarch64-darwin
     ]
     (
       system: let
