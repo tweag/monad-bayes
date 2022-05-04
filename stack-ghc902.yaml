@@ -1,8 +1,0 @@
-resolver: nightly-2022-01-10
-packages:
-  - "."
-flags:
-  monad-bayes:
-    dev: True
-nix:
-  path: [nixpkgs=./nix/nixpkgs-stack.nix]
