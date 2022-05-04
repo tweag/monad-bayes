@@ -23,8 +23,11 @@ jobs:
           name: tweag-monad-bayes
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
+      - name: Lint
+        run: nix --print-build-logs build .#pre-commit
+
       - name: Build
-        run: nix --print-build-logs build
+        run: nix --print-build-logs build .#monad-bayes
 
       - name: Development environenment
         run: nix --print-build-logs develop --command echo Ready

@@ -1,5 +1,5 @@
 {
-  description = "A very basic flake";
+  description = "A library for probabilistic programming in Haskell.";
 
   nixConfig = {
     extra-substituters = [
@@ -15,6 +15,9 @@
     flake-compat.url = "github:edolstra/flake-compat";
     flake-compat.flake = false;
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
   };
 
   outputs = {
@@ -22,14 +25,15 @@
     nixpkgs,
     flake-compat,
     flake-utils,
+    pre-commit-hooks,
   }:
     flake-utils.lib.eachSystem
     [
       flake-utils.lib.system.x86_64-linux
       flake-utils.lib.system.aarch64-linux
     ]
-    (system:
-      let
+    (
+      system: let
         inherit (nixpkgs) lib;
 
         pkgs = nixpkgs.legacyPackages.${system};
@@ -48,13 +52,26 @@
         monad-bayes = pkgs.haskell.packages.ghc922.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
 
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [ monad-bayes.env ];
+          inputsFrom = [monad-bayes.env];
+          shellHook =
+            pre-commit.shellHook
+            + ''
+              echo "=== monad-bayes development shell ==="
+            '';
+        };
+
+        pre-commit = pre-commit-hooks.lib.${system}.run {
+          src = self;
+          hooks = {
+            alejandra.enable = true;
+            hlint.enable = true;
+          };
         };
       in rec {
-        packages = { inherit monad-bayes; };
+        packages = {inherit monad-bayes pre-commit;};
         packages.default = packages.monad-bayes;
 
-        checks = { inherit monad-bayes; };
+        checks = {inherit monad-bayes pre-commit;};
 
         devShells.default = monad-bayes-dev;
 
