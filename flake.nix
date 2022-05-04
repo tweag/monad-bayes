@@ -1,6 +1,15 @@
 {
   description = "A very basic flake";
 
+  nixConfig = {
+    extra-substituters = [
+      "https://tweag-monad-bayes.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "tweag-monad-bayes.cachix.org-1:tmmTZ+WvtUMpYWD4LAkfSuNKqSuJyL3N8ZVm/qYtqdc="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
     flake-compat.url = "github:edolstra/flake-compat";
