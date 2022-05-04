@@ -22,7 +22,11 @@
     (system:
       let
         inherit (nixpkgs) lib;
+
         pkgs = nixpkgs.legacyPackages.${system};
+
+        warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
+
         src = lib.sourceByRegex self [
           "^benchmark.*$"
           "^models.*$"
@@ -31,19 +35,23 @@
           "^test.*$"
           "^.*\.md"
         ];
+
         monad-bayes = pkgs.haskell.packages.ghc922.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
-        devShell = pkgs.mkShell {
+
+        monad-bayes-dev = pkgs.mkShell {
           inputsFrom = [ monad-bayes.env ];
         };
-      in
-      {
-        defaultPackage = monad-bayes;
-        packages.default = monad-bayes;
+      in rec {
+        packages = { inherit monad-bayes; };
+        packages.default = packages.monad-bayes;
 
         checks = { inherit monad-bayes; };
 
-        inherit devShell;
-        devShells.default = devShell;
+        devShells.default = monad-bayes-dev;
+
+        # Needed for backwards compatibility with Nix versions <2.8
+        defaultPackage = warnToUpdateNix packages.default;
+        devShell = warnToUpdateNix devShells.default;
       }
     );
 }
