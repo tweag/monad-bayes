@@ -29,7 +29,7 @@ import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 data Trace a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
     variables :: [Double],
-    -- |
+    --
     output :: a,
     -- | The probability of observing this particular sequence.
     density :: Log Double
@@ -69,7 +69,7 @@ mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
+    i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)

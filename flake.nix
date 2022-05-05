@@ -57,6 +57,12 @@
 
         monad-bayes-dev = pkgs.mkShell {
           inputsFrom = [monad-bayes.env];
+          packages = with pre-commit-hooks.packages.${system}; [
+            alejandra
+            cabal-fmt
+            hlint
+            ormolu
+          ];
           shellHook =
             pre-commit.shellHook
             + ''
@@ -65,7 +71,7 @@
         };
 
         pre-commit = pre-commit-hooks.lib.${system}.run {
-          src = self;
+          inherit src;
           hooks = {
             alejandra.enable = true;
             cabal-fmt.enable = true;

@@ -321,4 +321,3 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
-
