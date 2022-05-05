@@ -68,7 +68,9 @@
           src = self;
           hooks = {
             alejandra.enable = true;
+            cabal-fmt.enable = true;
             hlint.enable = true;
+            ormolu.enable = true;
           };
         };
       in rec {

@@ -1,0 +1,357 @@
+# HLint configuration file
+# https://github.com/ndmitchell/hlint
+##########################
+
+# This file contains a template configuration file, which is typically
+# placed as .hlint.yaml in the root of your project
+
+# All built-in hints
+- ignore: {name: "Avoid lambda"}
+- ignore: {name: "Avoid lambda using `infix`"}
+- ignore: {name: "Collapse lambdas"}
+- ignore: {name: "Eta reduce"}
+- ignore: {name: "Fix pragma markup"}
+- ignore: {name: "Missing NOINLINE pragma"}
+- ignore: {name: "Move brackets to avoid $"}
+- ignore: {name: "Move guards forward"}
+- ignore: {name: "Move map inside list comprehension"}
+- ignore: {name: "Redundant $"}
+- ignore: {name: "Redundant True guards"}
+- ignore: {name: "Redundant as"}
+- ignore: {name: "Redundant as-pattern"}
+- ignore: {name: "Redundant bang pattern"}
+- ignore: {name: "Redundant bracket"}
+- ignore: {name: "Redundant bracket due to operator fixities"}
+- ignore: {name: "Redundant case"}
+- ignore: {name: "Redundant do"}
+- ignore: {name: "Redundant guard"}
+- ignore: {name: "Redundant irrefutable pattern"}
+- ignore: {name: "Redundant lambda"}
+- ignore: {name: "Redundant return"}
+- ignore: {name: "Redundant section"}
+- ignore: {name: "Redundant variable capture"}
+- ignore: {name: "Redundant void"}
+- ignore: {name: "Redundant where"}
+- ignore: {name: "Short-circuited list comprehension"}
+- ignore: {name: "Unused LANGUAGE pragma"}
+- ignore: {name: "Use :"}
+- ignore: {name: "Use <$>"}
+- ignore: {name: "Use DerivingStrategies"}
+- ignore: {name: "Use LANGUAGE pragmas"}
+- ignore: {name: "Use String"}
+- ignore: {name: "Use camelCase"}
+- ignore: {name: "Use explicit module export list"}
+- ignore: {name: "Use fewer LANGUAGE pragmas"}
+- ignore: {name: "Use fewer imports"}
+- ignore: {name: "Use foldM"}
+- ignore: {name: "Use foldM_"}
+- ignore: {name: "Use foldl"}
+- ignore: {name: "Use foldr"}
+- ignore: {name: "Use forM_"}
+- ignore: {name: "Use guards"}
+- ignore: {name: "Use join"}
+- ignore: {name: "Use lambda"}
+- ignore: {name: "Use lambda-case"}
+- ignore: {name: "Use let"}
+- ignore: {name: "Use list literal"}
+- ignore: {name: "Use list literal pattern"}
+- ignore: {name: "Use map"}
+- ignore: {name: "Use mapM_"}
+- ignore: {name: "Use module export list"}
+- ignore: {name: "Use newtype instead of data"}
+- ignore: {name: "Use otherwise"}
+- ignore: {name: "Use pragma syntax"}
+- ignore: {name: "Use record patterns"}
+- ignore: {name: "Use section"}
+- ignore: {name: "Use tuple-section"}
+- ignore: {name: "Use underscore"}
+- ignore: {name: "Used otherwise as a pattern"}
+
+# All LHS/RHS hints
+- ignore: {name: "Alternative law, left identity"}
+- ignore: {name: "Alternative law, right identity"}
+- ignore: {name: "Avoid reverse"}
+- ignore: {name: "Drop on a non-positive"}
+- ignore: {name: "Evaluate"}
+- ignore: {name: "Functor law"}
+- ignore: {name: "Fuse concatMap/map"}
+- ignore: {name: "Fuse foldMap/fmap"}
+- ignore: {name: "Fuse foldMap/map"}
+- ignore: {name: "Fuse foldr/map"}
+- ignore: {name: "Fuse mapM/map"}
+- ignore: {name: "Fuse mapM_/map"}
+- ignore: {name: "Fuse mapMaybe/map"}
+- ignore: {name: "Fuse on/on"}
+- ignore: {name: "Fuse traverse/map"}
+- ignore: {name: "Fuse traverse_/map"}
+- ignore: {name: "Hoist not"}
+- ignore: {name: "Length always non-negative"}
+- ignore: {name: "Monad law, left identity"}
+- ignore: {name: "Monad law, right identity"}
+- ignore: {name: "Monoid law, left identity"}
+- ignore: {name: "Monoid law, right identity"}
+- ignore: {name: "Move flip"}
+- ignore: {name: "Move nub out"}
+- ignore: {name: "Move nubOrd out"}
+- ignore: {name: "Move reverse out"}
+- ignore: {name: "Move sort out"}
+- ignore: {name: "Redundant $"}
+- ignore: {name: "Redundant $!"}
+- ignore: {name: "Redundant &"}
+- ignore: {name: "Redundant /="}
+- ignore: {name: "Redundant <$>"}
+- ignore: {name: "Redundant <&>"}
+- ignore: {name: "Redundant <*"}
+- ignore: {name: "Redundant =="}
+- ignore: {name: "Redundant >>"}
+- ignore: {name: "Redundant ^."}
+- ignore: {name: "Redundant at"}
+- ignore: {name: "Redundant bimap"}
+- ignore: {name: "Redundant castPtr"}
+- ignore: {name: "Redundant compare"}
+- ignore: {name: "Redundant curry"}
+- ignore: {name: "Redundant evaluate"}
+- ignore: {name: "Redundant first"}
+- ignore: {name: "Redundant flip"}
+- ignore: {name: "Redundant fmap"}
+- ignore: {name: "Redundant fromInteger"}
+- ignore: {name: "Redundant fromIntegral"}
+- ignore: {name: "Redundant id"}
+- ignore: {name: "Redundant if"}
+- ignore: {name: "Redundant list comprehension"}
+- ignore: {name: "Redundant map"}
+- ignore: {name: "Redundant maybe"}
+- ignore: {name: "Redundant multi-way if"}
+- ignore: {name: "Redundant negate"}
+- ignore: {name: "Redundant not"}
+- ignore: {name: "Redundant pair"}
+- ignore: {name: "Redundant pure"}
+- ignore: {name: "Redundant return"}
+- ignore: {name: "Redundant second"}
+- ignore: {name: "Redundant seq"}
+- ignore: {name: "Redundant take"}
+- ignore: {name: "Redundant uncurry"}
+- ignore: {name: "Redundant void"}
+- ignore: {name: "Replace case with fromMaybe"}
+- ignore: {name: "Replace case with maybe"}
+- ignore: {name: "Take on a non-positive"}
+- ignore: {name: "Traversable law"}
+- ignore: {name: "Use !!"}
+- ignore: {name: "Use $"}
+- ignore: {name: "Use $>"}
+- ignore: {name: "Use &&"}
+- ignore: {name: "Use &&&"}
+- ignore: {name: "Use (,)"}
+- ignore: {name: "Use (,,)"}
+- ignore: {name: "Use ++"}
+- ignore: {name: "Use -"}
+- ignore: {name: "Use /="}
+- ignore: {name: "Use 1"}
+- ignore: {name: "Use :"}
+- ignore: {name: "Use <"}
+- ignore: {name: "Use <$"}
+- ignore: {name: "Use <$>"}
+- ignore: {name: "Use <&>"}
+- ignore: {name: "Use <**>"}
+- ignore: {name: "Use <="}
+- ignore: {name: "Use <=<"}
+- ignore: {name: "Use <|>"}
+- ignore: {name: "Use =<<"}
+- ignore: {name: "Use =="}
+- ignore: {name: "Use >"}
+- ignore: {name: "Use >="}
+- ignore: {name: "Use >=>"}
+- ignore: {name: "Use >>"}
+- ignore: {name: "Use >>="}
+- ignore: {name: "Use ?~"}
+- ignore: {name: "Use False"}
+- ignore: {name: "Use Just"}
+- ignore: {name: "Use True"}
+- ignore: {name: "Use ^?!"}
+- ignore: {name: "Use all"}
+- ignore: {name: "Use and"}
+- ignore: {name: "Use any"}
+- ignore: {name: "Use ap"}
+- ignore: {name: "Use appendFile"}
+- ignore: {name: "Use asks"}
+- ignore: {name: "Use asum"}
+- ignore: {name: "Use bimap"}
+- ignore: {name: "Use bracket_"}
+- ignore: {name: "Use break"}
+- ignore: {name: "Use catMaybes"}
+- ignore: {name: "Use catch"}
+- ignore: {name: "Use catchJust"}
+- ignore: {name: "Use concat"}
+- ignore: {name: "Use concatMap"}
+- ignore: {name: "Use const"}
+- ignore: {name: "Use curry"}
+- ignore: {name: "Use delete"}
+- ignore: {name: "Use drop"}
+- ignore: {name: "Use dropWhile"}
+- ignore: {name: "Use either"}
+- ignore: {name: "Use elem"}
+- ignore: {name: "Use elemIndex"}
+- ignore: {name: "Use elemIndices"}
+- ignore: {name: "Use empty"}
+- ignore: {name: "Use error"}
+- ignore: {name: "Use evalState"}
+- ignore: {name: "Use even"}
+- ignore: {name: "Use execState"}
+- ignore: {name: "Use exitSuccess"}
+- ignore: {name: "Use find"}
+- ignore: {name: "Use first"}
+- ignore: {name: "Use floor"}
+- ignore: {name: "Use fmap"}
+- ignore: {name: "Use fold"}
+- ignore: {name: "Use foldMap"}
+- ignore: {name: "Use foldl"}
+- ignore: {name: "Use foldl1"}
+- ignore: {name: "Use foldr"}
+- ignore: {name: "Use foldr1"}
+- ignore: {name: "Use for"}
+- ignore: {name: "Use forM"}
+- ignore: {name: "Use forM_"}
+- ignore: {name: "Use for_"}
+- ignore: {name: "Use fromLeft"}
+- ignore: {name: "Use fromMaybe"}
+- ignore: {name: "Use fromRight"}
+- ignore: {name: "Use fst"}
+- ignore: {name: "Use getChar"}
+- ignore: {name: "Use getContents"}
+- ignore: {name: "Use getLine"}
+- ignore: {name: "Use gets"}
+- ignore: {name: "Use group"}
+- ignore: {name: "Use hPrint"}
+- ignore: {name: "Use hReady"}
+- ignore: {name: "Use handle"}
+- ignore: {name: "Use handleJust"}
+- ignore: {name: "Use head"}
+- ignore: {name: "Use id"}
+- ignore: {name: "Use if"}
+- ignore: {name: "Use infix"}
+- ignore: {name: "Use init"}
+- ignore: {name: "Use insert"}
+- ignore: {name: "Use intercalate"}
+- ignore: {name: "Use intersect"}
+- ignore: {name: "Use isAlpha"}
+- ignore: {name: "Use isAsciiLower"}
+- ignore: {name: "Use isAsciiUpper"}
+- ignore: {name: "Use isDigit"}
+- ignore: {name: "Use isEOF"}
+- ignore: {name: "Use isJust"}
+- ignore: {name: "Use isNothing"}
+- ignore: {name: "Use isOctDigit"}
+- ignore: {name: "Use isSuffixOf"}
+- ignore: {name: "Use iterate"}
+- ignore: {name: "Use ix"}
+- ignore: {name: "Use join"}
+- ignore: {name: "Use last"}
+- ignore: {name: "Use lefts"}
+- ignore: {name: "Use list comprehension"}
+- ignore: {name: "Use logBase"}
+- ignore: {name: "Use map"}
+- ignore: {name: "Use map once"}
+- ignore: {name: "Use mapAndUnzipM"}
+- ignore: {name: "Use mapM"}
+- ignore: {name: "Use mapM_"}
+- ignore: {name: "Use mapMaybe"}
+- ignore: {name: "Use max"}
+- ignore: {name: "Use maximum"}
+- ignore: {name: "Use maximumBy"}
+- ignore: {name: "Use maybe"}
+- ignore: {name: "Use maybeToList"}
+- ignore: {name: "Use min"}
+- ignore: {name: "Use minimum"}
+- ignore: {name: "Use minimumBy"}
+- ignore: {name: "Use mkWeakPair"}
+- ignore: {name: "Use mkWeakPtr"}
+- ignore: {name: "Use msum"}
+- ignore: {name: "Use negate"}
+- ignore: {name: "Use nestedAtomically"}
+- ignore: {name: "Use newEmptyTMVarIO"}
+- ignore: {name: "Use newTMVarIO"}
+- ignore: {name: "Use newTVarIO"}
+- ignore: {name: "Use nonTermination"}
+- ignore: {name: "Use notElem"}
+- ignore: {name: "Use nub"}
+- ignore: {name: "Use null"}
+- ignore: {name: "Use odd"}
+- ignore: {name: "Use optional"}
+- ignore: {name: "Use or"}
+- ignore: {name: "Use print"}
+- ignore: {name: "Use product"}
+- ignore: {name: "Use putChar"}
+- ignore: {name: "Use putStr"}
+- ignore: {name: "Use putStrLn"}
+- ignore: {name: "Use readTVarIO"}
+- ignore: {name: "Use reads"}
+- ignore: {name: "Use repeat"}
+- ignore: {name: "Use replicate"}
+- ignore: {name: "Use replicateM"}
+- ignore: {name: "Use replicateM_"}
+- ignore: {name: "Use rights"}
+- ignore: {name: "Use second"}
+- ignore: {name: "Use sequence"}
+- ignore: {name: "Use sequenceA"}
+- ignore: {name: "Use sequenceA_"}
+- ignore: {name: "Use sequence_"}
+- ignore: {name: "Use show"}
+- ignore: {name: "Use showHex"}
+- ignore: {name: "Use showOct"}
+- ignore: {name: "Use shows"}
+- ignore: {name: "Use snd"}
+- ignore: {name: "Use sort"}
+- ignore: {name: "Use sortOn"}
+- ignore: {name: "Use span"}
+- ignore: {name: "Use splitAt"}
+- ignore: {name: "Use sqrt"}
+- ignore: {name: "Use sum"}
+- ignore: {name: "Use tail"}
+- ignore: {name: "Use take"}
+- ignore: {name: "Use takeWhile"}
+- ignore: {name: "Use tan"}
+- ignore: {name: "Use traverse"}
+- ignore: {name: "Use traverse_"}
+- ignore: {name: "Use tuple-section"}
+- ignore: {name: "Use typeRep"}
+- ignore: {name: "Use uncurry"}
+- ignore: {name: "Use union"}
+- ignore: {name: "Use unless"}
+- ignore: {name: "Use unlines"}
+- ignore: {name: "Use unwords"}
+- ignore: {name: "Use unzip"}
+- ignore: {name: "Use view"}
+- ignore: {name: "Use void"}
+- ignore: {name: "Use when"}
+- ignore: {name: "Use withBinaryFile"}
+- ignore: {name: "Use withFile"}
+- ignore: {name: "Use writeFile"}
+- ignore: {name: "Use writeIORef"}
+- ignore: {name: "Use writeList2Chan"}
+- ignore: {name: "Use zip"}
+- ignore: {name: "Use zip3"}
+- ignore: {name: "Use zipWith"}
+- ignore: {name: "Use zipWithM"}
+- ignore: {name: "Use zipWithM_"}
+- ignore: {name: "Use ||"}
+- ignore: {name: "Using all on tuple"}
+- ignore: {name: "Using and on tuple"}
+- ignore: {name: "Using any on tuple"}
+- ignore: {name: "Using concat on tuple"}
+- ignore: {name: "Using elem on tuple"}
+- ignore: {name: "Using fold on tuple"}
+- ignore: {name: "Using foldMap on tuple"}
+- ignore: {name: "Using foldl on tuple"}
+- ignore: {name: "Using foldl' on tuple"}
+- ignore: {name: "Using foldl1 on tuple"}
+- ignore: {name: "Using foldr on tuple"}
+- ignore: {name: "Using foldr' on tuple"}
+- ignore: {name: "Using foldr1 on tuple"}
+- ignore: {name: "Using length on tuple"}
+- ignore: {name: "Using maximum on tuple"}
+- ignore: {name: "Using minimum on tuple"}
+- ignore: {name: "Using null on tuple"}
+- ignore: {name: "Using or on tuple"}
+- ignore: {name: "Using product on tuple"}
+- ignore: {name: "Using sum on tuple"}
+- ignore: {name: "Using toList on tuple"}
