@@ -18,7 +18,7 @@ import Sprinkler ()
 import Control.Monad.Bayes.Free
     ( withPartialRandomnessCM, FreeSampler ) 
 import Control.Monad.State
-    ( (>=>), StateT, MonadTrans(..), evalStateT, MonadState(put) )
+    ( (>=>), StateT, MonadTrans(..), evalStateT, MonadState(put), evalState )
 import qualified Data.Text as T
 import qualified Data.Map as M
 import Control.Monad.Bayes.Weighted ( prior )
@@ -26,6 +26,7 @@ import Control.Monad.Bayes.Traced.Named
     ( mh, traced, ChoiceMap(cm), Traced(traceDist) ) 
 import Lens.Micro.GHC (ix)
 import Data.Map (keys)
+import Control.Monad.Bayes.Inference.PMMH (pmmh)
 
 
 ex :: MonadSample m => FreeSampler (StateT T.Text m)  (Bool, Bool)
@@ -36,25 +37,23 @@ ex = do
   return (x,y)
 
 
-
+-- goodProposal :: MonadSample m => Proposal m
 goodProposal = (ix "xij" (const random) >=> ix "y" (const random))
 
--- prop2 :: Proposal
+-- badProposal :: MonadSample m => Proposal m
 badProposal k = do
-  key <- uniformD ["x", "y"]
+  key <- uniformD $ keys k
   ix key (const random) k
 
-
-
-ex2 :: (MonadTrans t, MonadState T.Text m, MonadSample (t m), MonadCond (t m)) =>
- t m (Double, Double)
+ex2 :: (MonadState T.Text m, MonadTrans t, MonadSample (t m),
+  MonadCond (t m)) =>
+  t m (Double, Double)
 ex2 = do
   x <-  traced "x" (random >> traced "i" (random >> traced "j" random))
   y <- traced "y" random
   condition (x > 0.7 && y > 0.7)
   _ <- bernoulli 0.5
   return (x,y)
-
 
 
 test1 = do

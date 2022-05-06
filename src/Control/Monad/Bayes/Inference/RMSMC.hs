@@ -25,6 +25,9 @@ import Control.Monad.Bayes.Traced as Tr
 import qualified Control.Monad.Bayes.Traced.Basic as TrBas
 import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
 import Data.Monoid
+import Control.Monad.State
+import Data.Text (Text)
+import qualified Control.Monad.Bayes.Traced.Named as Named
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -79,6 +82,23 @@ rmsmcLocal k n t =
   TrDyn.marginal
     . sis (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoistT resampleSystematic) k
     . hoistS (TrDyn.hoistT (spawn n >>))
+
+-- -- | Resample-move Sequential Monte Carlo.
+-- rmsmcNamed ::
+--   MonadSample m =>
+--   -- | number of timesteps
+--   Int ->
+--   -- | number of particles
+--   Int ->
+--   -- | number of Metropolis-Hastings transitions after each resampling
+--   Int ->
+--   -- | model
+--   Sequential (Named.Traced (Population (StateT Text m))) a ->
+--   Population (StateT Text m) a
+-- rmsmcNamed k n t =
+--   Named.marginal
+--     . sis (composeCopies t (undefined $ Named.mhStep undefined) . Named.hoistT (resampleSystematic)) k
+--     . hoistS (Named.hoistT (spawn n >>))
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)

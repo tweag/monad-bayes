@@ -304,6 +304,73 @@ produces 10 unbiased samples from the posterior, by using single-site trace MCMC
 
 The end of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
+#### MCMC with named traces
+
+In order to use MCMC to good effect in most settings, it is important to customize the proposal distribution well. In the basic version of MCMC, described above, this is difficult to do, because execution traces are summarized by a list of the value of each random choice. 
+
+`Control.Monad.Bayes.Traced.Named` provides an alternative that is easy to use. Here, a trace is a *choice map*, which is a dictionary mapping *named* random choices to their values, like:
+
+```
+"x" -> 0.1
+"y" -> 0.5
+...
+```
+
+A proposal is a stochastic modification of such a choice map, that is `MonadSample m => ChoiceMap -> m ChoiceMap`.
+
+In order to name random choices, you can use the `traced` function provided by this module, as follows:
+
+```haskell
+ex :: (MonadTrans t, MonadState T.Text m, MonadSample (t m), MonadCond (t m)) =>
+ t m (Double, Double)
+ex = do
+  x <-  traced "x" random
+  y <- traced "y" random
+  condition (x > 0.7 && y > 0.7)
+  return (x,y)
+```
+
+You can then run `mh` as follows:
+
+```haskell
+simpleProposal = (const $ return $ M.fromList [("x", 0.8), ("y", 0.8)])
+run = mh simpleProposal 3 ex2
+```
+
+In this simple example, MCMC is performed with the proposal distribution that always (with probability $1$, regardless of the previous choice map), proposes the choice map
+
+```
+"x" -> 0.8
+"y" -> 0.8
+```
+
+A more interesting choice map would be
+
+```haskell
+standardProposal k = do
+  key <- uniformD $ keys k
+  ix key (const random) k
+```
+
+which randomly picks a key, and redraws its value randomly from the $[0,1]$ interval. (This is the default proposal used in the other `Control.Monad.Bayes.Traced` modules)
+
+Using `traced`, you may name your random variables whatever you like. Their values will always be `Double` and should be in the $[0,1]$ interval. For example, in `traced "x" (bernoulli 0.5)`, the traced value is the underlying call to `random` (which yields `True` for values of `random` less than $0.5$).
+
+Note that calls to `traced` can be nested. For example, consider:
+
+```haskell
+example = do
+  x <-  traced "x" $ do
+    random
+    random
+    traced "i" random
+  y <- traced "y" random
+  condition (x > 0.7 && y > 0.7)
+  _ <- bernoulli 0.5
+  return (x,y)
+```
+
+Here, the first two calls to `random` will be named "x", and *both* will be updated by whatever the value of "x" is in your choice map. The third call will be named "xi". The general principle is that `traced name1 program` gives `name1` to the whole of `program`, and calls to `traced name2` with `program` will append their `name2` to `name1`. 
 
 ### Sequential Monte Carlo (Particle Filtering)
 
