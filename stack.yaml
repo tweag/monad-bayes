@@ -1,1 +1,6 @@
-stack-ghc883.yaml
+resolver: nightly-2022-05-03
+packages:
+  - "."
+flags:
+  monad-bayes:
+    dev: True

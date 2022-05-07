@@ -1,0 +1,42 @@
+---
+name: "nix-build"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Nix Environenment
+        uses: ./.github/actions/nix-common-setup
+        with:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Lint
+        run: nix --print-build-logs build .#pre-commit
+
+  build:
+    needs: lint
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          - os: macos-latest
+            system: x86_64-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Nix Environenment
+        uses: ./.github/actions/nix-common-setup
+        with:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Build
+        run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes
+      - name: Development environenment
+        run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes --command echo Ready

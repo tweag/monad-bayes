@@ -1,8 +1,0 @@
-resolver: lts-12.15 # first lts-12.X which uses ghc844
-packages:
-  - "."
-flags:
-  monad-bayes:
-    dev: True
-nix:
-  path: [nixpkgs=./nix/nixpkgs-stack.nix]
