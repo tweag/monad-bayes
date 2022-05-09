@@ -22,6 +22,7 @@ module Control.Monad.Bayes.Population
     spawn,
     resampleMultinomial,
     resampleSystematic,
+    resampleStratified,
     extractEvidence,
     pushEvidence,
     proper,
@@ -41,9 +42,12 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
+import Data.List (unfoldr)
 import qualified Data.List
+import Data.Maybe (catMaybes)
+import Data.Vector ((!))
 import qualified Data.Vector as V
-import Numeric.Log
+import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
@@ -114,6 +118,32 @@ resampleSystematic ::
   Population m a ->
   Population m a
 resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
+
+-- | Stratified resampler.
+stratified :: MonadSample m => V.Vector Double -> m [Int]
+stratified weights = do
+  let bigN = V.length weights
+  dithers <- V.replicateM bigN (uniform 0.0 1.0)
+  let positions =
+        V.map (/ (fromIntegral bigN)) $
+          V.zipWith (+) dithers (V.map fromIntegral $ V.fromList [0 .. bigN - 1])
+      cumulativeSum = V.scanl (+) 0.0 weights
+      coalg (i, j)
+        | i < bigN =
+          if (positions ! i) < (cumulativeSum ! j)
+            then Just (Just j, (i + 1, j))
+            else Just (Nothing, (i, j + 1))
+        | otherwise =
+          Nothing
+  return $ map (\i -> i - 1) $ catMaybes $ unfoldr coalg (0, 0)
+
+-- | Resample the population using the underlying monad and a stratified resampling scheme.
+-- The total weight is preserved.
+resampleStratified ::
+  (MonadSample m) =>
+  Population m a ->
+  Population m a
+resampleStratified = resampleGeneric stratified
 
 -- | Multinomial resampler.
 multinomial :: MonadSample m => V.Vector Double -> m [Int]
