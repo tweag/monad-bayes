@@ -125,7 +125,7 @@ stratified weights = do
   let bigN = V.length weights
   dithers <- V.replicateM bigN (uniform 0.0 1.0)
   let positions =
-        V.map (/ (fromIntegral bigN)) $
+        V.map (/ fromIntegral bigN) $
           V.zipWith (+) dithers (V.map fromIntegral $ V.fromList [0 .. bigN - 1])
       cumulativeSum = V.scanl (+) 0.0 weights
       coalg (i, j)
