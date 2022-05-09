@@ -1,6 +1,6 @@
 # User Guide
 
-Probabilistic programming is all about being able to write programs like:
+Probabilistic programming is all about being able to write arbitrary probabilistic models as programs, like:
 
 ```haskell
 sprinkler :: MonadInfer m => m Bool
@@ -16,7 +16,7 @@ sprinkler = do
   return rain
 ```
 
-and doing then do inference like this:
+and then doing inference like this:
 
 ```haskell   
 enumerate sprinkler
@@ -30,23 +30,24 @@ to get
 
 `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
 
-`sprinkler` is a distribution specified as a program with randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence: probabilistic programming. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
+`sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
 
 ## monad-bayes vs other libraries
 
-monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling an important subset well.
+
+monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
 There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
 
-Advantage of these other libraries/languages:
+**What other approaches have that monad-bayes lacks**:
 
-- a lot of engineering work has been put into these libraries and languages to make them practical for real-world problems. The same is not true for monad-bayes. While its core is very nice, it doesn't come with a lot of the batteries you might want. Adam Scibior's thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on. We believe these are largely orthogonal to the core design, so excluding them makes for a clearer and more accessible presentation of the main ideas."
+- a lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
-Advantages of monad-bayes: 
+**What monad-bayes has that is unique**: 
 
-- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is totally pure. You can make use of laziness. The types are invaluable. There's no new special syntax to learn, which makes use and development much easier.
+- models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
-- inference algorithms are modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces.
+- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
 
 ## References
 
@@ -213,7 +214,7 @@ It will run forever on infinite distributions like `enumerate (poisson 0.7)` and
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
-**However**, it's totally fine to have the elements of the support be an instance of `Ord`, as in:
+**However**, it's totally fine to have the elements of the support to be infinite but discrete, as in:
 
 ```haskell
 fmap (\(ls,p) -> (take 4 ls, p)) $ enumerate $ uniformD [[1..], [2..]]
@@ -307,11 +308,11 @@ The end of the chain is the head of the list, so you can drop samples from the e
 ### Sequential Monte Carlo (Particle Filtering)
 
 ```haskell
-(sampleIO. runPopulation. smcSystematic numSteps numParticles) 
+(sampleIO. runPopulation . smcSystematic numSteps numParticles) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ```
 
-`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance, to use our now familiar `example`:
+`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`:
 
 
 ```haskell
@@ -325,7 +326,7 @@ example = do
 Then 
 
 ```haskell
-run :: IO [Bool]
+run :: IO [(Bool, Log Double)]
 run = (sampleIO . runPopulation. smcSystematic 4 4) example
 ```
 
@@ -333,16 +334,47 @@ run = (sampleIO . runPopulation. smcSystematic 4 4) example
 [(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
 ```
 
-Each of these is a particle with a weight.
+Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
+
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 
 ### Resample Move Sequential Monte Carlo
+
+This is a fancier variant of SMC, which has the particles take an MCMC walk through the solution space in order to spread out. This can avoid a common failure mode of SMC, where the population concentrates its weight too heavily on one mode.
+
+```haskell
+rmsmcBasic ::
+  MonadSample m =>
+  -- | number of timesteps
+  Int ->
+  -- | number of particles
+  Int ->
+  -- | number of Metropolis-Hastings transitions after each resampling
+  Int ->
+  -- | model
+  Sequential (Traced (Population m)) a ->
+  Population m a
+```
+
+```haskell
+run :: IO [(Bool, Log Double)]
+run = (sampleIO . runPopulation. smcSystematic 4 4 4) example
+```
+
+What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.
+
+
 
 <!-- todo -->
 
 ### Particle Marginal Metropolis Hastings
 
-This inference method takes a prior and a model separately.
+This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
+
+<!-- Run it like this: -->
+
+
 
 
 <!-- todo -->
@@ -367,7 +399,7 @@ This inference method takes a prior and a model separately.
 
 <!-- *The interpretation of your model is the program which performs inference on it* -->
 
-# Example Gallery
+<!-- # Example Gallery -->
 
 <!-- todo: link to monad-bayes examples, with graphs and how to run -->
 
@@ -395,7 +427,8 @@ betaBernoulli n = do
 
  -->
 
-## Interoperating with other Haskell code
+
+# Interoperating with other Haskell code
 
 Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
 
@@ -414,7 +447,7 @@ or
 example = whileM (bernoulli 0.99) (normal 0 1)
 ```
 
-We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
+<!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 
 We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
 
@@ -422,10 +455,85 @@ We can define models like PCFGs using recursion schemes, as in models/PCFG.hs.
 
 We can write probabilistic parsers, as in models/Parser.hs.
 
-We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs.
+We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs. -->
 
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
 
+# Tips on writing good probabilistic programs
+
+There are many ways to specify the same distribution, and some will lend themselves more readily to efficient inference than others. For instance,
+
+```haskell
+mixture1 point = do
+    cluster <- uniformD [1,5]
+    prediction <- normal cluster 1
+    condition (prediction == point )
+    return cluster
+```
+
+is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
+
+However, the same conditional distribution is represented by 
+
+```haskell
+mixture2 point = do
+    cluster <- uniformD [1,5]
+    factor (normalPdf cluster 1 point)
+    return cluster
+```
+
+This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
+
+```haskell
+enumerate $ mixture2 2
+```
+
+yields
+
+```haskell
+[(1.0, 0.98...), (5.0, 0.017...)]
+```
+
+as well as sampling methods. 
+
+The local lesson here is that you shouldn't `condition` on samples from a continuous distribution and expect a sampling based inference method to work. But the more general lesson is that you aren't exempted from thinking about inference when specifying your model. Alas.
+
+As a second example of this general point, consider:
+
+```haskell
+allAtOnce = do
+    x <- bernoulli 0.5
+    y <- bernoulli 0.5
+    condition (x && y)
+    return (x && y)
+```
+
+and
+
+```haskell
+incremental = do
+    x <- bernoulli 0.5
+    condition x
+    y <- bernoulli 0.5
+    condition y
+    return (x && y)
+```
+
+Like in the previous example, `allAtOnce` and `incremental` denote the same distribution, namely `[(True, 1.0), (False, 0.0)]`. However, any inference algorithm for `allAtOnce` will have to explore all 4 possible variable assignments (`[(True,True), (True, False), (False, True), (False, False)]`). Meanwhile, `incremental` opens the possibility for inference algorithms to first determine the value of `x` and then of `y`.
+
+In this example, the performance difference is negligible, but it's easy to extend this to models where it's the difference between something tractable and something intractable. 
+
+<!-- todo: similar lesson about incremental factors: compare two models -->
+
+## Executables
+
+monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
+
+```haskell
+stack exec example -- -m LDA4 -a MH
+```
+
+where the options for `-m` (model) are "LDA" (latent dirichlet), "LR" (logistic regression) and "HMM" (hidden Markov model) and for `-a` (algorithm) are "MH" (Metropolis Hastings), "SMC" (sequential Monte Carlo), and "RMSMC" (resample-move sequential Monte Carlo). The number is the number of steps to take.
 
 ## API docs
 
