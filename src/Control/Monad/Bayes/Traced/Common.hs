@@ -14,7 +14,7 @@ module Control.Monad.Bayes.Traced.Common
     bind,
     mhTrans,
     mhTrans',
-    burnIn
+    burnIn,
   )
 where
 

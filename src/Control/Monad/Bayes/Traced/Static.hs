@@ -13,7 +13,7 @@ module Control.Monad.Bayes.Traced.Static
     hoistT,
     marginal,
     mhStep,
-    mh
+    mh,
   )
 where
 
@@ -79,7 +79,6 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
     f k
       | k <= 0 = fmap (:| []) d
       | otherwise = do
-        (x :| xs) <- f (k - 1)
-        y <- mhTrans m x
-        return (y :| x : xs)
-
+          (x :| xs) <- f (k - 1)
+          y <- mhTrans m x
+          return (y :| x : xs)

@@ -28,13 +28,14 @@ import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
 import Control.Monad.Trans.Writer
 import Data.AEq (AEq, (===), (~==))
+import Data.List (sortOn)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Monoid
+import Data.Ord
 import qualified Data.Vector.Generic as V
 import Numeric.Log as Log
-import Data.Ord
-import Data.List (sortOn)
+
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)

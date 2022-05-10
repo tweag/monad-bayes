@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+
 -- Logistic regression model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
 
@@ -28,9 +29,9 @@ syntheticData n = replicateM n do
   label <- bernoulli 0.5
   return (x, label)
 
-
 -- a tiny test dataset, for sanity-checking
 xs :: [Double]
 xs = [-10, -5, 2, 6, 10]
+
 labels :: [Bool]
 labels = [False, False, True, True, True]

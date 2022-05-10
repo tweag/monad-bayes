@@ -54,31 +54,33 @@ module Control.Monad.Bayes.Class
     condition,
     MonadInfer,
     discrete,
-    normalPdf
+    normalPdf,
   )
 where
 
 import Control.Monad (when)
-import Control.Monad.Trans.Class ( MonadTrans(lift) )
-import Control.Monad.Trans.Cont ( ContT )
-import Control.Monad.Trans.Identity ( IdentityT )
-import Control.Monad.Trans.List ( ListT )
-import Control.Monad.Trans.RWS ( RWST )
-import Control.Monad.Trans.Reader ( ReaderT )
-import Control.Monad.Trans.State ( StateT )
-import Control.Monad.Trans.Writer ( WriterT )
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Cont (ContT)
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.List (ListT)
+import Control.Monad.Trans.RWS (RWST)
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.State (StateT)
+import Control.Monad.Trans.Writer (WriterT)
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG ( Vector, (!), map, mapM, sum )
-import Numeric.Log ( Log(..) )
+import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
+import Numeric.Log (Log (..))
 import Statistics.Distribution
-    ( DiscreteDistr(probability), ContDistr(logDensity, quantile) )
+  ( ContDistr (logDensity, quantile),
+    DiscreteDistr (probability),
+  )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
-import Control.Monad.Except (ExceptT)
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
