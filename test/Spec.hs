@@ -6,8 +6,10 @@ import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
-import Control.Monad.Bayes.Enumerator (empirical)
+import Control.Monad.Bayes.Enumerator (enumerate, empirical)
 import Control.Monad ((>=>))
+import Data.AEq ( AEq((~==)) )
+import Control.Arrow (second)
 
 main :: IO ()
 main = hspec $ do
@@ -27,9 +29,9 @@ main = hspec $ do
       prop "converts weighted list of samples to distribution correctly" $
         \observations ->
           property $ 
-            (empirical >=> empirical) (observations :: [(Bool, Double)]) 
-            == 
-            empirical observations
+            (enumerate . empirical . enumerate . empirical) ((second abs <$> observations) :: [(Bool, Double)]) 
+            ~== 
+            (enumerate . empirical) (second abs <$> observations)
   describe "Population" $ do
     context "controlling population" $ do
       it "preserves the population when not explicitly altered" $ do

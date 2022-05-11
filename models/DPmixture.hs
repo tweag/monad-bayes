@@ -133,7 +133,7 @@ posterior (m, k, a, b) xs = (m', k', a', b')
     x2 = sum $ zipWith (*) xs xs -- sum xs^2
     s = sum $ zipWith (*) d d -- pvar xs
       where
-        d = map (+ (- x)) xs
+        d = map (+ (-x)) xs
 
 -- | Model evidence for a cluster
 evidence :: NormalInvGamma -> [Double] -> Double
@@ -189,7 +189,7 @@ partitions n = generate n 1
     generate n k = do
       x <- range (1, k) -- range is inclusive on both ends
       let k' = max k (x + 1) -- next empty cluster
-      xs <- generate (n -1) k'
+      xs <- generate (n - 1) k'
       return (x : xs)
 
 -- | Posterior over the number of clusters

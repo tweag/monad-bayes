@@ -22,3 +22,6 @@ cabal.project.local~
 cabal.sandbox.config
 dist
 dist-*
+/result
+/.pre-commit-config.yaml
+/.direnv

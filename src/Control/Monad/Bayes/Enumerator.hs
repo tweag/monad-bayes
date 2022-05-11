@@ -21,8 +21,7 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
-    empirical,
-    bin
+    empirical
   )
 where
 
@@ -42,7 +41,7 @@ import qualified Data.Vector.Generic as V
 import qualified Data.Vector as VV
 import Numeric.Log as Log ( Log(..), sum )
 import qualified Data.Text as T
-import Control.Monad.Except (runExcept, MonadError (throwError))
+import Control.Monad.Except (runExcept, runExceptT, MonadError (throwError))
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -132,10 +131,9 @@ instance Ord a => AEq (Enumerator a) where
 
 
 -- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
-empirical samples = runExcept $ do
+empirical :: (MonadSample m, Ord a) => [(a, Double)] -> m a
+empirical samples = do
     let (support, probs) = unzip samples
-    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
-    return $ enumerate do
-      i <- categorical $ VV.fromList probs
-      return $ support !! i
+    when (any (<= 0) probs) (error "Probabilities are not all strictly positive")
+    i <- categorical $ VV.fromList probs
+    return $ support !! i
