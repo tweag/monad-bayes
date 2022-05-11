@@ -67,6 +67,8 @@ smcSystematic ::
   Population m a
 smcSystematic = sir resampleSystematic
 
+-- | Sequential Monte Carlo with stratified resampling at each timestep.
+-- Weights are not normalized.
 smcStratified ::
   MonadSample m =>
   -- | number of timesteps
