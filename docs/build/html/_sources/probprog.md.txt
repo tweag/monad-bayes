@@ -1,36 +1,44 @@
 # User Guide
 
-Probabilistic programming is all about being able to write arbitrary probabilistic models as programs, like:
+Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
 
 ```haskell
-sprinkler :: MonadInfer m => m Bool
-sprinkler = do
-  rain <- bernoulli 0.3
-  sprinkler <- bernoulli $ if rain then 0.1 else 0.4
-  wet <- bernoulli $ case (rain, sprinkler) of
-    (True, True) -> 0.98
-    (True, False) -> 0.8
-    (False, True) -> 0.9
-    (False, False) -> 0.0
-  condition (not wet)
-  return rain
+paramPriorRegression :: MonadSample m => m (Double, Double, Double)
+paramPriorRegression = do
+    slope <- normal 0 2
+    intercept <- normal 0 2
+    noise <- gamma 4 4
+    return (slope, intercept, noise)
+
+regression :: (MonadInfer m) => [Double] -> [Double] -> m (Double, Double, Double)
+regression xs ys = do
+    params@(slope, intercept, noise) <- paramPriorRegression
+    forM (zip xs ys) \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
+    return (slope, intercept, noise)
 ```
 
-and then doing inference like this:
+`regression` takes observations of `xs` and `ys`, and using the prior expressed by `paramPriorRegression`, returns the posterior conditioned on the observations.
+
+This is the *model*. To perform *inference* , suppose we have a data set of `xs` and `ys` like:
+
+![](_static/priorpred.png)
+
+We could then run the model as follows:
 
 ```haskell   
-enumerate sprinkler
+mhRunsRegression = sampleIO $ prior $ mh 1000 $ regression xs ys
 ```
 
-to get
+This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:
 
-```
-[(False,0.8914),(True,0.1086)]
-```
+![](_static/regress.png)
 
-`sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
 
-`sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way.
+
+<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+
+`sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
 ## monad-bayes vs other libraries
 
@@ -41,13 +49,13 @@ There is a variety of universal probabilistic programming libraries and/or langu
 
 **What other approaches have that monad-bayes lacks**:
 
-- a lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
+A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
 **What monad-bayes has that is unique**: 
 
-- models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
+Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
-- probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
+Probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
 
 ## References
 
@@ -428,7 +436,7 @@ betaBernoulli n = do
  -->
 
 
-# Interoperating with other Haskell code
+## Interoperating with other Haskell code
 
 Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
 
@@ -459,7 +467,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
 
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
 
-# Tips on writing good probabilistic programs
+## Tips on writing good probabilistic programs
 
 There are many ways to specify the same distribution, and some will lend themselves more readily to efficient inference than others. For instance,
 

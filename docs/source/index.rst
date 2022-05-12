@@ -6,17 +6,14 @@
 Welcome to monad-bayes's documentation!
 =======================================
 
-Monad-bayes is a library for doing probabilistic programming in Haskell, using probability monads. The emphasis is on composition of inference algorithms implemented in terms of monad transformers.
+Monad-bayes is a library for doing probabilistic programming in Haskell, using probability monads. The emphasis is on specifying advanced inference algorithms in a compositional (and therefore succinct) way.
 
-This documentation is for:
-
-* **users**: to understand how to write probabilistic programs and run inference methods
-* **developers**: to understand how the inference methods work and how to extend them
+This documentation is for **users** to understand how to write probabilistic programs and run inference methods and **developers** to understand how the inference methods work and how to extend them
 
 .. toctree::
    probprog
    usage
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
 
