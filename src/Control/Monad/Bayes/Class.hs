@@ -66,7 +66,7 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
@@ -77,7 +77,7 @@ import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
-import qualified Statistics.Distribution.Poisson as Poisson
+import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
@@ -266,6 +266,7 @@ instance MonadInfer m => MonadInfer (IdentityT m)
 
 instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score

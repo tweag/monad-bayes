@@ -72,6 +72,9 @@ library
         TupleSections
         FlexibleContexts
         OverloadedStrings
+        ImportQualifiedPost
+        LambdaCase
+
 
   if flag(dev)
     ghc-options:

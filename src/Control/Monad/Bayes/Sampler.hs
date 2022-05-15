@@ -42,7 +42,7 @@ import System.Random.MWC
       restore,
       save,
       Variate(uniformR, uniform) )
-import qualified System.Random.MWC.Distributions as MWC
+import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)

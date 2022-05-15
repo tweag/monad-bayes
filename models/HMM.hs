@@ -10,10 +10,14 @@ module HMM
   )
 where
 
---Hidden Markov Models
-
+-- Hidden Markov Models
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
+  ( MonadInfer,
+    MonadSample (categorical, uniformD),
+    factor,
+    normalPdf,
+  )
 import Data.Vector (fromList)
 
 -- | Observed values

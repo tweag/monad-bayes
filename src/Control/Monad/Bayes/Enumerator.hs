@@ -34,14 +34,14 @@ import Control.Monad.Bayes.Class
       MonadSample(categorical, bernoulli, random) )
 import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
-import qualified Data.Map as Map
+import Data.List (sortOn)
+import Data.Map qualified as Map
 import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
-import qualified Data.Vector.Generic as V
-import qualified Data.Vector as VV
+import Data.Ord ( Down(Down) )
+import Data.Vector.Generic qualified as V
+import Data.Vector qualified as VV
 import Numeric.Log as Log ( Log(..), sum )
-import qualified Data.Text as T
-import Control.Monad.Except (runExcept, runExceptT, MonadError (throwError))
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -84,8 +84,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
-compact = Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
+compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -131,7 +131,7 @@ instance Ord a => AEq (Enumerator a) where
 
 
 -- | The empirical distribution of a set of weighted samples
-empirical :: (MonadSample m, Ord a) => [(a, Double)] -> m a
+empirical :: MonadSample m => [(a, Double)] -> m a
 empirical samples = do
     let (support, probs) = unzip samples
     when (any (<= 0) probs) (error "Probabilities are not all strictly positive")

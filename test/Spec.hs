@@ -77,3 +77,9 @@ main = hspec $ do
           checkParticles <- TestInference.checkParticlesSystematic observations particles
           return $ checkParticles == particles
     
+  describe "SMC with stratified resampling" $
+    prop "number of particles is equal to its second parameter" $
+      \observations particles ->
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          checkParticles <- TestInference.checkParticlesStratified observations particles
+          return $ checkParticles == particles

@@ -16,6 +16,7 @@ module Control.Monad.Bayes.Inference.SMC
   ( sir,
     smcMultinomial,
     smcSystematic,
+    smcStratified,
     smcMultinomialPush,
     smcSystematicPush,
   )
@@ -27,6 +28,7 @@ import Control.Monad.Bayes.Population
     pushEvidence,
     resampleMultinomial,
     resampleSystematic,
+    resampleStratified,
     spawn,
   )
 import Control.Monad.Bayes.Sequential as Seq
@@ -75,6 +77,19 @@ smcSystematic ::
   Sequential (Population m) a ->
   Population m a
 smcSystematic = sir resampleSystematic
+
+-- | Sequential Monte Carlo with stratified resampling at each timestep.
+-- Weights are not normalized.
+smcStratified ::
+  MonadSample m =>
+  -- | number of timesteps
+  Int ->
+  -- | number of particles
+  Int ->
+  Sequential (Population m) a ->
+  -- | model
+  Population m a
+smcStratified = sir resampleStratified
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
