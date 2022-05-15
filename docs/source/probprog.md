@@ -1,5 +1,9 @@
 # User Guide
 
+$$
+foo
+$$
+
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
 
 ```haskell
