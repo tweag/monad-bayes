@@ -94,6 +94,8 @@ executable example
     , optparse-applicative
     , time
     , vector
+    , hvega
+    , ihaskell-hvega
 
   if flag(dev)
     ghc-options:
