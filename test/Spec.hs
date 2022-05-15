@@ -25,13 +25,6 @@ main = hspec $ do
       TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $
       TestEnumerator.passed4 `shouldBe` True
-  describe "Empirical" $
-      prop "converts weighted list of samples to distribution correctly" $
-        \observations ->
-          property $ 
-            (enumerate . empirical . enumerate . empirical) ((second abs <$> observations) :: [(Bool, Double)]) 
-            ~== 
-            (enumerate . empirical) (second abs <$> observations)
   describe "Population" $ do
     context "controlling population" $ do
       it "preserves the population when not explicitly altered" $ do

@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 
 -- |
@@ -20,9 +19,8 @@ module Control.Monad.Bayes.Enumerator
     compact,
     enumerate,
     expectation,
-    normalForm,
-    empirical
-  )
+    normalForm
+    )
 where
 
 import Control.Applicative (Alternative)
@@ -129,11 +127,3 @@ instance Ord a => AEq (Enumerator a) where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
-
--- | The empirical distribution of a set of weighted samples
-empirical :: MonadSample m => [(a, Double)] -> m a
-empirical samples = do
-    let (support, probs) = unzip samples
-    when (any (<= 0) probs) (error "Probabilities are not all strictly positive")
-    i <- categorical $ VV.fromList probs
-    return $ support !! i
