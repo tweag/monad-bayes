@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Population
@@ -20,8 +21,12 @@ module Control.Monad.Bayes.Population
     explicitPopulation,
     fromWeightedList,
     spawn,
+    multinomial,
     resampleMultinomial,
+    systematic,
     resampleSystematic,
+    stratified,
+    resampleStratified,
     extractEvidence,
     pushEvidence,
     proper,
@@ -41,9 +46,12 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
+import Data.List (unfoldr)
 import qualified Data.List
+import Data.Maybe (catMaybes)
+import Data.Vector ((!))
 import qualified Data.Vector as V
-import Numeric.Log
+import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
@@ -94,7 +102,23 @@ resampleGeneric resampler m = fromWeightedList $ do
     else -- if all weights are zero do not resample
       return pop
 
--- | Systematic resampling helper.
+-- | Systematic sampler.
+-- Sample \(n\) values from \((0,1]\) as follows
+-- \[
+-- \begin{aligned}
+-- u^{(1)} &\sim U\left(0, \frac{1}{n}\right] \\
+-- u^{(i)} &=u^{(1)}+\frac{i-1}{n}, \quad i=2,3, \ldots, n
+-- \end{aligned}
+-- \]
+-- and then pick integers \(m\) according to
+-- \[
+-- Q^{(m-1)}<u^{(n)} \leq Q^{(m)}
+-- \]
+-- where
+-- \[
+-- Q^{(m)}=\sum_{k=1}^{m} w^{(k)}
+-- \]
+-- and \(w^{(k)}\) are the weights. See also [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
 systematic :: Double -> V.Vector Double -> [Int]
 systematic u ps = f 0 (u / fromIntegral n) 0 0 []
   where
@@ -104,7 +128,7 @@ systematic u ps = f 0 (u / fromIntegral n) 0 0 []
     f i _ _ _ acc | i == n = acc
     f i v j q acc =
       if v < q
-        then f (i + 1) (v + inc) j q (j -1 : acc)
+        then f (i + 1) (v + inc) j q (j - 1 : acc)
         else f i v (j + 1) (q + prob j) acc
 
 -- | Resample the population using the underlying monad and a systematic resampling scheme.
@@ -115,7 +139,51 @@ resampleSystematic ::
   Population m a
 resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 
--- | Multinomial resampler.
+-- | Stratified sampler.
+--
+-- Sample \(n\) values from \((0,1]\) as follows
+-- \[
+-- u^{(i)} \sim U\left(\frac{i-1}{n}, \frac{i}{n}\right], \quad i=1,2, \ldots, n
+-- \]
+-- and then pick integers \(m\) according to
+-- \[
+-- Q^{(m-1)}<u^{(n)} \leq Q^{(m)}
+-- \]
+-- where
+-- \[
+-- Q^{(m)}=\sum_{k=1}^{m} w^{(k)}
+-- \]
+-- and \(w^{(k)}\) are the weights.
+--
+-- The conditional variance of stratified sampling is always smaller than that of multinomial sampling and it is also unbiased - see  [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
+stratified :: MonadSample m => V.Vector Double -> m [Int]
+stratified weights = do
+  let bigN = V.length weights
+  dithers <- V.replicateM bigN (uniform 0.0 1.0)
+  let positions =
+        V.map (/ fromIntegral bigN) $
+          V.zipWith (+) dithers (V.map fromIntegral $ V.fromList [0 .. bigN - 1])
+      cumulativeSum = V.scanl (+) 0.0 weights
+      coalg (i, j)
+        | i < bigN =
+          if (positions ! i) < (cumulativeSum ! j)
+            then Just (Just j, (i + 1, j))
+            else Just (Nothing, (i, j + 1))
+        | otherwise =
+          Nothing
+  return $ map (\i -> i - 1) $ catMaybes $ unfoldr coalg (0, 0)
+
+-- | Resample the population using the underlying monad and a stratified resampling scheme.
+-- The total weight is preserved.
+resampleStratified ::
+  (MonadSample m) =>
+  Population m a ->
+  Population m a
+resampleStratified = resampleGeneric stratified
+
+-- | Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
+-- times drawn at random according to the weights where \(n\) is the
+-- length of vector of weights.
 multinomial :: MonadSample m => V.Vector Double -> m [Int]
 multinomial ps = replicateM (V.length ps) (categorical ps)
 

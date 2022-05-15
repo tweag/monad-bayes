@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -58,19 +59,22 @@ module Control.Monad.Bayes.Class
 where
 
 import Control.Monad (when)
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Cont (ContT)
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.List (ListT)
+import Control.Monad.Trans.RWS (RWST)
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.State (StateT)
+import Control.Monad.Trans.Writer (WriterT)
 import qualified Data.Vector as V
-import Data.Vector.Generic as VG
-import Numeric.Log
+import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
+import Numeric.Log (Log (..))
 import Statistics.Distribution
+  ( ContDistr (logDensity, quantile),
+    DiscreteDistr (probability),
+  )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
@@ -259,13 +263,13 @@ instance MonadCond m => MonadCond (IdentityT m) where
 
 instance MonadInfer m => MonadInfer (IdentityT m)
 
-instance MonadSample m => MonadSample (MaybeT m) where
+instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
 
-instance MonadCond m => MonadCond (MaybeT m) where
+instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (MaybeT m)
+instance MonadInfer m => MonadInfer (ExceptT e m)
 
 instance MonadSample m => MonadSample (ReaderT r m) where
   random = lift random

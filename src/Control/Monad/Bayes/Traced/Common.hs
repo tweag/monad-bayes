@@ -14,6 +14,7 @@ module Control.Monad.Bayes.Traced.Common
     bind,
     mhTrans,
     mhTrans',
+    burnIn,
   )
 where
 
@@ -29,7 +30,7 @@ import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 data Trace a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
     variables :: [Double],
-    -- |
+    --
     output :: a,
     -- | The probability of observing this particular sequence.
     density :: Log Double
@@ -69,7 +70,7 @@ mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
+    i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
@@ -82,3 +83,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
+
+-- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
+burnIn :: Int -> [a] -> [a]
+burnIn n ls = let len = length ls in take (len - n) ls

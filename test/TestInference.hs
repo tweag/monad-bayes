@@ -24,6 +24,10 @@ checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
   sampleIOfixed (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
 
+checkParticlesStratified :: Int -> Int -> IO Int
+checkParticlesStratified observations particles =
+  sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
+
 checkTerminateSMC :: IO [(Bool, Log Double)]
 checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
 
