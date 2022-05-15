@@ -22,9 +22,20 @@ module Control.Monad.Bayes.Inference.SMC
   )
 where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
+  ( Population,
+    pushEvidence,
+    resampleMultinomial,
+    resampleSystematic,
+    resampleStratified,
+    spawn,
+  )
 import Control.Monad.Bayes.Sequential as Seq
+  ( Sequential,
+    hoistFirst,
+    sis,
+  )
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.

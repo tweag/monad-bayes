@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -64,11 +63,10 @@ import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
 import Control.Monad.Trans.Identity (IdentityT)
 import Control.Monad.Trans.List (ListT)
-import Control.Monad.Trans.RWS (RWST)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
@@ -79,7 +77,7 @@ import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
-import qualified Statistics.Distribution.Poisson as Poisson
+import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
@@ -135,7 +133,10 @@ class Monad m => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
-  bernoulli p = fmap (< p) random
+  bernoulli p =
+    if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
+      then fmap (< p) random
+      else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- | Draw from a categorical distribution.
   categorical ::
@@ -265,6 +266,7 @@ instance MonadInfer m => MonadInfer (IdentityT m)
 
 instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
@@ -299,14 +301,6 @@ instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (StateT s m)
-
-instance (MonadSample m, Monoid w) => MonadSample (RWST r w s m) where
-  random = lift random
-
-instance (MonadCond m, Monoid w) => MonadCond (RWST r w s m) where
-  score = lift . score
-
-instance (MonadInfer m, Monoid w) => MonadInfer (RWST r w s m)
 
 instance MonadSample m => MonadSample (ListT m) where
   random = lift random

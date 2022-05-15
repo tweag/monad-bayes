@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables
@@ -21,16 +22,18 @@ module Control.Monad.Bayes.Enumerator
     expectation,
     normalForm,
     toBins,
-    empirical,
-    normalizeWeights
-  )
+    toEmpirical
+    )
 where
 
 import Control.Applicative (Alternative)
-import Control.Arrow (second)
+import Control.Arrow (second, Arrow (first))
 import Control.Monad (MonadPlus, when)
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans.Writer
+    ( MonadCond(..),
+      MonadInfer,
+      MonadSample(categorical, bernoulli, random) )
+import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
 import Data.List (sortOn)
 import qualified Data.Map as Map
@@ -38,11 +41,19 @@ import Data.Maybe
 import Data.Monoid
 import Data.Ord
 import qualified Data.Vector.Generic as V
-import Numeric.Log as Log hiding (sum)
+import Numeric.Log as Log hiding (sum, sum)
 import qualified Data.Text as T
 import qualified Data.Vector as VV
 import Control.Monad.Except (runExcept, MonadError (throwError))
 import Data.Fixed (mod')
+import Data.Map qualified as Map
+import Data.Maybe ( fromMaybe )
+import Data.Monoid ( Product(..) )
+import Data.Ord ( Down(Down) )
+import Data.Vector.Generic qualified as V
+import Data.Vector qualified as VV
+import Numeric.Log as Log ( Log(..) )
+import Data.Text (pack)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -131,16 +142,8 @@ instance Ord a => AEq (Enumerator a) where
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
 
--- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
-empirical samples = runExcept $ do
-    let (support, probs) = unzip samples
-    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
-    return $ enumerate $ fromList (second (log . Exp) <$> samples)
-    -- do
-    --   i <- categorical $ VV.fromList probs
-    --   return $ support !! i
-
+toEmpirical :: (Show a, Fractional b, Ord a) => [a] -> [(T.Text, b)]
+toEmpirical ls = fmap (first (pack . show)) $ normalizeWeights $ compact (zip ls (repeat 1)) 
 
 type Bin = (Double, Double)
 -- | binning function. Useful when you want to return the bin that
