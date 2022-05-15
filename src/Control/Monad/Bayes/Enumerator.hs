@@ -20,8 +20,9 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
-    toBin,
-    empirical
+    toBins,
+    empirical,
+    normalizeWeights
   )
 where
 
@@ -37,7 +38,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Ord
 import qualified Data.Vector.Generic as V
-import Numeric.Log as Log
+import Numeric.Log as Log hiding (sum)
 import qualified Data.Text as T
 import qualified Data.Vector as VV
 import Control.Monad.Except (runExcept, MonadError (throwError))
@@ -73,7 +74,7 @@ explicit = map (second (exp . ln)) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
 evidence :: Enumerator a -> Log Double
-evidence = Log.sum . map snd . logExplicit
+evidence = sum . map snd . logExplicit
 
 -- | Normalized probability mass of a specific value.
 mass :: Ord a => Enumerator a -> a -> Double
@@ -84,8 +85,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
-compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
+compact = Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -100,13 +101,13 @@ enumerate d = compact (zip xs ws)
 expectation :: (a -> Double) -> Enumerator a -> Double
 expectation f = Prelude.sum . map (\(x, w) -> f x * (exp . ln) w) . normalizeWeights . logExplicit
 
-normalize :: [Log Double] -> [Log Double]
+normalize :: Fractional b => [b] -> [b]
 normalize xs = map (/ z) xs
   where
-    z = Log.sum xs
+    z = sum xs
 
 -- | Divide all weights by their sum.
-normalizeWeights :: [(a, Log Double)] -> [(a, Log Double)]
+normalizeWeights :: Fractional b => [(a, b)] -> [(a, b)]
 normalizeWeights ls = zip xs ps
   where
     (xs, ws) = unzip ls
@@ -148,3 +149,6 @@ toBin :: Double -- ^ bin size
   -> Double -- ^ number
   -> Bin
 toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+
+toBins :: Functor f => Double -> f Double -> f Double
+toBins binWidth = fmap (fst . toBin binWidth)

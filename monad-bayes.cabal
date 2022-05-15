@@ -65,6 +65,7 @@ library
     , statistics       >=0.14.0 && <0.17
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
+    , text
 
   if flag(dev)
     ghc-options:
