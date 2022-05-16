@@ -51,9 +51,13 @@ import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
 import Data.Ord ( Down(Down) )
 import Data.Vector.Generic qualified as V
+<<<<<<< HEAD
 import Data.Vector qualified as VV
 import Numeric.Log as Log ( Log(..) )
 import Data.Text (pack)
+=======
+import Numeric.Log as Log ( Log(..), sum )
+>>>>>>> notebook
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.

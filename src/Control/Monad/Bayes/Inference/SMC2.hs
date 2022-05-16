@@ -20,18 +20,19 @@ where
 
 import Control.Monad.Bayes.Class
     ( MonadCond(..), MonadInfer, MonadSample(random) )
-import Control.Monad.Bayes.Helpers ( P, S, T )
 import Control.Monad.Bayes.Inference.RMSMC ( rmsmc )
 import Control.Monad.Bayes.Inference.SMC ( smcSystematicPush )
-import Control.Monad.Bayes.Population as Pop ( runPopulation )
+import Control.Monad.Bayes.Population as Pop ( runPopulation, Population )
 import Control.Monad.Trans ( MonadTrans(..) )
 import Numeric.Log ( Log )
+import Control.Monad.Bayes.Sequential (Sequential)
+import Control.Monad.Bayes.Traced
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
-newtype SMC2 m a = SMC2 (S (T (P m)) a)
+newtype SMC2 m a = SMC2 (Sequential (Traced (Population m)) a)
   deriving newtype (Functor, Applicative, Monad)
 
-setup :: SMC2 m a -> S (T (P m)) a
+setup :: SMC2 m a -> Sequential (Traced (Population m)) a
 setup (SMC2 m) = m
 
 instance MonadTrans SMC2 where
@@ -57,9 +58,9 @@ smc2 ::
   -- | number of MH transitions
   Int ->
   -- | model parameters
-  S (T (P m)) b ->
+  Sequential (Traced (Population m)) b ->
   -- | model
-  (b -> S (P (SMC2 m)) a) ->
-  P m [(a, Log Double)]
+  (b -> Sequential (Population (SMC2 m)) a) ->
+  Population m [(a, Log Double)]
 smc2 k n p t param model =
   rmsmc k p t (param >>= setup . runPopulation . smcSystematicPush k n . model)
