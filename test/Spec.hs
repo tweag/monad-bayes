@@ -1,11 +1,15 @@
-import Test.Hspec
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
+import Test.Hspec ( hspec, context, describe, it, shouldBe )
+import Test.Hspec.QuickCheck ( prop )
+import Test.QuickCheck ( Testable(property), (==>), ioProperty )
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
+import Control.Monad.Bayes.Enumerator (enumerate, empirical)
+import Control.Monad ((>=>))
+import Data.AEq ( AEq((~==)) )
+import Control.Arrow (second)
 
 main :: IO ()
 main = hspec $ do
@@ -14,7 +18,7 @@ main = hspec $ do
       do
         passed <- TestWeighted.passed
         passed `shouldBe` True
-  describe "Dist" $ do
+  describe "Enumerator" $ do
     it "sorts samples and aggregates weights" $
       TestEnumerator.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $
@@ -65,6 +69,7 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticlesSystematic observations particles
           return $ checkParticles == particles
+    
   describe "SMC with stratified resampling" $
     prop "number of particles is equal to its second parameter" $
       \observations particles ->

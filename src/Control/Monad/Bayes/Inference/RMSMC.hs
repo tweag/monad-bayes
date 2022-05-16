@@ -17,13 +17,16 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Helpers
+import Control.Monad.Bayes.Class ( MonadSample )
+import Control.Monad.Bayes.Helpers ( hoistT, hoistS )
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sequential as Seq
-import Control.Monad.Bayes.Traced as Tr
-import qualified Control.Monad.Bayes.Traced.Basic as TrBas
-import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
+    ( resampleSystematic, spawn, Population )
+import Control.Monad.Bayes.Sequential as Seq ( sis, Sequential )
+import Control.Monad.Bayes.Traced.Static as Tr
+    ( marginal, mhStep, Traced )
+import Control.Monad.Bayes.Traced.Basic qualified as TrBas
+import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
+import Data.Monoid ( Endo(..) )
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -81,4 +84,7 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k f = foldr (.) id (replicate k f)
+composeCopies k = withEndo (mconcat . replicate k)
+
+withEndo :: (Endo a1 -> Endo a2) -> (a1 -> a1) -> a2 -> a2
+withEndo f = appEndo . f . Endo

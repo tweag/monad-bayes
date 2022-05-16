@@ -19,8 +19,10 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
+    ( MonadInfer, MonadCond(..), MonadSample(random) )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
+    ( Trace(..), singleton, scored, bind, mhTrans )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
@@ -72,7 +74,7 @@ mhStep (Traced m d) = Traced m d'
     d' = d >>= mhTrans m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
--- number of steps.
+-- number of steps. Newest samples are at the head of the list.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where

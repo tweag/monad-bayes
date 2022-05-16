@@ -7,6 +7,7 @@
 *.hi
 *.hp
 *.lock
+.vscode/*
 *.o
 *.prof
 .HTF/
