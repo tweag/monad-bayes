@@ -12,7 +12,7 @@ import Control.Arrow (first, second)
 
 barplot (xs, ys) =
     let enc = encoding
-                    . position X [ PName "X", PmType Nominal]
+                    . position X [ PName "X", PmType Nominal, PSort [CustomSort (Strings xs)]]
                     . position Y [ PName "Y", PmType Quantitative ]
 
         dat = (dataFromColumns [ ] 

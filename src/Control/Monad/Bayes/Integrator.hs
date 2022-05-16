@@ -11,20 +11,34 @@
 -- only practical for small programs
 
 
-module Control.Monad.Bayes.Integrator where
+module Control.Monad.Bayes.Integrator 
+  (probability,
+  variance,
+  expectation,
+  cdf,
+  empirical,
+  enumerateWith,
+  histogram,
+  plotCdf,
+  normalize,
+  Integrator)
+where
 
 import Control.Monad.Trans.Cont
     ( cont, runCont, Cont, ContT(ContT) )
-import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, uniformD), condition)
+import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, uniformD))
 import Statistics.Distribution (density)
 import Numeric.Integration.TanhSinh ( trap, Result(result) )
 import Control.Monad.Bayes.Weighted (runWeighted, Weighted)
 import Statistics.Distribution.Uniform qualified as Statistics
 import Numeric.Log (Log(ln))
+import Control.Monad.Bayes.Class (MonadCond (score), MonadInfer)
+import Data.Set (Set, elems)
 import Control.Foldl qualified as Foldl
 import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
 import Data.Foldable (Foldable(foldl'))
+import Data.Text qualified as T
 
 newtype Integrator a = Integrator (Cont Double a)
   deriving newtype (Functor, Applicative, Monad)
@@ -37,8 +51,10 @@ instance MonadSample Integrator where
     bernoulli p = Integrator $ cont (\f -> p * f True + (1 -p) * f False)
     uniformD = fromMassFunction (const 1)
 
--- instance MonadCond Integrator where
---   score d = Integrator $ cont (\f -> f () * (ln $ exp d))
+instance MonadCond Integrator where
+  score d = Integrator $ cont (\f -> f () * (ln $ exp d))
+
+instance MonadInfer Integrator
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $ cont $ \f ->
@@ -71,10 +87,6 @@ normalize m = let
 
 expectation :: Integrator Double -> Double
 expectation = runIntegrator id
-  -- let 
-  --   m' = runWeighted m
-  --   z = runIntegrator (ln . exp . snd) m'
-  -- in runIntegrator (\(x, w) -> x * (ln (exp w)/z)) m'
 
 variance :: Integrator Double -> Double
 variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
@@ -113,28 +125,26 @@ instance Num a => Num (Integrator a) where
   fromInteger = pure . fromInteger
 
 probability :: Ord a => (a, a) -> Weighted Integrator a -> Double
-probability (lower, upper) = runIntegrator (\(x,d) -> if x<upper && x  > lower then exp $ ln d else 0) . runWeighted
+probability (lower, upper) = runIntegrator (\(x,d) -> if x <upper && x  >= lower then exp $ ln d else 0) . runWeighted
 
+enumerateWith :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
+enumerateWith ls meas =
+    -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
+    undefined [(val, runIntegrator (\(x,d) ->
+            if x == val
+                then exp (ln d)
+                else 0)
+                (runWeighted meas)) | val <- elems ls]
 
+histogram :: (Enum a, Show a, Ord a, Fractional a) => 
+  Int -> a -> Weighted Integrator a -> [(T.Text, Double)]
+histogram nBins binSize model = do
+    x <- take nBins [1..]
+    let transform k = (k - (fromIntegral nBins / 2)) * binSize
+    return ((T.pack . show) (transform x,transform (x+1)),probability (transform x,transform (x+1)) model)
 
--- enumerate :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
--- enumerate ls meas =
---     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
---     Enumerator.empirical [(val, runIntegrator (\(x,d) ->
---             if x == val
---                 then exp (ln d)
---                 else 0)
---                 (runWeighted meas)) | val <- elems ls]
-
-model :: Weighted Integrator Bool
-model = do
-
-    x <- normal 0 1
-    y <- bernoulli x
-    condition (not y)
-    return (x > 0)
-
--- testI = expectation do
---   x <- normal 0 1
---   condition (x > 1)
---   return x
+plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
+plotCdf nBins binSize model = do
+    x <- take nBins [1..]
+    let transform k = (k - (fromIntegral nBins / 2)) * binSize
+    return ((T.pack . show) $  transform x, cdf model (transform x))

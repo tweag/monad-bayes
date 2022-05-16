@@ -7,7 +7,6 @@ copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC ==8.4.4 || ==8.6.5 || ==8.8.1
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
@@ -63,6 +62,8 @@ library
     , statistics       >=0.14.0 && <0.17
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
+    , integration
+    , foldl
     , text
     , pipes
     , foldl
@@ -103,12 +104,12 @@ executable example
     , log-domain
     , monad-bayes
     , mwc-random
-    , optparse-applicative
     , time
     , vector
     , hvega
     , ihaskell-hvega
     , pipes
+    , optparse-applicative
 
   if flag(dev)
     ghc-options:
