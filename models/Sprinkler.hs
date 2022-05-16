@@ -1,4 +1,4 @@
-module Sprinkler where
+module Sprinkler (hard, soft) where
 
 import Control.Monad (when)
 import Control.Monad.Bayes.Class

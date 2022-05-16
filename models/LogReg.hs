@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+
 -- Logistic regression model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
 
@@ -6,12 +8,6 @@ module LogReg where
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
 import Numeric.Log
-
-xs :: [Double]
-xs = [-10, -5, 2, 6, 10]
-
-labels :: [Bool]
-labels = [False, False, True, True, True]
 
 logisticRegression :: (MonadInfer m) => [(Double, Bool)] -> m Double
 logisticRegression dat = do
@@ -26,10 +22,16 @@ logisticRegression dat = do
   mapM_ (uncurry obs) dat
   sigmoid 8
 
+-- make a synthetic dataset by randomly choosing input-label pairs
 syntheticData :: MonadSample m => Int -> m [(Double, Bool)]
-syntheticData n = replicateM n syntheticPoint
-  where
-    syntheticPoint = do
-      x <- uniform (-1) 1
-      label <- bernoulli 0.5
-      return (x, label)
+syntheticData n = replicateM n do
+  x <- uniform (-1) 1
+  label <- bernoulli 0.5
+  return (x, label)
+
+-- a tiny test dataset, for sanity-checking
+xs :: [Double]
+xs = [-10, -5, 2, 6, 10]
+
+labels :: [Bool]
+labels = [False, False, True, True, True]

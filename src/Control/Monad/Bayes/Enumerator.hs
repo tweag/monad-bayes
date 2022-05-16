@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables
@@ -18,21 +19,26 @@ module Control.Monad.Bayes.Enumerator
     compact,
     enumerate,
     expectation,
-    normalForm,
-  )
+    normalForm
+    )
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans.Writer
+    ( MonadCond(..),
+      MonadInfer,
+      MonadSample(categorical, bernoulli, random) )
+import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
-import qualified Data.Map as Map
-import Data.Maybe
-import Data.Monoid
-import qualified Data.Vector.Generic as V
-import Numeric.Log as Log
+import Data.List (sortOn)
+import Data.Map qualified as Map
+import Data.Maybe ( fromMaybe )
+import Data.Monoid ( Product(..) )
+import Data.Ord ( Down(Down) )
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log ( Log(..), sum )
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -75,8 +81,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
-compact = Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
+compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -119,3 +125,4 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
+

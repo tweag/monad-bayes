@@ -7,6 +7,7 @@
 *.hi
 *.hp
 *.lock
+.vscode/*
 *.o
 *.prof
 .HTF/
@@ -14,6 +15,7 @@
 .ghc.environment.*
 .hpc
 .hsenv
+.vscode
 .stack-work/
 cabal-dev
 cabal.project.local
