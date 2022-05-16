@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BlockArguments #-}
 
+
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
 -- Description : Exhaustive enumeration of discrete random variables
@@ -18,10 +19,8 @@ module Control.Monad.Bayes.Enumerator
     mass,
     compact,
     enumerate,
-    enumerateToDistribution,
     expectation,
-    normalForm,
-    empirical
+    normalForm
   )
 where
 
@@ -29,7 +28,10 @@ import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus, when)
 import Control.Monad.Bayes.Class
-import Control.Monad.Trans.Writer
+    ( MonadCond(..),
+      MonadInfer,
+      MonadSample(categorical, bernoulli, random) )
+import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
 import qualified Data.Map as Map
 import Data.Maybe
@@ -40,6 +42,13 @@ import qualified Data.Vector as VV
 import Control.Monad.Error (MonadError(..))
 import Control.Monad.Except (runExcept)
 import Debug.Trace (traceM)
+import Data.List (sortOn)
+import Data.Map qualified as Map
+import Data.Maybe ( fromMaybe )
+import Data.Monoid ( Product(..) )
+import Data.Ord ( Down(Down) )
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log ( Log(..), sum )
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -82,8 +91,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
-compact = Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
+compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -127,25 +136,3 @@ instance Ord a => AEq (Enumerator a) where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
-
--- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> Either String [(a, Double)]
-empirical samples = runExcept $ do
-    let (support, probs) = unzip samples
-    when (any (< 0) probs || Prelude.sum probs == 0) (throwError "Probabilities are not all positive")
-    return $ enumerate do
-          i <- categorical $ VV.fromList probs
-          return $ support !! i
-
--- | 
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
-enumerateToDistribution model = do
-  let samples = explicit model
-  let (support, probs) = unzip samples
-  traceM (show probs)
-  traceM (show $ enumerate $ categorical $ VV.fromList probs)
-  i <- categorical $ VV.fromList probs
-  traceM "bar"
-  return $ support !! i
-
-testF = enumerate $ categorical $ VV.fromList [8.098644976978212e-3,0.2792595962810029,3.62956086778715e-2]

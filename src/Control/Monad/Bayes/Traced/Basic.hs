@@ -19,8 +19,10 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
+    ( MonadCond(..), MonadInfer, MonadSample(random) )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
+    ( bind, mhTrans', scored, singleton, Trace(..) )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
@@ -75,6 +77,6 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
     f k
       | k <= 0 = fmap (:| []) d
       | otherwise = do
-        (x :| xs) <- f (k -1)
+        (x :| xs) <- f (k - 1)
         y <- mhTrans' m x
         return (y :| x : xs)

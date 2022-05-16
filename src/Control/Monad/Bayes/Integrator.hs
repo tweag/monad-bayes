@@ -15,18 +15,15 @@ module Control.Monad.Bayes.Integrator where
 
 import Control.Monad.Trans.Cont
     ( cont, runCont, Cont, ContT(ContT) )
-import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, uniformD), condition, MonadCond (score))
+import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, normal, uniformD), condition)
 import Statistics.Distribution (density)
-import Numeric.Integration.TanhSinh
-    ( trap, Result(result) )
-import Control.Monad.Bayes.Weighted (runWeighted, Weighted, applyWeight, prior)
-import qualified Statistics.Distribution.Uniform as Statistics
-import Numeric.Log (Log(ln, Exp))
-import Data.Set (Set, fromList, elems)
-import qualified Control.Foldl as Foldl
+import Numeric.Integration.TanhSinh ( trap, Result(result) )
+import Control.Monad.Bayes.Weighted (runWeighted, Weighted)
+import Statistics.Distribution.Uniform qualified as Statistics
+import Numeric.Log (Log(ln))
+import Control.Foldl qualified as Foldl
 import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
-import qualified Control.Monad.Bayes.Enumerator as Enumerator
 import Data.Foldable (Foldable(foldl'))
 
 newtype Integrator a = Integrator (Cont Double a)
@@ -79,8 +76,8 @@ expectation = runIntegrator id
   --   z = runIntegrator (ln . exp . snd) m'
   -- in runIntegrator (\(x, w) -> x * (ln (exp w)/z)) m'
 
-variance :: Weighted Integrator Double -> Double
-variance nu = undefined -- runIntegrator (^ 2) nu - expectation nu ^ 2
+variance :: Integrator Double -> Double
+variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
 
 momentGeneratingFunction :: Integrator Double -> Double -> Double
 momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
@@ -120,14 +117,14 @@ probability (lower, upper) = runIntegrator (\(x,d) -> if x<upper && x  > lower t
 
 
 
-enumerate :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
-enumerate ls meas =
-    -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
-    Enumerator.empirical [(val, runIntegrator (\(x,d) ->
-            if x == val
-                then exp (ln d)
-                else 0)
-                (runWeighted meas)) | val <- elems ls]
+-- enumerate :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
+-- enumerate ls meas =
+--     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
+--     Enumerator.empirical [(val, runIntegrator (\(x,d) ->
+--             if x == val
+--                 then exp (ln d)
+--                 else 0)
+--                 (runWeighted meas)) | val <- elems ls]
 
 model :: Weighted Integrator Bool
 model = do

@@ -28,6 +28,8 @@ module Control.Monad.Bayes.Sampler
 where
 
 import Control.Monad.Bayes.Class
+    ( MonadSample(geometric, categorical, bernoulli, beta, gamma,
+                  normal, uniform, random) )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
@@ -40,6 +42,14 @@ import Control.Applicative
 import Control.Monad
 import Control.Foldl hiding (random)
 import Numeric.Log (Log(ln))
+-- import     ( Seed,
+--       GenST,
+--       GenIO,
+--       create,
+--       createSystemRandom,
+--       restore,
+--       save,
+--       Variate(uniformR, uniform) )
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)

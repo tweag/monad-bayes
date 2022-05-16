@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE LambdaCase #-}
 
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
@@ -13,23 +10,23 @@ where
 
 
 import Control.Monad (replicateM, when)
-import Control.Monad.Bayes.Class
 import Data.Vector (fromList)
-import Control.Monad.Bayes.Enumerator
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Inference.RMSMC
-import Control.Monad.Bayes.Sampler (sampleSTfixed, SamplerIO)
-import Pipes.Core
+import Control.Monad.Bayes.Enumerator ( explicit, Enumerator )
+import Pipes.Core ( Producer )
 import qualified Pipes.Prelude as Pipes
 import Pipes (MonadTrans(lift), (>->), each, yield, MFunctor (hoist))
 import Pipes.Prelude (toListM)
-import Numeric.Log
-import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (prior)
-import Data.Maybe
-import Data.AEq ((~==))
-import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
-import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Class
+    ( factor,
+      normalPdf,
+      MonadCond,
+      MonadInfer,
+      MonadSample(categorical, uniformD, normal) )
+import Data.Maybe ( fromJust, isJust )
+import Control.Monad.Bayes.Sampler ( sampleIO )
+import qualified Data.Vector as VV
+
+
 -- | Observed values
 values :: [Double]
 values =
@@ -118,4 +115,12 @@ hmmPosteriorPredictive dataset =
   Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
   >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
 
+hmmWithPipe :: IO [Double]
 hmmWithPipe = sampleIO $ reverse . init <$> toListM (hmmPosteriorPredictive (replicate 1000 1) >-> Pipes.take 3)
+
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = explicit model
+  let (support, probs) = unzip samples
+  i <- categorical $ VV.fromList probs
+  return $ support !! i

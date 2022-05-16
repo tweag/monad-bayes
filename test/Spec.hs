@@ -1,7 +1,10 @@
-{-# LANGUAGE BlockArguments #-}
+
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
+import Test.Hspec ( hspec, context, describe, it, shouldBe )
+import Test.Hspec.QuickCheck ( prop )
+import Test.QuickCheck ( (==>), ioProperty )
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
@@ -17,7 +20,7 @@ main = hspec do
       do
         passed <- TestWeighted.passed
         passed `shouldBe` True
-  describe "Dist" do
+  describe "Enumerator" $ do
     it "sorts samples and aggregates weights" $
       TestEnumerator.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $
@@ -81,3 +84,10 @@ main = hspec do
   describe "Pipes: HMM" do
       prop "pipe model is equivalent to standard model" $
         \num -> property $ hmms $ take 5 num
+    
+  describe "SMC with stratified resampling" $
+    prop "number of particles is equal to its second parameter" $
+      \observations particles ->
+        observations >= 0 && particles >= 1 ==> ioProperty $ do
+          checkParticles <- TestInference.checkParticlesStratified observations particles
+          return $ checkParticles == particles
