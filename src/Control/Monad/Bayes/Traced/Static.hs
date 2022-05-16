@@ -9,21 +9,28 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Static
-  ( Traced,
+  ( Traced(Traced),
     hoistT,
     marginal,
     mhStep,
-    mh
+    mh,
+    model,
+    traceDist,
+    estimateMeanVarianceMH
   )
 where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
+    ( MonadInfer, MonadCond(..), MonadSample(random) )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.Weighted (Weighted, prior)
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
+import Control.Foldl hiding (random, map)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -79,7 +86,11 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
     f k
       | k <= 0 = fmap (:| []) d
       | otherwise = do
-        (x :| xs) <- f (k -1)
+        (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
+
+
+estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)
+estimateMeanVarianceMH s = fold (liftA2 (,) mean variance) <$> (fmap (take 2000) . sampleIO . prior . mh 5000) s
 

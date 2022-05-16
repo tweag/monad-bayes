@@ -16,14 +16,30 @@ module Control.Monad.Bayes.Inference.SMC
   ( sir,
     smcMultinomial,
     smcSystematic,
+    smcStratified,
     smcMultinomialPush,
     smcSystematicPush,
   )
 where
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class ( MonadInfer, MonadSample )
 import Control.Monad.Bayes.Population
+    ( Population,
+      spawn,
+      resampleSystematic,
+      resampleMultinomial,
+      pushEvidence, resampleStratified )
 import Control.Monad.Bayes.Sequential as Seq
+    ( Sequential, hoistFirst, sis )
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+
+import Control.Monad.Bayes.Sequential as Seq
+    ( Sequential, hoistFirst, sis )
+
+
+import Control.Monad.Bayes.Population
+  ( resampleStratified,
+  )
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
@@ -66,6 +82,19 @@ smcSystematic ::
   Population m a
 smcSystematic = sir resampleSystematic
 
+-- | Sequential Monte Carlo with stratified resampling at each timestep.
+-- Weights are not normalized.
+smcStratified ::
+  MonadSample m =>
+  -- | number of timesteps
+  Int ->
+  -- | number of particles
+  Int ->
+  Sequential (Population m) a ->
+  -- | model
+  Population m a
+smcStratified = sir resampleStratified
+
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
@@ -93,3 +122,4 @@ smcSystematicPush ::
   Sequential (Population m) a ->
   Population m a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)
+

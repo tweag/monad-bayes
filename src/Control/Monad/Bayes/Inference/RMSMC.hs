@@ -17,17 +17,19 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Helpers
+import Control.Monad.Bayes.Class ( MonadSample )
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sequential as Seq
-import Control.Monad.Bayes.Traced as Tr
-import qualified Control.Monad.Bayes.Traced.Basic as TrBas
-import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
-import Data.Monoid
-import Control.Monad.State
-import Data.Text (Text)
+    ( resampleSystematic, spawn, Population )
+import Control.Monad.Bayes.Sequential as Seq ( sis, Sequential )
+import Control.Monad.Bayes.Traced.Static as Tr
+    ( marginal, mhStep, Traced )
+import Control.Monad.Bayes.Traced.Basic qualified as TrBas
+import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
+import Data.Monoid ( Endo(..) )
+import Control.Monad.Bayes.Traced.Static qualified as TrStat
+import Control.Monad.Bayes.Sequential qualified as S
 import qualified Control.Monad.Bayes.Traced.Named as Named
+
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -43,8 +45,8 @@ rmsmc ::
   Population m a
 rmsmc k n t =
   marginal
-    . sis (composeCopies t mhStep . hoistT resampleSystematic) k
-    . hoistS (hoistT (spawn n >>))
+    . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
+    . S.hoist (TrStat.hoistT (spawn n >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
@@ -62,7 +64,7 @@ rmsmcBasic ::
 rmsmcBasic k n t =
   TrBas.marginal
     . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
-    . hoistS (TrBas.hoistT (spawn n >>))
+    . S.hoist (TrBas.hoistT (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
@@ -81,7 +83,7 @@ rmsmcLocal ::
 rmsmcLocal k n t =
   TrDyn.marginal
     . sis (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoistT resampleSystematic) k
-    . hoistS (TrDyn.hoistT (spawn n >>))
+    . S.hoist (TrDyn.hoistT (spawn n >>))
 
 -- -- | Resample-move Sequential Monte Carlo.
 -- rmsmcNamed ::

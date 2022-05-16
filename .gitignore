@@ -15,6 +15,7 @@
 .ghc.environment.*
 .hpc
 .hsenv
+.vscode
 .stack-work/
 cabal-dev
 cabal.project.local
@@ -22,3 +23,6 @@ cabal.project.local~
 cabal.sandbox.config
 dist
 dist-*
+/result
+/.pre-commit-config.yaml
+/.direnv

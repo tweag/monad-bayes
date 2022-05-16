@@ -1,11 +1,13 @@
 module TestEnumerator where
 
 import Control.Monad.Bayes.Class
+    ( MonadSample(categorical, uniformD) )
 import Control.Monad.Bayes.Enumerator
-import Data.AEq
+    ( enumerate, evidence, expectation )
+import Data.AEq ( AEq((~==)) )
 import qualified Data.Vector as V
-import Numeric.Log
-import Sprinkler
+import Numeric.Log ( Log(ln) )
+import Sprinkler ( hard, soft )
 
 unnorm :: MonadSample m => m Int
 unnorm = categorical $ V.fromList [0.5, 0.8]
@@ -20,7 +22,7 @@ agg = do
   return (x + y)
 
 passed2 :: Bool
-passed2 = enumerate agg ~== [(2,0.5),(1,0.25),(3,0.25)]
+passed2 = enumerate agg ~== [(2, 0.5), (1, 0.25), (3, 0.25)]
 
 passed3 :: Bool
 passed3 = enumerate Sprinkler.hard ~== enumerate Sprinkler.soft

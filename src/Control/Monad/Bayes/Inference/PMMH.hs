@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 
 
 -- |
@@ -19,17 +18,18 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Inference.SMC
+import Control.Monad.Bayes.Class ( MonadInfer )
+import Control.Monad.Bayes.Inference.SMC ( smcSystematic )
 import Control.Monad.Bayes.Population as Pop
-import Control.Monad.Bayes.Sequential
-import Control.Monad.Bayes.Traced
+    ( hoist, pushEvidence, runPopulation, Population )
+import Control.Monad.Bayes.Sequential ( Sequential )
+import Control.Monad.Bayes.Traced.Static ( mh, Traced )
 import Control.Monad.Trans (lift)
-import Numeric.Log
 import qualified Control.Monad.Bayes.Traced.Named as Named
-import Control.Monad.State
-import Data.Text (Text)
 import Control.Monad.Bayes.Traced.Named (Proposal)
+import Numeric.Log
+import Control.Monad.State (evalStateT, StateT)
+import Data.Text (Text)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::

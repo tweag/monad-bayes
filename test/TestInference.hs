@@ -1,16 +1,29 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
 module TestInference where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Class ( MonadInfer )
+import Control.Monad.Bayes.Enumerator ( enumerate )
 import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population
+    ( smcMultinomial, smcSystematic, smcStratified )
+import Control.Monad.Bayes.Population ( collapse, runPopulation )
 import Control.Monad.Bayes.Sampler
-import Data.AEq
-import Numeric.Log
-import Sprinkler
+    ( estimateMeanEmpirical, sampleIOfixed, SamplerIO )
+import Data.AEq ( AEq((~==)) )
+import Numeric.Log ( Log )
+import Sprinkler ( soft )
+import ConjugatePriors
+    ( posterior,
+      gammaNormalAnalytic,
+      betaBernoulliAnalytic,
+      betaBernoulli',
+      normalNormal',
+      gammaNormal',
+      normalNormalAnalytic )
+import Control.Monad.Bayes.Integrator qualified as Integrator
+import Control.Monad.Bayes.Weighted (Weighted)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -24,6 +37,10 @@ checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
   sampleIOfixed (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
 
+checkParticlesStratified :: Int -> Int -> IO Int
+checkParticlesStratified observations particles =
+  sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
+
 checkTerminateSMC :: IO [(Bool, Log Double)]
 checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
 
@@ -31,3 +48,43 @@ checkPreserveSMC :: Bool
 checkPreserveSMC =
   (enumerate . collapse . smcMultinomial 2 2) sprinkler
     ~== enumerate sprinkler
+
+expectationNear :: Weighted SamplerIO Double -> Weighted SamplerIO Double -> IO Double
+expectationNear x y = do
+    (e1) <- estimateMeanEmpirical x
+    (e2) <- estimateMeanEmpirical y
+    return (abs (e1 - e2))
+
+expectationNearAnalytic :: Monad m =>
+  Weighted Integrator.Integrator Double
+  -> Weighted Integrator.Integrator Double -> m Double
+expectationNearAnalytic x y = do
+    let e1 = Integrator.expectation $ Integrator.normalize x
+        e2 = Integrator.expectation $ Integrator.normalize y
+    return (abs (e1 - e2))
+
+testNormalNormal :: [Double] -> IO Bool
+testNormalNormal n = do
+
+  e <- expectationNear
+    (posterior (normalNormal' 1 (1,1)) n)
+    (normalNormalAnalytic 1 (1,1) n)
+
+  return (e < 1e-0)
+
+testGammaNormal :: [Double] -> IO Bool
+testGammaNormal n = do
+
+  e <- expectationNearAnalytic
+    (posterior (gammaNormal' (1,1)) n)
+    (gammaNormalAnalytic (1,1) n)
+  return (e < 1e-1)
+
+testBetaBernoulli :: [Bool] -> IO Bool
+testBetaBernoulli bs = do
+
+  e <- expectationNearAnalytic
+    (posterior (betaBernoulli' (1,1)) bs)
+    (betaBernoulliAnalytic (1,1) bs)
+  
+  return (e < 1e-1)

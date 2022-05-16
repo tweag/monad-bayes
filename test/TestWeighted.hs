@@ -3,12 +3,13 @@
 module TestWeighted where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted
-import Control.Monad.State
-import Data.AEq
+    ( factor, MonadInfer, MonadSample(normal, uniformD) )
+import Control.Monad.Bayes.Sampler ( sampleIOfixed )
+import Control.Monad.Bayes.Weighted ( runWeighted )
+import Control.Monad.State ( unless, when )
+import Data.AEq ( AEq((~==)) )
 import Data.Bifunctor (second)
-import Numeric.Log
+import Numeric.Log ( Log(Exp, ln) )
 
 model :: MonadInfer m => m (Int, Double)
 model = do

@@ -1,23 +1,32 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
 module HMM
-  ( values,
-    hmm,
-    syntheticData,
-  )
+  -- ( values,
+  --   hmm,
+  --   syntheticData,
+  -- )
 where
 
---Hidden Markov Models
-import Control.Monad (replicateM)
+
+import Control.Monad (replicateM, when)
+import Data.Vector (fromList)
+import Control.Monad.Bayes.Enumerator ( explicit, Enumerator )
+import Pipes.Core ( Producer )
+import qualified Pipes.Prelude as Pipes
+import Pipes (MonadTrans(lift), (>->), each, yield, MFunctor (hoist))
+import Pipes.Prelude (toListM)
 import Control.Monad.Bayes.Class
     ( factor,
       normalPdf,
+      MonadCond,
       MonadInfer,
-      MonadSample(uniformD, categorical) )
-import Data.Vector (fromList)
+      MonadSample(categorical, uniformD, normal) )
+import Data.Maybe ( fromJust, isJust )
+import Control.Monad.Bayes.Sampler ( sampleIO )
+import qualified Data.Vector as VV
+
+
 -- | Observed values
 values :: [Double]
 values =
@@ -73,3 +82,45 @@ syntheticData :: MonadSample m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
   where
     syntheticPoint = uniformD [0, 1, 2]
+
+
+-- | Equivalent model, but using pipes for simplicity
+
+-- | Prior expressed as a stream
+hmmPrior :: MonadSample m => Producer Int m b
+hmmPrior = do
+      x <- lift start
+      yield x
+      Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
+
+-- | Observations expressed as a stream
+hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
+hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
+
+-- | Posterior expressed as a stream
+hmmPosterior :: (MonadInfer m) => [Double] -> Producer Int m ()
+hmmPosterior dataset = zipWithM hmmLikelihood
+    hmmPrior
+    (hmmObservations dataset)
+
+  where
+
+  hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
+  hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
+
+  zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
+
+hmmPosteriorPredictive :: MonadSample m => [Double] -> Producer Double m ()
+hmmPosteriorPredictive dataset =
+  Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
+  >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
+
+hmmWithPipe :: IO [Double]
+hmmWithPipe = sampleIO $ reverse . init <$> toListM (hmmPosteriorPredictive (replicate 1000 1) >-> Pipes.take 3)
+
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = explicit model
+  let (support, probs) = unzip samples
+  i <- categorical $ VV.fromList probs
+  return $ support !! i

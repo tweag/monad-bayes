@@ -7,30 +7,35 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
+  ( Trace(Trace, variables, output, density),
     singleton,
     output,
     scored,
     bind,
     mhTrans,
+    mhTransWithBool,
     mhTrans',
-    burnIn
+    burnIn,
   )
 where
 
 import Control.Monad.Bayes.Class
+    ( discrete, MonadSample(bernoulli, random) )
 import Control.Monad.Bayes.Free as FreeSampler
+    ( hoist, withPartialRandomness, FreeSampler )
 import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Trans.Writer
-import Data.Functor.Identity
+    ( hoist, runWeighted, Weighted )
+import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
+import Data.Functor.Identity ( Identity(runIdentity) )
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+import Debug.Trace (traceM, trace)
 
 -- | Collection of random variables sampled during the program's execution.
 data Trace a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
     variables :: [Double],
-    -- |
+    --
     output :: a,
     -- | The probability of observing this particular sequence.
     density :: Log Double
@@ -67,18 +72,24 @@ bind dx f = do
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+mhTrans m t = fst <$> mhTransWithBool m t
+
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
+mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a, Bool)
+mhTransWithBool m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
+    i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
+  -- error $ show q
   accept <- bernoulli ratio
-  return $ if accept then Trace vs b q else t
+  -- if not accept then error $ show ratio else return ()
+  return $ if accept then (Trace vs b q, True) else (t, False)
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
