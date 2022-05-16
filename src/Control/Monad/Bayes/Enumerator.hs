@@ -25,7 +25,7 @@ where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
-import Control.Monad (MonadPlus, when)
+import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
     ( MonadCond(..),
       MonadInfer,
@@ -38,7 +38,6 @@ import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
 import Data.Ord ( Down(Down) )
 import Data.Vector.Generic qualified as V
-import Data.Vector qualified as VV
 import Numeric.Log as Log ( Log(..), sum )
 
 -- | An exact inference transformer that integrates

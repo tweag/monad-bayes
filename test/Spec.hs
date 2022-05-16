@@ -1,15 +1,11 @@
 import Test.Hspec ( hspec, context, describe, it, shouldBe )
 import Test.Hspec.QuickCheck ( prop )
-import Test.QuickCheck ( Testable(property), (==>), ioProperty )
+import Test.QuickCheck ( (==>), ioProperty )
 import qualified TestEnumerator
 import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
-import Control.Monad.Bayes.Enumerator (enumerate, empirical)
-import Control.Monad ((>=>))
-import Data.AEq ( AEq((~==)) )
-import Control.Arrow (second)
 
 main :: IO ()
 main = hspec $ do

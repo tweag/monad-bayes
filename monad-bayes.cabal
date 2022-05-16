@@ -34,7 +34,6 @@ library
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Free
-    Control.Monad.Bayes.Helpers
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
@@ -57,11 +56,9 @@ library
     , free             >=5.0.2  && <5.2
     , ieee754          ^>=0.8.0
     , log-domain       >=0.12   && <0.14
-    , math-functions   >=0.2.1  && <0.4
     , monad-coroutine  ^>=0.9.0
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
-    , safe             ^>=0.3.17
     , statistics       >=0.14.0 && <0.17
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
@@ -131,7 +128,6 @@ test-suite monad-bayes-test
     , hspec
     , ieee754
     , log-domain
-    , math-functions
     , monad-bayes
     , mtl
     , QuickCheck
@@ -148,6 +144,11 @@ test-suite monad-bayes-test
 
     default-extensions: 
         BlockArguments
+        TupleSections
+        FlexibleContexts
+        OverloadedStrings
+        ImportQualifiedPost
+        LambdaCase
 
 benchmark ssm-bench
   type:             exitcode-stdio-1.0
