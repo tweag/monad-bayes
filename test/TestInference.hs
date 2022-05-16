@@ -6,7 +6,7 @@ module TestInference where
 import Control.Monad.Bayes.Class ( MonadInfer )
 import Control.Monad.Bayes.Enumerator ( enumerate )
 import Control.Monad.Bayes.Inference.SMC
-    ( smcMultinomial, smcSystematic )
+    ( smcMultinomial, smcSystematic, smcStratified )
 import Control.Monad.Bayes.Population ( collapse, runPopulation )
 import Control.Monad.Bayes.Sampler ( sampleIOfixed )
 import Data.AEq ( AEq((~==)) )
