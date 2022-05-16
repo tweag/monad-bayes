@@ -66,8 +66,8 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import qualified Data.Vector as V
-import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
+import Data.Vector qualified as V
+import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!), null)
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
@@ -77,7 +77,7 @@ import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
-import qualified Statistics.Distribution.Poisson as Poisson
+import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
@@ -145,7 +145,7 @@ class Monad m => MonadSample m where
     v Double ->
     -- | outcome category
     m Int
-  categorical ps = fromPMF (ps !)
+  categorical ps = if VG.null ps then error "empty input list" else fromPMF (ps !)
 
   -- | Draw from a categorical distribution in the log domain.
   logCategorical ::
@@ -266,6 +266,7 @@ instance MonadInfer m => MonadInfer (IdentityT m)
 
 instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
@@ -295,6 +296,7 @@ instance MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score

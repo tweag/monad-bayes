@@ -97,7 +97,7 @@ mh n (Traced c) = do
   let f k
         | k <= 0 = return (t :| [])
         | otherwise = do
-          (x :| xs) <- f (k -1)
+          (x :| xs) <- f (k - 1)
           y <- mhTrans m x
           return (y :| x : xs)
   fmap (map output . NE.toList) (f n)

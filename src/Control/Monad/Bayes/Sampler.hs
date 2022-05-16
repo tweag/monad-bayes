@@ -23,6 +23,7 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
+    estimateMeanEmpirical
   )
 where
 
@@ -34,15 +35,21 @@ import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import System.Random.MWC
-    ( Seed,
-      GenST,
-      GenIO,
-      create,
-      createSystemRandom,
-      restore,
-      save,
-      Variate(uniformR, uniform) )
 import qualified System.Random.MWC.Distributions as MWC
+import Control.Monad.Bayes.Weighted 
+import qualified Control.Foldl as F hiding (random)
+import Control.Applicative
+import Control.Monad
+import Control.Foldl hiding (random)
+import Numeric.Log (Log(ln))
+-- import     ( Seed,
+--       GenST,
+--       GenIO,
+--       create,
+--       createSystemRandom,
+--       restore,
+--       save,
+--       Variate(uniformR, uniform) )
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -117,3 +124,10 @@ instance MonadSample SamplerST where
   bernoulli p = fromMWC $ MWC.bernoulli p
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p
+
+
+estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
+estimateMeanEmpirical s =
+  fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
+    <$> (sampleIO . replicateM 1000 . runWeighted) s
+
