@@ -21,43 +21,25 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
-    toBins,
-    toEmpirical
-    )
+    toEmpirical,
+    toEmpiricalWeighted
+        )
 where
 
 import Control.Applicative (Alternative)
-import Control.Arrow (second, Arrow (first))
-import Control.Monad (MonadPlus, when)
+import Control.Arrow (second)
+import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
     ( MonadCond(..),
       MonadInfer,
       MonadSample(categorical, bernoulli, random) )
 import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
-import Data.List (sortOn)
-import qualified Data.Map as Map
-import Data.Maybe
-import Data.Monoid
-import Data.Ord
-import qualified Data.Vector.Generic as V
-import Numeric.Log as Log hiding (sum, sum)
-import qualified Data.Text as T
-import qualified Data.Vector as VV
-import Control.Monad.Except (runExcept, MonadError (throwError))
-import Data.Fixed (mod')
 import Data.Map qualified as Map
 import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
-import Data.Ord ( Down(Down) )
 import Data.Vector.Generic qualified as V
-<<<<<<< HEAD
-import Data.Vector qualified as VV
 import Numeric.Log as Log ( Log(..) )
-import Data.Text (pack)
-=======
-import Numeric.Log as Log ( Log(..), sum )
->>>>>>> notebook
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -146,16 +128,10 @@ instance Ord a => AEq (Enumerator a) where
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
 
-toEmpirical :: (Show a, Fractional b, Ord a) => [a] -> [(T.Text, b)]
-toEmpirical ls = fmap (first (pack . show)) $ normalizeWeights $ compact (zip ls (repeat 1)) 
+toEmpirical :: (Fractional b, Ord a) => [a] -> [(a, b)]
+toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1)) 
 
-type Bin = (Double, Double)
--- | binning function. Useful when you want to return the bin that
--- a random variable falls into, so that you can show a histogram of samples
-toBin :: Double -- ^ bin size 
-  -> Double -- ^ number
-  -> Bin
-toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+toEmpiricalWeighted :: (Fractional b, Ord a) => [(a, b)] -> [(a, b)]
+toEmpiricalWeighted = normalizeWeights . compact
 
-toBins :: Functor f => Double -> f Double -> f Double
-toBins binWidth = fmap (fst . toBin binWidth)
+

@@ -23,7 +23,8 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
-  )
+    toBins
+    )
 where
 
 import Control.Monad.Bayes.Class
@@ -43,6 +44,7 @@ import System.Random.MWC
       save,
       Variate(uniformR, uniform) )
 import System.Random.MWC.Distributions qualified as MWC
+import Data.Fixed (mod')
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -117,3 +119,15 @@ instance MonadSample SamplerST where
   bernoulli p = fromMWC $ MWC.bernoulli p
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p
+
+
+type Bin = (Double, Double)
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
+toBin :: Double -- ^ bin size 
+  -> Double -- ^ number
+  -> Bin
+toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+
+toBins :: Double -> [Double] -> [Double]
+toBins binWidth = fmap (fst . toBin binWidth)
