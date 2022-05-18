@@ -32,6 +32,7 @@ library
   exposed-modules:
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
+    Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Free
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
@@ -118,6 +119,7 @@ test-suite monad-bayes-test
   other-modules:
     Sprinkler
     TestEnumerator
+    TestIntegrator
     TestInference
     TestPopulation
     TestSequential
@@ -134,6 +136,7 @@ test-suite monad-bayes-test
     , QuickCheck
     , transformers
     , vector
+    , containers
 
   if flag(dev)
     ghc-options:

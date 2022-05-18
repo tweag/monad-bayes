@@ -21,7 +21,8 @@ module Control.Monad.Bayes.Enumerator
     expectation,
     normalForm,
     toEmpirical,
-    toEmpiricalWeighted
+    toEmpiricalWeighted,
+    normalizeWeights
         )
 where
 
@@ -39,6 +40,8 @@ import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
 import Data.Vector.Generic qualified as V
 import Numeric.Log as Log ( Log(..) )
+import Data.List (sortOn)
+import Data.Ord (Down(Down))
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -81,8 +84,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
-compact = Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
+compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -127,10 +130,10 @@ instance Ord a => AEq (Enumerator a) where
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
 
-toEmpirical :: (Fractional b, Ord a) => [a] -> [(a, b)]
+toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
 toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1)) 
 
-toEmpiricalWeighted :: (Fractional b, Ord a) => [(a, b)] -> [(a, b)]
+toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
 
 
