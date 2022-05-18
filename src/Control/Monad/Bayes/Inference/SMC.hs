@@ -32,20 +32,6 @@ import Control.Monad.Bayes.Population
       pushEvidence, resampleStratified )
 import Control.Monad.Bayes.Sequential as Seq
     ( Sequential, hoistFirst, sis )
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
-import Control.Monad.Bayes.Population
-  ( Population,
-    pushEvidence,
-    resampleMultinomial,
-    resampleSystematic,
-    resampleStratified,
-    spawn,
-  )
-import Control.Monad.Bayes.Sequential as Seq
-  ( Sequential,
-    hoistFirst,
-    sis,
-  )
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
