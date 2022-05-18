@@ -39,25 +39,25 @@ main = hspec $ do
         ls -> (TestIntegrator.volumeIsOne ls)
 
   describe "Integrator" $ do
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed1 `shouldBe` True
-    it "computes expectation correctly" $
+    it "" $
       TestIntegrator.passed2 `shouldBe` True
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed3 `shouldBe` True
-    it "computes expectation correctly" $
+    it "" $
       TestIntegrator.passed4 `shouldBe` True
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed5 `shouldBe` True
-    it "computes expectation correctly" $
+    it "" $
       TestIntegrator.passed6 `shouldBe` True
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed7 `shouldBe` True
-    it "computes expectation correctly" $
+    it "" $
       TestIntegrator.passed8 `shouldBe` True
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed9 `shouldBe` True
-    it "gives correct answer for the sprinkler model" $
+    it "" $
       TestIntegrator.passed10 `shouldBe` True
   describe "Population" $ do
     context "controlling population" $ do
