@@ -18,7 +18,7 @@ import Data.Profunctor (Profunctor (lmap))
 import Numeric.Log (Log (Exp, ln))
 import Prelude
 import Control.Monad.Bayes.Integrator (expectation)
-import Control.Monad.Bayes.Integrator (normalize)
+-- import Control.Monad.Bayes.Integrator (normalize)
 
 data Bayesian m z o = Bayesian {
   latent :: m z,
@@ -124,7 +124,7 @@ normalNormalAnalytic sigma_2 (mu0, sigma0_2) points = normal mu' (sqrt sigma_2')
 
 
 
-testC = do
-  print $ expectation $ normalize $ normalNormalAnalytic 1 (1,1) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
-  print $ expectation $ normalize $ posterior (normalNormal' 1 (1,1)) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
+-- testC = do
+--   print $ expectation $ normalize $ normalNormalAnalytic 1 (1,1) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
+--   print $ expectation $ normalize $ posterior (normalNormal' 1 (1,1)) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
   -- normalNormalAnalytic (1) (1,1) [-1]

@@ -5,7 +5,7 @@
 
 -- |
 -- This is heavily inspired by https://jtobin.io/giry-monad-implementation
--- but brought into the monad-bayes framework (i.e. Measure is an inference transformer)
+-- but brought into the monad-bayes framework (i.e. Measure is an instance of MonadInfer)
 -- It's largely for debugging other inference methods and didactic use, 
 -- because brute force integration of measures is 
 -- only practical for small programs
@@ -20,16 +20,14 @@ module Control.Monad.Bayes.Integrator
   enumerateWith,
   histogram,
   plotCdf,
-  normalize,
-  Integrator)
+  Integrator,
+  volume)
 where
 
 import Control.Monad.Trans.Cont
     ( cont, runCont, Cont, ContT(ContT) )
 import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, uniformD))
-import Statistics.Distribution (density)
 import Numeric.Integration.TanhSinh ( trap, Result(result) )
-import Control.Monad.Bayes.Weighted (runWeighted, Weighted)
 import Statistics.Distribution.Uniform qualified as Statistics
 import Numeric.Log (Log(ln))
 import Control.Monad.Bayes.Class (MonadCond (score), MonadInfer)
@@ -39,6 +37,8 @@ import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
 import Data.Foldable (Foldable(foldl'))
 import Data.Text qualified as T
+import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
+import Statistics.Distribution (density)
 
 newtype Integrator a = Integrator (Cont Double a)
   deriving newtype (Functor, Applicative, Monad)
@@ -49,7 +49,8 @@ runIntegrator f (Integrator a) = runCont a f
 instance MonadSample Integrator where
     random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
     bernoulli p = Integrator $ cont (\f -> p * f True + (1 -p) * f False)
-    uniformD = fromMassFunction (const 1)
+    -- categorical m = (fromMassFunction id m)
+    uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
 instance MonadCond Integrator where
   score d = Integrator $ cont (\f -> f () * (ln $ exp d))
@@ -77,13 +78,6 @@ empirical = Integrator . cont . flip weightedAverage where
 
     averageFold :: Fractional a => Fold a a
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
-
--- | push the weights into the measure
-normalize :: Weighted Integrator Double -> Integrator Double
-normalize m = let 
-    m' = runWeighted m
-    z = runIntegrator (ln . exp . snd) m'
-    in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
 
 expectation :: Integrator Double -> Double
 expectation = runIntegrator id
@@ -124,20 +118,20 @@ instance Num a => Num (Integrator a) where
   signum      = fmap signum
   fromInteger = pure . fromInteger
 
-probability :: Ord a => (a, a) -> Weighted Integrator a -> Double
-probability (lower, upper) = runIntegrator (\(x,d) -> if x <upper && x  >= lower then exp $ ln d else 0) . runWeighted
+probability :: Ord a => (a, a) -> Integrator a -> Double
+probability (lower, upper) = runIntegrator (\x -> if x <upper && x  >= lower then 1 else 0)
 
-enumerateWith :: Ord a => Set a -> Weighted Integrator a -> Either String [(a, Double)]
+enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
 enumerateWith ls meas =
     -- let norm = expectation $ exp . ln . snd <$> runWeighted meas
-    undefined [(val, runIntegrator (\(x,d) ->
+    normalizeWeights $ compact [(val, runIntegrator (\x ->
             if x == val
-                then exp (ln d)
+                then 1
                 else 0)
-                (runWeighted meas)) | val <- elems ls]
+                meas) | val <- elems ls]
 
 histogram :: (Enum a, Show a, Ord a, Fractional a) => 
-  Int -> a -> Weighted Integrator a -> [(T.Text, Double)]
+  Int -> a -> Integrator a -> [(T.Text, Double)]
 histogram nBins binSize model = do
     x <- take nBins [1..]
     let transform k = (k - (fromIntegral nBins / 2)) * binSize

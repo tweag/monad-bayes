@@ -23,8 +23,9 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
-    estimateMeanEmpirical
-  )
+    estimateMeanEmpirical,
+    toBins
+    )
 where
 
 import Control.Monad.Bayes.Class
@@ -38,18 +39,12 @@ import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
 import Control.Monad.Bayes.Weighted 
 import qualified Control.Foldl as F hiding (random)
-import Control.Applicative
-import Control.Monad
-import Control.Foldl hiding (random)
+
+import System.Random.MWC.Distributions qualified as MWC
+import Control.Applicative (liftA2)
+import Control.Monad (replicateM)
 import Numeric.Log (Log(ln))
--- import     ( Seed,
---       GenST,
---       GenIO,
---       create,
---       createSystemRandom,
---       restore,
---       save,
---       Variate(uniformR, uniform) )
+import Data.Fixed (mod')
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -62,13 +57,12 @@ newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
 sampleIO :: SamplerIO a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 
--- | Like 'sampleIO', but with a fixed random seed.
 -- Useful for reproducibility.
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO a -> GenIO -> IO a
+sampleIOwith :: SamplerIO a -> Gen F.RealWorld -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
 fromSamplerST :: SamplerST a -> SamplerIO a
@@ -128,6 +122,16 @@ instance MonadSample SamplerST where
 
 estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
 estimateMeanEmpirical s =
-  fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
+  F.fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
     <$> (sampleIO . replicateM 1000 . runWeighted) s
 
+type Bin = (Double, Double)
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
+toBin :: Double -- ^ bin size 
+  -> Double -- ^ number
+  -> Bin
+toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+
+toBins :: Double -> [Double] -> [Double]
+toBins binWidth = fmap (fst . toBin binWidth)

@@ -24,6 +24,7 @@ import ConjugatePriors
       normalNormalAnalytic )
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Weighted (Weighted)
+import qualified Control.Monad.Bayes.Sampler as Sampler
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -49,24 +50,23 @@ checkPreserveSMC =
   (enumerate . collapse . smcMultinomial 2 2) sprinkler
     ~== enumerate sprinkler
 
-expectationNear :: Weighted SamplerIO Double -> Weighted SamplerIO Double -> IO Double
-expectationNear x y = do
-    (e1) <- estimateMeanEmpirical x
-    (e2) <- estimateMeanEmpirical y
+expectationNearAnalytic :: Monad m =>
+   Integrator.Integrator Double
+  ->  Integrator.Integrator Double -> m Double
+expectationNearAnalytic x y = do
+    let e1 = Integrator.expectation x
+        e2 = Integrator.expectation y
     return (abs (e1 - e2))
 
-expectationNearAnalytic :: Monad m =>
-  Weighted Integrator.Integrator Double
-  -> Weighted Integrator.Integrator Double -> m Double
-expectationNearAnalytic x y = do
-    let e1 = Integrator.expectation $ Integrator.normalize x
-        e2 = Integrator.expectation $ Integrator.normalize y
+expectationNearSampling x y = do
+    e1 <- Sampler.estimateMeanEmpirical x
+    e2 <- Sampler.estimateMeanEmpirical y
     return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
-  e <- expectationNear
+  e <- expectationNearSampling
     (posterior (normalNormal' 1 (1,1)) n)
     (normalNormalAnalytic 1 (1,1) n)
 
@@ -75,7 +75,7 @@ testNormalNormal n = do
 testGammaNormal :: [Double] -> IO Bool
 testGammaNormal n = do
 
-  e <- expectationNearAnalytic
+  e <- expectationNearSampling
     (posterior (gammaNormal' (1,1)) n)
     (gammaNormalAnalytic (1,1) n)
   return (e < 1e-1)
@@ -83,8 +83,12 @@ testGammaNormal n = do
 testBetaBernoulli :: [Bool] -> IO Bool
 testBetaBernoulli bs = do
 
-  e <- expectationNearAnalytic
+  e <- expectationNearSampling
     (posterior (betaBernoulli' (1,1)) bs)
     (betaBernoulliAnalytic (1,1) bs)
   
   return (e < 1e-1)
+
+a = Sampler.estimateMeanEmpirical (posterior (betaBernoulli' (1,2)) [True])
+
+b = Integrator.volume (posterior (betaBernoulli' (1,2)) [True])

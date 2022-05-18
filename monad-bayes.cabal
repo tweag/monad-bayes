@@ -126,6 +126,7 @@ test-suite monad-bayes-test
   other-modules:
     Sprinkler
     TestEnumerator
+    TestIntegrator
     TestInference
     TestPopulation
     TestSequential
@@ -146,6 +147,7 @@ test-suite monad-bayes-test
     , pipes
     , foldl
     , profunctors
+    , containers
 
   if flag(dev)
     ghc-options:
