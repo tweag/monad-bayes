@@ -25,6 +25,7 @@ import ConjugatePriors
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Weighted (Weighted)
 import qualified Control.Monad.Bayes.Sampler as Sampler
+import Control.Monad.Bayes.Integrator (normalize)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -50,12 +51,12 @@ checkPreserveSMC =
   (enumerate . collapse . smcMultinomial 2 2) sprinkler
     ~== enumerate sprinkler
 
-expectationNearAnalytic :: Monad m =>
-   Integrator.Integrator Double
-  ->  Integrator.Integrator Double -> m Double
-expectationNearAnalytic x y = do
-    let e1 = Integrator.expectation x
-        e2 = Integrator.expectation y
+expectationNearNumeric :: Monad m =>
+   Weighted Integrator.Integrator Double
+  ->  Weighted Integrator.Integrator Double -> m Double
+expectationNearNumeric x y = do
+    let e1 = Integrator.expectation $ normalize x
+        e2 = Integrator.expectation $ normalize y
     return (abs (e1 - e2))
 
 expectationNearSampling x y = do
@@ -66,7 +67,7 @@ expectationNearSampling x y = do
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
-  e <- expectationNearSampling
+  e <- expectationNearNumeric
     (posterior (normalNormal' 1 (1,1)) n)
     (normalNormalAnalytic 1 (1,1) n)
 
@@ -75,7 +76,7 @@ testNormalNormal n = do
 testGammaNormal :: [Double] -> IO Bool
 testGammaNormal n = do
 
-  e <- expectationNearSampling
+  e <- expectationNearNumeric
     (posterior (gammaNormal' (1,1)) n)
     (gammaNormalAnalytic (1,1) n)
   return (e < 1e-1)
@@ -83,12 +84,8 @@ testGammaNormal n = do
 testBetaBernoulli :: [Bool] -> IO Bool
 testBetaBernoulli bs = do
 
-  e <- expectationNearSampling
+  e <- expectationNearNumeric
     (posterior (betaBernoulli' (1,1)) bs)
     (betaBernoulliAnalytic (1,1) bs)
   
   return (e < 1e-1)
-
-a = Sampler.estimateMeanEmpirical (posterior (betaBernoulli' (1,2)) [True])
-
-b = Integrator.volume (posterior (betaBernoulli' (1,2)) [True])
