@@ -20,7 +20,8 @@ module Control.Monad.Bayes.Integrator
   enumerateWith,
   histogram,
   plotCdf,
-  volume)
+  volume,
+  normalize)
 where
 
 import Control.Monad.Trans.Cont
@@ -52,10 +53,10 @@ instance MonadSample Integrator where
     -- categorical m = (fromMassFunction id m)
     uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
-instance MonadCond Integrator where
-  score d = Integrator $ cont (\f -> f () * (ln $ exp d))
+-- instance MonadCond Integrator where
+--   score d = Integrator $ cont (\f -> f () * (ln $ exp d))
 
-instance MonadInfer Integrator
+-- instance MonadInfer Integrator
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $ cont $ \f ->
@@ -91,6 +92,14 @@ momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
+
+normalize :: Weighted Integrator a -> Integrator a
+normalize m = do 
+    (m',w) <- runWeighted m
+    -- z = runIntegrator (ln . exp . snd) m'
+    Integrator $ cont (\f -> f () * (ln $ exp w))
+    return m'
+    -- in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
 
 cdf :: Integrator Double -> Double -> Double
 cdf nu x = runIntegrator (negativeInfinity `to` x) nu
