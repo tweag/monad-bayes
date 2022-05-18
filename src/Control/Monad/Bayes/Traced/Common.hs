@@ -19,13 +19,21 @@ module Control.Monad.Bayes.Traced.Common
 where
 
 import Control.Monad.Bayes.Class
-    ( discrete, MonadSample(bernoulli, random) )
+  ( MonadSample (bernoulli, random),
+    discrete,
+  )
 import Control.Monad.Bayes.Free as FreeSampler
-    ( hoist, withPartialRandomness, FreeSampler )
+  ( FreeSampler,
+    hoist,
+    withPartialRandomness,
+  )
 import Control.Monad.Bayes.Weighted as Weighted
-    ( hoist, runWeighted, Weighted )
-import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
-import Data.Functor.Identity ( Identity(runIdentity) )
+  ( Weighted,
+    hoist,
+    runWeighted,
+  )
+import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
+import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 

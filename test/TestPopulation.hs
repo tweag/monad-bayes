@@ -1,18 +1,19 @@
 module TestPopulation where
 
-import Control.Monad.Bayes.Class ( MonadInfer, MonadSample )
-import Control.Monad.Bayes.Enumerator ( enumerate, expectation )
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+import Control.Monad.Bayes.Enumerator (enumerate, expectation)
 import Control.Monad.Bayes.Population as Population
-    ( Population,
-      spawn,
-      resampleMultinomial,
-      pushEvidence,
-      collapse,
-      popAvg,
-      runPopulation )
-import Control.Monad.Bayes.Sampler ( sampleIOfixed )
-import Data.AEq ( AEq((~==)) )
-import Sprinkler ( soft )
+  ( Population,
+    collapse,
+    popAvg,
+    pushEvidence,
+    resampleMultinomial,
+    runPopulation,
+    spawn,
+  )
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Data.AEq (AEq ((~==)))
+import Sprinkler (soft)
 
 weightedSampleSize :: MonadSample m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
