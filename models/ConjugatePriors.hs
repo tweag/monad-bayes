@@ -17,7 +17,9 @@ import Control.Monad.Bayes.Weighted (prior, runWeighted, Weighted)
 import Data.Profunctor (Profunctor (lmap))
 import Numeric.Log (Log (Exp, ln))
 import Prelude
-import Control.Monad.Bayes.Integrator (expectation)
+import Control.Monad.Bayes.Integrator (expectation, normalize)
+import qualified Control.Monad.Bayes.Sampler as Sampler
+import qualified Control.Monad.Bayes.Integrator as Integrator
 -- import Control.Monad.Bayes.Integrator (normalize)
 
 data Bayesian m z o = Bayesian {
@@ -75,14 +77,6 @@ betaBernoulliAnalytic (a, b) points = beta a' b'
     a' = a + s
     b' = b + fromIntegral n - s
 
-simpleTest1, simpleTest2 :: MonadInfer m => m Double
-simpleTest1 = do
-  x <- random
-  condition (x > 0.5)
-  return x
-simpleTest2 = do
-  x <- random
-  return ((x + 1) / 2)
 
 
 
@@ -95,10 +89,16 @@ betaBernoulli' :: MonadInfer m => (Double, Double) -> Bayesian m Double Bool
 betaBernoulli' (a,b) = Bayesian (beta a b) bernoulli bernoulliPdf
 
 normalNormal' :: MonadInfer m => Double -> (Double, Double) -> Bayesian m Double Double
-normalNormal' var (mu0, var0) = Bayesian (normal mu0 (sqrt var0)) (`normal` sqrt var) (`normalPdf` sqrt var)
+normalNormal' var (mu0, var0) = Bayesian (normal mu0 (sqrt var0)) (`normal` (sqrt var)) (`normalPdf` (sqrt var))
 
 gammaNormal' :: MonadInfer m => (Double, Double) -> Bayesian m Double Double
 gammaNormal' (a,b) = Bayesian (gamma a (recip b)) (normal 0 . sqrt . recip) (normalPdf 0 . sqrt . recip)
+
+-- ts = [12.4,-15.415,-15.1491,15.156,12.292008514754356,-10.492127926367344,-16.4610760286298, -100]
+ts = [20]
+test1 = (Integrator.expectation . normalize) (posterior (normalNormal' 1 (1,5)) ts)
+test2 = (Integrator.expectation . normalize) (normalNormalAnalytic 1 (1,5) ts)
+
 
 -- nrml mu sigma x = (1 / (sigma * (sqrt (2 * pi)))) * exp ((-0.5) * ((x-mu) / sigma)**2)
 
@@ -128,3 +128,12 @@ normalNormalAnalytic sigma_2 (mu0, sigma0_2) points = normal mu' (sqrt sigma_2')
 --   print $ expectation $ normalize $ normalNormalAnalytic 1 (1,1) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
 --   print $ expectation $ normalize $ posterior (normalNormal' 1 (1,1)) [-6.0,-19.15,9.811,-19.0923,-15.1351,12.8544,13.48199,7.17525]
   -- normalNormalAnalytic (1) (1,1) [-1]
+
+simpleTest1, simpleTest2 :: MonadInfer m => m Double
+simpleTest1 = do
+  x <- random
+  condition (x > 0.5)
+  return x
+simpleTest2 = do
+  x <- random
+  return ((x + 1) / 2)

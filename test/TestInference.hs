@@ -68,8 +68,8 @@ testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
   e <- expectationNearNumeric
-    (posterior (normalNormal' 1 (1,1)) n)
-    (normalNormalAnalytic 1 (1,1) n)
+    (posterior (normalNormal' 1 (1,10)) n)
+    (normalNormalAnalytic 1 (1,10) n)
 
   return (e < 1e-0)
 
