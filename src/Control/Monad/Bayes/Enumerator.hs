@@ -22,7 +22,8 @@ module Control.Monad.Bayes.Enumerator
     normalForm,
     toEmpirical,
     toEmpiricalWeighted,
-    normalizeWeights
+    normalizeWeights,
+    enumerateToDistribution
         )
 where
 
@@ -32,7 +33,7 @@ import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
     ( MonadCond(..),
       MonadInfer,
-      MonadSample(categorical, bernoulli, random) )
+      MonadSample(categorical, bernoulli, random, logCategorical) )
 import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
 import qualified Data.Map as Map
@@ -50,6 +51,7 @@ import Data.Vector.Generic qualified as V
 import Numeric.Log as Log ( Log(..) )
 import Data.List (sortOn)
 import Data.Ord (Down(Down))
+import qualified Data.Vector as VV
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -145,3 +147,9 @@ toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
 
 
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = logExplicit model
+  let (support, logprobs) = unzip samples
+  i <- logCategorical $ VV.fromList logprobs
+  return $ support !! i

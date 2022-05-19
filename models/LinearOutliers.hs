@@ -1,10 +1,8 @@
 module LinearOutliers where
 
--- import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler (sampleIO)
 import Control.Monad.Bayes.Weighted
--- import Numeric.Log
 
 regressionWithOutliers :: (MonadSample m, MonadCond m) =>
     [Double] -> [Double] -> m (Double, Double, Double, Double, [Bool])

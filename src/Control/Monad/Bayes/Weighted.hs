@@ -28,12 +28,12 @@ where
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
-    MonadSample,
+    MonadSample (random),
     factor
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
-import Numeric.Log (Log)
+import Numeric.Log (Log (Exp))
 import Data.Fixed ( mod' )
 import Control.Arrow ( Arrow(first) )
 
@@ -84,4 +84,7 @@ hoist t (Weighted m) = Weighted $ mapStateT t m
 toBinsWeighted :: Double -> [(Double, Log Double)] -> [(Double, Log Double)]
 toBinsWeighted binWidth = fmap (first (fst . toBin binWidth))
   where toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+
+
+
 

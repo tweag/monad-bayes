@@ -17,7 +17,7 @@ import System.IO
 import Numeric.Log
 import Control.Monad.Bayes.Weighted (prior)
 import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
-import Control.Monad.Bayes.Population (normalize)
+-- import Control.Monad.Bayes.Population (normalize)
 
 -- main = do
 --   -- make sure `putStrLn` prints to console immediately
@@ -53,7 +53,7 @@ lgssBenchmark t nRuns ns = do
     let ref = kalman param ys
     let run m = do
           -- RMSE on the mean of filetering distribution
-          estMean <- popAvg Vector.last (normalize m)
+          estMean <- popAvg Vector.last (undefined m) -- (normalize m)
           let trueMean = fst (Vector.last ref)
           return $ abs (trueMean - estMean)
     mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
