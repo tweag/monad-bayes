@@ -14,18 +14,9 @@ import Control.Monad.Bayes.Class
 import Data.Profunctor (Profunctor (lmap))
 import Numeric.Log (Log (Exp, ln))
 import Prelude
+import Control.Monad.Bayes.Class (Bayesian(..))
 
-data Bayesian m z o = Bayesian {
-  latent :: m z,
-  generative :: z -> m o,
-  likelihood :: z -> o -> Log Double
-  }
 
-posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
-posterior Bayesian {..} os = do
-  z <- latent
-  factor $ product $ fmap (likelihood z) os
-  return z
 
 type GammaParams = (Double, Double)
 type BetaParams = (Double, Double)

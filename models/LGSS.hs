@@ -44,29 +44,21 @@ import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
 --         )
 
 -- lgssBenchmark :: FilePath -> Int -> Int -> [Int] -> SamplerIO ()
-lgssBenchmark t nRuns ns = do
-  liftIO $ putStrLn "running LGSS benchmark"
-  -- let plotPath = "lgss.pdf"
-  let param = LGSSParam (0, 1) 1 0 1 1 0 1
-  scores <- replicateM nRuns $ do
-    ys <- synthesizeData param t
-    let ref = kalman param ys
-    let run m = do
-          -- RMSE on the mean of filetering distribution
-          estMean <- popAvg Vector.last (undefined m) -- (normalize m)
-          let trueMean = fst (Vector.last ref)
-          return $ abs (trueMean - estMean)
-    mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
-  let points = zip (map fromIntegral ns) (transpose scores)
-  liftIO $ print points
-  -- liftIO $
-  --   toFile (fo_format .~ PDF $ def) plotPath $ do
-  --     layout_title .= "LGSS"
-  --     errorbarPlot
-  --       "#samples"
-  --       "RMSE"
-  --       [ ("SMC", points)
-  --       ]
+-- lgssBenchmark t nRuns ns = do
+--   liftIO $ putStrLn "running LGSS benchmark"
+--   -- let plotPath = "lgss.pdf"
+--   let param = LGSSParam (0, 1) 1 0 1 1 0 1
+--   scores <- replicateM nRuns $ do
+--     ys <- synthesizeData param t
+--     let ref = kalman param ys
+--     let run m = do
+--           -- RMSE on the mean of filetering distribution
+--           estMean <- popAvg Vector.last (undefined m) -- (normalize m)
+--           let trueMean = fst (Vector.last ref)
+--           return $ abs (trueMean - estMean)
+--     mapM (\n -> run $ smcMultinomial t n (linearGaussian param ys)) ns
+--   let points = zip (map fromIntegral ns) (transpose scores)
+--   liftIO $ print points
 
 type Mean = Double
 

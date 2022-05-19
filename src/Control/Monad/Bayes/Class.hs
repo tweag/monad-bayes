@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-deprecations #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -54,6 +55,8 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
+    Bayesian(Bayesian),
+    posterior
   )
 where
 
@@ -251,6 +254,20 @@ normalPdf ::
   -- | relative likelihood of observing sample x in \(\mathcal{N}(\mu, \sigma^2)\)
   Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
+
+--------------------
+-- | a useful datatype for expressing bayesian models
+data Bayesian m z o = Bayesian {
+  latent :: m z, -- prior over latent variable Z 
+  generative :: z -> m o, -- distribution over observations given Z=z
+  likelihood :: z -> o -> Log Double -- p(o|z)
+  }
+
+posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
+posterior Bayesian {..} os = do
+  z <- latent
+  factor $ product $ fmap (likelihood z) os
+  return z
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.

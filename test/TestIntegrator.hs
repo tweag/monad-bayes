@@ -5,13 +5,11 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted (runWeighted)
 import Control.Monad.Bayes.Integrator
     ( cdf,
-      empirical,
       enumerateWith,
       expectation,
       probability,
       variance,
-      volume,
-      normalize )
+      volume )
 import Data.AEq ( AEq((~==)) )
 import Numeric.Log ( Log(ln) )
 import Sprinkler ( hard, soft )

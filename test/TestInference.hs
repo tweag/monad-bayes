@@ -4,7 +4,7 @@
 
 module TestInference where
 
-import Control.Monad.Bayes.Class ( MonadInfer )
+import Control.Monad.Bayes.Class 
 import Control.Monad.Bayes.Enumerator ( enumerate )
 import Control.Monad.Bayes.Inference.SMC
     ( smcMultinomial, smcSystematic, smcStratified )
@@ -15,7 +15,7 @@ import Data.AEq ( AEq((~==)) )
 import Numeric.Log ( Log )
 import Sprinkler ( soft )
 import ConjugatePriors
-    ( posterior,
+    ( 
       gammaNormalAnalytic,
       betaBernoulliAnalytic,
       betaBernoulli',
