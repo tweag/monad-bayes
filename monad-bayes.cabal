@@ -110,6 +110,10 @@ executable example
     , ihaskell-hvega
     , pipes
     , optparse-applicative
+    , text
+    , pretty-simple
+    , math-functions
+    , pipes
 
   if flag(dev)
     ghc-options:
@@ -148,6 +152,7 @@ test-suite monad-bayes-test
     , foldl
     , profunctors
     , containers
+    , text
 
   if flag(dev)
     ghc-options:
@@ -196,6 +201,7 @@ benchmark speed-bench
     , process
     , vector
     , pipes
+    , text
 
   if flag(dev)
     ghc-options:

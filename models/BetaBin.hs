@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+
 module BetaBin where
 
 -- The beta-binomial model in latent variable and urn model representations.
 -- The two formulations should be exactly equivalent, but only urn works with Dist.
-
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
   ( MonadInfer,
