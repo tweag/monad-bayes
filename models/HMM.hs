@@ -1,21 +1,14 @@
 
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
-module HMM
-  -- ( values,
-  --   hmm,
-  --   syntheticData,
-  -- )
-where
+module HMM where
 
 
 import Control.Monad (replicateM, when)
 import Data.Vector (fromList)
-import Control.Monad.Bayes.Enumerator ( explicit, Enumerator )
 import Pipes.Core ( Producer )
 import qualified Pipes.Prelude as Pipes
 import Pipes (MonadTrans(lift), (>->), each, yield, MFunctor (hoist))
-import Pipes.Prelude (toListM)
 import Control.Monad.Bayes.Class
     ( factor,
       normalPdf,
@@ -23,8 +16,7 @@ import Control.Monad.Bayes.Class
       MonadInfer,
       MonadSample(categorical, uniformD, normal) )
 import Data.Maybe ( fromJust, isJust )
-import Control.Monad.Bayes.Sampler ( sampleIO )
-import qualified Data.Vector as VV
+import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
 
 
 -- | Observed values
@@ -115,12 +107,7 @@ hmmPosteriorPredictive dataset =
   Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
   >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
 
-hmmWithPipe :: IO [Double]
-hmmWithPipe = sampleIO $ reverse . init <$> toListM (hmmPosteriorPredictive (replicate 1000 1) >-> Pipes.take 3)
 
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
-enumerateToDistribution model = do
-  let samples = explicit model
-  let (support, probs) = unzip samples
-  i <- categorical $ VV.fromList probs
-  return $ support !! i
+
+
+

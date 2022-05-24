@@ -7,3 +7,6 @@ flags:
 
 extra-deps:
 - ihaskell-hvega-0.5.0.0@sha256:63f8b79301d84c2e192c98d3568efbdc5161178361ec1ad6434d54fe007b1117,1212
+
+
+allow-newer: True

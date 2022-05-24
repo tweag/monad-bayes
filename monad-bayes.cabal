@@ -31,9 +31,11 @@ flag dev
 library
   exposed-modules:
     Control.Monad.Bayes.Class
+    Control.Monad.Bayes.TUI
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Free
+    Control.Monad.Bayes.Inference.MH
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
@@ -69,8 +71,10 @@ library
     , foldl
     , profunctors
     , integration
-    , brick
+    , brick ^>= 0.69
     , vty
+    , pretty-simple
+    , scientific
 
   default-extensions: 
         BlockArguments
@@ -112,6 +116,10 @@ executable example
     , ihaskell-hvega
     , pipes
     , optparse-applicative
+    , text
+    , pretty-simple
+    , math-functions
+    , pipes
 
   if flag(dev)
     ghc-options:
@@ -128,6 +136,7 @@ test-suite monad-bayes-test
   other-modules:
     Sprinkler
     TestEnumerator
+    TestIntegrator
     TestInference
     TestPopulation
     TestSequential
@@ -148,6 +157,8 @@ test-suite monad-bayes-test
     , pipes
     , foldl
     , profunctors
+    , containers
+    , text
 
   if flag(dev)
     ghc-options:
@@ -196,6 +207,7 @@ benchmark speed-bench
     , process
     , vector
     , pipes
+    , text
 
   if flag(dev)
     ghc-options:

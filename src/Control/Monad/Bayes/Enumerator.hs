@@ -19,34 +19,30 @@ module Control.Monad.Bayes.Enumerator
     enumerate,
     expectation,
     normalForm,
-    toBin,
-    empirical,
-    toBins,
-    toEmpirical
+    toEmpirical,
+    toEmpiricalWeighted,
+    normalizeWeights,
+    enumerateToDistribution
     )
 where
 
 import Control.Applicative (Alternative)
-import Control.Arrow (second, Arrow (first))
-import Control.Monad (MonadPlus, when)
+import Control.Arrow (second)
+import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
     ( MonadCond(..),
       MonadInfer,
-      MonadSample(categorical, bernoulli, random) )
+      MonadSample(categorical, bernoulli, random, logCategorical) )
 import Control.Monad.Trans.Writer ( WriterT(..) )
 import Data.AEq (AEq, (===), (~==))
-import qualified Data.Map as Map
-import Data.Maybe
-import Data.Monoid
-import qualified Data.Vector.Generic as V
-import qualified Data.Text as T
-import Control.Monad.Except (runExcept, MonadError (throwError))
-import Numeric.Log as Log
-import Data.Fixed (mod')
-import Numeric.Log as Log
-import Data.Text qualified as T
-import Data.Fixed (mod')
-import Data.Text (pack)
+import Data.Map qualified as Map
+import Data.Maybe ( fromMaybe )
+import Data.Monoid ( Product(..) )
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log ( Log(..) )
+import Data.List (sortOn)
+import Data.Ord (Down(Down))
+import Data.Vector qualified as VV
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -89,8 +85,8 @@ mass d = f
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
-compact :: (Num r, Ord a) => [(a, r)] -> [(a, r)]
-compact = Map.toAscList . Map.fromListWith (+)
+compact :: (Num r, Ord a, Ord r) => [(a, r)] -> [(a, r)]
+compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
@@ -135,27 +131,16 @@ instance Ord a => AEq (Enumerator a) where
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
 
--- | The empirical distribution of a set of weighted samples
-empirical :: Ord a => [(a, Double)] -> Either T.Text [(a, Double)]
-empirical samples = runExcept $ do
-    let (support, probs) = unzip samples
-    when (any (<= 0) probs) (throwError "Probabilities are not all strictly positive")
-    return $ enumerate $ fromList (second (log . Exp) <$> samples)
-    -- do
-    --   i <- categorical $ VV.fromList probs
-    --   return $ support !! i
+toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
+toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1)) 
 
-toEmpirical :: (Show a, Fractional b, Ord a) => [a] -> [(T.Text, b)]
-toEmpirical ls = fmap (first (pack . show)) $ normalizeWeights $ compact (zip ls (repeat 1)) 
+toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
+toEmpiricalWeighted = normalizeWeights . compact
 
-type Bin = (Double, Double)
--- | binning function. Useful when you want to return the bin that
--- a random variable falls into, so that you can show a histogram of samples
-toBin :: Double -- ^ bin size 
-  -> Double -- ^ number
-  -> Bin
-toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
-toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
 
-toBins :: Functor f => Double -> f Double -> f Double
-toBins binWidth = fmap (fst . toBin binWidth)
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = logExplicit model
+  let (support, logprobs) = unzip samples
+  i <- logCategorical $ VV.fromList logprobs
+  return $ support !! i
