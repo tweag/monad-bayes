@@ -98,6 +98,9 @@ runWith randomness m = withPartialRandomness randomness $ hoist (return . runIde
 
 -- | For choice maps
 -- withPartialRandomnessCM :: MonadSample m => Map [Text] Double -> FreeSampler (StateT [Text] m) a -> m (a, [Double])
+withPartialRandomnessCM :: (MonadSample m, Ord a1) =>
+  Map [a1] Double
+  -> FreeSampler (StateT [a1] m) a2 -> m (a2, [Double])
 withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT [] $
   runWriterT $ (iterTM f m)
   where
@@ -108,4 +111,5 @@ withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT [] $
         Just y -> return y
       tell [x]
       k x
+
 
