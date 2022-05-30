@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+
 module BetaBin where
 
 -- The beta-binomial model in latent variable and urn model representations.
 -- The two formulations should be exactly equivalent, but only urn works with Dist.
-
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
   ( MonadInfer,
@@ -43,9 +43,6 @@ urnP n = P.toListM $ P.take n <-< P.unfoldr toss (1,1)
                         let (a', b') = if outcome then (a + 1, b) else (a, b + 1)
                         return $ Right (outcome, (a', b'))
 
--- | Post-processing by counting the number of True values.
-count :: [Bool] -> Int
-count = length . filter id
 
 -- | A beta-binomial model where the first three states are True,True,False.
 -- The resulting distribution is on the remaining outcomes.
@@ -60,4 +57,7 @@ cond d = do
 -- | The final conditional model, abstracting the representation.
 model :: MonadInfer m => (Int -> m [Bool]) -> Int -> m Int
 model repr n = fmap count $ cond $ repr (n + 3)
-
+  where
+  -- | Post-processing by counting the number of True values.
+  count :: [Bool] -> Int
+  count = length . filter id

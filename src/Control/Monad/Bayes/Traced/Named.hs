@@ -12,38 +12,28 @@
 -- Maintainer  : leonhard.markert@tweag.io
 -- Stability   : experimental
 -- Portability : GHC
-module Control.Monad.Bayes.Traced.Named
-  -- ( Traced,
-  --   hoistT,
-  --   marginal,
-  --   mhStep,
-  --   mh,
-  -- )
-where
+module Control.Monad.Bayes.Traced.Named where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
     ( MonadSample(random, bernoulli), MonadInfer, MonadCond(..) )
--- import Control.Monad.Bayes.Traced.Common (mhTrans)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 import Data.Map ( fromList, Map, empty )
 import Data.Text (Text)
 import Numeric.Log ( Log(ln) )
-
 import Control.Monad.Bayes.Free as FreeSampler
     ( withPartialRandomnessCM, FreeSampler )
 import Control.Monad.Bayes.Weighted as Weighted
     ( Weighted, runWeighted, hoist )
 import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
 import Control.Monad.State
-    ( MonadState(get), StateT, MonadTrans(..) )
-import qualified Data.Text as T
-import Data.Text (Text)
-import Control.Monad.State.Class
-import qualified Data.Map as M
+    ( MonadState(get), StateT, MonadTrans(..), evalStateT )
+import Data.Text qualified as T
+import Control.Monad.State.Class ( modify )
+import Data.Map qualified as M
+import Debug.Trace (traceM)
 
 -- | A tracing monad where only a subset of random choices are traced.
---
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
 data Traced m a = Traced
@@ -54,22 +44,21 @@ data Traced m a = Traced
 -- | Collection of random variables sampled during the program's execution.
 data ChoiceMap a = ChoiceMap
   { -- | Named variables in the execution trace
-    cm :: Map Text Double,
+    cm :: Map [Text] Double,
     variables :: [Double],
-    -- |
+    -- | the output of the program
     output :: a,
     -- | The probability of observing this particular sequence.
     density :: Log Double
-  }
+  } deriving Show
 instance Functor ChoiceMap where
   fmap f t = t {output = f (output t)}
-
 instance Applicative ChoiceMap where
   pure x = ChoiceMap {cm = empty, output = x, density = 1, variables = []}
   tf <*> tx =
     ChoiceMap
       { cm = cm tf <> cm tx,
-        variables = variables tf ++ variables tx,
+        variables = variables tf <> variables tx,
         output = output tf (output tx),
         density = density tf * density tx
       }
@@ -78,7 +67,7 @@ instance Monad ChoiceMap where
     let t' = f (output t)
      in t' {cm = cm t <> cm t', variables = variables t ++ variables t', density = density t * density t'}
 
-singleton :: Maybe Text -> Double -> ChoiceMap Double
+singleton :: Maybe [Text] -> Double -> ChoiceMap Double
 singleton (Just v) u = ChoiceMap {cm = fromList [(v, u)], output = u, density = 1, variables = [u]}
 singleton Nothing u = ChoiceMap {cm = empty, output = u, density = 1, variables = [u]}
 
@@ -105,18 +94,14 @@ instance Monad m => Monad (Traced m) where
 instance MonadTrans Traced where
   lift m = Traced (lift $ lift m) (fmap pure m)
 
--- instance MonadSample m => MonadSample (Traced m) where
---   random = Traced random (singleton <$> random)
-
-instance MonadSample m => MonadSample (Traced (StateT Text m)) where
+instance MonadSample m => MonadSample (Traced (StateT [Text] m)) where
   random = Traced random $ do
       v <- get
-      singleton (case v of "" -> Nothing; x -> Just x) <$> random
-
+      singleton (case v of [] -> Nothing; x -> Just x) <$> random
 instance MonadCond m => MonadCond (Traced m) where
   score w = Traced (score w) (score w >> pure (scored w))
 
-instance MonadInfer m => MonadInfer (Traced (StateT Text m))
+instance MonadInfer m => MonadInfer (Traced (StateT [Text] m))
 
 hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoistT f (Traced m d) = Traced m (f d)
@@ -125,11 +110,10 @@ hoistT f (Traced m d) = Traced m (f d)
 marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
-type Proposal m = M.Map T.Text Double -> m ( M.Map T.Text Double)
-
+type Proposal m = M.Map [Text] Double -> m ( M.Map [Text] Double)
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => Proposal m -> Traced (StateT Text m) a -> Traced (StateT Text m) a
+mhStep :: MonadSample m => Proposal m -> Traced (StateT [Text] m) a -> Traced (StateT [Text] m) a
 mhStep prop (Traced m d) = Traced m d'
   where
     d' = d >>= lift . mhTrans prop m
@@ -137,25 +121,35 @@ mhStep prop (Traced m d) = Traced m d'
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m =>
   Proposal m ->
-  Weighted (FreeSampler (StateT Text m)) a -> ChoiceMap a -> m (ChoiceMap a)
-mhTrans prop m t@ChoiceMap {cm = us, variables = allUs, density = p} = do
+  Weighted (FreeSampler (StateT [Text] m)) a -> ChoiceMap a -> m (ChoiceMap a)
+mhTrans m p t = fst <$> mhTransWithBool m p t
+
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
+mhTransWithBool :: MonadSample m =>
+  Proposal m ->
+  Weighted (FreeSampler (StateT [Text] m)) a -> ChoiceMap a -> m (ChoiceMap a, Bool)
+mhTransWithBool prop m t@ChoiceMap {cm = us, variables = allUs, density = p} = do
   us' <- prop us
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT .  withPartialRandomnessCM us') m
-  let qprob = q * fromIntegral (length allUs)
-      ratio = if qprob == 0
-      then 0
-      else exp . ln $ min 1 (qprob / (p * fromIntegral (length vs)))
-  accept <- bernoulli (if isNaN ratio then error "ratio is Nan" else ratio) -- trace (show (q, p, us')) ratio
-  return $ if accept then ChoiceMap us' vs b q else t
-  -- trace ("|" <> show vs <> "|" <> show allUs <> "|") $ 
+  -- let qprob = q * fromIntegral (length allUs)
+  --     ratio = if qprob == 0
+  --     then 0
+  --     else exp . ln $ min 1 (qprob / (p * fromIntegral (length vs)))
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral (length allUs) / (p * fromIntegral (length vs)))
+  accept <- bernoulli ratio --  (if isNaN ratio then error "ratio is Nan" else ratio) 
+  traceM $ show ratio
+  traceM $ show accept
+  traceM $ show us
+  traceM $ show us'
+  return $ if accept then (ChoiceMap us' vs b q, accept) else (t, accept)
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
 mh :: MonadSample m =>
-  Proposal m -> Int -> Traced (StateT Text m) a -> StateT Text m [a]
+  Proposal m -> Int -> Traced (StateT [Text] m) a -> m [a]
 mh prop n (Traced m d) =
 
-  fmap (map output . NE.toList) (f n)
+  (`evalStateT` []) $ fmap (map output . NE.toList) (f n)
   where
     f k
       | k <= 0 = fmap (:| []) d
@@ -164,5 +158,5 @@ mh prop n (Traced m d) =
         y <- lift $ mhTrans prop m x
         return (y :| x : xs)
 
-traced :: (MonadState Text m, Monad (t m), MonadTrans t) => Text -> t m b -> t m b
-traced name program = lift (modify (<> name)) >> program <* lift (modify T.init)
+traced :: (MonadState [Text] m, Monad (t m), MonadTrans t) => Text -> t m b -> t m b
+traced name program = lift (modify (<> [name])) >> program <* lift (modify init)

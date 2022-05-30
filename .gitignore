@@ -1,4 +1,5 @@
 *.aux
+data
 *.chi
 *.chs.h
 *.dyn_hi

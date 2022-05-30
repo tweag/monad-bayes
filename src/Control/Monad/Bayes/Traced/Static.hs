@@ -14,6 +14,7 @@ module Control.Monad.Bayes.Traced.Static
     marginal,
     mhStep,
     mh,
+    mhWithBool,
     model,
     traceDist,
     estimateMeanVarianceMH
@@ -31,6 +32,7 @@ import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
 import Control.Foldl hiding (random, map)
+import Control.Arrow (Arrow(second, first))
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -89,6 +91,18 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
+
+-- | Full run of the Trace Metropolis-Hastings algorithm with a specified
+-- number of steps. Newest samples are at the head of the list.
+mhWithBool :: MonadSample m => Int -> Traced m a -> m [(a, Bool)]
+mhWithBool n (Traced m d) = fmap (map (first output) . NE.toList) (f n)
+  where
+    f k
+      | k <= 0 = fmap ((:| []) . (, False)) d
+      | otherwise = do
+        (x :| xs) <- f (k - 1)
+        MHResult b tr <- mhTransWithBool m $ fst x
+        return ((tr, b) :| x : xs)
 
 
 estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)

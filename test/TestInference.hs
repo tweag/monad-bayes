@@ -4,7 +4,7 @@
 
 module TestInference where
 
-import Control.Monad.Bayes.Class ( MonadInfer )
+import Control.Monad.Bayes.Class 
 import Control.Monad.Bayes.Enumerator ( enumerate )
 import Control.Monad.Bayes.Inference.SMC
     ( smcMultinomial, smcSystematic, smcStratified )
@@ -15,7 +15,7 @@ import Data.AEq ( AEq((~==)) )
 import Numeric.Log ( Log )
 import Sprinkler ( soft )
 import ConjugatePriors
-    ( posterior,
+    ( 
       gammaNormalAnalytic,
       betaBernoulliAnalytic,
       betaBernoulli',
@@ -24,6 +24,8 @@ import ConjugatePriors
       normalNormalAnalytic )
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Weighted (Weighted)
+import qualified Control.Monad.Bayes.Sampler as Sampler
+import Control.Monad.Bayes.Integrator (normalize)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -49,33 +51,32 @@ checkPreserveSMC =
   (enumerate . collapse . smcMultinomial 2 2) sprinkler
     ~== enumerate sprinkler
 
-expectationNear :: Weighted SamplerIO Double -> Weighted SamplerIO Double -> IO Double
-expectationNear x y = do
-    (e1) <- estimateMeanEmpirical x
-    (e2) <- estimateMeanEmpirical y
+expectationNearNumeric :: Monad m =>
+   Weighted Integrator.Integrator Double
+  ->  Weighted Integrator.Integrator Double -> m Double
+expectationNearNumeric x y = do
+    let e1 = Integrator.expectation $ normalize x
+        e2 = Integrator.expectation $ normalize y
     return (abs (e1 - e2))
 
-expectationNearAnalytic :: Monad m =>
-  Weighted Integrator.Integrator Double
-  -> Weighted Integrator.Integrator Double -> m Double
-expectationNearAnalytic x y = do
-    let e1 = Integrator.expectation $ Integrator.normalize x
-        e2 = Integrator.expectation $ Integrator.normalize y
+expectationNearSampling x y = do
+    e1 <- Sampler.estimateMeanEmpirical x
+    e2 <- Sampler.estimateMeanEmpirical y
     return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
-  e <- expectationNear
-    (posterior (normalNormal' 1 (1,1)) n)
-    (normalNormalAnalytic 1 (1,1) n)
+  e <- expectationNearNumeric
+    (posterior (normalNormal' 1 (1,10)) n)
+    (normalNormalAnalytic 1 (1,10) n)
 
   return (e < 1e-0)
 
 testGammaNormal :: [Double] -> IO Bool
 testGammaNormal n = do
 
-  e <- expectationNearAnalytic
+  e <- expectationNearNumeric
     (posterior (gammaNormal' (1,1)) n)
     (gammaNormalAnalytic (1,1) n)
   return (e < 1e-1)
@@ -83,7 +84,7 @@ testGammaNormal n = do
 testBetaBernoulli :: [Bool] -> IO Bool
 testBetaBernoulli bs = do
 
-  e <- expectationNearAnalytic
+  e <- expectationNearNumeric
     (posterior (betaBernoulli' (1,1)) bs)
     (betaBernoulliAnalytic (1,1) bs)
   

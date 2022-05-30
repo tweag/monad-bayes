@@ -97,8 +97,8 @@ runWith randomness m = withPartialRandomness randomness $ hoist (return . runIde
 
 
 -- | For choice maps
-withPartialRandomnessCM :: MonadSample m => Map Text Double -> FreeSampler (StateT Text m) a -> m (a, [Double])
-withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT "" $
+-- withPartialRandomnessCM :: MonadSample m => Map [Text] Double -> FreeSampler (StateT [Text] m) a -> m (a, [Double])
+withPartialRandomnessCM choicemap (FreeSampler m) = flip evalStateT [] $
   runWriterT $ (iterTM f m)
   where
     f (Random k) = do

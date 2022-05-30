@@ -12,7 +12,7 @@ import Control.Monad.Bayes.Class
       MonadSample(bernoulli, gamma, normal, uniform) )
 import Numeric.Log ( Log(Exp) )
 
-logisticRegression :: (MonadInfer m) => [(Double, Bool)] -> m Double
+logisticRegression :: MonadInfer m => [(Double, Bool)] -> m Double
 logisticRegression dat = do
   m <- normal 0 1
   b <- normal 0 1

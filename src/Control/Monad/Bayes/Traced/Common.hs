@@ -16,6 +16,7 @@ module Control.Monad.Bayes.Traced.Common
     mhTransWithBool,
     mhTrans',
     burnIn,
+    MHResult(..)
   )
 where
 
@@ -29,7 +30,8 @@ import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
 import Data.Functor.Identity ( Identity(runIdentity) )
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
-import Debug.Trace (traceM, trace)
+import Debug.Trace (traceM)
+import Control.Monad (when)
 
 -- | Collection of random variables sampled during the program's execution.
 data Trace a = Trace
@@ -40,6 +42,9 @@ data Trace a = Trace
     -- | The probability of observing this particular sequence.
     density :: Log Double
   }
+
+data MHResult a = MHResult {success :: Bool, trace :: Trace a}
+
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
@@ -72,24 +77,25 @@ bind dx f = do
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t = fst <$> mhTransWithBool m t
+mhTrans m t = trace <$> mhTransWithBool m t
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a, Bool)
+mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (MHResult a)
 mhTransWithBool m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
-      (xs, _ : ys) -> return $ xs ++ (u' : ys)
-      _ -> error "impossible"
+      (xs, _ : ys) -> pure $ xs ++ (u' : ys)
+      _ -> pure [] -- error "impossible"
   ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   -- error $ show q
   accept <- bernoulli ratio
+  when accept (traceM $ show (ratio, q, p, (q * fromIntegral n / (p * fromIntegral (length vs)))))
   -- if not accept then error $ show ratio else return ()
-  return $ if accept then (Trace vs b q, True) else (t, False)
+  return if accept then MHResult True (Trace vs b q) else MHResult False t 
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)

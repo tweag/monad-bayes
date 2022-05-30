@@ -15,6 +15,7 @@ import qualified HMM
 import qualified LDA
 import qualified LogReg
 import System.Random.MWC (GenIO, createSystemRandom)
+import qualified Data.Text as T
 
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
@@ -22,7 +23,7 @@ newtype Env = Env {rng :: GenIO}
 data ProbProgSys = MonadInfer
   deriving (Show)
 
-data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
+data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
 
 instance Show Model where
   show (LR xs) = "LR" ++ show (length xs)
@@ -80,7 +81,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
-        ++ map (\n -> LDA $ map (take n) ldaData) ldaLengths
+        ++ map (\n -> LDA $ map (fmap T.pack . take n) ldaData) ldaLengths
     algs =
       [ MH 100,
         SMC 100,
@@ -104,7 +105,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
-        ++ map (\n -> LDA $ map (take n) ldaData) ldaLengths
+        ++ map (\n -> LDA $ fmap (fmap T.pack . take n) ldaData) ldaLengths
     algs =
       map (\x -> MH (100 * x)) [1 .. 10] ++ map (\x -> SMC (100 * x)) [1 .. 10]
         ++ map (\x -> RMSMC 10 (10 * x)) [1 .. 10]
@@ -125,6 +126,6 @@ main = do
   hmmData <- sampleIOwith (HMM.syntheticData 1000) g
   ldaData <- sampleIOwith (LDA.syntheticData 5 1000) g
   let configLength = defaultConfig {csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configLength (lengthBenchmarks e lrData hmmData ((fmap . fmap) T.unpack ldaData))
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ((fmap . fmap) T.unpack ldaData))

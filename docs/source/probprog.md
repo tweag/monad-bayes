@@ -1,8 +1,50 @@
 # User Guide
 
-$$
-foo
-$$
+## Quickstart
+
+Write a program like:
+
+```haskell
+program = do
+  x <- normal 0 0.5
+  y <- normal 2 0.5
+  condition (x > y)
+  return (x+y)
+```
+
+Run it with Markov Chain Monte Carlo (MCMC) like so:
+
+```haskell
+tui (runTraced 10 program) showHistogram
+```
+
+This runs MCMC on `program` with 10 step thrown away (burn-in). The algorithm will be displayed running in real time, with a progress bar and histogram:
+
+![](_static/tui.png)
+
+Quit with 'q', and your samples will be saved at `data/tui_output.txt`:
+
+```
+MCMCData
+    { numSteps = 53
+    , numSuccesses = 14
+    , samples =
+        [ 0.37395969496978554
+        ...
+        , 1.2294542780853663
+        ]
+    , lk =
+        [ 1.0
+        , ...
+        , 1.0
+        ]
+    , totalSteps = 100000
+    }
+```
+
+This shows the number of steps taken, the number of accepted Metropolis-Hastings (MH) proposals, the samples, the likelihoods and the total steps (here you quit early before reaching the total).
+
+## Overview
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
 
@@ -45,7 +87,6 @@ Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from
 `sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
 ## monad-bayes vs other libraries
-
 
 monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
@@ -333,7 +374,7 @@ A proposal is a stochastic modification of such a choice map, that is `MonadSamp
 In order to name random choices, you can use the `traced` function provided by this module, as follows:
 
 ```haskell
-ex :: (MonadTrans t, MonadState T.Text m, MonadSample (t m), MonadCond (t m)) =>
+ex :: (MonadTrans t, MonadState [T.Text] m, MonadInfer (t m)) =>
  t m (Double, Double)
 ex = do
   x <-  traced "x" random
@@ -346,7 +387,7 @@ You can then run `mh` as follows:
 
 ```haskell
 simpleProposal = (const $ return $ M.fromList [("x", 0.8), ("y", 0.8)])
-run = mh simpleProposal 3 ex2
+run = mh simpleProposal 3 ex
 ```
 
 In this simple example, MCMC is performed with the proposal distribution that always (with probability $1$, regardless of the previous choice map), proposes the choice map
@@ -608,7 +649,7 @@ In this example, the performance difference is negligible, but it's easy to exte
 
 monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
 
-```haskell
+```
 stack exec example -- -m LDA4 -a MH
 ```
 

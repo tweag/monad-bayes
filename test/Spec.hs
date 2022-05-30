@@ -3,12 +3,14 @@ import Test.Hspec ( hspec, context, describe, it, shouldBe )
 import Test.Hspec.QuickCheck ( prop )
 import Test.QuickCheck ( Testable(property), (==>), ioProperty )
 import qualified TestEnumerator
+import qualified TestIntegrator
 import qualified TestInference
 import qualified TestPopulation
 import qualified TestSequential
 import qualified TestWeighted
 import qualified TestPipes
 import TestPipes (hmms)
+import Data.AEq ( AEq((~==)) )
 
 main :: IO ()
 main = hspec do
@@ -24,9 +26,44 @@ main = hspec do
       TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $
       TestEnumerator.passed4 `shouldBe` True
-  describe "Population" do
-    context "controlling population" do
-      it "preserves the population when not explicitly altered" do
+  describe "Integrator Expectation" $ do
+    prop "expectation numerically" $
+      \mean var ->
+        var > 0 ==> property $ TestIntegrator.normalExpectation mean (sqrt var) ~== mean
+  describe "Integrator Variance" $ do
+    prop "variance numerically" $
+      \mean var ->
+        var > 0 ==> property $ TestIntegrator.normalVariance mean (sqrt var) ~== var
+  describe "Integrator Volume" $ do
+    prop "volume sums to 1" $
+      property $ \case 
+        [] -> True
+        ls -> (TestIntegrator.volumeIsOne ls)
+
+  describe "Integrator" $ do
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed1 `shouldBe` True
+    it "computes expectation correctly" $
+      TestIntegrator.passed2 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed3 `shouldBe` True
+    it "computes expectation correctly" $
+      TestIntegrator.passed4 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed5 `shouldBe` True
+    it "computes expectation correctly" $
+      TestIntegrator.passed6 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed7 `shouldBe` True
+    it "computes expectation correctly" $
+      TestIntegrator.passed8 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed9 `shouldBe` True
+    it "gives correct answer for the sprinkler model" $
+      TestIntegrator.passed10 `shouldBe` True
+  describe "Population" $ do
+    context "controlling population" $ do
+      it "preserves the population when not explicitly altered" $ do
         popSize <- TestPopulation.popSize
         popSize `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" do
@@ -72,7 +109,7 @@ main = hspec do
       prop "Gamma Normal" $
         ioProperty . TestInference.testGammaNormal
       prop "Normal Normal" $
-        ioProperty . TestInference.testNormalNormal
+        \n -> abs n < 5 ==> ioProperty (TestInference.testNormalNormal [n])
       prop "Beta Bernoulli" $
         ioProperty . TestInference.testBetaBernoulli
   describe "Pipes: Urn" do
