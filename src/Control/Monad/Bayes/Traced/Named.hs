@@ -28,10 +28,9 @@ import Control.Monad.Bayes.Weighted as Weighted
 import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
 import Control.Monad.State
     ( MonadState(get), StateT, MonadTrans(..), evalStateT )
-import Data.Text qualified as T
 import Control.Monad.State.Class ( modify )
 import Data.Map qualified as M
-import Debug.Trace (traceM)
+import Control.Monad.Bayes.Free qualified as Free
 
 -- | A tracing monad where only a subset of random choices are traced.
 -- The random choices that are not to be traced should be lifted from the
@@ -137,10 +136,6 @@ mhTransWithBool prop m t@ChoiceMap {cm = us, variables = allUs, density = p} = d
   --     else exp . ln $ min 1 (qprob / (p * fromIntegral (length vs)))
   let ratio = (exp . ln) $ min 1 (q * fromIntegral (length allUs) / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio --  (if isNaN ratio then error "ratio is Nan" else ratio) 
-  traceM $ show ratio
-  traceM $ show accept
-  traceM $ show us
-  traceM $ show us'
   return $ if accept then (ChoiceMap us' vs b q, accept) else (t, accept)
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
@@ -160,3 +155,9 @@ mh prop n (Traced m d) =
 
 traced :: (MonadState [Text] m, Monad (t m), MonadTrans t) => Text -> t m b -> t m b
 traced name program = lift (modify (<> [name])) >> program <* lift (modify init)
+
+lower :: MonadInfer m => FreeSampler (StateT [a1] m) a2 -> FreeSampler m a2
+lower = Free.hoist (flip evalStateT [])
+
+lowerToSampler :: MonadSample m => FreeSampler (StateT [a1] m) a2 -> m a2
+lowerToSampler = Free.interpret . Free.hoist (flip evalStateT [])
