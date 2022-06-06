@@ -1,3 +1,5 @@
+{-# LANGUAGE StandaloneKindSignatures #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Common
 -- Description : Numeric code for Trace MCMC

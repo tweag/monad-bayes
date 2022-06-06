@@ -116,6 +116,7 @@ executable example
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings
+    StandaloneKindSignatures
     TupleSections
 
 test-suite monad-bayes-test

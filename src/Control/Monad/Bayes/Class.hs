@@ -1,4 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |

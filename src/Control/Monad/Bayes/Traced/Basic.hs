@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Basic
