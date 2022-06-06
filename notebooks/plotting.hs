@@ -29,22 +29,12 @@ barplot (xs, ys) =
           height 200
         ]
 
--- predData = baseData .
---   dataColumn "Outlier Prediction"
---       (Numbers ((\(x, y) -> log (fromIntegral y / (fromIntegral x+1)))
---         <$> take 9000 (countOutliers mhRuns)))
-
--- predEncoding = baseEncoding . color [ MName "Outlier Prediction", VL.MmType VL.Quantitative]
--- showPlot predEncoding predData
-
 scatterplot ((xs, ys), cs) cE f mode =
   let enc =
         encoding
           . position X [PName "X", PmType Quantitative]
           . position Y [PName "Y", PmType Quantitative]
           . cE
-
-      -- color [ MName "Outlier"]
 
       dat =
         ( dataFromColumns []
@@ -95,30 +85,5 @@ instance Plottable ([Double], (Double, Double)) where
             Numbers
             Line
 
--- color [ MName "Outlier Prediction", VL.MmType VL.Quantitative]
-
--- instance Plottable [((Double, Double), Double)] where
---     plotVega ls = scatt
-
 instance Plottable [(T.Text, Double)] where
   plotVega ls = vlShow $ barplot $ unzip ls
-
---         baseData = dataFromColumns [ ]
---   . dataColumn "X" (Numbers range)
---   . dataColumn "Y" (Numbers (fst <$> samples))
---   . dataColumn "Outlier" (Strings (T.pack . show . snd <$> samples))
-
--- baseEncoding = encoding
---                     . position X [ PName "X" ]
---                     . position Y [ PName "Y" ]
---                     . color [ MName "Outlier"]
-
--- showPlot enc dat = vlShow $ toVegaLite [
---             dat [],
---             mark Point []
---               , enc []
---               , width 200
---               , height 200
---               ]
-
--- showPlot baseEncoding baseData

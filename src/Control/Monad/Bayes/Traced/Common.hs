@@ -100,5 +100,7 @@ mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
-burnIn :: Int -> [a] -> [a]
-burnIn n ls = let len = length ls in take (len - n) ls
+burnIn :: Functor m => Int -> m [a] -> m [a]
+burnIn n = fmap dropEnd
+  where
+    dropEnd ls = let len = length ls in take (len - n) ls
