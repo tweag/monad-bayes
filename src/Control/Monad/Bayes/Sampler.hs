@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 
 -- |
@@ -27,24 +28,36 @@ module Control.Monad.Bayes.Sampler
 where
 
 import Control.Monad.Bayes.Class
-    ( MonadSample(geometric, categorical, bernoulli, beta, gamma,
-                  normal, uniform, random) )
+  ( MonadSample
+      ( bernoulli,
+        beta,
+        categorical,
+        gamma,
+        geometric,
+        normal,
+        random,
+        uniform
+      ),
+  )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+import Data.Kind (Type)
 import System.Random.MWC
-    ( Seed,
-      GenST,
-      GenIO,
-      create,
-      createSystemRandom,
-      restore,
-      save,
-      Variate(uniformR, uniform) )
+  ( GenIO,
+    GenST,
+    Seed,
+    Variate (uniform, uniformR),
+    create,
+    createSystemRandom,
+    restore,
+    save,
+  )
 import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
+type SamplerIO :: Type -> Type
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
@@ -71,6 +84,7 @@ instance MonadSample SamplerIO where
   random = fromSamplerST random
 
 -- | An 'ST' based random sampler using the @mwc-random@ package.
+type SamplerST :: Type -> Type
 newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a

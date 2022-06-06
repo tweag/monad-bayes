@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE ImportQualifiedPost #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -19,29 +19,32 @@ module Control.Monad.Bayes.Enumerator
     compact,
     enumerate,
     expectation,
-    normalForm
-    )
+    normalForm,
+  )
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..),
-      MonadInfer,
-      MonadSample(categorical, bernoulli, random) )
-import Control.Monad.Trans.Writer ( WriterT(..) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (bernoulli, categorical, random),
+  )
+import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
+import Data.Kind (Type)
 import Data.List (sortOn)
 import Data.Map qualified as Map
-import Data.Maybe ( fromMaybe )
-import Data.Monoid ( Product(..) )
-import Data.Ord ( Down(Down) )
+import Data.Maybe (fromMaybe)
+import Data.Monoid (Product (..))
+import Data.Ord (Down (Down))
 import Data.Vector.Generic qualified as V
-import Numeric.Log as Log ( Log(..), sum )
+import Numeric.Log as Log (Log (..), sum)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
+type Enumerator :: Type -> Type
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
@@ -125,4 +128,3 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
-

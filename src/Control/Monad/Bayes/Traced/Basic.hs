@@ -33,9 +33,11 @@ import Control.Monad.Bayes.Traced.Common
   )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
+import Data.Kind (Type)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | Tracing monad that records random choices made in the program.
+type Traced :: (Type -> Type) -> Type -> Type
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
     model :: Weighted (FreeSampler Identity) a,

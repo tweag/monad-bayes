@@ -29,8 +29,10 @@ import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
+import Data.Kind (Type)
 
 -- | Random sampling functor.
+type SamF :: Type -> Type
 newtype SamF a = Random (Double -> a)
 
 instance Functor SamF where
@@ -39,6 +41,7 @@ instance Functor SamF where
 -- | Free monad transformer over random sampling.
 --
 -- Uses the Church-encoded version of the free monad for efficiency.
+type FreeSampler :: (Type -> Type) -> Type -> Type
 newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT SamF m a}
   deriving newtype (Functor, Applicative, Monad, MonadTrans)
 

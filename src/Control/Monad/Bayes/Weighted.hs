@@ -32,9 +32,11 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+import Data.Kind (Type)
 import Numeric.Log (Log)
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
+type Weighted :: (Type -> Type) -> Type -> Type
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
