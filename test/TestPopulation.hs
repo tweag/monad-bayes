@@ -1,4 +1,6 @@
-module TestPopulation where
+{-# LANGUAGE Trustworthy #-}
+
+module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Enumerator (enumerate, expectation)

@@ -1,4 +1,6 @@
-module TestSequential where
+{-# LANGUAGE Trustworthy #-}
+
+module TestSequential (twoSync, finishedTwoSync, checkTwoSync, checkPreserve, pFinished, isFinished, checkSync) where
 
 import Control.Monad.Bayes.Class
   ( MonadInfer,

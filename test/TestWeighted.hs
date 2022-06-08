@@ -1,6 +1,7 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module TestWeighted where
+module TestWeighted (check, passed, result, model) where
 
 import Control.Monad.Bayes.Class
   ( MonadInfer,

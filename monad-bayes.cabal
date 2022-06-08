@@ -1,6 +1,6 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.1.0
+version:            0.1.1.1
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
@@ -60,7 +60,6 @@ library
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
     , statistics       >=0.14.0 && <0.17
-    , text
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
 

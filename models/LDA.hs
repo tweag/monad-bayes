@@ -1,13 +1,19 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+
 -- LDA model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
 
-module LDA where
+module LDA (lda, syntheticData, documents) where
 
-import qualified Control.Monad as List (replicateM)
+import Control.Monad qualified as List (replicateM)
 import Control.Monad.Bayes.Class
-import qualified Data.Map as Map
-import Data.Vector as V hiding (length, mapM, mapM_, zip)
-import Numeric.Log
+  ( MonadInfer,
+    MonadSample (categorical, dirichlet, uniformD),
+    factor,
+  )
+import Data.Map qualified as Map
+import Data.Vector as V (Vector, replicate, (!))
+import Numeric.Log (Log (Exp))
 
 vocabulary :: [String]
 vocabulary = ["bear", "wolf", "python", "prolog"]

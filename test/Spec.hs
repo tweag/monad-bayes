@@ -1,11 +1,14 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE Trustworthy #-}
+
 import Test.Hspec (context, describe, hspec, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (ioProperty, (==>))
-import qualified TestEnumerator
-import qualified TestInference
-import qualified TestPopulation
-import qualified TestSequential
-import qualified TestWeighted
+import TestEnumerator qualified
+import TestInference qualified
+import TestPopulation qualified
+import TestSequential qualified
+import TestWeighted qualified
 
 main :: IO ()
 main = hspec $ do

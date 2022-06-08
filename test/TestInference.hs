@@ -1,7 +1,8 @@
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module TestInference where
+module TestInference (checkParticles, checkParticlesSystematic, checkParticlesStratified, checkTerminateSMC, checkPreserveSMC) where
 
 import Control.Monad.Bayes.Class (MonadInfer)
 import Control.Monad.Bayes.Enumerator (enumerate)

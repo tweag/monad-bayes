@@ -1,3 +1,5 @@
+{-# LANGUAGE Safe #-}
+
 module Sprinkler (hard, soft) where
 
 import Control.Monad (when)
