@@ -5,7 +5,7 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
@@ -85,7 +85,7 @@
           
             
             
-                <p class="caption"><span class="caption-text">Contents:</span></p>
+                <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="probprog.html">User Guide</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Developer Guide</a><ul>
@@ -114,7 +114,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#sequential-monte-carlo">Sequential Monte Carlo</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#resample-move-sequential-monte-carlo">Resample-Move Sequential Monte Carlo</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sequential-monte-carlo-squared-smc-2">Sequential Monte Carlo squared (<span class="math notranslate nohighlight">\(SMC^2\)</span>)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-monte-carlo-squared-smc-2">Sequential Monte Carlo squared ($SMC^2$)</a></li>
 </ul>
 </li>
 </ul>
@@ -182,7 +182,7 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section class="tex2jax_ignore mathjax_ignore" id="developer-guide">
+  <section id="developer-guide">
 <h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline">¶</a></h1>
 <p>This document assumes the reader is familiar with:</p>
 <ul class="simple">
@@ -209,7 +209,7 @@
   <span class="n">random</span> <span class="ow">::</span> <span class="n">m</span> <span class="kt">Double</span>
 </pre></div>
 </div>
-<p>This one method, <code class="docutils literal notranslate"><span class="pre">random</span></code>, represents a uniform distribution over <span class="math notranslate nohighlight">\([0,1]\)</span>. (<code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> actually has a few other distributions, but that’s not essential.)</p>
+<p>This one method, <code class="docutils literal notranslate"><span class="pre">random</span></code>, represents a uniform distribution over $[0,1]$. (<code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> actually has a few other distributions, but that’s not essential.)</p>
 <p>What comes next is clever: you can define any other distribution you like in terms of <code class="docutils literal notranslate"><span class="pre">random</span></code>. As an example:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">bernoulli</span> <span class="ow">::</span> <span class="kt">MonadSample</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
 <span class="nf">bernoulli</span> <span class="n">p</span> <span class="ow">=</span> <span class="n">fmap</span> <span class="p">(</span><span class="o">&lt;</span> <span class="n">p</span><span class="p">)</span> <span class="n">random</span>
@@ -220,7 +220,7 @@
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">normalDistr</span></code> comes from a separate library <code class="docutils literal notranslate"><span class="pre">Statistics.Distribution.Normal</span></code> and <code class="docutils literal notranslate"><span class="pre">quantile</span> <span class="pre">(normalDistr</span> <span class="pre">m</span> <span class="pre">s)</span> <span class="pre">::</span> <span class="pre">Double</span> <span class="pre">-&gt;</span> <span class="pre">Double</span></code> is the inverse CDF of the normal, a deterministic function.</p>
-<p>Again, to emphasize: <strong>all of our randomness can be reduced to draws from a uniform distribution over the interval <span class="math notranslate nohighlight">\([0,1]\)</span></strong>.</p>
+<p>Again, to emphasize: <strong>all of our randomness can be reduced to draws from a uniform distribution over the interval $[0,1]$</strong>.</p>
 <p>So we now have a way of constructing distributions in a monadic fashion. As a simple example:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadSample</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
 <span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
@@ -229,7 +229,7 @@
     <span class="n">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="mf">1.5</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Think of this as the procedure of first sampling uniformly from <span class="math notranslate nohighlight">\([0,1]\)</span>, then from <span class="math notranslate nohighlight">\([0,x]\)</span>, and then returning the Boolean <span class="math notranslate nohighlight">\(x + y &gt; 1.5\)</span>. More precisely, this is the <strong>marginal</strong> probability of <span class="math notranslate nohighlight">\(x + y &gt; 1.5\)</span>.</p>
+<p>Think of this as the procedure of first sampling uniformly from $[0,1]$, then from $[0,x]$, and then returning the Boolean $x + y &gt; 1.5$. More precisely, this is the <strong>marginal</strong> probability of $x + y &gt; 1.5$.</p>
 <p><strong>Technical note</strong>: <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> actually contains a number of other distributions beyond <code class="docutils literal notranslate"><span class="pre">random</span></code>, which by default are defined in terms of <code class="docutils literal notranslate"><span class="pre">random</span></code>, but allow for different definitions when desired. For example, <code class="docutils literal notranslate"><span class="pre">SamplerST</span></code> (an instance of <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> in Control.Monad.Sampler) defines <code class="docutils literal notranslate"><span class="pre">normal</span></code> and other distributions independently of <code class="docutils literal notranslate"><span class="pre">random</span></code>.</p>
 <!-- Inference is TODO
  `example1`, of type `MonadSample m => m Double`, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with *interpreting* `MonadSample` as something more concrete, namely an inference algorithm. -->
@@ -627,7 +627,7 @@ TODO: Enumerator example with `trace` -->
   <span class="n">return</span> <span class="n">x</span>
 </pre></div>
 </div>
-<p>Doing <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">example</span></code> will create a list of <span class="math notranslate nohighlight">\(2^{100}\)</span> entries, all but one of which have <span class="math notranslate nohighlight">\(0\)</span> mass. (See below for a way to perform this inference efficiently).</p>
+<p>Doing <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">example</span></code> will create a list of $2^{100}$ entries, all but one of which have $0$ mass. (See below for a way to perform this inference efficiently).</p>
 <p>The main purpose of <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code> is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like <code class="docutils literal notranslate"><span class="pre">Weighted</span></code>, to get a sense of how they work. For example, consider:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
   <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
@@ -708,8 +708,8 @@ TODO: Enumerator example with `trace` -->
   <span class="n">return</span> <span class="n">x</span>
 </pre></div>
 </div>
-<p>Naive enumeration, as in <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">example</span></code> is enormously and needlessly inefficient, because it will create a <span class="math notranslate nohighlight">\(2^{100}\)</span> size list of possible values. What we’d like to do is to throw away values of <code class="docutils literal notranslate"><span class="pre">x</span></code> that are <code class="docutils literal notranslate"><span class="pre">False</span></code> at each condition statement, rather than carrying them along forever.</p>
-<p>Suppose we have a function <code class="docutils literal notranslate"><span class="pre">removeZeros</span> <span class="pre">::</span> <span class="pre">Enumerator</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">Enumerator</span> <span class="pre">a</span></code>, which removes values of the distribution with <span class="math notranslate nohighlight">\(0\)</span> mass from <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code>. We can then write <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">$</span> <span class="pre">sis</span> <span class="pre">removeZeros</span> <span class="pre">100</span> <span class="pre">$</span> <span class="pre">model</span></code> to run <code class="docutils literal notranslate"><span class="pre">removeZeros</span></code> at each of the 100 <code class="docutils literal notranslate"><span class="pre">condition</span></code> statements, making the algorithm run quickly.</p>
+<p>Naive enumeration, as in <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">example</span></code> is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we’d like to do is to throw away values of <code class="docutils literal notranslate"><span class="pre">x</span></code> that are <code class="docutils literal notranslate"><span class="pre">False</span></code> at each condition statement, rather than carrying them along forever.</p>
+<p>Suppose we have a function <code class="docutils literal notranslate"><span class="pre">removeZeros</span> <span class="pre">::</span> <span class="pre">Enumerator</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">Enumerator</span> <span class="pre">a</span></code>, which removes values of the distribution with $0$ mass from <code class="docutils literal notranslate"><span class="pre">Enumerator</span></code>. We can then write <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">$</span> <span class="pre">sis</span> <span class="pre">removeZeros</span> <span class="pre">100</span> <span class="pre">$</span> <span class="pre">model</span></code> to run <code class="docutils literal notranslate"><span class="pre">removeZeros</span></code> at each of the 100 <code class="docutils literal notranslate"><span class="pre">condition</span></code> statements, making the algorithm run quickly.</p>
 </section>
 <section id="sequential-monte-carlo">
 <h3>Sequential Monte Carlo<a class="headerlink" href="#sequential-monte-carlo" title="Permalink to this headline">¶</a></h3>
@@ -803,7 +803,7 @@ TODO: Enumerator example with `trace` -->
 <p>So the algorithm works by creating <code class="docutils literal notranslate"><span class="pre">n</span></code> particles, and at each of the first <code class="docutils literal notranslate"><span class="pre">k</span></code> calls to <code class="docutils literal notranslate"><span class="pre">factor</span></code>, first resampling the population and then for each particle in the population, doing an MH-MCMC walk for <code class="docutils literal notranslate"><span class="pre">t</span></code> steps to update it.</p>
 </section>
 <section id="sequential-monte-carlo-squared-smc-2">
-<h3>Sequential Monte Carlo squared (<span class="math notranslate nohighlight">\(SMC^2\)</span>)<a class="headerlink" href="#sequential-monte-carlo-squared-smc-2" title="Permalink to this headline">¶</a></h3>
+<h3>Sequential Monte Carlo squared ($SMC^2$)<a class="headerlink" href="#sequential-monte-carlo-squared-smc-2" title="Permalink to this headline">¶</a></h3>
 <p>This combines RMSMC and PMMH. That is, it is RMSMC, but for the MCMC rejuvenation procedure, PMMH is used instead of MH.</p>
 <p>There is one slight complication here, related to the fact that the MTL style effect system approach requires newtypes when more than one of a given effect appears in a stack, in order to differentiate them.</p>
 <!-- todo: finish -->
@@ -882,8 +882,6 @@ Composed instances of `MonadInfer`:
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js"></script>
-      <script type="text/javascript" src="None"></script>
 
   
 

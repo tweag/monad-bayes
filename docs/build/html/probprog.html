@@ -5,7 +5,7 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
@@ -86,7 +86,7 @@
           
             
             
-                <p class="caption"><span class="caption-text">Contents:</span></p>
+                <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">User Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#monad-bayes-vs-other-libraries">monad-bayes vs other libraries</a></li>
@@ -176,12 +176,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section class="tex2jax_ignore mathjax_ignore" id="user-guide">
+  <section id="user-guide">
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
-<div class="math notranslate nohighlight">
-\[
-foo
-\]</div>
 <p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">paramPriorRegression</span> <span class="ow">::</span> <span class="kt">MonadSample</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="p">(</span><span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)</span>
 <span class="nf">paramPriorRegression</span> <span class="ow">=</span> <span class="kr">do</span>
@@ -226,13 +222,13 @@ foo
 </section>
 <section id="specifying-distributions">
 <h2>Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permalink to this headline">¶</a></h2>
-<p>A distribution in monad-bayes over a set <span class="math notranslate nohighlight">\(X\)</span>, is of type:</p>
+<p>A distribution in monad-bayes over a set $X$, is of type:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">X</span>
 </pre></div>
 </div>
 <p>monad-bayes provides standard distributions, such as:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code> : sample uniformly from <span class="math notranslate nohighlight">\([0,1]\)</span></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">Double</span></code> : sample uniformly from $[0,1]$</p></li>
 </ul>
 <p>The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html</p>
 <p>Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over <code class="docutils literal notranslate"><span class="pre">(+)</span> <span class="pre">::</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span></code> and <code class="docutils literal notranslate"><span class="pre">(-)</span> <span class="pre">::</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span> <span class="pre">-&gt;</span> <span class="pre">Int</span></code>:</p>
@@ -245,16 +241,15 @@ foo
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">fmap</span> <span class="p">(</span><span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span> <span class="n">random</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
 </pre></div>
 </div>
-<p>This is the uniform distribution over <span class="math notranslate nohighlight">\((0.5, 1]\)</span>.</p>
-<p>As an important special case, if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">(a,b)</span></code> is a joint distribution over two variables, then <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> <strong>marginalizes</strong> out the second variable. That is to say, <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span></code> is the distribution <span class="math notranslate nohighlight">\(p(a)\)</span>, where <span class="math notranslate nohighlight">\(p(a) = \int_b p(a,b)\)</span></p>
+<p>This is the uniform distribution over $(0.5, 1]$.</p>
+<p>As an important special case, if <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">(a,b)</span></code> is a joint distribution over two variables, then <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span> <span class="pre">::</span> <span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> <strong>marginalizes</strong> out the second variable. That is to say, <code class="docutils literal notranslate"><span class="pre">fmap</span> <span class="pre">fst</span> <span class="pre">a</span></code> is the distribution $p(a)$, where $p(a) = \int_b p(a,b)$</p>
 <p>The above example use only the functor instance for <code class="docutils literal notranslate"><span class="pre">m</span></code>, but we also have the monad instance, as used in:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
 <span class="nf">example</span> <span class="ow">=</span> <span class="n">bernoulli</span> <span class="mf">0.5</span> <span class="o">&gt;&gt;=</span> <span class="p">(</span><span class="nf">\</span><span class="n">x</span> <span class="ow">-&gt;</span> <span class="kr">if</span> <span class="n">x</span> <span class="kr">then</span> <span class="n">random</span> <span class="kr">else</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>It’s easiest to understand this distribution as a probabilistic program: it’s the distribution you get by first sampling from <code class="docutils literal notranslate"><span class="pre">bernoulli</span> <span class="pre">0.5</span></code>, then checking the result. If the result is <code class="docutils literal notranslate"><span class="pre">True</span></code>, then sample from <code class="docutils literal notranslate"><span class="pre">random</span></code>, else from <code class="docutils literal notranslate"><span class="pre">normal</span> <span class="pre">0</span> <span class="pre">1</span></code>. As a distribution, this has a PDF:</p>
-<div class="math notranslate nohighlight">
-\[ f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  \]</div>
+<p>$$ f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  $$</p>
 <!-- $$ \int\_{[0,1]} 1[x>0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx $$ -->
 <p>Equivalently, we could write this in do-notation as:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
@@ -361,7 +356,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
   <span class="kr">if</span> <span class="n">x</span> <span class="kr">then</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">1</span> <span class="kr">else</span> <span class="n">normal</span> <span class="mi">1</span> <span class="mi">2</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">sampleIO</span> <span class="pre">example</span></code> will produce a sample from a Bernoulli distribution with <span class="math notranslate nohighlight">\(p=0.5\)</span>, and if it is <span class="math notranslate nohighlight">\(True\)</span>, return a sample from a standard normal, else from a normal with mean 1 and std 2. ‘</p>
+<p><code class="docutils literal notranslate"><span class="pre">sampleIO</span> <span class="pre">example</span></code> will produce a sample from a Bernoulli distribution with $p=0.5$, and if it is $True$, return a sample from a standard normal, else from a normal with mean 1 and std 2. ‘</p>
 <p><code class="docutils literal notranslate"><span class="pre">(replicateM</span> <span class="pre">n</span> <span class="pre">.</span> <span class="pre">sampleIO)</span> <span class="pre">example</span></code> will produce a list of <code class="docutils literal notranslate"><span class="pre">n</span></code> independent samples. However, it is recommended to instead do <code class="docutils literal notranslate"><span class="pre">(sampleIO</span> <span class="pre">.</span> <span class="pre">replicateM</span> <span class="pre">n)</span> <span class="pre">example</span></code>, which will create a new model (<code class="docutils literal notranslate"><span class="pre">replicateM</span> <span class="pre">n</span> <span class="pre">example</span></code>) consisting of <code class="docutils literal notranslate"><span class="pre">n</span></code> independent draws from <code class="docutils literal notranslate"><span class="pre">example</span></code>.</p>
 <p>Because <code class="docutils literal notranslate"><span class="pre">sampleIO</span> <span class="pre">example</span></code> is totally pure, it is parallelizable.</p>
 </section>
@@ -532,7 +527,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
     <span class="n">return</span> <span class="n">cluster</span>
 </pre></div>
 </div>
-<p>is a piece of code to infer whether an observed point was generated from a Gaussian of mean <span class="math notranslate nohighlight">\(1\)</span> or <span class="math notranslate nohighlight">\(5\)</span>. That is, <code class="docutils literal notranslate"><span class="pre">mixture1</span></code> is a conditional Bernoulli distribution over the mean given an observation. You’re not going to be able to do much with <code class="docutils literal notranslate"><span class="pre">mixture1</span></code> though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the <code class="docutils literal notranslate"><span class="pre">condition</span></code> requires.</p>
+<p>is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, <code class="docutils literal notranslate"><span class="pre">mixture1</span></code> is a conditional Bernoulli distribution over the mean given an observation. You’re not going to be able to do much with <code class="docutils literal notranslate"><span class="pre">mixture1</span></code> though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the <code class="docutils literal notranslate"><span class="pre">condition</span></code> requires.</p>
 <p>However, the same conditional distribution is represented by</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">mixture2</span> <span class="n">point</span> <span class="ow">=</span> <span class="kr">do</span>
     <span class="n">cluster</span> <span class="ow">&lt;-</span> <span class="n">uniformD</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
@@ -637,8 +632,6 @@ We can use monad transformers on top of our probability monad `m`, as in models/
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js"></script>
-      <script type="text/javascript" src="None"></script>
 
   
 
