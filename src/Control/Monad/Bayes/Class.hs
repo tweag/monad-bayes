@@ -82,6 +82,11 @@ import Statistics.Distribution.Normal (normalDistr)
 import qualified Statistics.Distribution.Poisson as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
+import Data.Matrix hiding ((!))
+import Control.Monad
+import qualified Data.Vector as V
+
+
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
   -- | Draw from a uniform distribution.
@@ -325,3 +330,11 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
+
+mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts
