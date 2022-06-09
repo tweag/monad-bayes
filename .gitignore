@@ -1,3 +1,6 @@
+*.csv
+*.pdf
+*.dat
 *.aux
 *.chi
 *.chs.h
@@ -7,6 +10,7 @@
 *.hi
 *.hp
 *.lock
+.vscode/*
 *.o
 *.prof
 .HTF/

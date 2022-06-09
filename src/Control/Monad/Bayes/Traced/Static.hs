@@ -72,7 +72,7 @@ mhStep (Traced m d) = Traced m d'
     d' = d >>= mhTrans m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
--- number of steps.
+-- number of steps. Newest samples are at the head of the list.
 mh :: MonadSample m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where

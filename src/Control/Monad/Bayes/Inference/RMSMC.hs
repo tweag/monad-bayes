@@ -24,6 +24,7 @@ import Control.Monad.Bayes.Sequential as Seq
 import Control.Monad.Bayes.Traced as Tr
 import qualified Control.Monad.Bayes.Traced.Basic as TrBas
 import qualified Control.Monad.Bayes.Traced.Dynamic as TrDyn
+import Data.Monoid
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -81,4 +82,7 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k f = foldr (.) id (replicate k f)
+composeCopies k = withEndo (mconcat . replicate k)
+
+withEndo :: (Endo a1 -> Endo a2) -> (a1 -> a1) -> a2 -> a2
+withEndo f = appEndo . f . Endo
