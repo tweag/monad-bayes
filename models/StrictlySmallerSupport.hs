@@ -1,5 +1,3 @@
-{-# LANGUAGE Safe #-}
-
 -- A model in which a random value switches between
 -- two distributions, one with a support strictly
 -- smaller than the other.
