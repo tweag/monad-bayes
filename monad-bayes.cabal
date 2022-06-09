@@ -1,13 +1,13 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.1.1
+version:            0.1.1.0
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC ==8.4.4 || ==8.6.5 || ==8.8.1
+tested-with:        GHC == 9.2.2
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
@@ -34,6 +34,7 @@ library
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Free
+    Control.Monad.Bayes.Helpers
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
@@ -47,30 +48,23 @@ library
     Control.Monad.Bayes.Traced.Static
     Control.Monad.Bayes.Weighted
 
-  hs-source-dirs:     src
-  other-modules:      Control.Monad.Bayes.Traced.Common
-  default-language:   Haskell2010
+  hs-source-dirs:   src
+  other-modules:    Control.Monad.Bayes.Traced.Common
+  default-language: Haskell2010
   build-depends:
       base             >=4.11   && <4.17
     , containers       >=0.5.10 && <0.7
     , free             >=5.0.2  && <5.2
     , ieee754          ^>=0.8.0
     , log-domain       >=0.12   && <0.14
+    , math-functions   >=0.2.1  && <0.4
     , monad-coroutine  ^>=0.9.0
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
+    , safe             ^>=0.3.17
     , statistics       >=0.14.0 && <0.17
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
-
-  default-extensions:
-    BlockArguments
-    FlexibleContexts
-    ImportQualifiedPost
-    LambdaCase
-    OverloadedStrings
-    Trustworthy
-    TupleSections
 
   if flag(dev)
     ghc-options:
@@ -82,15 +76,15 @@ library
     ghc-options: -Wall
 
 executable example
-  main-is:            Single.hs
-  hs-source-dirs:     benchmark models
+  main-is:          Single.hs
+  hs-source-dirs:   benchmark models
   other-modules:
     Dice
     HMM
     LDA
     LogReg
 
-  default-language:   Haskell2010
+  default-language: Haskell2010
   build-depends:
       base
     , containers
@@ -108,15 +102,6 @@ executable example
 
   else
     ghc-options: -Wall
-
-  default-extensions:
-    BlockArguments
-    FlexibleContexts
-    ImportQualifiedPost
-    LambdaCase
-    OverloadedStrings
-    StandaloneKindSignatures
-    TupleSections
 
 test-suite monad-bayes-test
   type:             exitcode-stdio-1.0
@@ -136,6 +121,7 @@ test-suite monad-bayes-test
     , hspec
     , ieee754
     , log-domain
+    , math-functions
     , monad-bayes
     , mtl
     , QuickCheck
@@ -148,14 +134,7 @@ test-suite monad-bayes-test
       -Wno-missing-import-lists -Wno-implicit-prelude
 
   else
-    ghc-options:        -Wall
-    default-extensions:
-      BlockArguments
-      FlexibleContexts
-      ImportQualifiedPost
-      LambdaCase
-      OverloadedStrings
-      TupleSections
+    ghc-options: -Wall
 
 benchmark ssm-bench
   type:             exitcode-stdio-1.0
@@ -168,15 +147,15 @@ benchmark ssm-bench
     , monad-bayes
 
 benchmark speed-bench
-  type:               exitcode-stdio-1.0
-  main-is:            Speed.hs
-  hs-source-dirs:     models benchmark
+  type:             exitcode-stdio-1.0
+  main-is:          Speed.hs
+  hs-source-dirs:   models benchmark
   other-modules:
     HMM
     LDA
     LogReg
 
-  default-language:   Haskell2010
+  default-language: Haskell2010
   build-depends:
       abstract-par
     , base
@@ -195,11 +174,3 @@ benchmark speed-bench
 
   else
     ghc-options: -Wall
-
-  default-extensions:
-    BlockArguments
-    FlexibleContexts
-    ImportQualifiedPost
-    LambdaCase
-    OverloadedStrings
-    TupleSections
