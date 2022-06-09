@@ -15,7 +15,6 @@ import LogReg qualified
 import Options.Applicative
 import System.Random.MWC (createSystemRandom)
 
-type Model :: Type
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
 
@@ -39,7 +38,6 @@ getModel model = (size model, program model)
     program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
     program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
 
-type Alg :: Type
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 

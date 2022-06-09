@@ -56,7 +56,6 @@ import System.Random.MWC
 import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
-type SamplerIO :: Type -> Type
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
@@ -83,7 +82,6 @@ instance MonadSample SamplerIO where
   random = fromSamplerST random
 
 -- | An 'ST' based random sampler using the @mwc-random@ package.
-type SamplerST :: Type -> Type
 newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
 runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a

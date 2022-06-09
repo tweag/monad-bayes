@@ -27,14 +27,11 @@ import LogReg qualified
 import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
-type Env :: Type
 newtype Env = Env {rng :: GenIO}
 
-type ProbProgSys :: Type
 data ProbProgSys = MonadBayes
   deriving stock (Show)
 
-type Model :: Type
 data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
 
 instance Show Model where
@@ -52,7 +49,6 @@ modelLength (LR xs) = length xs
 modelLength (HMM xs) = length xs
 modelLength (LDA xs) = sum (map length xs)
 
-type Alg :: Type
 data Alg = MH Int | SMC Int | RMSMC Int Int
 
 instance Show Alg where

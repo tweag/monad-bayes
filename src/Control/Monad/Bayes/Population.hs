@@ -62,7 +62,6 @@ import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
-type Population :: (Type -> Type) -> Type -> Type
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
 
