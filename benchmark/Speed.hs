@@ -20,12 +20,12 @@ import Criterion.Main
     nfIO,
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
+import Data.Functor (void)
 import HMM qualified
 import LDA qualified
 import LogReg qualified
-import System.Random.MWC (GenIO, createSystemRandom)
 import System.Process.Typed (runProcess)
-import Data.Functor (void)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
@@ -74,7 +74,7 @@ prepareBenchmark e MonadBayes model alg =
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (_, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = True
 supported _ = True
 
 systems :: [ProbProgSys]
