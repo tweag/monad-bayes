@@ -1,3 +1,5 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -66,6 +68,7 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
+import Data.Kind (Constraint, Type)
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
 import Numeric.Log (Log (..))
@@ -79,6 +82,13 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+
+-- the core type classes
+type MonadSample :: (Type -> Type) -> Constraint
+
+type MonadCond :: (Type -> Type) -> Constraint
+
+type MonadInfer :: (Type -> Type) -> Constraint
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where

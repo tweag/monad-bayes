@@ -1,3 +1,6 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE Trustworthy #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Inference.RMSMC
 -- Description : Resample-Move Sequential Monte Carlo (RM-SMC)
@@ -17,17 +20,22 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class ( MonadSample )
+import Control.Monad.Bayes.Class (MonadSample)
 import Control.Monad.Bayes.Population
-    ( resampleSystematic, spawn, Population )
-import Control.Monad.Bayes.Sequential as Seq ( sis, Sequential )
-import Control.Monad.Bayes.Traced.Static as Tr
-    ( marginal, mhStep, Traced )
+  ( Population,
+    resampleSystematic,
+    spawn,
+  )
+import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
+import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
-import Data.Monoid ( Endo(..) )
-import qualified Control.Monad.Bayes.Traced.Static as TrStat
-import qualified Control.Monad.Bayes.Sequential as S
+import Control.Monad.Bayes.Traced.Static as Tr
+  ( Traced,
+    marginal,
+    mhStep,
+  )
+import Control.Monad.Bayes.Traced.Static qualified as TrStat
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -85,7 +93,4 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k = withEndo (mconcat . replicate k)
-
-withEndo :: (Endo a1 -> Endo a2) -> (a1 -> a1) -> a2 -> a2
-withEndo f = appEndo . f . Endo
+composeCopies k f = foldr (.) id (replicate k f)

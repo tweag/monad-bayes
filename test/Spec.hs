@@ -1,11 +1,14 @@
-import Test.Hspec ( hspec, context, describe, it, shouldBe )
-import Test.Hspec.QuickCheck ( prop )
-import Test.QuickCheck ( (==>), ioProperty )
-import qualified TestEnumerator
-import qualified TestInference
-import qualified TestPopulation
-import qualified TestSequential
-import qualified TestWeighted
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE Trustworthy #-}
+
+import Test.Hspec (context, describe, hspec, it, shouldBe)
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (ioProperty, (==>))
+import TestEnumerator qualified
+import TestInference qualified
+import TestPopulation qualified
+import TestSequential qualified
+import TestWeighted qualified
 
 main :: IO ()
 main = hspec $ do
@@ -65,7 +68,7 @@ main = hspec $ do
         observations >= 0 && particles >= 1 ==> ioProperty $ do
           checkParticles <- TestInference.checkParticlesSystematic observations particles
           return $ checkParticles == particles
-    
+
   describe "SMC with stratified resampling" $
     prop "number of particles is equal to its second parameter" $
       \observations particles ->

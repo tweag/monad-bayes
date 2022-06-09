@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Basic
@@ -19,15 +20,25 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..), MonadInfer, MonadSample(random) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random),
+  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-    ( bind, mhTrans', scored, singleton, Trace(..) )
+  ( Trace (..),
+    bind,
+    mhTrans',
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
+import Data.Kind (Type)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | Tracing monad that records random choices made in the program.
+type Traced :: (Type -> Type) -> Type -> Type
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
     model :: Weighted (FreeSampler Identity) a,

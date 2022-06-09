@@ -1,3 +1,5 @@
+{-# LANGUAGE StandaloneKindSignatures #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Common
 -- Description : Numeric code for Trace MCMC
@@ -19,17 +21,27 @@ module Control.Monad.Bayes.Traced.Common
 where
 
 import Control.Monad.Bayes.Class
-    ( discrete, MonadSample(bernoulli, random) )
+  ( MonadSample (bernoulli, random),
+    discrete,
+  )
 import Control.Monad.Bayes.Free as FreeSampler
-    ( hoist, withPartialRandomness, FreeSampler )
+  ( FreeSampler,
+    hoist,
+    withPartialRandomness,
+  )
 import Control.Monad.Bayes.Weighted as Weighted
-    ( hoist, runWeighted, Weighted )
-import Control.Monad.Trans.Writer ( WriterT(WriterT, runWriterT) )
-import Data.Functor.Identity ( Identity(runIdentity) )
+  ( Weighted,
+    hoist,
+    runWeighted,
+  )
+import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
+import Data.Functor.Identity (Identity (runIdentity))
+import Data.Kind (Type)
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
 -- | Collection of random variables sampled during the program's execution.
+type Trace :: Type -> Type
 data Trace a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
     variables :: [Double],
@@ -88,5 +100,7 @@ mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
-burnIn :: Int -> [a] -> [a]
-burnIn n ls = let len = length ls in take (len - n) ls
+burnIn :: Functor m => Int -> m [a] -> m [a]
+burnIn n = fmap dropEnd
+  where
+    dropEnd ls = let len = length ls in take (len - n) ls

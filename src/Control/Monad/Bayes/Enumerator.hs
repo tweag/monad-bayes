@@ -1,7 +1,12 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+<<<<<<< HEAD
 {-# LANGUAGE OverloadedStrings #-}
 
+=======
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+>>>>>>> cleanup
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -24,25 +29,36 @@ module Control.Monad.Bayes.Enumerator
     toEmpirical,
     toEmpiricalWeighted
         )
+  
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..),
-      MonadInfer,
-      MonadSample(categorical, bernoulli, random) )
-import Control.Monad.Trans.Writer ( WriterT(..) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (bernoulli, categorical, random),
+  )
+import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
 import Data.Map qualified as Map
 import Data.Maybe ( fromMaybe )
 import Data.Monoid ( Product(..) )
 import Data.Vector.Generic qualified as V
 import Numeric.Log as Log ( Log(..) )
+import Data.Kind (Type)
+import Data.List (sortOn)
+import Data.Map qualified as Map
+import Data.Maybe (fromMaybe)
+import Data.Monoid (Product (..))
+import Data.Ord (Down (Down))
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log (Log (..), sum)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
+type Enumerator :: Type -> Type
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 

@@ -1,6 +1,11 @@
 module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
+  ( MonadInfer,
+    MonadSample (gamma, normal),
+    factor,
+    normalPdf,
+  )
 
 param :: MonadSample m => m (Double, Double)
 param = do

@@ -27,8 +27,8 @@ import Control.Monad.Bayes.Population
   ( Population,
     pushEvidence,
     resampleMultinomial,
-    resampleSystematic,
     resampleStratified,
+    resampleSystematic,
     spawn,
   )
 import Control.Monad.Bayes.Sequential as Seq

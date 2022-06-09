@@ -1,4 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -20,16 +22,26 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..), MonadInfer, MonadSample(random) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random),
+  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-    ( bind, mhTrans, scored, singleton, Trace(..) )
+  ( Trace (..),
+    bind,
+    mhTrans,
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
+import Data.Kind (Type)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
+type Traced :: (Type -> Type) -> Type -> Type
 newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
 
 pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a

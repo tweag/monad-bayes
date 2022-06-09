@@ -1,3 +1,7 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
@@ -5,15 +9,17 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
+import Data.Kind (Type)
 import Data.Time
-import qualified HMM
-import qualified LDA
-import qualified LogReg
+import HMM qualified
+import LDA qualified
+import LogReg qualified
 import Options.Applicative
 import System.Random.MWC (createSystemRandom)
 
+type Model :: Type
 data Model = LR Int | HMM Int | LDA (Int, Int)
-  deriving (Show, Read)
+  deriving stock (Show, Read)
 
 parseModel :: String -> Maybe Model
 parseModel s =
@@ -35,8 +41,9 @@ getModel model = (size model, program model)
     program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
     program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
 
+type Alg :: Type
 data Alg = SMC | MH | RMSMC
-  deriving (Read, Show)
+  deriving stock (Read, Show)
 
 runAlg :: Model -> Alg -> SamplerIO String
 runAlg model alg =
