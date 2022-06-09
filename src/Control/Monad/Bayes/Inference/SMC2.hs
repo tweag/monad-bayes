@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC2
@@ -30,11 +29,9 @@ import Control.Monad.Bayes.Population as Pop (Population, runPopulation)
 import Control.Monad.Bayes.Sequential (Sequential)
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
-import Data.Kind (Type)
 import Numeric.Log (Log)
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
-type SMC2 :: (Type -> Type) -> Type -> Type
 newtype SMC2 m a = SMC2 (Sequential (Traced (Population m)) a)
   deriving newtype (Functor, Applicative, Monad)
 

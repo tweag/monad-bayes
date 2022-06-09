@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wall #-}
 
@@ -22,7 +21,6 @@ import Criterion.Main
     nfIO,
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
-import Data.Kind (Type)
 import HMM qualified
 import LDA qualified
 import LogReg qualified
