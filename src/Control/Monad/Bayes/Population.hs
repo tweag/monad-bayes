@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -54,7 +53,6 @@ import Control.Monad.Bayes.Weighted
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.List (ListT (..))
-import Data.Kind (Type)
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)
@@ -64,7 +62,6 @@ import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
-type Population :: (Type -> Type) -> Type -> Type
 newtype Population m a = Population (Weighted (ListT m) a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
 

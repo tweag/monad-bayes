@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE Trustworthy #-}
 
 -- |
@@ -36,12 +35,10 @@ import Control.Monad.Bayes.Traced.Common
   )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
-import Data.Kind (Type)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-type Traced :: (Type -> Type) -> Type -> Type
 newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
 
 pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a

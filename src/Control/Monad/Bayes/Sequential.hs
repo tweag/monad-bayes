@@ -1,7 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sequential
@@ -42,14 +41,12 @@ import Control.Monad.Coroutine.SuspensionFunctors
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Data.Either (isRight)
-import Data.Kind (Type)
 
 -- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly
 -- useful for implementation of Sequential Monte Carlo related methods.
 -- All the probabilistic effects are lifted from the transformed monad, but
 -- also `suspend` is inserted after each `factor`.
-type Sequential :: (Type -> Type) -> Type -> Type
 newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
   deriving newtype (Functor, Applicative, Monad, MonadTrans, MonadIO)
 

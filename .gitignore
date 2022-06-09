@@ -1,6 +1,6 @@
-*.dat
 *.csv
 *.pdf
+*.dat
 *.aux
 *.chi
 *.chs.h
