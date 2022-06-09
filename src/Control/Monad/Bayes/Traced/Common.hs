@@ -1,5 +1,3 @@
-{-# LANGUAGE StandaloneKindSignatures #-}
-
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Common
 -- Description : Numeric code for Trace MCMC
@@ -36,12 +34,10 @@ import Control.Monad.Bayes.Weighted as Weighted
   )
 import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
-import Data.Kind (Type)
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
 -- | Collection of random variables sampled during the program's execution.
-type Trace :: Type -> Type
 data Trace a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
     variables :: [Double],

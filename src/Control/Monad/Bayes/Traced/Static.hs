@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Static
@@ -34,14 +33,12 @@ import Control.Monad.Bayes.Traced.Common
   )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
-import Data.Kind (Type)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
-type Traced :: (Type -> Type) -> Type -> Type
 data Traced m a = Traced
   { model :: Weighted (FreeSampler m) a,
     traceDist :: m (Trace a)

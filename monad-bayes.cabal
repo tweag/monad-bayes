@@ -74,7 +74,7 @@ library
 
   if flag(dev)
     ghc-options:
-      -Weverything -Wno-missing-local-signatures -Wno-unsafe
+      -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
       -Wno-missing-import-lists -Wno-implicit-prelude
       -Wno-monomorphism-restriction
 
@@ -144,7 +144,7 @@ test-suite monad-bayes-test
 
   if flag(dev)
     ghc-options:
-      -Weverything -Wno-missing-local-signatures -Wno-unsafe
+      -Wall -Wno-missing-local-signatures -Wno-unsafe
       -Wno-missing-import-lists -Wno-implicit-prelude
 
   else
@@ -190,7 +190,7 @@ benchmark speed-bench
 
   if flag(dev)
     ghc-options:
-      -Weverything -Wno-missing-local-signatures -Wno-unsafe
+      -Wall -Wno-missing-local-signatures -Wno-unsafe
       -Wno-missing-import-lists -Wno-implicit-prelude
 
   else

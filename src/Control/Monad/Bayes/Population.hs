@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -54,7 +53,6 @@ import Control.Monad.Bayes.Weighted
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.List (ListT (..))
-import Data.Kind (Type)
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)

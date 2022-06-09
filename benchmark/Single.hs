@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
@@ -9,7 +8,6 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
-import Data.Kind (Type)
 import Data.Time
 import HMM qualified
 import LDA qualified
