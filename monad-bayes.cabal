@@ -7,7 +7,7 @@ copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC == 9.2.2
+tested-with:        GHC ==9.2.2
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
@@ -34,7 +34,6 @@ library
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Free
-    Control.Monad.Bayes.Helpers
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
@@ -48,9 +47,9 @@ library
     Control.Monad.Bayes.Traced.Static
     Control.Monad.Bayes.Weighted
 
-  hs-source-dirs:   src
-  other-modules:    Control.Monad.Bayes.Traced.Common
-  default-language: Haskell2010
+  hs-source-dirs:     src
+  other-modules:      Control.Monad.Bayes.Traced.Common
+  default-language:   Haskell2010
   build-depends:
       base             >=4.11   && <4.17
     , containers       >=0.5.10 && <0.7
@@ -75,16 +74,24 @@ library
   else
     ghc-options: -Wall
 
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
+
 executable example
-  main-is:          Single.hs
-  hs-source-dirs:   benchmark models
+  main-is:            Single.hs
+  hs-source-dirs:     benchmark models
   other-modules:
     Dice
     HMM
     LDA
     LogReg
 
-  default-language: Haskell2010
+  default-language:   Haskell2010
   build-depends:
       base
     , containers
@@ -103,10 +110,18 @@ executable example
   else
     ghc-options: -Wall
 
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
+
 test-suite monad-bayes-test
-  type:             exitcode-stdio-1.0
-  main-is:          Spec.hs
-  hs-source-dirs:   test models
+  type:               exitcode-stdio-1.0
+  main-is:            Spec.hs
+  hs-source-dirs:     test models
   other-modules:
     Sprinkler
     TestEnumerator
@@ -115,7 +130,7 @@ test-suite monad-bayes-test
     TestSequential
     TestWeighted
 
-  default-language: Haskell2010
+  default-language:   Haskell2010
   build-depends:
       base
     , hspec
@@ -136,6 +151,14 @@ test-suite monad-bayes-test
   else
     ghc-options: -Wall
 
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
+
 benchmark ssm-bench
   type:             exitcode-stdio-1.0
   main-is:          SSM.hs
@@ -147,15 +170,15 @@ benchmark ssm-bench
     , monad-bayes
 
 benchmark speed-bench
-  type:             exitcode-stdio-1.0
-  main-is:          Speed.hs
-  hs-source-dirs:   models benchmark
+  type:               exitcode-stdio-1.0
+  main-is:            Speed.hs
+  hs-source-dirs:     models benchmark
   other-modules:
     HMM
     LDA
     LogReg
 
-  default-language: Haskell2010
+  default-language:   Haskell2010
   build-depends:
       abstract-par
     , base
@@ -174,3 +197,11 @@ benchmark speed-bench
 
   else
     ghc-options: -Wall
+
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections

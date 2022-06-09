@@ -93,7 +93,4 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k = withEndo (mconcat . replicate k)
-
-withEndo :: (Endo a1 -> Endo a2) -> (a1 -> a1) -> a2 -> a2
-withEndo f = appEndo . f . Endo
+composeCopies k f = foldr (.) id (replicate k f)
