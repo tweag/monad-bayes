@@ -91,6 +91,10 @@ normalize :: Weighted Integrator Double -> Integrator Double
 normalize m =
     let m' = runWeighted m
         z = runIntegrator (ln . exp . snd) m'
+    -- in do 
+    --   (x, d) <- m' 
+    --   Integrator $ cont $ \f -> z * f () 
+    --   return (x* ln (exp d))
     in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
 
 cdf :: Integrator Double -> Double -> Double
