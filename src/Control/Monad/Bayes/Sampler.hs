@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ApplicativeDo #-}
 
@@ -31,24 +32,33 @@ module Control.Monad.Bayes.Sampler
 where
 
 import Control.Monad.Bayes.Class
-    ( MonadSample(geometric, categorical, bernoulli, beta, gamma,
-                  normal, uniform, random) )
+  ( MonadSample
+      ( bernoulli,
+        beta,
+        categorical,
+        gamma,
+        geometric,
+        normal,
+        random,
+        uniform
+      ),
+  )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
-import System.Random.MWC
-    ( Seed,
-      GenST,
-      GenIO,
-      create,
-      createSystemRandom,
-      restore,
-      save,
-      Variate(uniformR, uniform) )
-import System.Random.MWC.Distributions qualified as MWC
 import Data.Fixed (mod')
-import qualified Control.Foldl as Foldl
+import System.Random.MWC
+  ( GenIO,
+    GenST,
+    Seed,
+    Variate (uniform, uniformR),
+    create,
+    createSystemRandom,
+    restore,
+    save,
+  )
+import System.Random.MWC.Distributions qualified as MWC
 import Numeric.Log (Log (ln))
 
 -- | An 'IO' based random sampler using the MWC-Random package.
@@ -125,14 +135,17 @@ instance MonadSample SamplerST where
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p
 
-
 type Bin = (Double, Double)
+
 -- | binning function. Useful when you want to return the bin that
 -- a random variable falls into, so that you can show a histogram of samples
-toBin :: Double -- ^ bin size 
-  -> Double -- ^ number
-  -> Bin
-toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+toBin ::
+  -- | bin size
+  Double ->
+  -- | number
+  Double ->
+  Bin
+toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
 
 toBins :: Double -> [Double] -> [Double]
 toBins binWidth = fmap (fst . toBin binWidth)

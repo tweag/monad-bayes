@@ -15,14 +15,18 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class ( MonadInfer )
-import Control.Monad.Bayes.Inference.SMC ( smcSystematic )
+import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Inference.SMC (smcSystematic)
 import Control.Monad.Bayes.Population as Pop
-    ( hoist, pushEvidence, runPopulation, Population )
-import Control.Monad.Bayes.Sequential ( Sequential )
-import Control.Monad.Bayes.Traced.Static ( mh, Traced )
+  ( Population,
+    hoist,
+    pushEvidence,
+    runPopulation,
+  )
+import Control.Monad.Bayes.Sequential (Sequential)
+import Control.Monad.Bayes.Traced.Static (Traced, mh)
 import Control.Monad.Trans (lift)
-import Numeric.Log ( Log )
+import Numeric.Log (Log)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::

@@ -21,21 +21,21 @@ module Control.Monad.Bayes.Weighted
     prior,
     applyWeight,
     hoist,
-    toBinsWeighted
+    toBinsWeighted,
   )
 where
 
+import Control.Arrow (Arrow (first))
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
     MonadSample,
-    factor
+    factor,
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+import Data.Fixed (mod')
 import Numeric.Log (Log)
-import Data.Fixed ( mod' )
-import Control.Arrow ( Arrow(first) )
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
@@ -83,5 +83,5 @@ hoist t (Weighted m) = Weighted $ mapStateT t m
 
 toBinsWeighted :: Double -> [(Double, Log Double)] -> [(Double, Log Double)]
 toBinsWeighted binWidth = fmap (first (fst . toBin binWidth))
-  where toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
-
+  where
+    toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)

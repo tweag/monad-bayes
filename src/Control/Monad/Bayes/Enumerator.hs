@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE ImportQualifiedPost #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -23,25 +23,26 @@ module Control.Monad.Bayes.Enumerator
     toEmpirical,
     toEmpiricalWeighted,
     normalizeWeights
-        )
+  )
 where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..),
-      MonadInfer,
-      MonadSample(categorical, bernoulli, random) )
-import Control.Monad.Trans.Writer ( WriterT(..) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (bernoulli, categorical, random),
+  )
+import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
-import Data.Map qualified as Map
-import Data.Maybe ( fromMaybe )
-import Data.Monoid ( Product(..) )
-import Data.Vector.Generic qualified as V
-import Numeric.Log as Log ( Log(..) )
 import Data.List (sortOn)
-import Data.Ord (Down(Down))
+import Data.Map qualified as Map
+import Data.Maybe (fromMaybe)
+import Data.Monoid (Product (..))
+import Data.Ord (Down (Down))
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log (Log (..), sum)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -73,7 +74,7 @@ explicit = map (second (exp . ln)) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
 evidence :: Enumerator a -> Log Double
-evidence = sum . map snd . logExplicit
+evidence = Log.sum . map snd . logExplicit
 
 -- | Normalized probability mass of a specific value.
 mass :: Ord a => Enumerator a -> a -> Double
@@ -103,7 +104,7 @@ expectation f = Prelude.sum . map (\(x, w) -> f x * (exp . ln) w) . normalizeWei
 normalize :: Fractional b => [b] -> [b]
 normalize xs = map (/ z) xs
   where
-    z = sum xs
+    z = Prelude.sum xs
 
 -- | Divide all weights by their sum.
 normalizeWeights :: Fractional b => [(a, b)] -> [(a, b)]
@@ -129,11 +130,8 @@ instance Ord a => AEq (Enumerator a) where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
-
 toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
-toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1)) 
+toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
 
 toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
-
-

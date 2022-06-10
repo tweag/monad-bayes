@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -20,10 +21,18 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..), MonadInfer, MonadSample(random) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random),
+  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-    ( bind, mhTrans, scored, singleton, Trace(..) )
+  ( Trace (..),
+    bind,
+    mhTrans,
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)

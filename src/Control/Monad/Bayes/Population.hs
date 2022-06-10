@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
@@ -38,14 +39,25 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
-import Control.Monad.Trans
-import Control.Monad.Trans.List
+  ( MonadCond,
+    MonadInfer,
+    MonadSample (categorical, logCategorical, random, uniform),
+    factor,
+  )
+import Control.Monad.Bayes.Weighted
+  ( Weighted,
+    applyWeight,
+    extractWeight,
+    runWeighted,
+    withWeight,
+  )
+import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
-import qualified Data.List
+import Data.List qualified
 import Data.Maybe (catMaybes)
 import Data.Vector ((!))
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 

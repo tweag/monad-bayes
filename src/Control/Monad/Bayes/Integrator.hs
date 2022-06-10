@@ -2,6 +2,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
@@ -34,18 +35,15 @@ import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, uniformD))
 import Numeric.Integration.TanhSinh ( trap, Result(result) )
 import Statistics.Distribution.Uniform qualified as Statistics
 import Numeric.Log (Log(ln))
-import Control.Monad.Bayes.Class (MonadCond (score), MonadInfer)
 import Data.Set (Set, elems)
 import Control.Foldl qualified as Foldl
 import Control.Foldl (Fold)
 import Control.Applicative (Applicative(..))
 import Data.Foldable (Foldable(foldl'))
 import Data.Text qualified as T
-import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
 import Statistics.Distribution (density)
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Data.Scientific (formatScientific, FPFormat (Exponent), fromFloatDigits)
-import Debug.Trace (trace)
 
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
@@ -109,8 +107,8 @@ cdf nu x = runIntegrator (negativeInfinity `to` x) nu where
   negativeInfinity = negate (1 / 0)
 
   to :: (Num a, Ord a) => a -> a -> a -> a
-  to a b x
-    | x >= a && x <= b = 1
+  to a b k
+    | k >= a && k <= b = 1
     | otherwise        = 0
 
 volume :: Integrator Double -> Double
@@ -151,4 +149,4 @@ plotCdf nBins binSize model = do
     x <- take nBins [1..]
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
     return ((T.pack . show) $  transform x, cdf model (transform x))
-    
+  

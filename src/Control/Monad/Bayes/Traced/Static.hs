@@ -19,10 +19,18 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-    ( MonadInfer, MonadCond(..), MonadSample(random) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random),
+  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-    ( Trace(..), singleton, scored, bind, mhTrans )
+  ( Trace (..),
+    bind,
+    mhTrans,
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)

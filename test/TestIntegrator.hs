@@ -3,16 +3,7 @@ module TestIntegrator where
 
 import Control.Monad.Bayes.Class
     ( MonadInfer, MonadSample(normal, uniformD, bernoulli, random, gamma), condition, factor, normalPdf, MonadCond (score) )
-import Control.Monad.Bayes.Weighted (runWeighted, Weighted)
-import Control.Monad.Bayes.Integrator
-    ( cdf,
-      empirical,
-      enumerateWith,
-      expectation,
-      probability,
-      variance,
-      volume,
-      normalize )
+import Control.Monad.Bayes.Weighted (runWeighted)
 import Data.AEq ( AEq((~==)) )
 import Numeric.Log ( Log(ln, Exp) )
 import Sprinkler ( hard, soft )
@@ -21,10 +12,6 @@ import Statistics.Distribution (Distribution(cumulative))
 import Statistics.Distribution.Normal (normalDistr)
 import Data.List (sortOn)
 import Control.Monad.Bayes.Integrator
-import Control.Monad.Bayes.Enumerator (enumerate, toEmpiricalWeighted)
-import Control.Monad.Cont (cont)
-import Statistics.Distribution.Uniform (uniformDistr)
-import Control.Monad.Bayes.Sampler (sampleIO)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Sampler 
 -- (sampleMean)
@@ -44,8 +31,10 @@ agg = do
   y <- uniformD [2, 1]
   return (x + y)
 
--- passed1, passed2, passed3, passed4, passed5, passed6, passed7, passed8, passed9, passed10 :: Bool
-
+passed1, passed2, passed3, passed4, 
+  passed5, passed6, passed7, passed8, 
+  passed9, passed10, passed11, passed12,
+  passed13, passed14, passed15 :: Bool
 
 passed1 = 
   sortOn fst (enumerateWith (fromList [3, 1, 2]) agg) 
