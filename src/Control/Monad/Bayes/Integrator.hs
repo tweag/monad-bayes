@@ -43,6 +43,8 @@ import Data.Text qualified as T
 import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
 import Statistics.Distribution (density)
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Data.Scientific (formatScientific, FPFormat (Exponent), fromFloatDigits)
+
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
@@ -101,15 +103,15 @@ normalize m =
     in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
 
 cdf :: Integrator Double -> Double -> Double
-cdf nu x = runIntegrator (negativeInfinity `to` x) nu
+cdf nu x = runIntegrator (negativeInfinity `to` x) nu where 
 
-negativeInfinity :: Double
-negativeInfinity = negate (1 / 0)
+  negativeInfinity :: Double
+  negativeInfinity = negate (1 / 0)
 
-to :: (Num a, Ord a) => a -> a -> a -> a
-to a b x
-  | x >= a && x <= b = 1
-  | otherwise        = 0
+  to :: (Num a, Ord a) => a -> a -> a -> a
+  to a b x
+    | x >= a && x <= b = 1
+    | otherwise        = 0
 
 volume :: Integrator Double -> Double
 volume = runIntegrator (const 1)
@@ -130,6 +132,11 @@ instance Num a => Num (Integrator a) where
 probability :: Ord a => (a, a) -> Integrator a -> Double
 probability (lower, upper) = runIntegrator (\x -> if x <upper && x  >= lower then 1 else 0)
 
+probabilityWeighted :: Ord a => (a, a) -> Weighted Integrator a -> Double
+probabilityWeighted (lower, upper) = 
+  runIntegrator (\(x,d) -> if x <upper && x  >= lower then ln (exp d) else 0) . runWeighted
+
+
 -- | an example of how you can use `Weighted` in conjun
 enumerateWithWeighted :: Ord a => Set a -> Weighted Integrator a -> [(a, Double)]
 enumerateWithWeighted ls meas =
@@ -145,12 +152,14 @@ enumerateWith ls meas = normalizeWeights $ compact [(val, runIntegrator
   (\x -> if x == val then 1 else 0) meas) 
   | val <- elems ls]
 
-histogram :: (Enum a, Show a, Ord a, Fractional a) => 
-  Int -> a -> Integrator a -> [(T.Text, Double)]
+histogram :: (Enum a, RealFloat a) => 
+  Int -> a -> Weighted Integrator a -> [(T.Text, Double)]
 histogram nBins binSize model = do
     x <- take nBins [1..]
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
-    return ((T.pack . show) (transform x,transform (x+1)),probability (transform x,transform (x+1)) model)
+    return (
+      (T.pack . formatScientific Exponent (Just 2) . fromFloatDigits . fst) 
+      (transform x,transform (x+1)),probabilityWeighted (transform x,transform (x+1)) model)
 
 plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
 plotCdf nBins binSize model = do

@@ -65,6 +65,7 @@ library
     , integration
     , foldl
     , text
+    , scientific
 
   default-extensions: 
         BlockArguments
