@@ -137,7 +137,9 @@ test-suite monad-bayes-test
     , QuickCheck
     , transformers
     , vector
+    , statistics       
     , containers
+    , foldl
 
   if flag(dev)
     ghc-options:

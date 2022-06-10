@@ -12,19 +12,20 @@
 
 
 module Control.Monad.Bayes.Integrator 
-  (probability,
-  variance,
-  expectation,
-  cdf,
-  empirical,
-  enumerateWith,
-  histogram,
-  plotCdf,
-  volume,
-  normalize,
-  momentGeneratingFunction,
-  cumulantGeneratingFunction,
-  Integrator)
+  -- (probability,
+  -- variance,
+  -- expectation,
+  -- cdf,
+  -- empirical,
+  -- enumerateWith,
+  -- enumerateWithWeighted,
+  -- histogram,
+  -- plotCdf,
+  -- volume,
+  -- normalize,
+  -- momentGeneratingFunction,
+  -- cumulantGeneratingFunction,
+  -- Integrator)
 where
 
 import Control.Monad.Trans.Cont
@@ -44,6 +45,7 @@ import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
 import Statistics.Distribution (density)
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Data.Scientific (formatScientific, FPFormat (Exponent), fromFloatDigits)
+import Debug.Trace (trace)
 
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
@@ -56,11 +58,6 @@ instance MonadSample Integrator where
     random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
     bernoulli p = Integrator $ cont (\f -> p * f True + (1 -p) * f False)
     uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
-
-instance MonadCond Integrator where
-    score d = Integrator (cont (\f -> ln (exp d) * f ()))
-
-instance MonadInfer Integrator
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $ cont $ \f ->
@@ -96,11 +93,14 @@ momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
-normalize :: Weighted Integrator Double -> Integrator Double
+normalize :: Weighted Integrator a -> Integrator a
 normalize m =
     let m' = runWeighted m
         z = runIntegrator (ln . exp . snd) m'
-    in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
+    in do
+      (x, d) <- runWeighted m
+      Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
+      return x
 
 cdf :: Integrator Double -> Double -> Double
 cdf nu x = runIntegrator (negativeInfinity `to` x) nu where 
@@ -132,23 +132,8 @@ instance Num a => Num (Integrator a) where
 probability :: Ord a => (a, a) -> Integrator a -> Double
 probability (lower, upper) = runIntegrator (\x -> if x <upper && x  >= lower then 1 else 0)
 
-probabilityWeighted :: Ord a => (a, a) -> Weighted Integrator a -> Double
-probabilityWeighted (lower, upper) = 
-  runIntegrator (\(x,d) -> if x <upper && x  >= lower then ln (exp d) else 0) . runWeighted
-
-
--- | an example of how you can use `Weighted` in conjun
-enumerateWithWeighted :: Ord a => Set a -> Weighted Integrator a -> [(a, Double)]
-enumerateWithWeighted ls meas =
-    let norm = volume $ exp . ln . snd <$> runWeighted meas
-    in normalizeWeights $ compact [(val, runIntegrator (\(x,d) ->
-            if x == val
-                then ln (exp d) / norm
-                else 0)
-                (runWeighted meas)) | val <- elems ls]
-
 enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
-enumerateWith ls meas = normalizeWeights $ compact [(val, runIntegrator 
+enumerateWith ls meas = [(val, runIntegrator 
   (\x -> if x == val then 1 else 0) meas) 
   | val <- elems ls]
 
@@ -159,7 +144,7 @@ histogram nBins binSize model = do
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
     return (
       (T.pack . formatScientific Exponent (Just 2) . fromFloatDigits . fst) 
-      (transform x,transform (x+1)),probabilityWeighted (transform x,transform (x+1)) model)
+      (transform x,transform (x+1)), probability (transform x,transform (x+1)) $ normalize model)
 
 plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
 plotCdf nBins binSize model = do
@@ -167,10 +152,3 @@ plotCdf nBins binSize model = do
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
     return ((T.pack . show) $  transform x, cdf model (transform x))
     
--- mode = do
---   x <- bernoulli 0.5
---   y <- bernoulli 0.6
---   condition x
---   return (x||y)
-
--- run = enumerateWith (S.fromList [True, False]) $ (normalize mode)

@@ -1,6 +1,8 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ApplicativeDo #-}
+
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -23,7 +25,8 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
-    toBins
+    toBins,
+    sampleMean
     )
 where
 
@@ -45,6 +48,8 @@ import System.Random.MWC
       Variate(uniformR, uniform) )
 import System.Random.MWC.Distributions qualified as MWC
 import Data.Fixed (mod')
+import qualified Control.Foldl as Foldl
+import Numeric.Log (Log (ln))
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -131,3 +136,14 @@ toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize)
 
 toBins :: Double -> [Double] -> [Double]
 toBins binWidth = fmap (fst . toBin binWidth)
+
+sampleMean :: [(Double, Log Double)] -> Double
+sampleMean x = 
+  let z = Prelude.sum $ fmap (ln . exp . snd) x 
+  in Prelude.sum [y*((ln (exp d)) /z) | (y,d) <- x]
+  
+  -- Foldl.fold do 
+  --       y <- Foldl.premap fst Foldl.sum
+  --       z <- Foldl.premap (ln . exp . snd) Foldl.sum
+  --       len <- Foldl.genericLength
+  --       pure (y * (ln (exp d) / z))

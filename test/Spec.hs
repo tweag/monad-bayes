@@ -39,26 +39,24 @@ main = hspec $ do
         ls -> (TestIntegrator.volumeIsOne ls)
 
   describe "Integrator" $ do
-    it "" $
-      TestIntegrator.passed1 `shouldBe` True
-    it "" $
-      TestIntegrator.passed2 `shouldBe` True
-    it "" $
-      TestIntegrator.passed3 `shouldBe` True
-    it "" $
-      TestIntegrator.passed4 `shouldBe` True
-    it "" $
-      TestIntegrator.passed5 `shouldBe` True
-    it "" $
-      TestIntegrator.passed6 `shouldBe` True
-    it "" $
-      TestIntegrator.passed7 `shouldBe` True
-    it "" $
-      TestIntegrator.passed8 `shouldBe` True
-    it "" $
-      TestIntegrator.passed9 `shouldBe` True
-    it "" $
-      TestIntegrator.passed10 `shouldBe` True
+    it "" $ 
+      all (==True) [
+        TestIntegrator.passed1,
+        TestIntegrator.passed2,
+        TestIntegrator.passed3,
+        TestIntegrator.passed4,
+        TestIntegrator.passed5,
+        TestIntegrator.passed6,
+        TestIntegrator.passed7,
+        TestIntegrator.passed8,
+        TestIntegrator.passed9,
+        TestIntegrator.passed10,
+        TestIntegrator.passed11,
+        TestIntegrator.passed12,
+        TestIntegrator.passed13,
+        TestIntegrator.passed14
+        ] `shouldBe` True
+
   describe "Population" $ do
     context "controlling population" $ do
       it "preserves the population when not explicitly altered" $ do
