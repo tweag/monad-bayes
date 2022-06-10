@@ -4,8 +4,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- |
--- This is heavily inspired by https://jtobin.io/giry-monad-implementation
--- but brought into the monad-bayes framework (i.e. Measure is an instance of MonadInfer)
+-- This is adapted from https://jtobin.io/giry-monad-implementation
+-- but brought into the monad-bayes framework (i.e. Integrator is an instance of MonadInfer)
 -- It's largely for debugging other inference methods and didactic use, 
 -- because brute force integration of measures is 
 -- only practical for small programs
@@ -22,11 +22,13 @@ module Control.Monad.Bayes.Integrator
   plotCdf,
   volume,
   normalize,
+  momentGeneratingFunction,
+  cumulantGeneratingFunction,
   Integrator)
 where
 
 import Control.Monad.Trans.Cont
-    ( cont, runCont, Cont, ContT(ContT), mapCont )
+    ( cont, runCont, Cont, ContT(ContT) )
 import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, uniformD))
 import Numeric.Integration.TanhSinh ( trap, Result(result) )
 import Statistics.Distribution.Uniform qualified as Statistics
@@ -52,6 +54,11 @@ instance MonadSample Integrator where
     random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
     bernoulli p = Integrator $ cont (\f -> p * f True + (1 -p) * f False)
     uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
+
+instance MonadCond Integrator where
+    score d = Integrator (cont (\f -> ln (exp d) * f ()))
+
+instance MonadInfer Integrator
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $ cont $ \f ->
@@ -123,14 +130,20 @@ instance Num a => Num (Integrator a) where
 probability :: Ord a => (a, a) -> Integrator a -> Double
 probability (lower, upper) = runIntegrator (\x -> if x <upper && x  >= lower then 1 else 0)
 
-enumerateWith :: Ord a => Set a -> Weighted Integrator a -> [(a, Double)]
-enumerateWith ls meas =
+-- | an example of how you can use `Weighted` in conjun
+enumerateWithWeighted :: Ord a => Set a -> Weighted Integrator a -> [(a, Double)]
+enumerateWithWeighted ls meas =
     let norm = volume $ exp . ln . snd <$> runWeighted meas
     in normalizeWeights $ compact [(val, runIntegrator (\(x,d) ->
             if x == val
                 then ln (exp d) / norm
                 else 0)
                 (runWeighted meas)) | val <- elems ls]
+
+enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
+enumerateWith ls meas = normalizeWeights $ compact [(val, runIntegrator 
+  (\x -> if x == val then 1 else 0) meas) 
+  | val <- elems ls]
 
 histogram :: (Enum a, Show a, Ord a, Fractional a) => 
   Int -> a -> Integrator a -> [(T.Text, Double)]
@@ -145,3 +158,10 @@ plotCdf nBins binSize model = do
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
     return ((T.pack . show) $  transform x, cdf model (transform x))
     
+-- mode = do
+--   x <- bernoulli 0.5
+--   y <- bernoulli 0.6
+--   condition x
+--   return (x||y)
+
+-- run = enumerateWith (S.fromList [True, False]) $ (normalize mode)
