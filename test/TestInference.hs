@@ -24,6 +24,9 @@ import ConjugatePriors
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Integrator (normalize)
+import qualified Control.Monad.Bayes.Sampler as Sampler
+import Control.Monad (replicateM)
+import qualified Control.Monad.Bayes.Weighted as Weighted
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -49,41 +52,39 @@ checkPreserveSMC =
   (enumerate . collapse . smcMultinomial 2 2) sprinkler
     ~== enumerate sprinkler
 
-expectationNearNumeric :: Monad m =>
+expectationNearNumeric :: 
    Weighted Integrator.Integrator Double
-  ->  Weighted Integrator.Integrator Double -> m Double
-expectationNearNumeric x y = do
+  ->  Weighted Integrator.Integrator Double -> Double
+expectationNearNumeric x y = 
     let e1 = Integrator.expectation $ normalize x
         e2 = Integrator.expectation $ normalize y
-    return (abs (e1 - e2))
+    in (abs (e1 - e2))
 
--- expectationNearSampling x y = do
---     e1 <- Sampler.sampleMean x
---     e2 <- Sampler.sampleMean y
---     return (abs (e1 - e2))
+expectationNearSampling x y = do
+    e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted x
+    e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted y
+    return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do
 
-  e <- expectationNearNumeric
-    (posterior (normalNormal' 1 (1,10)) n)
-    (normalNormalAnalytic 1 (1,10) n)
-
-  return (e < 1e-0)
+    let e = expectationNearNumeric
+          (posterior (normalNormal' 1 (1,10)) n)
+          (normalNormalAnalytic 1 (1,10) n)
+    return (e < 1e-0)
 
 testGammaNormal :: [Double] -> IO Bool
 testGammaNormal n = do
 
-  e <- expectationNearNumeric
-    (posterior (gammaNormal' (1,1)) n)
-    (gammaNormalAnalytic (1,1) n)
+  let e = expectationNearNumeric
+        (posterior (gammaNormal' (1,1)) n)
+        (gammaNormalAnalytic (1,1) n)
   return (e < 1e-1)
 
 testBetaBernoulli :: [Bool] -> IO Bool
 testBetaBernoulli bs = do
 
-  e <- expectationNearNumeric
-    (posterior (betaBernoulli' (1,1)) bs)
-    (betaBernoulliAnalytic (1,1) bs)
-  
+  let e = expectationNearNumeric
+        (posterior (betaBernoulli' (1,1)) bs)
+        (betaBernoulliAnalytic (1,1) bs)
   return (e < 1e-1)
