@@ -1,6 +1,9 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ApplicativeDo #-}
+
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -23,28 +26,32 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
-    estimateMeanEmpirical,
-    toBins
+    toBins,
+    sampleMean
     )
 where
 
 import Control.Monad.Bayes.Class
-    ( MonadSample(geometric, categorical, bernoulli, beta, gamma,
-                  normal, uniform, random) )
+  ( MonadSample
+      ( bernoulli,
+        beta,
+        categorical,
+        gamma,
+        geometric,
+        normal,
+        random,
+        uniform
+      ),
+  )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+import Data.Fixed (mod')
 import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
-import Control.Monad.Bayes.Weighted 
 import qualified Control.Foldl as F hiding (random)
-
-import System.Random.MWC.Distributions qualified as MWC
-import Control.Applicative (liftA2)
-import Control.Monad (replicateM)
-import Numeric.Log (Log(ln))
-import Data.Fixed (mod')
+import Numeric.Log (Log (ln))
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -120,18 +127,35 @@ instance MonadSample SamplerST where
   geometric p = fromMWC $ MWC.geometric0 p
 
 
-estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
-estimateMeanEmpirical s =
-  F.fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
-    <$> (sampleIO . replicateM 1000 . runWeighted) s
 
 type Bin = (Double, Double)
+
 -- | binning function. Useful when you want to return the bin that
 -- a random variable falls into, so that you can show a histogram of samples
-toBin :: Double -- ^ bin size 
-  -> Double -- ^ number
-  -> Bin
-toBin binSize n = let lb = n `mod'` binSize in (n-lb, n-lb + binSize) 
+toBin ::
+  -- | bin size
+  Double ->
+  -- | number
+  Double ->
+  Bin
+toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
 
 toBins :: Double -> [Double] -> [Double]
 toBins binWidth = fmap (fst . toBin binWidth)
+
+sampleMean :: [(Double, Log Double)] -> Double
+sampleMean x = 
+  let z = Prelude.sum $ fmap (ln . exp . snd) x 
+  in Prelude.sum [y*((ln (exp d)) /z) | (y,d) <- x]
+  
+
+--   estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
+-- estimateMeanEmpirical s =
+--   F.fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
+--     <$> (sampleIO . replicateM 1000 . runWeighted) s
+
+  -- Foldl.fold do 
+  --       y <- Foldl.premap fst Foldl.sum
+  --       z <- Foldl.premap (ln . exp . snd) Foldl.sum
+  --       len <- Foldl.genericLength
+  --       pure (y * (ln (exp d) / z))

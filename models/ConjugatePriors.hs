@@ -7,12 +7,12 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Foldl (fold)
 import Control.Foldl qualified as F
 import Control.Monad.Bayes.Class
-    ( factor,
+    ( 
       normalPdf,
       MonadInfer,
       MonadSample(beta, bernoulli, gamma, normal) )
 import Data.Profunctor (Profunctor (lmap))
-import Numeric.Log (Log (Exp, ln))
+import Numeric.Log (Log (Exp))
 import Prelude
 import Control.Monad.Bayes.Class (Bayesian(..))
 

@@ -1,9 +1,5 @@
 # User Guide
 
-$$
-foo
-$$
-
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
 
 ```haskell
@@ -153,7 +149,7 @@ example = do
   return n
 ```
 
-This describes a poisson distribution in which all even values of the random variable are marginalized out.
+This describes a Poisson distribution in which all even values of the random variable are marginalized out.
 
 <!-- Another use case is Bayesian inference as in:
 
@@ -198,7 +194,7 @@ To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "margi
 
 All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.
 
-**The challenge of inference** is that most distributions that are of interest are not as simple as `sprinkler`. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.
+The challenge of inference is that most distributions that are of interest are not as simple as `sprinkler`. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.
 
 Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given about are sufficient for that. 
 
@@ -220,13 +216,29 @@ So `enumerate (bernoulli 0.7)` gives you
 [(False,0.3),(True,0.7)]
 ```
 
+This works for distributions with `factor` statements (i.e. an instance of `MonadInfer`), as in:
+
+```haskell
+
+model :: MonadInfer m => m Bool
+model = do
+  x <- bernoulli 0.5
+  y <- bernoulli 0.3
+  condition (x || y)
+  return x
+
+enumerate model
+
+> [(True,0.7692307692307692),(False,0.23076923076923078)]
+```
+
 **Note: enumerate only works on finite discrete distributions**
 
 It will run forever on infinite distributions like `enumerate (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerate (normal 0 1)`:
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
-**However**, it's totally fine to have the elements of the support to be infinite but discrete, as in:
+**However**, it's totally fine to have the elements of the support themselves be infinite, as in:
 
 ```haskell
 fmap (\(ls,p) -> (take 4 ls, p)) $ enumerate $ uniformD [[1..], [2..]]
@@ -237,6 +249,34 @@ which gives
 ```
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
+
+#### Near exact inference for continuous distributions
+
+Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
+
+```haskell
+model :: MonadSample m => m Double
+model = do
+  var <- gamma 1 1
+  normal 0 (sqrt var)
+```
+
+you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly $0.5$, since the PDF of `model` is symmetric around $0$.
+
+You can also try `expectation model`, `variance model`, `momentGeneratingFunction model n` or `cdf model n`. 
+
+If the model has factor statements, as in
+
+```haskell
+model :: MonadInfer m => m Double
+model = do
+  var <- gamma 1 1
+  n <- normal 0 (sqrt var)
+  condition (n > 0)
+  return var
+```
+
+we must first `normalize` the model, as in `probability (0, 0.1) (normalize model)`.
 
 ### Independent forward sampling
 

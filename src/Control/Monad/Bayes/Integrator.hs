@@ -2,10 +2,11 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
 -- |
--- This is heavily inspired by https://jtobin.io/giry-monad-implementation
--- but brought into the monad-bayes framework (i.e. Measure is an instance of MonadInfer)
+-- This is adapted from https://jtobin.io/giry-monad-implementation
+-- but brought into the monad-bayes framework (i.e. Integrator is an instance of MonadInfer)
 -- It's largely for debugging other inference methods and didactic use, 
 -- because brute force integration of measures is 
 -- only practical for small programs
@@ -27,6 +28,23 @@ where
 
 import Control.Monad.Trans.Cont
     ( cont, runCont, Cont, ContT(ContT), mapCont )
+  -- (probability,
+  -- variance,
+  -- expectation,
+  -- cdf,
+  -- empirical,
+  -- enumerateWith,
+  -- enumerateWithWeighted,
+  -- histogram,
+  -- plotCdf,
+  -- volume,
+  -- normalize,
+  -- momentGeneratingFunction,
+  -- cumulantGeneratingFunction,
+  -- Integrator)
+
+import Control.Monad.Trans.Cont
+    ( cont, runCont, Cont, ContT(ContT) )
 import Control.Monad.Bayes.Class (MonadSample (random, bernoulli, uniformD))
 import Numeric.Integration.TanhSinh ( trap, Result(result) )
 import Statistics.Distribution.Uniform qualified as Statistics
@@ -41,6 +59,11 @@ import Data.Text qualified as T
 import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
 import Statistics.Distribution (density)
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+
+import Statistics.Distribution (density)
+import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Data.Scientific (formatScientific, FPFormat (Exponent), fromFloatDigits)
+
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
@@ -87,26 +110,25 @@ momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
-normalize :: Weighted Integrator Double -> Integrator Double
+normalize :: Weighted Integrator a -> Integrator a
 normalize m =
     let m' = runWeighted m
         z = runIntegrator (ln . exp . snd) m'
-    -- in do 
-    --   (x, d) <- m' 
-    --   Integrator $ cont $ \f -> z * f () 
-    --   return (x* ln (exp d))
-    in fmap (\(x, w) -> x * (ln (exp w)/z)) m'
+    in do
+      (x, d) <- runWeighted m
+      Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
+      return x
 
 cdf :: Integrator Double -> Double -> Double
-cdf nu x = runIntegrator (negativeInfinity `to` x) nu
+cdf nu x = runIntegrator (negativeInfinity `to` x) nu where 
 
-negativeInfinity :: Double
-negativeInfinity = negate (1 / 0)
+  negativeInfinity :: Double
+  negativeInfinity = negate (1 / 0)
 
-to :: (Num a, Ord a) => a -> a -> a -> a
-to a b x
-  | x >= a && x <= b = 1
-  | otherwise        = 0
+  to :: (Num a, Ord a) => a -> a -> a -> a
+  to a b k
+    | k >= a && k <= b = 1
+    | otherwise        = 0
 
 volume :: Integrator Double -> Double
 volume = runIntegrator (const 1)
@@ -127,24 +149,23 @@ instance Num a => Num (Integrator a) where
 probability :: Ord a => (a, a) -> Integrator a -> Double
 probability (lower, upper) = runIntegrator (\x -> if x <upper && x  >= lower then 1 else 0)
 
-enumerateWith :: Ord a => Set a -> Weighted Integrator a -> [(a, Double)]
-enumerateWith ls meas =
-    let norm = volume $ exp . ln . snd <$> runWeighted meas
-    in normalizeWeights $ compact [(val, runIntegrator (\(x,d) ->
-            if x == val
-                then ln (exp d) / norm
-                else 0)
-                (runWeighted meas)) | val <- elems ls]
+enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
+enumerateWith ls meas = [(val, runIntegrator 
+  (\x -> if x == val then 1 else 0) meas) 
+  | val <- elems ls]
 
-histogram :: (Enum a, Show a, Ord a, Fractional a) => 
-  Int -> a -> Integrator a -> [(T.Text, Double)]
+histogram :: (Enum a, RealFloat a) => 
+  Int -> a -> Weighted Integrator a -> [(T.Text, Double)]
 histogram nBins binSize model = do
     x <- take nBins [1..]
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
-    return ((T.pack . show) (transform x,transform (x+1)),probability (transform x,transform (x+1)) model)
+    return (
+      (T.pack . formatScientific Exponent (Just 2) . fromFloatDigits . fst) 
+      (transform x,transform (x+1)), probability (transform x,transform (x+1)) $ normalize model)
 
 plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
 plotCdf nBins binSize model = do
     x <- take nBins [1..]
     let transform k = (k - (fromIntegral nBins / 2)) * binSize
     return ((T.pack . show) $  transform x, cdf model (transform x))
+  

@@ -5,8 +5,6 @@ module Dice (diceHard, diceSoft) where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-    ( condition, MonadCond(score), MonadInfer, MonadSample(uniformD) )
-
 -- | A toss of a six-sided die.
 die :: MonadSample m => m Int
 die = uniformD [1 .. 6]

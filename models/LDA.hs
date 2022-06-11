@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 
 -- LDA model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
@@ -23,6 +24,8 @@ import qualified Data.Vector as V hiding (length, mapM, mapM_)
 import Numeric.Log ( Log(Exp) )
 import Data.Text (Text, words)
 import Text.Pretty.Simple ( pPrint )
+
+import Data.Vector as V (Vector, replicate, (!))
 
 vocabulary :: [Text]
 vocabulary = ["bear", "wolf", "python", "prolog"]

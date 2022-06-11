@@ -3,14 +3,13 @@
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
 module TestInference where
-
 import Control.Monad.Bayes.Class 
 import Control.Monad.Bayes.Enumerator ( enumerate )
 import Control.Monad.Bayes.Inference.SMC
     ( smcMultinomial, smcSystematic, smcStratified )
 import Control.Monad.Bayes.Population ( collapse, runPopulation )
 import Control.Monad.Bayes.Sampler
-    ( estimateMeanEmpirical, sampleIOfixed, SamplerIO )
+    ( sampleIOfixed )
 import Data.AEq ( AEq((~==)) )
 import Numeric.Log ( Log )
 import Sprinkler ( soft )
@@ -24,7 +23,6 @@ import ConjugatePriors
       normalNormalAnalytic )
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Weighted (Weighted)
-import qualified Control.Monad.Bayes.Sampler as Sampler
 import Control.Monad.Bayes.Integrator (normalize)
 
 sprinkler :: MonadInfer m => m Bool
@@ -59,10 +57,10 @@ expectationNearNumeric x y = do
         e2 = Integrator.expectation $ normalize y
     return (abs (e1 - e2))
 
-expectationNearSampling x y = do
-    e1 <- Sampler.estimateMeanEmpirical x
-    e2 <- Sampler.estimateMeanEmpirical y
-    return (abs (e1 - e2))
+-- expectationNearSampling x y = do
+--     e1 <- Sampler.sampleMean x
+--     e2 <- Sampler.sampleMean y
+--     return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool
 testNormalNormal n = do

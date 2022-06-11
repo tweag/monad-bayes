@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
@@ -41,8 +42,18 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Trans
 import Control.Monad.Trans.List
+
+import Control.Monad.Bayes.Weighted
+  ( Weighted,
+    applyWeight,
+    extractWeight,
+    runWeighted,
+    withWeight,
+  )
+import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
-import qualified Data.List
+import Data.List qualified
 import Data.Maybe (catMaybes)
 import Data.Vector ((!))
 import Data.Vector qualified as V

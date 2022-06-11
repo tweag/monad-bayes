@@ -182,6 +182,8 @@ From the way the `MonadSample` instance for `Enumerator` is defined, `bernoulli 
 
 
 
+
+
 <!-- ```haskell
 example2 = do
     x <- bernoulli 0.5
@@ -320,6 +322,7 @@ This takes a natural transformation `m ~> n` and lifts it into a natural transfo
 **composable stack of inference transformers, implemented as instances of `MonadSample` and `MonadCond` typeclasses.**
 
 In a similar vein, `Population` and `Sequential` go together to handle Sequential Monte Carlo (SMC), and `Traced` is associated with Markov Chain Monte Carlo (MCMC). -->
+
 
 
 ### Population
@@ -488,8 +491,6 @@ When `m` is `Population n` for some other `n`, then `resampleGeneric` gives us o
 
 ### FreeSampler
 
-(*Difficulty: high*)
-
 Summary of key info on `FreeSampler`:
 
 - `FreeSampler :: (Type -> Type) -> (Type -> Type)`
@@ -553,8 +554,6 @@ This takes a list of `Double`s (a representation of a trace), and a probabilisti
 
 ### Traced
 
-(*Difficulty: hard*)
-
 Summary of key info on `Traced`:
 
 - `Traced :: (Type -> Type) -> (Type -> Type)`
@@ -595,6 +594,27 @@ A `Traced` interpretation of a model is a particular run of the model with its c
 
 This machinery allows us to implement MCMC (see inference methods below for details). 
 
+### Integrator
+
+Summary of key info:
+
+- `Integrator :: Type -> Type`
+- `instance MonadSample Integrator`
+
+`Integrator` is in `Control.Monad.Bayes.Integrator`, defined as follows:
+
+```haskell
+newtype Integrator a = Integrator {getCont :: Cont Double a}
+```
+
+This `MonadSample` instance interprets a probabilistic program as a numerical integrator. For a nice explanation, see [this blog post](https://jtobin.io/giry-monad-implementation).
+
+`Integrator a` is isomorphic to `(a -> Double) -> Double`. 
+A program `model` of type `Integrator a` will take a function `f` and calculate $E_{p}[f] = \int f(x)*p(x)$ where $p$ is the density of `model`. 
+
+The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, `random :: Integrator Double` is the program which takes a function `f` and integrates `f` over the $(0,1)$ range.
+
+We can calculate the probability for an interval $(a,b)$ of any model of type `Integrator Double` by setting `f` to be the function that returns $1$ for that range, else $0$. Similarly for the CDF, MGF and so on.
 
 ## Inference methods under the hood
 
@@ -623,6 +643,23 @@ example = do
 ```
 
 `(enumerate . runWeighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . runWeighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
+
+### Quadrature
+
+As described on the section on `Integrator`, we can interpret our probabilistic program of type `MonadSample m => m a` as having concrete type `Integrator a`. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).
+
+This can also handle programs of type `MonadInfer m => m a`, that is, programs with `factor` statements. For these cases, a function `normalize :: Weighted Integrator a -> Integrator a` is employed. For example, 
+
+```haskell
+model :: MonadInfer m => m Double
+model = do
+  var <- gamma 1 1
+  n <- normal 0 (sqrt var)
+  condition (n > 0)
+  return var
+```
+
+is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `(Double -> (Double, Log Double) -> Double)`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`. 
 
 ### Independent forward sampling
 

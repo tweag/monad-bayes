@@ -3,7 +3,7 @@
 -- Logistic regression model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
 
-module LogReg where
+module LogReg (logisticRegression, syntheticData, xs, labels) where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class

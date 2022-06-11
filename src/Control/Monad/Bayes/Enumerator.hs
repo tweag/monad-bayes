@@ -1,6 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE ImportQualifiedPost #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -24,7 +24,8 @@ module Control.Monad.Bayes.Enumerator
     toEmpiricalWeighted,
     normalizeWeights,
     enumerateToDistribution
-        )
+    
+  )
 where
 
 import Control.Applicative (Alternative)
@@ -41,16 +42,9 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Vector.Generic as V
 import Numeric.Log as Log
-import Data.Text qualified as T
-import Data.Fixed (mod')
-import Data.Text (pack)
-import Data.Map qualified as Map
-import Data.Maybe ( fromMaybe )
-import Data.Monoid ( Product(..) )
-import Data.Vector.Generic qualified as V
-import Numeric.Log as Log ( Log(..) )
+
+import Data.Ord (Down (Down))
 import Data.List (sortOn)
-import Data.Ord (Down(Down))
 import qualified Data.Vector as VV
 
 -- | An exact inference transformer that integrates
@@ -83,7 +77,7 @@ explicit = map (second (exp . ln)) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
 evidence :: Enumerator a -> Log Double
-evidence = Prelude.sum . map snd . logExplicit
+evidence = Log.sum . map snd . logExplicit
 
 -- | Normalized probability mass of a specific value.
 mass :: Ord a => Enumerator a -> a -> Double
@@ -139,9 +133,8 @@ instance Ord a => AEq (Enumerator a) where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
 
-
 toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
-toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1)) 
+toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
 
 toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
