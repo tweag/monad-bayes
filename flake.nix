@@ -69,6 +69,7 @@
                                   pkgs.myHaskellPackages.lens
                                   pkgs.myHaskellPackages.log-domain
                                   pkgs.myHaskellPackages.katip
+                                  pkgs.myHaskellPackages.ihaskell-hvega
                                   monad-bayes
                                 ];
           # Optional definition of `haskellPackages` to be used.
