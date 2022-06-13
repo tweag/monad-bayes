@@ -1,6 +1,17 @@
 # User Guide
 
-Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
+Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
+
+$$
+\beta \sim \operatorname{normal}(0, 2)
+\alpha \sim \operatorname{normal}(0, 2)
+\sigma^2 \sim \operatorname{gamma}(4, 4)
+
+\epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
+$$
+
+but in code as:
 
 ```haskell
 paramPriorRegression :: MonadSample m => m (Double, Double, Double)
@@ -29,7 +40,7 @@ We could then run the model as follows:
 mhRunsRegression = sampleIO $ prior $ mh 1000 $ regression xs ys
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampleIO` samples a particular chain. Plotting one gives:
 
 ![](_static/regress.png)
 
@@ -59,7 +70,7 @@ Probabilistic programs in monad-bayes are first class programs in Haskell. This 
 
 ## References
 
-Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to WebPPL is an excellent resource for learning about probabilistic programming: https://probmods.org/. The tutorials for Gen are also very good, particularly for learning about traces: https://github.com/probcomp/gen-quickstart/blob/master/tutorials/A%20Bottom-Up%20Introduction%20to%20Gen.ipynb.
+Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to [WebPPL](https://probmods.org/) is an excellent resource for learning about probabilistic programming. The [tutorials for Gen](https://www.gen.dev/tutorials/) are also very good, particularly for learning about traces.
 
 ## Specifying distributions
 
@@ -537,7 +548,7 @@ In this example, the performance difference is negligible, but it's easy to exte
 
 monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
 
-```haskell
+```
 stack exec example -- -m LDA4 -a MH
 ```
 

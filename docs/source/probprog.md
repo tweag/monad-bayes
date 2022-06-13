@@ -70,7 +70,7 @@ Probabilistic programs in monad-bayes are first class programs in Haskell. This 
 
 ## References
 
-Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to WebPPL is an excellent resource for learning about probabilistic programming: https://probmods.org/. The tutorials for Gen are also very good, particularly for learning about traces: https://github.com/probcomp/gen-quickstart/blob/master/tutorials/A%20Bottom-Up%20Introduction%20to%20Gen.ipynb.
+Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to [WebPPL](https://probmods.org/) is an excellent resource for learning about probabilistic programming. The [tutorials for Gen](https://www.gen.dev/tutorials/) are also very good, particularly for learning about traces.
 
 ## Specifying distributions
 
@@ -548,7 +548,7 @@ In this example, the performance difference is negligible, but it's easy to exte
 
 monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
 
-```haskell
+```
 stack exec example -- -m LDA4 -a MH
 ```
 

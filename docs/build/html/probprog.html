@@ -40,7 +40,7 @@
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="monad-bayes  documentation" href="index.html"/>
         <link rel="next" title="Developer Guide" href="usage.html"/>
-        <link rel="prev" title="Welcome to monad-bayes’s documentation!" href="index.html"/> 
+        <link rel="prev" title="Documentation for Monad-Bayes" href="index.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -178,7 +178,15 @@
             
   <section class="tex2jax_ignore mathjax_ignore" id="user-guide">
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
-<p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:</p>
+<p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}
+\beta \sim \operatorname{normal}(0, 2)
+\alpha \sim \operatorname{normal}(0, 2)
+\sigma^2 \sim \operatorname{gamma}(4, 4)\\\epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
+\end{aligned}\end{align} \]</div>
+<p>but in code as:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">paramPriorRegression</span> <span class="ow">::</span> <span class="kt">MonadSample</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="p">(</span><span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)</span>
 <span class="nf">paramPriorRegression</span> <span class="ow">=</span> <span class="kr">do</span>
     <span class="n">slope</span> <span class="ow">&lt;-</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">2</span>
@@ -200,7 +208,7 @@
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">mhRunsRegression</span> <span class="ow">=</span> <span class="n">sampleIO</span> <span class="o">$</span> <span class="n">prior</span> <span class="o">$</span> <span class="n">mh</span> <span class="mi">1000</span> <span class="o">$</span> <span class="n">regression</span> <span class="n">xs</span> <span class="n">ys</span>
 </pre></div>
 </div>
-<p>This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:</p>
+<p>This yields 1000 samples from an MCMC walk using an MH kernel. <code class="docutils literal notranslate"><span class="pre">mh</span> <span class="pre">n</span></code> produces a distribution over chains of length <code class="docutils literal notranslate"><span class="pre">n</span></code>, along with the probability of that chain. <code class="docutils literal notranslate"><span class="pre">prior</span></code> throws away that weight (we don’t care about the probability of the chain itself), and <code class="docutils literal notranslate"><span class="pre">sampleIO</span></code> samples a particular chain. Plotting one gives:</p>
 <p><img alt="" src="_images/regress.png" /></p>
 <p>Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two.</p>
 <!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
@@ -218,7 +226,7 @@
 </section>
 <section id="references">
 <h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
-<p>Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to WebPPL is an excellent resource for learning about probabilistic programming: https://probmods.org/. The tutorials for Gen are also very good, particularly for learning about traces: https://github.com/probcomp/gen-quickstart/blob/master/tutorials/A%20Bottom-Up%20Introduction%20to%20Gen.ipynb.</p>
+<p>Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to <a class="reference external" href="https://probmods.org/">WebPPL</a> is an excellent resource for learning about probabilistic programming. The <a class="reference external" href="https://www.gen.dev/tutorials/">tutorials for Gen</a> are also very good, particularly for learning about traces.</p>
 </section>
 <section id="specifying-distributions">
 <h2>Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permalink to this headline">¶</a></h2>
@@ -570,7 +578,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
 <section id="executables">
 <h2>Executables<a class="headerlink" href="#executables" title="Permalink to this headline">¶</a></h2>
 <p>monad-bayes comes with an executable called <code class="docutils literal notranslate"><span class="pre">example</span></code>. It’s not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you’ve done <code class="docutils literal notranslate"><span class="pre">stack</span> <span class="pre">build</span></code>, run this with e.g.:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">stack</span> <span class="n">exec</span> <span class="n">example</span> <span class="c1">-- -m LDA4 -a MH</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">stack</span> <span class="n">exec</span> <span class="n">example</span> <span class="o">--</span> <span class="o">-</span><span class="n">m</span> <span class="n">LDA4</span> <span class="o">-</span><span class="n">a</span> <span class="n">MH</span>
 </pre></div>
 </div>
 <p>where the options for <code class="docutils literal notranslate"><span class="pre">-m</span></code> (model) are “LDA” (latent dirichlet), “LR” (logistic regression) and “HMM” (hidden Markov model) and for <code class="docutils literal notranslate"><span class="pre">-a</span></code> (algorithm) are “MH” (Metropolis Hastings), “SMC” (sequential Monte Carlo), and “RMSMC” (resample-move sequential Monte Carlo). The number is the number of steps to take.</p>
@@ -591,7 +599,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
         <a href="usage.html" class="btn btn-neutral float-right" title="Developer Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Welcome to monad-bayes’s documentation!" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="Documentation for Monad-Bayes" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
