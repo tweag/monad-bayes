@@ -24,7 +24,7 @@ paramPriorRegression = do
 regression :: (MonadInfer m) => [Double] -> [Double] -> m (Double, Double, Double)
 regression xs ys = do
     params@(slope, intercept, noise) <- paramPriorRegression
-    forM (zip xs ys) \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
+    forM_ (zip xs ys) \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
     return (slope, intercept, noise)
 ```
 
