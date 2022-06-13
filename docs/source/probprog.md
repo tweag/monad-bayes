@@ -1,10 +1,17 @@
 # User Guide
 
+Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
+
 $$
-foo
+\beta \sim \operatorname{normal}(0, 2)
+\alpha \sim \operatorname{normal}(0, 2)
+\sigma^2 \sim \operatorname{gamma}(4, 4)
+
+\epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
 $$
 
-Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
+but in code as:
 
 ```haskell
 paramPriorRegression :: MonadSample m => m (Double, Double, Double)
@@ -33,7 +40,7 @@ We could then run the model as follows:
 mhRunsRegression = sampleIO $ prior $ mh 1000 $ regression xs ys
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampleIO` samples a particular chain. Plotting one gives:
 
 ![](_static/regress.png)
 
