@@ -1,17 +1,17 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE Trustworthy #-}
 
-import Test.Hspec ( hspec, context, describe, it, shouldBe )
-import Test.Hspec.QuickCheck ( prop )
-import Test.QuickCheck ( (==>), ioProperty, property )
-import qualified TestEnumerator
-import qualified TestIntegrator
-import qualified TestInference
-import qualified TestPopulation
-import qualified TestSequential
-import qualified TestWeighted
-import Data.AEq ( AEq((~==)) )
+import Data.AEq (AEq ((~==)))
+import Test.Hspec (context, describe, hspec, it, shouldBe)
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (ioProperty, property, (==>))
+import TestEnumerator qualified
+import TestInference qualified
+import TestIntegrator qualified
+import TestPopulation qualified
+import TestSequential qualified
+import TestWeighted qualified
 
 main :: IO ()
 main = hspec $ do
@@ -37,28 +37,30 @@ main = hspec $ do
         var > 0 ==> property $ TestIntegrator.normalVariance mean (sqrt var) ~== var
   describe "Integrator Volume" $ do
     prop "volume sums to 1" $
-      property $ \case 
+      property $ \case
         [] -> True
         ls -> (TestIntegrator.volumeIsOne ls)
 
   describe "Integrator" $ do
-    it "" $ 
-      all (==True) [
-        TestIntegrator.passed1,
-        TestIntegrator.passed2,
-        TestIntegrator.passed3,
-        TestIntegrator.passed4,
-        TestIntegrator.passed5,
-        TestIntegrator.passed6,
-        TestIntegrator.passed7,
-        TestIntegrator.passed8,
-        TestIntegrator.passed9,
-        TestIntegrator.passed10,
-        TestIntegrator.passed11,
-        TestIntegrator.passed12,
-        TestIntegrator.passed13,
-        TestIntegrator.passed14
-        ] `shouldBe` True
+    it "" $
+      all
+        (== True)
+        [ TestIntegrator.passed1,
+          TestIntegrator.passed2,
+          TestIntegrator.passed3,
+          TestIntegrator.passed4,
+          TestIntegrator.passed5,
+          TestIntegrator.passed6,
+          TestIntegrator.passed7,
+          TestIntegrator.passed8,
+          TestIntegrator.passed9,
+          TestIntegrator.passed10,
+          TestIntegrator.passed11,
+          TestIntegrator.passed12,
+          TestIntegrator.passed13,
+          TestIntegrator.passed14
+        ]
+        `shouldBe` True
 
   describe "Population" $ do
     context "controlling population" $ do

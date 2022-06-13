@@ -22,7 +22,7 @@ module Control.Monad.Bayes.Enumerator
     normalForm,
     toEmpirical,
     toEmpiricalWeighted,
-    normalizeWeights
+    normalizeWeights,
   )
 where
 
