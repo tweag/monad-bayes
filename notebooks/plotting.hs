@@ -88,7 +88,14 @@ instance Plottable [((Double, Double), Double)] where
     vlShow $
       scatterplot
         (first unzip $ unzip (ls))
-        (color [MName "Outlier", MmType Quantitative])
+        ( color
+            [ MName "Outlier",
+              MmType Quantitative,
+              MScale
+                [ SScheme "viridis" []
+                ]
+            ]
+        )
         Numbers
         Circle
 
