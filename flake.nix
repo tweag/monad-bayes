@@ -36,6 +36,18 @@
                        sundials_sunmatrixsparse = self.sundials;
                      }));
 
+              random-fu = super.haskell.lib.dontCheck (
+                hself.callCabal2nixWithOptions "random-fu" (builtins.fetchGit {
+                  url = "https://github.com/haskell-numerics/random-fu";
+                  rev = "18a6ba6b29c7ca3b3ff34ea6ca0eca910da72726";
+                }) "--subpath random-fu" { });
+
+              rvar = super.haskell.lib.dontCheck (
+                hself.callCabal2nixWithOptions "rvar" (builtins.fetchGit {
+                  url = "https://github.com/haskell-numerics/random-fu";
+                  rev = "18a6ba6b29c7ca3b3ff34ea6ca0eca910da72726";
+                }) "--subpath rvar" { });
+
             };
           };
         };
@@ -71,6 +83,7 @@
                                   pkgs.myHaskellPackages.katip
                                   pkgs.myHaskellPackages.ihaskell-hvega
                                   pkgs.myHaskellPackages.text
+                                  pkgs.myHaskellPackages.random-fu
                                   monad-bayes
                                 ];
           # Optional definition of `haskellPackages` to be used.
