@@ -23,8 +23,8 @@ module Control.Monad.Bayes.Enumerator
     toEmpirical,
     toEmpiricalWeighted,
     normalizeWeights,
-    enumerateToDistribution
-    
+    enumerateToDistribution,
+    removeZeros,
   )
 where
 
@@ -32,20 +32,20 @@ import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-    ( MonadCond(..),
-      MonadInfer,
-      MonadSample(categorical, bernoulli, random, logCategorical) )
-import Control.Monad.Trans.Writer ( WriterT(..) )
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (bernoulli, categorical, logCategorical, random),
+  )
+import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
-import qualified Data.Map as Map
+import Data.List (sortOn)
+import Data.Map qualified as Map
 import Data.Maybe
 import Data.Monoid
-import qualified Data.Vector.Generic as V
-import Numeric.Log as Log
-
 import Data.Ord (Down (Down))
-import Data.List (sortOn)
-import qualified Data.Vector as VV
+import Data.Vector qualified as VV
+import Data.Vector.Generic qualified as V
+import Numeric.Log as Log
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -96,7 +96,7 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 --
 -- > enumerate = compact . explicit
 enumerate :: Ord a => Enumerator a -> [(a, Double)]
-enumerate d = compact (zip xs ws)
+enumerate d = filter ((/= 0) . snd) $ compact (zip xs ws)
   where
     (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
 
@@ -120,6 +120,22 @@ normalizeWeights ls = zip xs ps
 normalForm :: Ord a => Enumerator a -> [(a, Double)]
 normalForm = filter ((/= 0) . snd) . compact . explicit
 
+toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
+toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
+
+toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
+toEmpiricalWeighted = normalizeWeights . compact
+
+enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution model = do
+  let samples = logExplicit model
+  let (support, logprobs) = unzip samples
+  i <- logCategorical $ VV.fromList logprobs
+  return $ support !! i
+
+removeZeros :: Enumerator a -> Enumerator a
+removeZeros (Enumerator (WriterT a)) = Enumerator $ WriterT $ filter ((\(Product x) -> x /= 0) . snd) a
+
 instance Ord a => Eq (Enumerator a) where
   p == q = normalForm p == normalForm q
 
@@ -132,17 +148,3 @@ instance Ord a => AEq (Enumerator a) where
     where
       (xs, ps) = unzip $ filter (not . (~== 0) . snd) $ normalForm p
       (ys, qs) = unzip $ filter (not . (~== 0) . snd) $ normalForm q
-
-toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
-toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
-
-toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
-toEmpiricalWeighted = normalizeWeights . compact
-
-
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
-enumerateToDistribution model = do
-  let samples = logExplicit model
-  let (support, logprobs) = unzip samples
-  i <- logCategorical $ VV.fromList logprobs
-  return $ support !! i

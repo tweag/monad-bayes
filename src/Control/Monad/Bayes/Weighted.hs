@@ -30,12 +30,12 @@ import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
     MonadSample,
-    factor
+    factor,
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+import Data.Fixed (mod')
 import Numeric.Log (Log)
-import Data.Fixed ( mod' )
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)

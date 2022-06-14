@@ -33,16 +33,13 @@ module Control.Monad.Bayes.Population
     hoist,
     collapse,
     popAvg,
+    independent,
   )
 where
 
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (hoist)
-import Control.Monad.Trans
-import Control.Monad.Trans.List
-
 import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,
@@ -50,7 +47,10 @@ import Control.Monad.Bayes.Weighted
     runWeighted,
     withWeight,
   )
+import Control.Monad.Bayes.Weighted hiding (hoist)
+import Control.Monad.Trans
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Control.Monad.Trans.List
 import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
 import Data.List qualified
@@ -71,6 +71,9 @@ instance MonadTrans Population where
 -- domain.
 runPopulation :: Population m a -> m [(a, Log Double)]
 runPopulation (Population m) = runListT $ runWeighted m
+
+independent :: Monad m => Int -> Population m a -> m [(a, Log Double)]
+independent i ma = runPopulation $ spawn i >> ma
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]

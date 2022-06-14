@@ -5,18 +5,19 @@ module LGSS where
 
 import Control.Monad (replicateM, unless, when)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted (prior)
 import Control.Monad.Trans
 import Data.Bifunctor (second)
 import Data.List (transpose)
 import Data.Semigroup ((<>))
 import Data.Vector (Vector, foldM, fromList, postscanl)
 import qualified Data.Vector as Vector
-import System.IO
 import Numeric.Log
-import Control.Monad.Bayes.Weighted (prior)
-import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
+import System.IO
+
 -- import Control.Monad.Bayes.Population (normalize)
 
 -- main = do

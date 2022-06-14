@@ -30,12 +30,12 @@ import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
 import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
-import Control.Monad.Bayes.Traced.Static qualified as TrStat
 import Control.Monad.Bayes.Traced.Static as Tr
   ( Traced,
     marginal,
     mhStep,
   )
+import Control.Monad.Bayes.Traced.Static qualified as TrStat
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::

@@ -22,24 +22,19 @@ module Control.Monad.Bayes.Inference.SMC
   )
 where
 
-import Control.Monad.Bayes.Class ( MonadInfer, MonadSample )
-import Control.Monad.Bayes.Population
-    ( Population,
-      spawn,
-      resampleSystematic,
-      resampleMultinomial,
-      pushEvidence, resampleStratified )
-
-import Control.Monad.Bayes.Sequential as Seq
-    ( Sequential, hoistFirst, sis )
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
-
-import Control.Monad.Bayes.Sequential as Seq
-    ( Sequential, hoistFirst, sis )
-
-
 import Control.Monad.Bayes.Population
-  ( resampleStratified,
+  ( Population,
+    pushEvidence,
+    resampleMultinomial,
+    resampleStratified,
+    resampleSystematic,
+    spawn,
+  )
+import Control.Monad.Bayes.Sequential as Seq
+  ( Sequential,
+    hoistFirst,
+    sis,
   )
 
 -- | Sequential importance resampling.
@@ -123,4 +118,3 @@ smcSystematicPush ::
   Sequential (Population m) a ->
   Population m a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)
-

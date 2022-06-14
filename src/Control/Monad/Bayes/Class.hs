@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -57,8 +57,8 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
-    Bayesian(Bayesian),
-    posterior
+    Bayesian (Bayesian),
+    posterior,
   )
 where
 
@@ -72,7 +72,7 @@ import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
 import Data.Vector qualified as V
-import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!), null)
+import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
@@ -258,11 +258,12 @@ normalPdf ::
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 --------------------
+
 -- | a useful datatype for expressing bayesian models
-data Bayesian m z o = Bayesian {
-  latent :: m z, -- prior over latent variable Z 
-  generative :: z -> m o, -- distribution over observations given Z=z
-  likelihood :: z -> o -> Log Double -- p(o|z)
+data Bayesian m z o = Bayesian
+  { latent :: m z, -- prior over latent variable Z
+    generative :: z -> m o, -- distribution over observations given Z=z
+    likelihood :: z -> o -> Log Double -- p(o|z)
   }
 
 posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z

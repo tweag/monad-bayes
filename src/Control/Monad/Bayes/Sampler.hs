@@ -1,9 +1,8 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ApplicativeDo #-}
-
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -27,10 +26,11 @@ module Control.Monad.Bayes.Sampler
     sampleST,
     sampleSTfixed,
     toBins,
-    sampleMean
-    )
+    sampleMean,
+  )
 where
 
+import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
   ( MonadSample
       ( bernoulli,
@@ -48,10 +48,9 @@ import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import Data.Fixed (mod')
-import System.Random.MWC
-import qualified System.Random.MWC.Distributions as MWC
-import qualified Control.Foldl as F hiding (random)
 import Numeric.Log (Log (ln))
+import System.Random.MWC
+import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -126,8 +125,6 @@ instance MonadSample SamplerST where
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p
 
-
-
 type Bin = (Double, Double)
 
 -- | binning function. Useful when you want to return the bin that
@@ -144,18 +141,17 @@ toBins :: Double -> [Double] -> [Double]
 toBins binWidth = fmap (fst . toBin binWidth)
 
 sampleMean :: [(Double, Log Double)] -> Double
-sampleMean x = 
-  let z = Prelude.sum $ fmap (ln . exp . snd) x 
-  in Prelude.sum [y*((ln (exp d)) /z) | (y,d) <- x]
-  
+sampleMean x =
+  let z = Prelude.sum $ fmap (ln . exp . snd) x
+   in Prelude.sum [y * ((ln (exp d)) / z) | (y, d) <- x]
 
 --   estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
 -- estimateMeanEmpirical s =
 --   F.fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
 --     <$> (sampleIO . replicateM 1000 . runWeighted) s
 
-  -- Foldl.fold do 
-  --       y <- Foldl.premap fst Foldl.sum
-  --       z <- Foldl.premap (ln . exp . snd) Foldl.sum
-  --       len <- Foldl.genericLength
-  --       pure (y * (ln (exp d) / z))
+-- Foldl.fold do
+--       y <- Foldl.premap fst Foldl.sum
+--       z <- Foldl.premap (ln . exp . snd) Foldl.sum
+--       len <- Foldl.genericLength
+--       pure (y * (ln (exp d) / z))

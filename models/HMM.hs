@@ -1,23 +1,21 @@
-
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
 module HMM where
 
-
 import Control.Monad (replicateM, when)
-import Data.Vector (fromList)
-import Pipes.Core ( Producer )
-import qualified Pipes.Prelude as Pipes
-import Pipes (MonadTrans(lift), (>->), each, yield, MFunctor (hoist))
 import Control.Monad.Bayes.Class
-    ( factor,
-      normalPdf,
-      MonadCond,
-      MonadInfer,
-      MonadSample(categorical, uniformD, normal) )
-import Data.Maybe ( fromJust, isJust )
+  ( MonadCond,
+    MonadInfer,
+    MonadSample (categorical, normal, uniformD),
+    factor,
+    normalPdf,
+  )
 import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
-
+import Data.Maybe (fromJust, isJust)
+import Data.Vector (fromList)
+import Pipes (MFunctor (hoist), MonadTrans (lift), each, yield, (>->))
+import Pipes.Core (Producer)
+import qualified Pipes.Prelude as Pipes
 
 -- | Observed values
 values :: [Double]
@@ -69,21 +67,19 @@ hmm dataset = f dataset (const . return)
     f [] k = start >>= k []
     f (y : ys) k = f ys (\xs x -> expand x y >>= k (x : xs))
 
-
 syntheticData :: MonadSample m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
   where
     syntheticPoint = uniformD [0, 1, 2]
-
 
 -- | Equivalent model, but using pipes for simplicity
 
 -- | Prior expressed as a stream
 hmmPrior :: MonadSample m => Producer Int m b
 hmmPrior = do
-      x <- lift start
-      yield x
-      Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
+  x <- lift start
+  yield x
+  Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
 
 -- | Observations expressed as a stream
 hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
@@ -91,23 +87,18 @@ hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
 
 -- | Posterior expressed as a stream
 hmmPosterior :: (MonadInfer m) => [Double] -> Producer Int m ()
-hmmPosterior dataset = zipWithM hmmLikelihood
+hmmPosterior dataset =
+  zipWithM
+    hmmLikelihood
     hmmPrior
     (hmmObservations dataset)
-
   where
+    hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
+    hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
 
-  hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
-  hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
-
-  zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
+    zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
 
 hmmPosteriorPredictive :: MonadSample m => [Double] -> Producer Double m ()
 hmmPosteriorPredictive dataset =
   Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
-  >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
-
-
-
-
-
+    >-> Pipes.mapM (\x -> normal (emissionMean x) 1)

@@ -14,25 +14,23 @@ module Control.Monad.Bayes.Traced.Static
     marginal,
     mhStep,
     mh,
-    estimateMeanVarianceMH
+    estimateMeanVarianceMH,
   )
 where
 
 import Control.Applicative (liftA2)
+import Control.Foldl hiding (map, random)
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
     MonadSample (random),
   )
 import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted, prior)
-
-import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
-import Control.Foldl hiding (random, map)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -92,7 +90,5 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         y <- mhTrans m x
         return (y :| x : xs)
 
-
 estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)
 estimateMeanVarianceMH s = fold (liftA2 (,) mean variance) <$> (fmap (take 2000) . sampleIO . prior . mh 5000) s
-

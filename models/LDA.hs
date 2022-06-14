@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- LDA model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
@@ -10,22 +10,22 @@
 
 module LDA where
 
-import Prelude hiding (words)
-import qualified Control.Monad as List (replicateM)
+import Control.Monad qualified as List (replicateM)
 import Control.Monad.Bayes.Class
-    ( factor,
-      MonadInfer,
-      MonadSample(uniformD, dirichlet, categorical) )
-import Control.Monad.Bayes.Sampler ( sampleIO )
-import Control.Monad.Bayes.Weighted ( prior )
-import Control.Monad.Bayes.Traced ( mh )
-import qualified Data.Map as Map
-import qualified Data.Vector as V hiding (length, mapM, mapM_)
-import Numeric.Log ( Log(Exp) )
+  ( MonadInfer,
+    MonadSample (categorical, dirichlet, uniformD),
+    factor,
+  )
+import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.Weighted (prior)
+import Data.Map qualified as Map
 import Data.Text (Text, words)
-import Text.Pretty.Simple ( pPrint )
-
 import Data.Vector as V (Vector, replicate, (!))
+import Data.Vector qualified as V hiding (length, mapM, mapM_)
+import Numeric.Log (Log (Exp))
+import Text.Pretty.Simple (pPrint)
+import Prelude hiding (words)
 
 vocabulary :: [Text]
 vocabulary = ["bear", "wolf", "python", "prolog"]
@@ -53,8 +53,10 @@ topicDistPrior = dirichlet $ V.replicate (length topics) 1
 wordIndex :: Map.Map Text Int
 wordIndex = Map.fromList $ zip vocabulary [0 ..]
 
-lda :: MonadInfer m => 
-  Documents -> m (Map.Map Text (V.Vector (Text, Double)), [(Text, V.Vector (Text, Double))])
+lda ::
+  MonadInfer m =>
+  Documents ->
+  m (Map.Map Text (V.Vector (Text, Double)), [(Text, V.Vector (Text, Double))])
 lda docs = do
   word_dist_for_topic <- do
     ts <- List.replicateM (length topics) wordDistPrior
@@ -67,15 +69,15 @@ lda docs = do
         mapM_ f doc
         return topic_dist
   td <- mapM obs docs
-  return 
-    (fmap ( V.zip (V.fromList vocabulary) ) word_dist_for_topic, 
-      zip (fmap (foldr1 (\x y -> x <> " " <> y)) docs) (fmap (V.zip $ V.fromList ["topic1", "topic2"]) td))
+  return
+    ( fmap (V.zip (V.fromList vocabulary)) word_dist_for_topic,
+      zip (fmap (foldr1 (\x y -> x <> " " <> y)) docs) (fmap (V.zip $ V.fromList ["topic1", "topic2"]) td)
+    )
 
 syntheticData :: MonadSample m => Int -> Int -> m [[Text]]
 syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
   where
     syntheticWord = uniformD vocabulary
-
 
 runLDA :: IO ()
 runLDA = do
