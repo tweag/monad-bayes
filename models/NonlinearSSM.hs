@@ -1,6 +1,11 @@
 module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
+  ( MonadInfer,
+    MonadSample (gamma, normal),
+    factor,
+    normalPdf,
+  )
 
 param :: MonadSample m => m (Double, Double)
 param = do
@@ -51,7 +56,7 @@ generateData t = do
         let n = length acc
         x' <- normal (mean x n) sigmaX
         y' <- normal (sq x' / 20) sigmaY
-        simulate (k -1) x' ((x', y') : acc)
+        simulate (k - 1) x' ((x', y') : acc)
   x0 <- normal 0 (sqrt 5)
   xys <- simulate t x0 []
   return $ reverse xys

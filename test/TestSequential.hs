@@ -1,10 +1,16 @@
-module TestSequential where
+{-# LANGUAGE Trustworthy #-}
+
+module TestSequential (twoSync, finishedTwoSync, checkTwoSync, checkPreserve, pFinished, isFinished, checkSync) where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Enumerator as Dist
-import Control.Monad.Bayes.Sequential
-import Data.AEq
-import Sprinkler
+  ( MonadInfer,
+    MonadSample (uniformD),
+    factor,
+  )
+import Control.Monad.Bayes.Enumerator as Dist (enumerate, mass)
+import Control.Monad.Bayes.Sequential (advance, finish, finished)
+import Data.AEq (AEq ((~==)))
+import Sprinkler (soft)
 
 twoSync :: MonadInfer m => m Int
 twoSync = do
@@ -18,7 +24,7 @@ finishedTwoSync :: MonadInfer m => Int -> m Bool
 finishedTwoSync n = finished (run n twoSync)
   where
     run 0 d = d
-    run k d = run (k -1) (advance d)
+    run k d = run (k - 1) (advance d)
 
 checkTwoSync :: Int -> Bool
 checkTwoSync 0 = mass (finishedTwoSync 0) False ~== 1
@@ -42,7 +48,7 @@ isFinished :: MonadInfer m => Int -> m Bool
 isFinished n = finished (run n sprinkler)
   where
     run 0 d = d
-    run k d = run (k -1) (advance d)
+    run k d = run (k - 1) (advance d)
 
 checkSync :: Int -> Bool
 checkSync n = mass (isFinished n) True ~== pFinished n

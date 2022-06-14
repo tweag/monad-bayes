@@ -1,65 +1,115 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# OPTIONS_GHC -Wno-monomorphism-restriction #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
-module DPmixture
-  ( stick,
-    dp,
-    dpMixture,
-    dpClusters,
-    --                  dpMem,
-    --                  dpMemClusters,
-    posteriorClustersDist,
-  )
-where
+module DPmixture where
 
 -- Dirichlet Process mixture of Gaussians
 
-import Control.Applicative ((<$>))
+-- Dirichlet Process mixture of Gaussians
+import Control.Applicative (Applicative (liftA2), (<$>))
 -- import Control.Monad.Memo (memo, startEvalMemoT)
 -- import Control.Monad.Trans.Memo.StateCache
 
-import Control.Monad.Bayes.Simple
+-- import Numeric.SpecFunctions (factorial, logGamma)
+
+import Control.Monad (replicateM)
+import Control.Monad.Bayes.Class
+  ( MonadInfer,
+    MonadSample (bernoulli, beta, categorical, gamma, normal),
+    factor,
+    normalPdf,
+  )
+import Control.Monad.Bayes.Enumerator (compact)
+import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.Weighted (prior)
 import Data.Ix (range)
-import Data.List hiding (sum)
-import Data.Maybe
-import Numeric.SpecFunctions (factorial, logGamma)
+import Data.List
+import Data.Map qualified as M
+import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Vector qualified as V
+import Debug.Trace (trace)
+import Pipes (Pipe, Producer, await, lift, runEffect, yield, (>->))
+import Pipes.Prelude qualified as P
+import System.IO.Unsafe ()
 import Prelude hiding (sum)
 
 type NormalInvGamma = (Double, Double, Double, Double)
+
+newtype Table = Table Int deriving newtype (Eq, Ord, Num, Show)
+
+type SeatingPlan = M.Map Table Int
+
+logGamma = undefined
+
+factorial = undefined
 
 -- | Prior over cluster parameters used in 'dpMixture'
 params :: NormalInvGamma
 params = (0, 1 / 10, 1, 10)
 
+m, k, a, b :: Double
 (m, k, a, b) = params
 
 obs :: [Double]
 obs = [1.0, 1.1, 1.2, -1.0, -1.5, -2.0, 0.001, 0.01, 0.005, 0.0]
 
 -- | Stick-breaking function.
-stick :: MonadDist m => [CustomReal m] -> [a] -> m a
+stick :: MonadSample m => [Double] -> [a] -> m a
 stick (b : breaks) (a : atoms) = do
   stop <- bernoulli b
   if stop then return a else stick breaks atoms
 
 -- | A Dirichlet Process generates a random probability distribution
 -- using the stick-breaking representation.
-dp :: MonadDist m => CustomReal m -> m a -> m (m a)
+dp :: MonadSample m => Double -> m a -> m (m a)
 dp concentration base = do
   breaks <- sequence $ repeat $ beta 1 concentration
   atoms <- sequence $ repeat base
   return $ stick breaks atoms
 
--- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
-dpMixture :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
-dpMixture =
+crpP :: MonadSample m => Double -> Producer SeatingPlan m r
+crpP concentration = flip P.unfoldr M.empty \seatingPlan -> do
+  let n = 1 + (fromIntegral $ sum $ M.elems seatingPlan)
+      nAtTable t = fromMaybe 0 $ M.lookup (Table t) seatingPlan
+      nOfTables = length $ M.keys seatingPlan
+  assignment <-
+    categorical $
+      V.fromList $
+        fmap (/ (n - 1 + concentration)) $
+          (<> [concentration]) $ -- [0...m_k, concentration]
+            fmap (fromIntegral . nAtTable) $
+              take nOfTables [0 ..]
+  let newSeatingPlan = M.insertWith (+) (Table assignment) 1 seatingPlan
+  return $ Right $ dup newSeatingPlan
+
+test = do
+  x <- sampleIO $ fmap last $ P.toListM $ crpP 0.5 >-> P.take 100
+  print x
+
+dpP concentration base = do
+  let breaks = P.repeatM $ liftA2 (,) (beta 1 concentration) base
+  return $ fmap snd $ runEffect (breaks >-> takeWhile' (\(d, b) -> bernoulli d) >-> P.drain)
+
+-- pr = unsafePerformIO $ sampleIOfixed $ dpP 0.5 (normal 0 1)
+
+dpmP :: IO [(Bool, Double)]
+dpmP = fmap (compact . (\x -> zip x (repeat 1.0))) $ sampleIO do
+  mixingMeasure <- dpP 0.5 (bernoulli 0.5)
+  replicateM 10 mixingMeasure
+
+-- -- | DP mixture example from http://dl.acm.org/citation.cfm?id=2804317
+dpMixture :: MonadInfer m => [Double] -> m [Int]
+dpMixture obs =
   let --lazily generate clusters
       clusters = do
         let atoms = [1 ..]
         breaks <- sequence $ repeat $ beta 1 1
         let classgen = stick breaks atoms
-        vars <- sequence $ repeat $ (1 /) . (* k) <$> gamma a b
+        vars <- sequence $ repeat $ recip . (* k) <$> gamma a b
         means <- mapM (normal m) vars
         return (classgen, vars, means)
       n = length obs
@@ -74,48 +124,24 @@ dpMixture =
         let mean = means !! cluster
         let var = vars !! cluster
         let point = (cluster, var, mean)
-        observe (normalDist mean (sqrt var)) y
+        factor $ normalPdf mean (sqrt var) y
         return (clusters, point : rest)
-   in --exctract cluster assignments
+   in --extract cluster assignments
       fmap (reverse . map (\(x, _, _) -> x) . snd) points
 
--- | 'dpMixture' restricted to the number of clusters only
-dpClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
-dpClusters = fmap (maximum . normalizePartition) dpMixture
+-- -- | 'dpMixture' restricted to the number of clusters only
+dpClusters :: MonadInfer m => [Double] -> m Int
+dpClusters obs = fmap (maximum . normalizePartition) (dpMixture obs)
 
--- | Renames identifiers so that they range from 1 to n
+-- -- | Renames identifiers so that they range from 1 to n
 normalizePartition :: [Int] -> [Int]
 normalizePartition xs = mapMaybe (`lookup` trans) xs
   where
     trans = zip unique [1 ..]
     unique = nub xs
 
--------------------------------------------------------
--- Strict version using memoization
-
--- cluster_param :: (MonadDist m, CustomReal m ~ Double) => Int -> m (Double, Double, Double)
--- cluster_param _ = do
---   b <- beta 1 1
---   var <- do
---     t <- gamma a b
---     return (1 / (k*t))
---   mean <- normal m var
---   return (b, mean, var)
---
--- dpMem :: (MonadBayes m, CustomReal m ~ Double) => m [Int]
--- dpMem = startEvalMemoT $ mapM process_point obs where
---   process_point x = do
---     (c, mean, var) <- get_cluster
---     observe (Continuous (Normal mean (sqrt var))) x
---     return c
---   get_cluster = stick 0 where
---     stick c = do
---       (b, mean, var) <- memo cluster_param c
---       stop <- bernoulli b
---       if stop then return (c, mean, var) else stick (c+1)
---
--- dpMemClusters :: (MonadBayes m, CustomReal m ~ Double) => m Int
--- dpMemClusters = fmap (maximum . normalizePartition) dpMem
+runDpMixture =
+  sampleIO $ prior $ mh 1 $ dpMixture obs
 
 ----------------------------------------------------------
 -- Exact posterior
@@ -133,7 +159,7 @@ posterior (m, k, a, b) xs = (m', k', a', b')
     x2 = sum $ zipWith (*) xs xs -- sum xs^2
     s = sum $ zipWith (*) d d -- pvar xs
       where
-        d = map (+ (- x)) xs
+        d = map (+ (-x)) xs
 
 -- | Model evidence for a cluster
 evidence :: NormalInvGamma -> [Double] -> Double
@@ -189,22 +215,33 @@ partitions n = generate n 1
     generate n k = do
       x <- range (1, k) -- range is inclusive on both ends
       let k' = max k (x + 1) -- next empty cluster
-      xs <- generate (n -1) k'
+      xs <- generate (n - 1) k'
       return (x : xs)
 
 -- | Posterior over the number of clusters
-posteriorClustersDist :: (MonadDist m, CustomReal m ~ Double) => m Int
-posteriorClustersDist = categorical $ zip ns $ map lookup ns
+posteriorClustersDist :: (MonadSample m) => m Int
+posteriorClustersDist = categorical $ V.map lookup ns
   where
-    ns = [1 .. length obs]
+    ns = V.fromList [1 .. length obs]
     lookup = exactClusters params obs
 
---------------------------------------
--- Instances for memoization
--- type instance CustomReal (StateCache c m) = CustomReal m
---
--- instance MonadDist m => MonadDist (StateCache c m) where
---   primitive = lift . primitive
---
--- instance MonadBayes m => MonadBayes (StateCache c m) where
---   factor = lift . factor
+----------
+-- helpers
+----------
+
+dup :: b -> (b, b)
+dup x = (x, x)
+
+takeWhile' :: Monad m => (a -> m Bool) -> Pipe a a m a
+takeWhile' predicate = go
+  where
+    go = do
+      a <- await
+      b <- lift $ predicate a
+      if b
+        then do
+          yield a
+          go
+        else return a
+
+traceIt x = trace (show x) x

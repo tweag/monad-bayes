@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -21,8 +21,18 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random),
+  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
+  ( Trace (..),
+    bind,
+    mhTrans,
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
@@ -96,7 +106,7 @@ mh n (Traced c) = do
   let f k
         | k <= 0 = return (t :| [])
         | otherwise = do
-          (x :| xs) <- f (k -1)
+          (x :| xs) <- f (k - 1)
           y <- mhTrans m x
           return (y :| x : xs)
   fmap (map output . NE.toList) (f n)

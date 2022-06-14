@@ -1,28 +1,39 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Inference.RMSMC
-import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Traced
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
+import Control.Monad.Bayes.Inference.SMC (smcSystematic)
+import Control.Monad.Bayes.Population (runPopulation)
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
+import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.Weighted (prior)
 import Criterion.Main
-import Criterion.Types
-import qualified HMM
-import qualified LDA
-import qualified LogReg
+  ( Benchmark,
+    Benchmarkable,
+    bench,
+    defaultConfig,
+    defaultMainWith,
+    nfIO,
+  )
+import Criterion.Types (Config (csvFile, rawDataFile))
+import Data.Text qualified as T
+import HMM qualified
+import LDA qualified
+import LogReg qualified
 import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
 
-data ProbProgSys = MonadBayes
-  deriving (Show)
+data ProbProgSys = MonadInfer
+  deriving stock (Show)
 
-data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
+data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
 
 instance Show Model where
   show (LR xs) = "LR" ++ show (length xs)
@@ -52,14 +63,14 @@ runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model)
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
+prepareBenchmarkable g MonadInfer model alg = nfIO $ sampleIOwith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
-prepareBenchmark e MonadBayes model alg =
-  bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
-    prepareBenchmarkable (rng e) MonadBayes model alg
+prepareBenchmark e MonadInfer model alg =
+  bench (show MonadInfer ++ sep ++ show model ++ sep ++ show alg) $
+    prepareBenchmarkable (rng e) MonadInfer model alg
   where
-    sep = "_"
+    sep = "_" :: String
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
@@ -68,15 +79,15 @@ supported _ = True
 
 systems :: [ProbProgSys]
 systems =
-  [ MonadBayes
+  [ MonadInfer
   ]
 
-lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
+lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
 lengthBenchmarks e lrData hmmData ldaData = benchmarks
   where
-    lrLengths = 10 : map (* 100) [1 .. 10]
-    hmmLengths = 10 : map (* 100) [1 .. 10]
-    ldaLengths = 5 : map (* 50) [1 .. 10]
+    lrLengths = 10 : map (* 100) [1 :: Int .. 10]
+    hmmLengths = 10 : map (* 100) [1 :: Int .. 10]
+    ldaLengths = 5 : map (* 50) [1 :: Int .. 10]
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
@@ -95,12 +106,12 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
           a <- algs
           return (s, m, a)
 
-samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
+samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
 samplesBenchmarks e lrData hmmData ldaData = benchmarks
   where
-    lrLengths = [50]
-    hmmLengths = [20]
-    ldaLengths = [10]
+    lrLengths = [50 :: Int]
+    hmmLengths = [20 :: Int]
+    ldaLengths = [10 :: Int]
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
