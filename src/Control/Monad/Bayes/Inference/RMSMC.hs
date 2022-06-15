@@ -55,7 +55,7 @@ rmsmc ::
 rmsmc k n t =
   marginal
     . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
-    . S.hoist (TrStat.hoistT (spawn n >>))
+    . S.hoistFirst (TrStat.hoistT (spawn n >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
