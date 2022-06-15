@@ -25,8 +25,8 @@ hist (xs, ys) =
         [ dat,
           mark Bar [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 barplot (xs, ys) =
@@ -45,8 +45,8 @@ barplot (xs, ys) =
         [ dat,
           mark Bar [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 scatterplot ((xs, ys), cs) cE f mode =
@@ -67,8 +67,8 @@ scatterplot ((xs, ys), cs) cE f mode =
         [ dat,
           mark mode [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 class Plottable a where
@@ -88,7 +88,14 @@ instance Plottable [((Double, Double), Double)] where
     vlShow $
       scatterplot
         (first unzip $ unzip (ls))
-        (color [MName "Outlier", MmType Quantitative])
+        ( color
+            [ MName "Outlier",
+              MmType Quantitative,
+              MScale
+                [ SScheme "viridis" []
+                ]
+            ]
+        )
         Numbers
         Circle
 

@@ -25,8 +25,8 @@ hist (xs, ys) =
         [ dat,
           mark Bar [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 barplot (xs, ys) =
@@ -45,8 +45,8 @@ barplot (xs, ys) =
         [ dat,
           mark Bar [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 scatterplot ((xs, ys), cs) cE f mode =
@@ -67,8 +67,8 @@ scatterplot ((xs, ys), cs) cE f mode =
         [ dat,
           mark mode [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 class Plottable a where
