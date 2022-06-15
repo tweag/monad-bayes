@@ -20,12 +20,15 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample)
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
   ( Population,
+    collapse,
     resampleSystematic,
+    runPopulation,
     spawn,
   )
+import Control.Monad.Bayes.Population qualified as P
 import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
 import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
@@ -70,7 +73,7 @@ rmsmcBasic ::
 rmsmcBasic k n t =
   TrBas.marginal
     . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
-    . S.hoist (TrBas.hoistT (spawn n >>))
+    . S.hoistFirst (TrBas.hoistT (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
