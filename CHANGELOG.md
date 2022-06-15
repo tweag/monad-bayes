@@ -2,7 +2,7 @@
 
 - No unreleased changes so far.
 
-# 0.1.1.1 (2021-06-08)
+# 0.1.1.2 (2021-06-08)
 
 Clean up of unused functions and broken code
 
@@ -10,6 +10,13 @@ Clean up of unused functions and broken code
 - remove broken models in `models`
 - explicit imports
 - added some global language extensions
+
+# 0.1.1.1 (2021-06-08)
+
+Add documentation
+
+- docs written in markdown
+- docs built by sphinx
 
 
 # 0.1.1.0 (2020-04-08)
