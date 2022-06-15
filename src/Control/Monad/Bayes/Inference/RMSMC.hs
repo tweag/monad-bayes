@@ -39,6 +39,7 @@ import Control.Monad.Bayes.Traced.Static as Tr
     mhStep,
   )
 import Control.Monad.Bayes.Traced.Static qualified as TrStat
+import Data.Monoid
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -96,4 +97,7 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k f = foldr (.) id (replicate k f)
+composeCopies k = withEndo (mconcat . replicate k)
+
+withEndo :: (Endo a -> Endo b) -> (a -> a) -> b -> b
+withEndo f = appEndo . f . Endo

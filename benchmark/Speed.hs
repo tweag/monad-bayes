@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE Trustworthy #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main (main) where
@@ -21,10 +20,12 @@ import Criterion.Main
     nfIO,
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
+import Data.Functor (void)
 import Data.Text qualified as T
 import HMM qualified
 import LDA qualified
 import LogReg qualified
+import System.Process.Typed (runProcess)
 import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
@@ -131,6 +132,9 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 main :: IO ()
 main = do
   g <- createSystemRandom
+  writeFile "speed-length.csv" ""
+  writeFile "speed-samples.csv" ""
+  writeFile "raw.dat" ""
   let e = Env g
   lrData <- sampleIOwith (LogReg.syntheticData 1000) g
   hmmData <- sampleIOwith (HMM.syntheticData 1000) g
@@ -139,3 +143,4 @@ main = do
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
   defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
+  void $ runProcess "python plots.py"

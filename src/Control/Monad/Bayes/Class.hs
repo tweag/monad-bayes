@@ -138,10 +138,11 @@ class Monad m => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
-  bernoulli p =
-    if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
-      then fmap (< p) random
-      else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
+  bernoulli p = fmap (< p) random
+
+  -- if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
+  --   then fmap (< p) random
+  --   else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- | Draw from a categorical distribution.
   categorical ::

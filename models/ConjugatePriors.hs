@@ -8,7 +8,6 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Foldl (fold)
 import Control.Foldl qualified as F
 import Control.Monad.Bayes.Class (Bayesian (..), MonadInfer, MonadSample (bernoulli, beta, gamma, normal), normalPdf)
-import Data.Profunctor (Profunctor (lmap))
 import Numeric.Log (Log (Exp))
 import Prelude
 
@@ -38,7 +37,7 @@ gammaNormalAnalytic (a, b) points = gamma a' (recip b')
 betaBernoulliAnalytic :: (MonadInfer m, Foldable t) => BetaParams -> t Bool -> m Double
 betaBernoulliAnalytic (a, b) points = beta a' b'
   where
-    (n, s) = fold (liftA2 (,) F.length (lmap (\case True -> 1; False -> 0) F.sum)) points
+    (n, s) = fold (liftA2 (,) F.length (F.premap (\case True -> 1; False -> 0) F.sum)) points
     a' = a + s
     b' = b + fromIntegral n - s
 
