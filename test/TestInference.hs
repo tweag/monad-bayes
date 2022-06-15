@@ -14,7 +14,7 @@ import ConjugatePriors
     normalNormalAnalytic,
   )
 import Control.Monad (replicateM)
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class (MonadInfer, posterior)
 import Control.Monad.Bayes.Enumerator (enumerate)
 import Control.Monad.Bayes.Inference.SMC
   ( smcMultinomial,

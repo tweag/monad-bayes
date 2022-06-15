@@ -340,7 +340,7 @@ newtype Population m a = Population (Weighted (ListT m) a)
 So:
 
 ```haskell
-Population m a ~ [Log Double -> (a, Log Double)]
+Population m a ~ m [Log Double -> (a, Log Double)]
 ```
 
 Note that while `ListT` isn't in general a valid monad transformer, we're not requiring it to be one here.

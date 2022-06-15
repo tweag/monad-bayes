@@ -1,6 +1,6 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.1.1
+version:            0.1.1.3
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
@@ -227,6 +227,7 @@ benchmark speed-bench
     , pretty-simple
     , process
     , text
+    , typed-process
     , vector
 
   if flag(dev)

@@ -77,7 +77,10 @@
               pkgs.myHaskellPackages.log-domain
               pkgs.myHaskellPackages.katip
               pkgs.myHaskellPackages.ihaskell-hvega
+              pkgs.myHaskellPackages.ihaskell-diagrams
               pkgs.myHaskellPackages.text
+              pkgs.myHaskellPackages.diagrams
+              pkgs.myHaskellPackages.diagrams-cairo
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.

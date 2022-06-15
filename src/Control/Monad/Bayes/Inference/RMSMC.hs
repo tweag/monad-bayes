@@ -20,12 +20,15 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample)
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
   ( Population,
+    collapse,
     resampleSystematic,
+    runPopulation,
     spawn,
   )
+import Control.Monad.Bayes.Population qualified as P
 import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
 import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
@@ -36,6 +39,7 @@ import Control.Monad.Bayes.Traced.Static as Tr
     mhStep,
   )
 import Control.Monad.Bayes.Traced.Static qualified as TrStat
+import Data.Monoid
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
@@ -52,7 +56,7 @@ rmsmc ::
 rmsmc k n t =
   marginal
     . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
-    . S.hoist (TrStat.hoistT (spawn n >>))
+    . S.hoistFirst (TrStat.hoistT (spawn n >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
@@ -70,7 +74,7 @@ rmsmcBasic ::
 rmsmcBasic k n t =
   TrBas.marginal
     . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
-    . S.hoist (TrBas.hoistT (spawn n >>))
+    . S.hoistFirst (TrBas.hoistT (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
@@ -93,4 +97,7 @@ rmsmcLocal k n t =
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)
-composeCopies k f = foldr (.) id (replicate k f)
+composeCopies k = withEndo (mconcat . replicate k)
+
+withEndo :: (Endo a -> Endo b) -> (a -> a) -> b -> b
+withEndo f = appEndo . f . Endo
