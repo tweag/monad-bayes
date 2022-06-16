@@ -74,7 +74,7 @@ prepareBenchmark e MonadBayes model alg =
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (_, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = True
 supported _ = True
 
 systems :: [ProbProgSys]

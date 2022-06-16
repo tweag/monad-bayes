@@ -187,8 +187,8 @@ benchmark speed-bench
     , monad-bayes
     , mwc-random
     , process
-    , vector
     , typed-process
+    , vector
 
   if flag(dev)
     ghc-options:
