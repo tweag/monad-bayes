@@ -36,7 +36,8 @@ import Control.Monad.Bayes.Traced.Static as Tr
     mhStep,
   )
 import Control.Monad.Bayes.Traced.Static qualified as TrStat
-import Data.Monoid 
+import Data.Monoid
+
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
   MonadSample m =>
@@ -52,7 +53,7 @@ rmsmc ::
 rmsmc k n t =
   marginal
     . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
-    . S.hoist (TrStat.hoistT (spawn n >>))
+    . S.hoistFirst (TrStat.hoistT (spawn n >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
@@ -70,7 +71,7 @@ rmsmcBasic ::
 rmsmcBasic k n t =
   TrBas.marginal
     . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
-    . S.hoist (TrBas.hoistT (spawn n >>))
+    . S.hoistFirst (TrBas.hoistT (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered

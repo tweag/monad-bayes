@@ -20,12 +20,12 @@ import Criterion.Main
     nfIO,
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
+import Data.Functor (void)
 import HMM qualified
 import LDA qualified
 import LogReg qualified
-import System.Random.MWC (GenIO, createSystemRandom)
 import System.Process.Typed (runProcess)
-import Data.Functor (void)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
