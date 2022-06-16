@@ -81,6 +81,7 @@
               pkgs.myHaskellPackages.text
               pkgs.myHaskellPackages.diagrams
               pkgs.myHaskellPackages.diagrams-cairo
+              pkgs.myHaskellPackages.monad-loops
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.

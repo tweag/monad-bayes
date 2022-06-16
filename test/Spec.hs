@@ -111,8 +111,8 @@ main = hspec do
   describe "Equivalent Expectations" do
     prop "Gamma Normal" $
       ioProperty . TestInference.testGammaNormal
-    prop "Normal Normal" $
-      \n -> abs n < 5 ==> ioProperty (TestInference.testNormalNormal [n])
+    -- prop "Normal Normal" $
+    --   \n -> abs n < 5 ==> ioProperty (TestInference.testNormalNormal [n])
     prop "Beta Bernoulli" $
       ioProperty . TestInference.testBetaBernoulli
   describe "Pipes: Urn" do
