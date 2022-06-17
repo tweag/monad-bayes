@@ -5,16 +5,19 @@ import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Population as Population
 import Control.Monad.Bayes.Sampler
 import Data.AEq
+import System.Random.Stateful
 import Sprinkler
 
 weightedSampleSize :: MonadSample m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
 
 popSize :: IO Int
-popSize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
+popSize = newIOGenM (mkStdGen 1729) >>=
+          sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler)
 
 manySize :: IO Int
-manySize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
+manySize = newIOGenM (mkStdGen 1729) >>=
+           sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft

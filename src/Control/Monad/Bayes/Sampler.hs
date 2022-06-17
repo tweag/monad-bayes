@@ -19,14 +19,14 @@
 -- transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler
   ( SamplerIO,
-    sampleIO,
-    sampleIOfixed,
+    -- sampleIO,
+    -- sampleIOfixed,
     sampleIOwith,
     Seed,
     SamplerST (SamplerST),
     runSamplerST,
-    sampleST,
-    sampleSTfixed,
+    -- sampleST,
+    -- sampleSTfixed,
   )
 where
 
@@ -70,8 +70,8 @@ sampleIOfixed :: SamplerIO g a -> IO a
 sampleIOfixed (SamplerIO m) = undefined -- create >>= runReaderT m
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO g a -> GenIO -> IO a
-sampleIOwith (SamplerIO m) = undefined -- runReaderT m
+sampleIOwith :: SR.StatefulGen r IO => SamplerIO r a -> r -> IO a
+sampleIOwith (SamplerIO m) = runReaderT m
 
 instance MonadSample (SamplerIO g) where
   random = SamplerIO ((\s -> ask >>= lift . s) (uniformRM (0, 1))) -- FIXME: There is a special function for this
