@@ -61,6 +61,8 @@ library
     , monad-coroutine  ^>=0.9.0
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
+    , random
+    , safe             ^>=0.3.17
     , statistics       >=0.14.0 && <0.17
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
@@ -143,6 +145,7 @@ test-suite monad-bayes-test
     , mtl
     , mwc-random
     , QuickCheck
+    , random
     , transformers
     , vector
 

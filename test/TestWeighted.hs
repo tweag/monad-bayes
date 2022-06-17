@@ -13,7 +13,8 @@ import Control.Monad.Bayes.Weighted (runWeighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
-import Numeric.Log (Log (Exp, ln))
+import Numeric.Log
+import System.Random.Stateful
 
 model :: MonadInfer m => m (Int, Double)
 model = do
@@ -27,7 +28,8 @@ result :: MonadSample m => m ((Int, Double), Double)
 result = second (exp . ln) <$> runWeighted model
 
 passed :: IO Bool
-passed = fmap check (sampleIOfixed result)
+passed = do stdGen <- newIOGenM (mkStdGen 1729)
+            fmap check (sampleIOwith result stdGen)
 
 check :: ((Int, Double), Double) -> Bool
 check ((0, 1), 1) = True
