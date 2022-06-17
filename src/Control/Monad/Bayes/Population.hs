@@ -1,8 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -31,26 +30,34 @@ module Control.Monad.Bayes.Population
     pushEvidence,
     proper,
     evidence,
-    collapse,
-    mapPopulation,
-    normalize,
-    popAvg,
-    flatten,
     hoist,
+    collapse,
+    popAvg,
   )
 where
 
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Weighted hiding (flatten, hoist)
-import Control.Monad.Trans
-import Control.Monad.Trans.List
+  ( MonadCond,
+    MonadInfer,
+    MonadSample (categorical, logCategorical, random, uniform),
+    factor,
+  )
+import Control.Monad.Bayes.Weighted
+  ( Weighted,
+    applyWeight,
+    extractWeight,
+    runWeighted,
+    withWeight,
+  )
+import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
-import qualified Data.List
+import Data.List qualified
 import Data.Maybe (catMaybes)
 import Data.Vector ((!))
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
@@ -244,19 +251,6 @@ collapse ::
   m a
 collapse = applyWeight . proper
 
--- | Applies a random transformation to a population.
-mapPopulation ::
-  (Monad m) =>
-  ([(a, Log Double)] -> m [(a, Log Double)]) ->
-  Population m a ->
-  Population m a
-mapPopulation f m = fromWeightedList $ runPopulation m >>= f
-
--- | Normalizes the weights in the population so that their sum is 1.
--- This transformation introduces bias.
-normalize :: (Monad m) => Population m a -> Population m a
-normalize = hoist prior . extractEvidence
-
 -- | Population average of a function, computed using unnormalized weights.
 popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
 popAvg f p = do
@@ -264,16 +258,6 @@ popAvg f p = do
   let ys = map (\(x, w) -> f x * w) xs
   let t = Data.List.sum ys
   return t
-
--- | Combine a population of populations into a single population.
-flatten :: Monad m => Population (Population m) a -> Population m a
-flatten m = Population $ withWeight $ ListT t
-  where
-    t = f <$> (runPopulation . runPopulation) m
-    f d = do
-      (x, p) <- d
-      (y, q) <- x
-      return (y, p * q)
 
 -- | Applies a transformation to the inner monad.
 hoist ::

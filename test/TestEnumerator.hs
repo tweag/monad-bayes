@@ -1,11 +1,20 @@
-module TestEnumerator where
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE Trustworthy #-}
+
+module TestEnumerator (passed1, passed2, passed3, passed4) where
 
 import Control.Monad.Bayes.Class
+  ( MonadSample (categorical, uniformD),
+  )
 import Control.Monad.Bayes.Enumerator
-import Data.AEq
-import qualified Data.Vector as V
-import Numeric.Log
-import Sprinkler
+  ( enumerate,
+    evidence,
+    expectation,
+  )
+import Data.AEq (AEq ((~==)))
+import Data.Vector qualified as V
+import Numeric.Log (Log (ln))
+import Sprinkler (hard, soft)
 
 unnorm :: MonadSample m => m Int
 unnorm = categorical $ V.fromList [0.5, 0.8]

@@ -1,14 +1,19 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module TestWeighted where
+module TestWeighted (check, passed, result, model) where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted
-import Control.Monad.State
-import Data.AEq
+  ( MonadInfer,
+    MonadSample (normal, uniformD),
+    factor,
+  )
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Control.Monad.Bayes.Weighted (runWeighted)
+import Control.Monad.State (unless, when)
+import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
-import Numeric.Log
+import Numeric.Log (Log (Exp, ln))
 
 model :: MonadInfer m => m (Int, Double)
 model = do

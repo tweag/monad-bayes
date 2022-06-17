@@ -1,16 +1,21 @@
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module TestInference where
+module TestInference (checkParticles, checkParticlesSystematic, checkParticlesStratified, checkTerminateSMC, checkPreserveSMC) where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Enumerator (enumerate)
 import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sampler
-import Data.AEq
-import Numeric.Log
-import Sprinkler
+  ( smcMultinomial,
+    smcStratified,
+    smcSystematic,
+  )
+import Control.Monad.Bayes.Population (collapse, runPopulation)
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Data.AEq (AEq ((~==)))
+import Numeric.Log (Log)
+import Sprinkler (soft)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft

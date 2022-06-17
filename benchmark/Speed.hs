@@ -1,26 +1,37 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Inference.RMSMC
-import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Traced
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
+import Control.Monad.Bayes.Inference.SMC (smcSystematic)
+import Control.Monad.Bayes.Population (runPopulation)
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
+import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.Weighted (prior)
 import Criterion.Main
-import Criterion.Types
-import qualified HMM
-import qualified LDA
-import qualified LogReg
+  ( Benchmark,
+    Benchmarkable,
+    bench,
+    defaultConfig,
+    defaultMainWith,
+    nfIO,
+  )
+import Criterion.Types (Config (csvFile, rawDataFile))
+import Data.Functor (void)
+import HMM qualified
+import LDA qualified
+import LogReg qualified
+import System.Process.Typed (runProcess)
 import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
 
 data ProbProgSys = MonadBayes
-  deriving (Show)
+  deriving stock (Show)
 
 data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
 
@@ -59,11 +70,11 @@ prepareBenchmark e MonadBayes model alg =
   bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
     prepareBenchmarkable (rng e) MonadBayes model alg
   where
-    sep = "_"
+    sep = "_" :: String
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (_, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = True
 supported _ = True
 
 systems :: [ProbProgSys]
@@ -74,9 +85,9 @@ systems =
 lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
 lengthBenchmarks e lrData hmmData ldaData = benchmarks
   where
-    lrLengths = 10 : map (* 100) [1 .. 10]
-    hmmLengths = 10 : map (* 100) [1 .. 10]
-    ldaLengths = 5 : map (* 50) [1 .. 10]
+    lrLengths = 10 : map (* 100) [1 :: Int .. 10]
+    hmmLengths = 10 : map (* 100) [1 :: Int .. 10]
+    ldaLengths = 5 : map (* 50) [1 :: Int .. 10]
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
@@ -98,9 +109,9 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
 samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
 samplesBenchmarks e lrData hmmData ldaData = benchmarks
   where
-    lrLengths = [50]
-    hmmLengths = [20]
-    ldaLengths = [10]
+    lrLengths = [50 :: Int]
+    hmmLengths = [20 :: Int]
+    ldaLengths = [10 :: Int]
     models =
       map (LR . (`take` lrData)) lrLengths
         ++ map (HMM . (`take` hmmData)) hmmLengths
@@ -120,6 +131,9 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 main :: IO ()
 main = do
   g <- createSystemRandom
+  writeFile "speed-length.csv" ""
+  writeFile "speed-samples.csv" ""
+  writeFile "raw.dat" ""
   let e = Env g
   lrData <- sampleIOwith (LogReg.syntheticData 1000) g
   hmmData <- sampleIOwith (HMM.syntheticData 1000) g
@@ -128,3 +142,4 @@ main = do
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
   defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
+  void $ runProcess "python plots.py"

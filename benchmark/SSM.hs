@@ -1,14 +1,14 @@
 module Main where
 
-import Control.Monad.Bayes.Inference.PMMH as PMMH
-import Control.Monad.Bayes.Inference.RMSMC
-import Control.Monad.Bayes.Inference.SMC
-import Control.Monad.Bayes.Inference.SMC2 as SMC2
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted
-import Control.Monad.IO.Class
-import NonlinearSSM
+import Control.Monad.Bayes.Inference.PMMH as PMMH (pmmh)
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
+import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
+import Control.Monad.Bayes.Inference.SMC2 as SMC2 (smc2)
+import Control.Monad.Bayes.Population (runPopulation)
+import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import NonlinearSSM (generateData, model, param)
 
 main :: IO ()
 main = sampleIO $ do
