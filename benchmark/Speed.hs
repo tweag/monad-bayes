@@ -31,7 +31,7 @@ import System.Random.MWC (GenIO, createSystemRandom)
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
 
-data ProbProgSys = MonadInfer
+data ProbProgSys = MonadBayes
   deriving stock (Show)
 
 data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
@@ -64,23 +64,23 @@ runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model)
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadInfer model alg = nfIO $ sampleIOwith (runAlg model alg) g
+prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
-prepareBenchmark e MonadInfer model alg =
-  bench (show MonadInfer ++ sep ++ show model ++ sep ++ show alg) $
-    prepareBenchmarkable (rng e) MonadInfer model alg
+prepareBenchmark e MonadBayes model alg =
+  bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
+    prepareBenchmarkable (rng e) MonadBayes model alg
   where
     sep = "_" :: String
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (_, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = True
 supported _ = True
 
 systems :: [ProbProgSys]
 systems =
-  [ MonadInfer
+  [ MonadBayes
   ]
 
 lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]

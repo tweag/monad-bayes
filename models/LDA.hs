@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 -- LDA model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)

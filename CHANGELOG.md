@@ -1,6 +1,3 @@
-# Unreleased
-
-- No unreleased changes so far.
 
 # 0.1.1.3 (2021-06-15)
 

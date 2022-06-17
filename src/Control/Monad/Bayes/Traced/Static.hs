@@ -28,6 +28,12 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced.Common
+  ( Trace (..),
+    bind,
+    mhTrans,
+    scored,
+    singleton,
+  )
 import Control.Monad.Bayes.Weighted (Weighted, prior)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)

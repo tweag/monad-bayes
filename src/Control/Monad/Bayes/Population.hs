@@ -40,6 +40,11 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
+  ( MonadCond,
+    MonadInfer,
+    MonadSample (categorical, logCategorical, random, uniform),
+    factor,
+  )
 import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,

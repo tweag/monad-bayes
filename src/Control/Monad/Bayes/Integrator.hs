@@ -5,6 +5,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
@@ -24,46 +25,25 @@ module Control.Monad.Bayes.Integrator
     volume,
     normalize,
     Integrator,
+    momentGeneratingFunction,
+    cumulantGeneratingFunction,
   )
 where
-
--- (probability,
--- variance,
--- expectation,
--- cdf,
--- empirical,
--- enumerateWith,
--- enumerateWithWeighted,
--- histogram,
--- plotCdf,
--- volume,
--- normalize,
--- momentGeneratingFunction,
--- cumulantGeneratingFunction,
--- Integrator)
 
 import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
-import Control.Monad.Bayes.Class (MonadCond (score), MonadInfer, MonadSample (bernoulli, beta, normal, random, uniformD), condition, factor)
-import Control.Monad.Bayes.Enumerator (compact, normalizeWeights)
-import Control.Monad.Bayes.Enumerator hiding (expectation)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
-import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (Weighted, prior, runWeighted)
-import Control.Monad.Cont (ContT (runContT), MonadTrans (lift), replicateM)
+import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
+import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Control.Monad.Trans.Cont
   ( Cont,
     ContT (ContT),
     cont,
-    mapCont,
     runCont,
   )
 import Data.Foldable (Foldable (foldl'))
-import Data.Scientific (FPFormat (Exponent), formatScientific, fromFloatDigits)
 import Data.Set (Set, elems)
 import Data.Text qualified as T
-import Debug.Trace (trace)
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
 import Statistics.Distribution (density)

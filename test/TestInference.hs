@@ -1,5 +1,6 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
@@ -24,9 +25,7 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Population (collapse, runPopulation)
-import Control.Monad.Bayes.Sampler
-  ( sampleIOfixed,
-  )
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Weighted qualified as Weighted

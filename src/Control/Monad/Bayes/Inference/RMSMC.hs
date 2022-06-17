@@ -20,15 +20,12 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+import Control.Monad.Bayes.Class (MonadSample)
 import Control.Monad.Bayes.Population
   ( Population,
-    collapse,
     resampleSystematic,
-    runPopulation,
     spawn,
   )
-import Control.Monad.Bayes.Population qualified as P
 import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
 import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
@@ -39,7 +36,7 @@ import Control.Monad.Bayes.Traced.Static as Tr
     mhStep,
   )
 import Control.Monad.Bayes.Traced.Static qualified as TrStat
-import Data.Monoid
+import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::

@@ -50,6 +50,16 @@ import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (ln))
 import System.Random.MWC
+  ( Gen,
+    GenIO,
+    GenST,
+    Seed,
+    Variate (uniform, uniformR),
+    create,
+    createSystemRandom,
+    restore,
+    save,
+  )
 import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import re
 
-benchmark_pattern = "(?P<system>(MonadInfer|Anglican|WebPPL))_(?P<model>(LR|HMM|LDA))(?P<length>[0-9]+)_(?P<alg>(SMC(?P<smcparam>[0-9]+$)|MH(?P<mhparam>[0-9]+$)|RMSMC(?P<rmsmcparam>[0-9]+-[0-9]+$)))"
+benchmark_pattern = "(?P<system>(MonadBayes|Anglican|WebPPL))_(?P<model>(LR|HMM|LDA))(?P<length>[0-9]+)_(?P<alg>(SMC(?P<smcparam>[0-9]+$)|MH(?P<mhparam>[0-9]+$)|RMSMC(?P<rmsmcparam>[0-9]+-[0-9]+$)))"
 benchmark_reg = re.compile(benchmark_pattern)
 rmsmc_pattern = "(?P<particles>[0-9]+)-(?P<steps>[0-9]+)"
 rmsmc_reg = re.compile(rmsmc_pattern)
@@ -59,7 +59,7 @@ def unpack_names(series):
 
 
 def style(system):
-    if system == "MonadInfer":
+    if system == "MonadBayes":
         return "ro"
     elif system == "Anglican":
         return "bs"
@@ -69,7 +69,7 @@ def style(system):
 
 models = ["LR", "HMM", "LDA"]
 algs = ["MH", "SMC", "RMSMC"]
-systems = ["MonadInfer", "Anglican", "WebPPL"]
+systems = ["MonadBayes", "Anglican", "WebPPL"]
 
 
 # plot execution time vs. dataset size

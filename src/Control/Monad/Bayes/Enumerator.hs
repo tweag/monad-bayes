@@ -40,12 +40,12 @@ import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
 import Data.List (sortOn)
 import Data.Map qualified as Map
-import Data.Maybe
-import Data.Monoid
+import Data.Maybe (fromMaybe)
+import Data.Monoid (Product (..))
 import Data.Ord (Down (Down))
 import Data.Vector qualified as VV
 import Data.Vector.Generic qualified as V
-import Numeric.Log as Log
+import Numeric.Log as Log (Log (..), sum)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
