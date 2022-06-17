@@ -151,17 +151,8 @@ toBins :: Double -> [Double] -> [Double]
 toBins binWidth = fmap (fst . toBin binWidth)
 
 sampleMean :: [(Double, Log Double)] -> Double
-sampleMean x =
-  let z = Prelude.sum $ fmap (ln . exp . snd) x
-   in Prelude.sum [y * ((ln (exp d)) / z) | (y, d) <- x]
-
---   estimateMeanEmpirical :: Weighted SamplerIO Double -> IO Double
--- estimateMeanEmpirical s =
---   F.fold (liftA2 (/) (F.premap (\(x, y) -> x * ln (exp y)) F.sum) (F.premap (ln . exp . snd) F.sum))
---     <$> (sampleIO . replicateM 1000 . runWeighted) s
-
--- Foldl.fold do
---       y <- Foldl.premap fst Foldl.sum
---       z <- Foldl.premap (ln . exp . snd) Foldl.sum
---       len <- Foldl.genericLength
---       pure (y * (ln (exp d) / z))
+sampleMean samples =
+  let z = F.premap (ln . exp . snd) F.sum
+      w = (F.premap (\(x, y) -> x * ln (exp y)) F.sum)
+      s = (/) <$> w <*> z
+   in F.fold s samples

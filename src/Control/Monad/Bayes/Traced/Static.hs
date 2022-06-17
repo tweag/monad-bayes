@@ -14,19 +14,16 @@ module Control.Monad.Bayes.Traced.Static
     marginal,
     mhStep,
     mh,
-    estimateMeanVarianceMH,
   )
 where
 
 import Control.Applicative (liftA2)
-import Control.Foldl hiding (map, random)
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
     MonadSample (random),
   )
 import Control.Monad.Bayes.Free (FreeSampler)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -34,7 +31,7 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted (Weighted, prior)
+import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
@@ -95,6 +92,3 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
-
-estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)
-estimateMeanVarianceMH s = fold (liftA2 (,) mean variance) <$> (fmap (take 2000) . sampleIO . prior . mh 5000) s

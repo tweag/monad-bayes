@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE Trustworthy #-}
 
 import Data.AEq (AEq ((~==)))
@@ -12,6 +11,7 @@ import TestIntegrator qualified
 import TestPipes (hmms)
 import TestPipes qualified
 import TestPopulation qualified
+import TestSampler qualified
 import TestSequential qualified
 import TestWeighted qualified
 
@@ -22,28 +22,31 @@ main = hspec do
       do
         passed <- TestWeighted.passed
         passed `shouldBe` True
-  describe "Enumerator" $ do
+  describe "Enumerator" do
     it "sorts samples and aggregates weights" $
       TestEnumerator.passed2 `shouldBe` True
     it "gives correct answer for the sprinkler model" $
       TestEnumerator.passed3 `shouldBe` True
     it "computes expectation correctly" $
       TestEnumerator.passed4 `shouldBe` True
-  describe "Integrator Expectation" $ do
+  describe "Integrator Expectation" do
     prop "expectation numerically" $
       \mean var ->
         var > 0 ==> property $ TestIntegrator.normalExpectation mean (sqrt var) ~== mean
-  describe "Integrator Variance" $ do
+  describe "Integrator Variance" do
     prop "variance numerically" $
       \mean var ->
         var > 0 ==> property $ TestIntegrator.normalVariance mean (sqrt var) ~== var
-  describe "Integrator Volume" $ do
+  describe "Sampler mean and variance" do
+    it "gets right mean and variance" $
+      TestSampler.testMeanAndVariance `shouldBe` True
+  describe "Integrator Volume" do
     prop "volume sums to 1" $
       property $ \case
         [] -> True
         ls -> (TestIntegrator.volumeIsOne ls)
 
-  describe "Integrator" $ do
+  describe "Integrator" do
     it "" $
       all
         (== True)
@@ -64,9 +67,9 @@ main = hspec do
         ]
         `shouldBe` True
 
-  describe "Population" $ do
-    context "controlling population" $ do
-      it "preserves the population when not explicitly altered" $ do
+  describe "Population" do
+    context "controlling population" do
+      it "preserves the population when not explicitly altered" do
         popSize <- TestPopulation.popSize
         popSize `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" do
@@ -112,7 +115,7 @@ main = hspec do
     prop "Gamma Normal" $
       ioProperty . TestInference.testGammaNormal
     prop "Normal Normal" $
-      \n -> abs n < 5 ==> ioProperty (TestInference.testNormalNormal [n])
+      \n -> ioProperty (TestInference.testNormalNormal [max (-3) $ min 3 n])
     prop "Beta Bernoulli" $
       ioProperty . TestInference.testBetaBernoulli
   describe "Pipes: Urn" do
@@ -125,6 +128,6 @@ main = hspec do
   describe "SMC with stratified resampling" $
     prop "number of particles is equal to its second parameter" $
       \observations particles ->
-        observations >= 0 && particles >= 1 ==> ioProperty $ do
+        observations >= 0 && particles >= 1 ==> ioProperty do
           checkParticles <- TestInference.checkParticlesStratified observations particles
           return $ checkParticles == particles

@@ -88,14 +88,6 @@ library
   else
     ghc-options: -Wall
 
-  default-extensions:
-    BlockArguments
-    FlexibleContexts
-    ImportQualifiedPost
-    LambdaCase
-    OverloadedStrings
-    TupleSections
-
 executable example
   main-is:            Single.hs
   hs-source-dirs:     benchmark models
@@ -120,8 +112,6 @@ executable example
     , time
     , vector
 
-  -- , hvega
-  -- , ihaskell-hvega
   if flag(dev)
     ghc-options:
       -Wall -Wcompat -Wincomplete-record-updates
@@ -149,6 +139,7 @@ test-suite monad-bayes-test
     TestInference
     TestIntegrator
     TestPopulation
+    TestSampler
     TestSequential
     TestWeighted
 
