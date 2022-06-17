@@ -3,6 +3,8 @@
 
 module Control.Monad.Bayes.Inference.Lazy.MH where
 
+import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler.Lazy
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Control.Monad.Extra (iterateM)
