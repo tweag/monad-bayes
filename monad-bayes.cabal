@@ -147,6 +147,7 @@ benchmark ssm-bench
   build-depends:
       base
     , monad-bayes
+    , random
 
 benchmark speed-bench
   type:             exitcode-stdio-1.0
