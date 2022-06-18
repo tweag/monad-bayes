@@ -13,7 +13,8 @@ import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
-import System.Random.MWC (createSystemRandom)
+import System.Random.MWC (createSystemRandom, create)
+import Control.Monad.ST (runST)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
@@ -32,16 +33,14 @@ getModel model = (size model, program model)
     size (LR n) = n
     size (HMM n) = n
     size (LDA (d, w)) = d * w
-    synthesize :: SamplerST a -> (a -> b) -> b
-    synthesize dataGen prog = prog (sampleSTfixed dataGen)
-    program (LR n) = show <$> synthesize (LogReg.syntheticData n) LogReg.logisticRegression
-    program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
-    program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
+    program (LR n) = show <$> (LogReg.logisticRegression (runST $ create >>= sampleSTwith (LogReg.syntheticData n)))
+    program (HMM n) = show <$> (HMM.hmm (runST $ create >>= sampleSTwith (HMM.syntheticData n)))
+    program (LDA (d, w)) = show <$> (LDA.lda (runST $ create >>= sampleSTwith (LDA.syntheticData d w)))
 
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 
-runAlg :: Model -> Alg -> SamplerIO String
+runAlg :: Model -> Alg -> SamplerIO g String
 runAlg model alg =
   case alg of
     SMC ->

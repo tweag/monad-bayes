@@ -57,7 +57,7 @@ instance Show Alg where
   show (SMC n) = "SMC" ++ show n
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
-runAlg :: Model -> Alg -> SamplerIO String
+runAlg :: Model -> Alg -> SamplerIO g String
 runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))

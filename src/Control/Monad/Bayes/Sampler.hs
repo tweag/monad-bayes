@@ -28,6 +28,7 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     -- sampleST,
     -- sampleSTfixed,
+    sampleSTwith
   )
 where
 
@@ -131,7 +132,10 @@ sampleSTfixed (SamplerST s) = runST $ do
   -- gen <- create
   -- runReaderT s gen
 
--- | Convert a distribution supplied by @mwc-random@.
+-- | Like 'sampleST' but with a custom pseudo-random number generator.
+sampleSTwith :: SR.StatefulGen r (ST s) => SamplerST r a -> r -> ST s a
+sampleSTwith (SamplerST s) = runReaderT s
+
 fromMWC :: (g -> (ST s) a) -> ReaderT g (ST s) a
 fromMWC = (\s -> ask >>= lift . s)
 
