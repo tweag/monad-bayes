@@ -103,10 +103,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#sequential">Sequential</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#freesampler">FreeSampler</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#traced">Traced</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integrator">Integrator</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#inference-methods-under-the-hood">Inference methods under the hood</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#exact-inference">Exact inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quadrature">Quadrature</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#independent-forward-sampling">Independent forward sampling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#independent-weighted-sampling">Independent weighted sampling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#metropolis-hastings-mcmc">Metropolis Hastings MCMC</a></li>
@@ -424,7 +426,7 @@ In a similar vein, `Population` and `Sequential` go together to handle Sequentia
 </pre></div>
 </div>
 <p>So:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Population</span> <span class="n">m</span> <span class="n">a</span> <span class="o">~</span> <span class="p">[</span><span class="kt">Log</span> <span class="kt">Double</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">Population</span> <span class="n">m</span> <span class="n">a</span> <span class="o">~</span> <span class="n">m</span> <span class="p">[</span><span class="kt">Log</span> <span class="kt">Double</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
 </pre></div>
 </div>
 <p>Note that while <code class="docutils literal notranslate"><span class="pre">ListT</span></code> isn’t in general a valid monad transformer, we’re not requiring it to be one here.</p>
@@ -535,7 +537,6 @@ TODO: Enumerator example with `trace` -->
 </section>
 <section id="freesampler">
 <h3>FreeSampler<a class="headerlink" href="#freesampler" title="Permalink to this headline">¶</a></h3>
-<p>(<em>Difficulty: high</em>)</p>
 <p>Summary of key info on <code class="docutils literal notranslate"><span class="pre">FreeSampler</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">FreeSampler</span> <span class="pre">::</span> <span class="pre">(Type</span> <span class="pre">-&gt;</span> <span class="pre">Type)</span> <span class="pre">-&gt;</span> <span class="pre">(Type</span> <span class="pre">-&gt;</span> <span class="pre">Type)</span></code></p></li>
@@ -583,7 +584,6 @@ TODO: Enumerator example with `trace` -->
 </section>
 <section id="traced">
 <h3>Traced<a class="headerlink" href="#traced" title="Permalink to this headline">¶</a></h3>
-<p>(<em>Difficulty: hard</em>)</p>
 <p>Summary of key info on <code class="docutils literal notranslate"><span class="pre">Traced</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Traced</span> <span class="pre">::</span> <span class="pre">(Type</span> <span class="pre">-&gt;</span> <span class="pre">Type)</span> <span class="pre">-&gt;</span> <span class="pre">(Type</span> <span class="pre">-&gt;</span> <span class="pre">Type)</span></code></p></li>
@@ -614,6 +614,23 @@ TODO: Enumerator example with `trace` -->
 <p>A <code class="docutils literal notranslate"><span class="pre">Traced</span></code> interpretation of a model is a particular run of the model with its corresponding probability, alongside a distribution over <code class="docutils literal notranslate"><span class="pre">Trace</span></code> info, which records: the value of each call to <code class="docutils literal notranslate"><span class="pre">random</span></code>, the value of the final output, and the density of this program trace.</p>
 <p>This machinery allows us to implement MCMC (see inference methods below for details).</p>
 </section>
+<section id="integrator">
+<h3>Integrator<a class="headerlink" href="#integrator" title="Permalink to this headline">¶</a></h3>
+<p>Summary of key info:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Integrator</span> <span class="pre">::</span> <span class="pre">Type</span> <span class="pre">-&gt;</span> <span class="pre">Type</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance</span> <span class="pre">MonadSample</span> <span class="pre">Integrator</span></code></p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">Integrator</span></code> is in <code class="docutils literal notranslate"><span class="pre">Control.Monad.Bayes.Integrator</span></code>, defined as follows:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kr">newtype</span> <span class="kt">Integrator</span> <span class="n">a</span> <span class="ow">=</span> <span class="kt">Integrator</span> <span class="p">{</span><span class="n">getCont</span> <span class="ow">::</span> <span class="kt">Cont</span> <span class="kt">Double</span> <span class="n">a</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>This <code class="docutils literal notranslate"><span class="pre">MonadSample</span></code> instance interprets a probabilistic program as a numerical integrator. For a nice explanation, see <a class="reference external" href="https://jtobin.io/giry-monad-implementation">this blog post</a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Integrator</span> <span class="pre">a</span></code> is isomorphic to <code class="docutils literal notranslate"><span class="pre">(a</span> <span class="pre">-&gt;</span> <span class="pre">Double)</span> <span class="pre">-&gt;</span> <span class="pre">Double</span></code>.
+A program <code class="docutils literal notranslate"><span class="pre">model</span></code> of type <code class="docutils literal notranslate"><span class="pre">Integrator</span> <span class="pre">a</span></code> will take a function <code class="docutils literal notranslate"><span class="pre">f</span></code> and calculate $E_{p}[f] = \int f(x)*p(x)$ where $p$ is the density of <code class="docutils literal notranslate"><span class="pre">model</span></code>.</p>
+<p>The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, <code class="docutils literal notranslate"><span class="pre">random</span> <span class="pre">::</span> <span class="pre">Integrator</span> <span class="pre">Double</span></code> is the program which takes a function <code class="docutils literal notranslate"><span class="pre">f</span></code> and integrates <code class="docutils literal notranslate"><span class="pre">f</span></code> over the $(0,1)$ range.</p>
+<p>We can calculate the probability for an interval $(a,b)$ of any model of type <code class="docutils literal notranslate"><span class="pre">Integrator</span> <span class="pre">Double</span></code> by setting <code class="docutils literal notranslate"><span class="pre">f</span></code> to be the function that returns $1$ for that range, else $0$. Similarly for the CDF, MGF and so on.</p>
+</section>
 </section>
 <section id="inference-methods-under-the-hood">
 <h2>Inference methods under the hood<a class="headerlink" href="#inference-methods-under-the-hood" title="Permalink to this headline">¶</a></h2>
@@ -636,6 +653,20 @@ TODO: Enumerator example with `trace` -->
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">(enumerate</span> <span class="pre">.</span> <span class="pre">runWeighted)</span> <span class="pre">example</span></code> gives <code class="docutils literal notranslate"><span class="pre">[((False,0.0),0.5),((True,1.0),0.5)]</span></code>. This is quite edifying for understanding <code class="docutils literal notranslate"><span class="pre">(sampleIO</span> <span class="pre">.</span> <span class="pre">runWeighted)</span> <span class="pre">example</span></code>. What it says is that there are precisely two ways the program will run, each with equal probability: either you get <code class="docutils literal notranslate"><span class="pre">False</span></code> with weight <code class="docutils literal notranslate"><span class="pre">0.0</span></code> or <code class="docutils literal notranslate"><span class="pre">True</span></code> with weight <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
+</section>
+<section id="quadrature">
+<h3>Quadrature<a class="headerlink" href="#quadrature" title="Permalink to this headline">¶</a></h3>
+<p>As described on the section on <code class="docutils literal notranslate"><span class="pre">Integrator</span></code>, we can interpret our probabilistic program of type <code class="docutils literal notranslate"><span class="pre">MonadSample</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code> as having concrete type <code class="docutils literal notranslate"><span class="pre">Integrator</span> <span class="pre">a</span></code>. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).</p>
+<p>This can also handle programs of type <code class="docutils literal notranslate"><span class="pre">MonadInfer</span> <span class="pre">m</span> <span class="pre">=&gt;</span> <span class="pre">m</span> <span class="pre">a</span></code>, that is, programs with <code class="docutils literal notranslate"><span class="pre">factor</span></code> statements. For these cases, a function <code class="docutils literal notranslate"><span class="pre">normalize</span> <span class="pre">::</span> <span class="pre">Weighted</span> <span class="pre">Integrator</span> <span class="pre">a</span> <span class="pre">-&gt;</span> <span class="pre">Integrator</span> <span class="pre">a</span></code> is employed. For example,</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">model</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Double</span>
+<span class="nf">model</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="n">var</span> <span class="ow">&lt;-</span> <span class="n">gamma</span> <span class="mi">1</span> <span class="mi">1</span>
+  <span class="n">n</span> <span class="ow">&lt;-</span> <span class="n">normal</span> <span class="mi">0</span> <span class="p">(</span><span class="n">sqrt</span> <span class="n">var</span><span class="p">)</span>
+  <span class="n">condition</span> <span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">return</span> <span class="n">var</span>
+</pre></div>
+</div>
+<p>is really an unnormalized measure, rather than a probability distribution. <code class="docutils literal notranslate"><span class="pre">normalize</span></code> views it as of type <code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">Integrator</span> <span class="pre">Double</span></code>, which is isomorphic to <code class="docutils literal notranslate"><span class="pre">(Double</span> <span class="pre">-&gt;</span> <span class="pre">(Double,</span> <span class="pre">Log</span> <span class="pre">Double)</span> <span class="pre">-&gt;</span> <span class="pre">Double)</span></code>. This can be used to compute the normalization constant, and divide the integrator’s output by it, all within <code class="docutils literal notranslate"><span class="pre">Integrator</span></code>.</p>
 </section>
 <section id="independent-forward-sampling">
 <h3>Independent forward sampling<a class="headerlink" href="#independent-forward-sampling" title="Permalink to this headline">¶</a></h3>
@@ -849,7 +880,7 @@ Composed instances of `MonadInfer`:
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 1980, Adam Scibior.
+        &copy; Copyright 2021, Adam Scibior.
 
     </p>
   </div>
