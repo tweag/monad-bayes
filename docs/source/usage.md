@@ -1,4 +1,4 @@
-# Developer Guide
+# The implementation of monad-bayes
 
 This document assumes the reader is familiar with:
 - the basics of Bayesian probability theory

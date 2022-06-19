@@ -1,4 +1,4 @@
-# User Guide
+# What is probabilistic programming
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
@@ -55,28 +55,12 @@ Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from
 
 `sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
-## monad-bayes vs other libraries
 
-
-monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
-
-There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
-
-**What other approaches have that monad-bayes lacks**:
-
-A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
-
-**What monad-bayes has that is unique**: 
-
-Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
-
-Probabilistic programs in monad-bayes are first class programs in Haskell. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, smart contracts, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. You can make use of laziness. Everything is strongly typed. There's no new special syntax or keywords.
-
-## References
+## Resources
 
 Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to [WebPPL](https://probmods.org/) is an excellent resource for learning about probabilistic programming. The [tutorials for Gen](https://www.gen.dev/tutorials/) are also very good, particularly for learning about traces.
 
-## Specifying distributions
+# Specifying distributions
 
 A distribution in monad-bayes over a set {math}`X`, is of type:
 
@@ -96,7 +80,7 @@ Note that these primitives already allows us to construct quite exotic distribut
 distributionOverFunctions = uniformD [(+), (-)]
 ```
 
-### Constructing distributions as programs
+## Constructing distributions as programs
 
 monad-bayes also lets us construct new distributions out of these. `MonadInfer m` implies `Monad m` and in turn `Functor m`, so we can do the following:
 
@@ -138,7 +122,7 @@ example = do
 
 That said, it is often useful to think of probabilistic programs as specifying distributions over **program executation traces**. For example, one trace of `example` as defined above is (informally): `{bernoulli 0.5 : True, random : 0.7}`.
 
-### Hard and soft conditioning
+## Hard and soft conditioning
 
 monad-bayes provides a function `score :: MonadInfer m => Log Double -> m ()`. (**Note**: `Log Double` is a wrapper for `Double` which stores doubles as their logarithm, and does multiplication by addition of logarithms.)
 
@@ -208,7 +192,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 
 <!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 
-## Performing inference
+# Performing inference
 
 To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.
 
@@ -224,7 +208,7 @@ Two of the large classes of inference methods are **sampling based methods** and
 
 <!-- For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on.  -->
 
-### Exact inference
+## Exact inference
 
 ```haskell
 enumerate :: Ord a => Enumerator a -> [(a, Double)]
@@ -254,7 +238,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-### Independent forward sampling
+## Independent forward sampling
 
 For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampleIO p` or `sampleSTfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
 
@@ -270,7 +254,7 @@ example = do
 
 Because `sampleIO example` is totally pure, it is parallelizable. 
 
-### Independent weighted sampling
+## Independent weighted sampling
 
 To perform weighted sampling, use:
 
@@ -298,7 +282,7 @@ run = (sampleIO . runWeighted) example
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
 
 
-### Markov Chain Monte Carlo
+## Markov Chain Monte Carlo
 
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:
 
@@ -333,7 +317,7 @@ produces 10 unbiased samples from the posterior, by using single-site trace MCMC
 The end of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
 
-### Sequential Monte Carlo (Particle Filtering)
+## Sequential Monte Carlo (Particle Filtering)
 
 ```haskell
 (sampleIO. runPopulation . smcSystematic numSteps numParticles) 
@@ -367,7 +351,7 @@ Each of these is a particle with a weight. In this simple case, there are all id
 `numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 
-### Resample Move Sequential Monte Carlo
+## Resample Move Sequential Monte Carlo
 
 This is a fancier variant of SMC, which has the particles take an MCMC walk through the solution space in order to spread out. This can avoid a common failure mode of SMC, where the population concentrates its weight too heavily on one mode.
 
@@ -396,7 +380,7 @@ What this returns is a population of samples, just like plain `SMC`. The third a
 
 <!-- todo -->
 
-### Particle Marginal Metropolis Hastings
+## Particle Marginal Metropolis Hastings
 
 This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
 
@@ -456,7 +440,7 @@ betaBernoulli n = do
  -->
 
 
-## Interoperating with other Haskell code
+# Interoperating with other Haskell code
 
 Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
 
@@ -475,6 +459,8 @@ or
 example = whileM (bernoulli 0.99) (normal 0 1)
 ```
 
+You may write distributions over artibrary types. For example, rather than drawing a sample from a distribution and then using the sample to construct a histogram or a plot, you can directly define a distribution over histograms or plots, and sample from that.
+
 <!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 
 We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
@@ -487,7 +473,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
 
 <!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
 
-## Tips on writing good probabilistic programs
+# Tips on writing good probabilistic programs
 
 There are many ways to specify the same distribution, and some will lend themselves more readily to efficient inference than others. For instance,
 
@@ -553,7 +539,7 @@ In this example, the performance difference is negligible, but it's easy to exte
 
 <!-- todo: similar lesson about incremental factors: compare two models -->
 
-## Executables
+<!-- ## Executables
 
 monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
 
@@ -561,8 +547,24 @@ monad-bayes comes with an executable called `example`. It's not particularly use
 stack exec example -- -m LDA4 -a MH
 ```
 
-where the options for `-m` (model) are "LDA" (latent dirichlet), "LR" (logistic regression) and "HMM" (hidden Markov model) and for `-a` (algorithm) are "MH" (Metropolis Hastings), "SMC" (sequential Monte Carlo), and "RMSMC" (resample-move sequential Monte Carlo). The number is the number of steps to take.
+where the options for `-m` (model) are "LDA" (latent dirichlet), "LR" (logistic regression) and "HMM" (hidden Markov model) and for `-a` (algorithm) are "MH" (Metropolis Hastings), "SMC" (sequential Monte Carlo), and "RMSMC" (resample-move sequential Monte Carlo). The number is the number of steps to take. -->
 
-## API docs
+# API docs
 
-For API docs, see [hackage](https://hackage.haskell.org/package/monad-bayes).
+For API docs in the normal Haskell style, see [hackage](https://hackage.haskell.org/package/monad-bayes).
+
+# Monad-bayes vs other libraries
+
+Monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
+
+There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
+
+**What other approaches have that monad-bayes lacks**:
+
+A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
+
+**What monad-bayes has that is unique**: 
+
+Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
+
+Probabilistic programs in monad-bayes are first class programs in Haskell. There's no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. Everything is strongly typed. You can make use of laziness.
