@@ -1,5 +1,6 @@
 # User Guide
 
+<<<<<<< HEAD
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
 ```{math}
@@ -16,6 +17,9 @@ y_{n}=\alpha+\beta x_{n}+\epsilon_{n}
 ```
 
 but in code as:
+=======
+Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
+>>>>>>> cleanup
 
 ```haskell
 paramPriorRegression :: MonadSample m => m (Double, Double, Double)

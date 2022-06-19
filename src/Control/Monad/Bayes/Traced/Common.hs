@@ -19,10 +19,21 @@ module Control.Monad.Bayes.Traced.Common
 where
 
 import Control.Monad.Bayes.Class
+  ( MonadSample (bernoulli, random),
+    discrete,
+  )
 import Control.Monad.Bayes.Free as FreeSampler
+  ( FreeSampler,
+    hoist,
+    withPartialRandomness,
+  )
 import Control.Monad.Bayes.Weighted as Weighted
-import Control.Monad.Trans.Writer
-import Data.Functor.Identity
+  ( Weighted,
+    hoist,
+    runWeighted,
+  )
+import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
+import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
@@ -85,5 +96,7 @@ mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
-burnIn :: Int -> [a] -> [a]
-burnIn n ls = let len = length ls in take (len - n) ls
+burnIn :: Functor m => Int -> m [a] -> m [a]
+burnIn n = fmap dropEnd
+  where
+    dropEnd ls = let len = length ls in take (len - n) ls

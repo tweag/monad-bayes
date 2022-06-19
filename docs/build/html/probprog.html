@@ -178,10 +178,14 @@
             
   <section id="user-guide">
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
+<<<<<<< HEAD
 <p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:</p>
 <div class="math notranslate nohighlight">
 \[ \begin{align}\begin{aligned}\beta \sim \operatorname{normal}(0, 2)\\\alpha \sim \operatorname{normal}(0, 2)\\\sigma^2 \sim \operatorname{gamma}(4, 4)\\\epsilon_{n} \sim \operatorname{normal}(0, \sigma)\\y_{n}=\alpha+\beta x_{n}+\epsilon_{n} \end{aligned}\end{align} \]</div>
 <p>but in code as:</p>
+=======
+<p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:</p>
+>>>>>>> cleanup
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">paramPriorRegression</span> <span class="ow">::</span> <span class="kt">MonadSample</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="p">(</span><span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)</span>
 <span class="nf">paramPriorRegression</span> <span class="ow">=</span> <span class="kr">do</span>
     <span class="n">slope</span> <span class="ow">&lt;-</span> <span class="n">normal</span> <span class="mi">0</span> <span class="mi">2</span>
@@ -225,7 +229,11 @@
 </section>
 <section id="specifying-distributions">
 <h2>Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permalink to this headline">¶</a></h2>
+<<<<<<< HEAD
 <p>A distribution in monad-bayes over a set <span class="math notranslate nohighlight">\(X\)</span>, is of type:</p>
+=======
+<p>A distribution in monad-bayes over a set $X$, is of type:</p>
+>>>>>>> cleanup
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">X</span>
 </pre></div>
 </div>
@@ -635,7 +643,10 @@ We can use monad transformers on top of our probability monad `m`, as in models/
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
+<<<<<<< HEAD
       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+=======
+>>>>>>> cleanup
 
   
 

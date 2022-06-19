@@ -1,22 +1,20 @@
 # monad-bayes
 
-[![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
+<!-- [![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
 [![Stackage](http://stackage.org/package/monad-bayes/badge/lts)](http://stackage.org/lts/package/monad-bayes)
 [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
-[![Build status](https://badge.buildkite.com/147af088063e8619fcf52ecf93fa7dd3353a2e8a252ef8e6ad.svg?branch=master)](https://buildkite.com/tweag-1/monad-bayes)
+[![Build status](https://badge.buildkite.com/147af088063e8619fcf52ecf93fa7dd3353a2e8a252ef8e6ad.svg?branch=master)](https://buildkite.com/tweag-1/monad-bayes) -->
 
-A library for **probabilistic programming in Haskell** using probability
-monads. The emphasis is on composition of inference algorithms implemented in
-terms of monad transformers.
+A library for **probabilistic programming in Haskell**. The emphasis is on composition of inference algorithms, and is implemented in terms of monad transformers.
 
-Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), maintained by
-[Tweag I/O][tweagio].
+See the [documentation](https://monad-bayes.netlify.app/) for a quick-start user guide and a reference overview of how it all works.
+
+Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation by [Reuben][reuben-web], maintained by [Tweag I/O][tweagio].
 
 ## Project status
 
 Now that `monad-bayes` has been released on Hackage, we will focus on improving
-documentation. In the meantime, see the [`models` folder][models] for examples.
-
+documentation, adding a variety of applications, improving the API, and making inference more easily customizable.
 ## Background
 
 The basis for the code in this repository is the ICFP 2018 paper [2]. For the
@@ -49,6 +47,7 @@ Now you can use `stack build`, `stack test` and `stack ghci`.
 
 [adam-github]: https://github.com/adscib
 [adam-web]: https://www.cs.ubc.ca/~ascibior/
+[reuben-web]: https://reubencohngordon.com/
 [haskell2015-doi]: https://doi.org/10.1145/2804302.2804317
 [haskell2015-tag]: https://github.com/tweag/monad-bayes/tree/haskell2015
 [icfp2018-doi]: https://doi.org/10.1145/3236778
