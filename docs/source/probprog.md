@@ -1,6 +1,5 @@
 # User Guide
 
-<<<<<<< HEAD
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
 ```{math}
@@ -17,9 +16,6 @@ y_{n}=\alpha+\beta x_{n}+\epsilon_{n}
 ```
 
 but in code as:
-=======
-Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model:
->>>>>>> cleanup
 
 ```haskell
 paramPriorRegression :: MonadSample m => m (Double, Double, Double)
@@ -90,7 +86,7 @@ MonadInfer m => m X
 
 monad-bayes provides standard distributions, such as:
 
-- `random :: MonadInfer m => m Double` : sample uniformly from $[0,1]$
+- `random :: MonadInfer m => m Double` : sample uniformly from {math}`[0,1]`
 
 The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html
 
@@ -108,9 +104,9 @@ monad-bayes also lets us construct new distributions out of these. `MonadInfer m
 fmap (> 0.5) random :: MonadInfer m => m Bool
 ```
 
-This is the uniform distribution over $(0.5, 1]$.
+This is the uniform distribution over {math}`(0.5, 1]`.
 
-As an important special case, if `x :: MonadInfer m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution $p(a)$, where $p(a) = \int_b p(a,b)$
+As an important special case, if `x :: MonadInfer m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
 
 The above example use only the functor instance for `m`, but we also have the monad instance, as used in:
 
@@ -121,7 +117,12 @@ example = bernoulli 0.5 >>= (\x -> if x then random else normal 0 1)
 
 It's easiest to understand this distribution as a probabilistic program: it's the distribution you get by first sampling from `bernoulli 0.5`, then checking the result. If the result is `True`, then sample from `random`, else from `normal 0 1`. As a distribution, this has a PDF:
 
-$$ f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  $$
+```{math}
+ f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  
+ ```
+
+
+
 <!-- $$ \int\_{[0,1]} 1[x>0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx $$ -->
 
 Equivalently, we could write this in do-notation as:
@@ -263,7 +264,7 @@ example = do
   if x then normal 0 1 else normal 1 2
 ```
 
-`sampleIO example` will produce a sample from a Bernoulli distribution with $p=0.5$, and if it is $True$, return a sample from a standard normal, else from a normal with mean 1 and std 2. '
+`sampleIO example` will produce a sample from a Bernoulli distribution with {math}`p=0.5`, and if it is {math}`True`, return a sample from a standard normal, else from a normal with mean 1 and std 2. '
 
 `(replicateM n . sampleIO) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampleIO . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
 
@@ -498,7 +499,7 @@ mixture1 point = do
     return cluster
 ```
 
-is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
+is a piece of code to infer whether an observed point was generated from a Gaussian of mean {math}`1` or {math}`5`. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
 
 However, the same conditional distribution is represented by 
 
