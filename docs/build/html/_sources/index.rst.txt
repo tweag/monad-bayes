@@ -17,6 +17,11 @@ so full interoperation with arbitrary Haskell code is totally straightforward.
 The *user guide* shows how to write models in Monad-Bayes and perform inference.
 The *developer guide* shows how the library works under the hood.
 
+.. math::
+
+   e^x
+
+
 .. toctree::
    probprog
    usage

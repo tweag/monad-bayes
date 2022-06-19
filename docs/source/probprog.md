@@ -2,14 +2,18 @@
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
-$$
+```{math}
+
 \beta \sim \operatorname{normal}(0, 2)
+
 \alpha \sim \operatorname{normal}(0, 2)
+
 \sigma^2 \sim \operatorname{gamma}(4, 4)
 
 \epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+
 y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
-$$
+```
 
 but in code as:
 
@@ -74,7 +78,7 @@ Other probabilistic programming languages with fairly similar APIs include WebPP
 
 ## Specifying distributions
 
-A distribution in monad-bayes over a set $X$, is of type:
+A distribution in monad-bayes over a set {math}`X`, is of type:
 
 ```haskell
 MonadInfer m => m X

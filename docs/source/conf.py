@@ -32,7 +32,7 @@ author = 'Adam Scibior, Reuben Cohn-Gordon'
 # ones.
 extensions = ['myst_parser', 'sphinx.ext.todo', 'sphinx.ext.mathjax', 'sphinx.ext.ifconfig']
 
-mathjax_path = 'http://cdn.mathjax.org/mathjax/latest/MathJax.js'
+# mathjax_path = 'http://cdn.mathjax.org/mathjax/latest/MathJax.js'
 # mathjax_path="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 # Add any paths that contain templates here, relative to this directory.
