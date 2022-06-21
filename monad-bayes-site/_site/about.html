@@ -10,12 +10,12 @@
     <body>
         <header>
             <div class="logo">
-                <a href="./about.html"></a>
+                <a href="./about.html">Monad-Bayes</a>
             </div>
             <nav>
+                <a href="./tutorials.html">Tutorials</a>
+                <a href="./examples.html">Examples</a>
                 <a href="https://monad-bayes.netlify.app/">Documentation</a>
-                <a href="./about.md">Tutorials</a>
-                <a href="./about.md">Examples</a>
                 <a href="https://github.com/tweag/monad-bayes">Source</a>
             </nav>
         </header>
@@ -25,27 +25,17 @@
             <p>Monad-Bayes is a library for <strong>probabilistic programming</strong> written in <strong>Haskell</strong>.</p>
 <p><strong>Define distributions</strong> as programs</p>
 <p><strong>Perform inference</strong>, with a variety of methods</p>
-<ul>
-<li>Importance Sampling from the prior</li>
-<li>Markov Chain Monte Carlo</li>
-<li>Sequential Monte Carlo</li>
-<li>direct integration / enumeration</li>
-<li><em>modular combinations</em> of the above</li>
-</ul>
 <!-- ```haskell
 mh $ ...
 ``` -->
 <p><strong>Distributions over any types</strong></p>
-<ul>
-<li>why draw a sample and then make a plot when you can just define a distribution over plots instead (see todo). Sample from distributions over JSONs (see todo) or diagrams</li>
-<li>distributions over infinite (lazily evaluated) lists are great for non-parametrics (see todo)</li>
-<li>build state space models as streams using <code>pipes</code></li>
-</ul>
-<p>inference methods are built modularly:</p>
-<ul>
-<li><p>write a particle filter that performs an MH step after every resampling step in one line (see todo)</p></li>
-<li></li>
-</ul>
+<!-- - why draw a sample and then make a plot when you can just define a distribution over plots instead (see todo). Sample from distributions over JSONs (see todo) or diagrams
+- distributions over infinite (lazily evaluated) lists  are great for non-parametrics (see todo)
+- build state space models as streams using `pipes`
+
+inference methods are built modularly:
+
+- write a particle filter that performs an MH step after every resampling step in one line (see todo) -->
         </main>
 
         <footer>
