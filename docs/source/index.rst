@@ -14,14 +14,7 @@ A unique feature is the modular construction of inference algorithms from simple
 In addition, Monad-Bayes is a normal Haskell library, not a separate language implemented using Haskell, 
 so full interoperation with arbitrary Haskell code is totally straightforward.
 
-The *user guide* shows how to write models in Monad-Bayes and perform inference.
-The *developer guide* shows how the library works under the hood.
-
-
-.. toctree::
-   probprog
-   usage
-   :maxdepth: 2
-   :caption: Contents:
+.. The *user guide* shows how to write models in Monad-Bayes and perform inference.
+.. The *developer guide* shows how the library works under the hood.
 
 

@@ -553,17 +553,17 @@ where the options for `-m` (model) are "LDA" (latent dirichlet), "LR" (logistic 
 
 For API docs in the normal Haskell style, see [hackage](https://hackage.haskell.org/package/monad-bayes).
 
-# Monad-bayes vs other libraries
+# Monad-Bayes vs other libraries
 
 Monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
 There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
 
-**What other approaches have that monad-bayes lacks**:
+**What other approaches have that Monad-Bayes lacks**:
 
 A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
-**What monad-bayes has that is unique**: 
+**What Monad-Bayes has that is unique**: 
 
 Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 

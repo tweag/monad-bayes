@@ -1,4 +1,4 @@
-# The implementation of monad-bayes
+# The implementation of Monad-Bayes
 
 This document assumes the reader is familiar with:
 - the basics of Bayesian probability theory
