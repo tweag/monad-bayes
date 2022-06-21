@@ -81,6 +81,10 @@
               pkgs.myHaskellPackages.text
               pkgs.myHaskellPackages.diagrams
               pkgs.myHaskellPackages.diagrams-cairo
+              pkgs.myHaskellPackages.aeson
+              pkgs.myHaskellPackages.lens
+              pkgs.myHaskellPackages.lens-aeson
+              pkgs.myHaskellPackages.pretty-simple
               pkgs.myHaskellPackages.monad-loops
               monad-bayes
             ];
