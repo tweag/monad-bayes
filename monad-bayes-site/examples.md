@@ -2,14 +2,16 @@
 title: Example Gallery
 ---
 
-## [Diagrams]()
+Coming soon
 
-## [Probabilistic Parsing]()
+<!-- ## [Diagrams](../Diagrams.html) -->
 
-## [Streams (with `pipes`)]()
+<!-- ## [Probabilistic Parsing](../Parsing.html) -->
+
+<!-- ## [Streams (with `pipes`)]()
 
 ## [Physics Simulations]()
 
-## [JSON (with `lens`)]()
+## [JSON (with `lens`)]() -->
 
-## [Overview of functional probabilistic programming](../Functional_PPLs.html)
+<!-- ## [Overview of functional probabilistic programming](../Functional_PPLs.html) -->

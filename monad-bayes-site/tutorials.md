@@ -2,14 +2,14 @@
 title: Tutorials
 ---
 
-## [Introduction to Monad-Bayes]()
+## [Introduction to Monad-Bayes](../Introduction.html)
 
-## [Sampling from a distribution]()
+## [Sampling from a distribution](../Sampling.html)
 
-## [Markov Chain Monte Carlo]()
+## [Markov Chain Monte Carlo](../MCMC.html)
 
-## [Sequential Monte Carlo]()
+## [Sequential Monte Carlo](../SMC.html)
 
-## [Advanced Inference Methods]()
+<!-- ## [Advanced Inference Methods](../AdvancedSampling.html)
 
-## [Building your own inference methods]()
+## [Building your own inference methods]() -->

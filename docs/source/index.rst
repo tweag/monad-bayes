@@ -18,3 +18,8 @@ so full interoperation with arbitrary Haskell code is totally straightforward.
 .. The *developer guide* shows how the library works under the hood.
 
 
+.. toctree::
+   probprog
+   usage
+   :maxdepth: 2
+   :caption: Contents:
