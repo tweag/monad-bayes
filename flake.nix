@@ -86,6 +86,18 @@
               pkgs.myHaskellPackages.lens-aeson
               pkgs.myHaskellPackages.pretty-simple
               pkgs.myHaskellPackages.monad-loops
+              pkgs.myHaskellPackages.hamilton
+              pkgs.myHaskellPackages.hmatrix
+              pkgs.myHaskellPackages.vector-sized
+              pkgs.myHaskellPackages.linear
+              pkgs.myHaskellPackages.recursion-schemes
+              pkgs.myHaskellPackages.data-fix
+              pkgs.myHaskellPackages.free
+              pkgs.myHaskellPackages.comonad
+              pkgs.myHaskellPackages.adjunctions
+              pkgs.myHaskellPackages.distributive
+              pkgs.myHaskellPackages.vector
+              pkgs.myHaskellPackages.megaparsec
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.
