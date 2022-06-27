@@ -36,12 +36,13 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Control.Monad.Bayes.Density (Density)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
+newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where

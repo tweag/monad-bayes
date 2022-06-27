@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Free as FreeSampler
   ( FreeSampler,
     hoist,
-    withPartialRandomness,
+    withPartialRandomness
   )
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
@@ -36,6 +36,7 @@ import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+import Control.Monad.Bayes.Density
 
 -- | Collection of random variables sampled during the program's execution.
 data Trace a = Trace
@@ -46,6 +47,7 @@ data Trace a = Trace
     -- | The probability of observing this particular sequence.
     density :: Log Double
   }
+
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
@@ -77,7 +79,7 @@ bind dx f = do
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
+mhTrans :: MonadSample m => (Weighted (Density m)) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
@@ -86,14 +88,14 @@ mhTrans m t@Trace {variables = us, density = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+  ((b, q), vs) <- runDensity (runWeighted m) us' -- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
-mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
+mhTrans' m = undefined -- mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
 burnIn :: Functor m => Int -> m [a] -> m [a]

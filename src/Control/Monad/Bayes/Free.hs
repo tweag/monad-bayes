@@ -14,13 +14,13 @@
 --
 -- 'FreeSampler' is a free monad transformer over random sampling.
 module Control.Monad.Bayes.Free
-  ( FreeSampler,
-    hoist,
-    interpret,
-    withRandomness,
-    withPartialRandomness,
-    runWith,
-  )
+  -- ( FreeSampler,
+  --   hoist,
+  --   interpret,
+  --   withRandomness,
+  --   withPartialRandomness,
+  --   runWith,
+  -- )
 where
 
 import Control.Monad.Bayes.Class (MonadSample (random))
@@ -29,6 +29,9 @@ import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
+import Control.Monad.RWS
+
+
 
 -- | Random sampling functor.
 newtype SamF a = Random (Double -> a)

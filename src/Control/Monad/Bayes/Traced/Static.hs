@@ -34,13 +34,14 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Control.Monad.Bayes.Density (Density)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
 data Traced m a = Traced
-  { model :: Weighted (FreeSampler m) a,
+  { model :: Weighted (Density m) a,
     traceDist :: m (Trace a)
   }
 

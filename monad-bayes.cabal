@@ -34,6 +34,7 @@ library
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Free
+    Control.Monad.Bayes.Density
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
