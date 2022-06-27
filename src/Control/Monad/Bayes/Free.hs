@@ -14,7 +14,7 @@
 --
 -- 'FreeSampler' is a free monad transformer over random sampling.
 module Control.Monad.Bayes.Free
-  ( FreeSampler(..),
+  ( FreeSampler (..),
     hoist,
     interpret,
     withRandomness,
@@ -23,7 +23,7 @@ module Control.Monad.Bayes.Free
   )
 where
 
-import Control.Monad.Bayes.Class 
+import Control.Monad.Bayes.Class
 import Control.Monad.State (evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
@@ -49,8 +49,11 @@ instance (Monad (m n), RealFloat n) => MonadSample n (FreeSampler m) where
   randomGeneric = FreeSampler $ liftF (Random id)
 
 -- | Hoist 'FreeSampler' through a monad transform.
-hoist :: (Monad (m n), Monad (m' n)) => 
-  (forall x. (m n) x -> (m' n) x) -> FreeSampler m n a -> FreeSampler m' n a
+hoist ::
+  (Monad (m n), Monad (m' n)) =>
+  (forall x. (m n) x -> (m' n) x) ->
+  FreeSampler m n a ->
+  FreeSampler m' n a
 hoist f (FreeSampler m) = FreeSampler (hoistFT f m)
 
 -- | Execute random sampling in the transformed monad.

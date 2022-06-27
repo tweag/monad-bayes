@@ -8,8 +8,8 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (categorical, normal),
     factor,
-    uniformD,
     normalPdf,
+    uniformD,
   )
 -- import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
 import Data.Maybe (fromJust, isJust)

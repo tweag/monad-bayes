@@ -50,8 +50,9 @@ newtype Enumerator n a = Enumerator (WriterT (Product (Log n)) [] a)
 
 instance RealFloat n => MonadSample n (Enumerator) where
   randomGeneric = error "Infinitely supported random variables not supported in Enumerator"
-  -- bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
-  -- categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
+
+-- bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
+-- categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
 
 instance RealFloat n => MonadCond n (Enumerator) where
   scoreGeneric w = fromList [((), w)]

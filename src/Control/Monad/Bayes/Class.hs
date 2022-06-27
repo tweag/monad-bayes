@@ -37,7 +37,7 @@
 --   return rain
 -- @
 module Control.Monad.Bayes.Class
-  ( MonadSample(randomGeneric),
+  ( MonadSample (randomGeneric),
     random,
     uniform,
     normal,
@@ -49,7 +49,7 @@ module Control.Monad.Bayes.Class
     geometric,
     poisson,
     dirichlet,
-    MonadCond(scoreGeneric),
+    MonadCond (scoreGeneric),
     score,
     factor,
     condition,
@@ -59,7 +59,7 @@ module Control.Monad.Bayes.Class
     -- Bayesian(Bayesian),
     -- posterior,
     uniformD,
-    IdentityN(..)
+    IdentityN (..),
   )
 where
 
@@ -142,10 +142,11 @@ class (RealFloat n, Monad (m n)) => MonadSample n m where
     n ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m n Bool
-  bernoulli p = undefined 
-    -- if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
-    --   then fmap (< p) random
-    --   else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
+  bernoulli p = undefined
+
+  -- if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
+  --   then fmap (< p) random
+  --   else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
   --   then fmap (< p) random
@@ -168,8 +169,6 @@ class (RealFloat n, Monad (m n)) => MonadSample n m where
     -- | outcome category
     m n Int
   logCategorical = undefined -- categorical . VG.map (exp . ln)
-
-
 
   -- | Draw from a geometric distribution.
   geometric ::
@@ -194,12 +193,13 @@ class (RealFloat n, Monad (m n)) => MonadSample n m where
     v n ->
     -- | \(\sim \mathrm{Dir}(\mathrm{as})\)
     m n (v n)
-  dirichlet as = undefined 
-  -- do
-  --   xs <- VG.mapM (`gamma` 1) as
-  --   let s = VG.sum xs
-  --   let ys = VG.map (/ s) xs
-  --   return ys
+  dirichlet as = undefined
+
+-- do
+--   xs <- VG.mapM (`gamma` 1) as
+--   let s = VG.sum xs
+--   let ys = VG.map (/ s) xs
+--   return ys
 
 -- | Draw from a continuous distribution using the inverse cumulative density
 -- function.
@@ -222,8 +222,6 @@ fromPMF p = f 0 1
 discrete :: (DiscreteDistr d, MonadSample Double m) => d -> m Double Int
 discrete = fromPMF . probability
 
-
-
 -- | Monads that can score different execution paths.
 class (RealFloat n, Monad (m n)) => MonadCond n m where
   -- | Record a likelihood.
@@ -238,7 +236,6 @@ score = scoreGeneric
 -- | Synonym for 'score'.
 factor :: MonadCond Double m => Log Double -> m Double ()
 factor = score
-
 
 -- | Hard conditioning.
 condition :: (RealFloat n, MonadCond n m) => Bool -> m n ()
@@ -260,7 +257,8 @@ normalPdf ::
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 -- | Draw from a discrete uniform distribution.
-uniformD :: MonadSample Double m =>
+uniformD ::
+  MonadSample Double m =>
   -- | observable outcomes @xs@
   [a] ->
   -- | \(\sim \mathcal{U}\{\mathrm{xs}\}\)
@@ -354,8 +352,8 @@ uniformD xs = do
 -- instance MonadInfer n m => MonadInfer n (ContT r m)
 data IdentityN n a = IdentityN {runIdentityN :: a} deriving (Functor)
 
-
 instance Applicative (IdentityN n)
+
 instance Monad (IdentityN n) where
   return a = IdentityN a
   a >>= f = (f $ runIdentityN a)

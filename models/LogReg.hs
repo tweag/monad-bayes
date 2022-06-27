@@ -1,4 +1,3 @@
-
 -- Logistic regression model from Anglican
 -- (https://bitbucket.org/probprog/anglican-white-paper)
 

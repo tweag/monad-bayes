@@ -20,7 +20,7 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free 
+import Control.Monad.Bayes.Free
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -28,17 +28,18 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted 
+import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m n a = 
-  Traced {runTraced :: m n (Weighted (FreeSampler m) n a, Trace n a)}
+newtype Traced m n a = Traced {runTraced :: m n (Weighted (FreeSampler m) n a, Trace n a)}
 
-pushM :: Monad (m n) => 
-  m n (Weighted (FreeSampler m) n a) -> Weighted (FreeSampler m) n a
+pushM ::
+  Monad (m n) =>
+  m n (Weighted (FreeSampler m) n a) ->
+  Weighted (FreeSampler m) n a
 pushM = join . Weighted . lift . FreeSampler . lift
 
 instance Monad (m n) => Functor (Traced m n) where

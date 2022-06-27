@@ -1,9 +1,9 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -116,14 +116,14 @@ fromMWC s = SamplerST $ ask >>= lift . s
 instance (Variate n, RealFloat n) => MonadSample n SamplerST where
   randomGeneric = fromMWC System.Random.MWC.uniform
 
-  -- uniform a b = fromMWC $ uniformR (a, b)
-  -- normal m s = fromMWC $ MWC.normal m s
-  -- gamma shape scale = fromMWC $ MWC.gamma shape scale
-  -- beta a b = fromMWC $ MWC.beta a b
+-- uniform a b = fromMWC $ uniformR (a, b)
+-- normal m s = fromMWC $ MWC.normal m s
+-- gamma shape scale = fromMWC $ MWC.gamma shape scale
+-- beta a b = fromMWC $ MWC.beta a b
 
-  -- bernoulli p = fromMWC $ MWC.bernoulli p
-  -- categorical ps = fromMWC $ MWC.categorical ps
-  -- geometric p = fromMWC $ MWC.geometric0 p
+-- bernoulli p = fromMWC $ MWC.bernoulli p
+-- categorical ps = fromMWC $ MWC.categorical ps
+-- geometric p = fromMWC $ MWC.geometric0 p
 
 type Bin = (Double, Double)
 

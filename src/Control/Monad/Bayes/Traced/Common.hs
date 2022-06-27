@@ -6,23 +6,24 @@
 -- Maintainer  : leonhard.markert@tweag.io
 -- Stability   : experimental
 -- Portability : GHC
-module Control.Monad.Bayes.Traced.Common
-  -- ( Trace,
-  --   singleton,
-  --   output,
-  --   scored,
-  --   bind,
-  --   mhTrans,
-  --   mhTrans',
-  --   burnIn,
-  -- )
-where
+module Control.Monad.Bayes.Traced.Common where
+
+-- ( Trace,
+--   singleton,
+--   output,
+--   scored,
+--   bind,
+--   mhTrans,
+--   mhTrans',
+--   burnIn,
+-- )
 
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Free as FreeSampler
   ( FreeSampler,
     hoist,
-    withPartialRandomness, withRandomness
+    withPartialRandomness,
+    withRandomness,
   )
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
@@ -31,11 +32,11 @@ import Control.Monad.Bayes.Weighted as Weighted
   )
 import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
-import Numeric.Log (Log (Exp), ln)
-import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+import qualified Data.Vector as V
 import Numeric.AD
 import Numeric.AD.Mode.Reverse
-import qualified Data.Vector as V
+import Numeric.Log (Log (Exp), ln)
+import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
 -- | Collection of random variables sampled during the program's execution.
 data Trace n a = Trace
@@ -92,8 +93,11 @@ mhTrans m t@Trace {variables = us, density = p} = do
   return $ if accept then Trace vs b q else t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
-mhTrans' :: (MonadSample n m, RealFloat n) =>
-  Weighted (FreeSampler IdentityN) n a -> Trace n a -> m n (Trace n a)
+mhTrans' ::
+  (MonadSample n m, RealFloat n) =>
+  Weighted (FreeSampler IdentityN) n a ->
+  Trace n a ->
+  m n (Trace n a)
 mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentityN)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
@@ -102,24 +106,23 @@ burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls
 
-
-
 model :: (RealFloat n, MonadInfer n m) => m n Bool
 model = do
   x <- randomGeneric
   y <- randomGeneric
-  scoreGeneric (Exp $ log $  x**2 * y)
+  scoreGeneric (Exp $ log $ x ** 2 * y)
   return (x > 0.5)
 
-pdf :: RealFloat n =>
-  Weighted (FreeSampler IdentityN) n a -> [n] -> n
-pdf model rand = 
+pdf ::
+  RealFloat n =>
+  Weighted (FreeSampler IdentityN) n a ->
+  [n] ->
+  n
+pdf model rand =
   ln . exp . snd . runIdentityN . withRandomness rand $ runWeighted model
 
-
-
 d2 :: RealFloat n => [n] -> [n]
-d2 = grad (pdf (model)) -- :: RealFloat n => Weighted (FreeSampler IdentityN) (Reverse s n) Bool)) 
+d2 = grad (pdf (model)) -- :: RealFloat n => Weighted (FreeSampler IdentityN) (Reverse s n) Bool))
 
 -- d :: (forall m n a. (RealFloat n, MonadInfer n m) => m n a) -> [n] -> n
 -- d m =  (runWeighted m :: (MonadSample n m, RealFloat n) => Weighted m n a -> m n (a, Log n))

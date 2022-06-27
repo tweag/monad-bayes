@@ -13,8 +13,8 @@ import Control.Monad qualified as List (replicateM)
 import Control.Monad.Bayes.Class
   ( MonadInfer,
     MonadSample (categorical, dirichlet),
-    uniformD,
     factor,
+    uniformD,
   )
 import Control.Monad.Bayes.Sampler (sampleIO)
 import Control.Monad.Bayes.Traced (mh)

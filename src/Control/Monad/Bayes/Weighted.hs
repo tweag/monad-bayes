@@ -1,8 +1,8 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Weighted
@@ -15,35 +15,39 @@
 --
 -- 'Weighted' is an instance of 'MonadCond'. Apply a 'MonadSample' transformer to
 -- obtain a 'MonadInfer' that can execute probabilistic models.
-module Control.Monad.Bayes.Weighted
-  -- ( Weighted,
-  --   withWeight,
-  --   runWeighted,
-  --   extractWeight,
-  --   prior,
-  --   applyWeight,
-  --   hoist,
-  --   toBinsWeighted,
-  -- )
-where
+module Control.Monad.Bayes.Weighted where
+
+-- ( Weighted,
+--   withWeight,
+--   runWeighted,
+--   extractWeight,
+--   prior,
+--   applyWeight,
+--   hoist,
+--   toBinsWeighted,
+-- )
 
 import Control.Arrow (Arrow (first))
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
+  ( IdentityN,
+    MonadCond (..),
     MonadInfer,
     MonadSample (randomGeneric),
+    factor,
+    normalPdf,
     random,
-    factor, normalPdf, score, IdentityN, runIdentityN
+    runIdentityN,
+    score,
   )
+import Control.Monad.Bayes.Free (FreeSampler, runWith, withRandomness)
+import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Identity (Identity (..))
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
 import Data.Fixed (mod')
-import Numeric.Log (Log (ln, Exp))
-import Control.Monad.Bayes.Sampler (sampleIO)
-import Control.Monad.Bayes.Free (runWith, withRandomness, FreeSampler)
-import Control.Monad.Identity (Identity(..))
 import Numeric.AD (grad)
 import Numeric.AD.Mode.Reverse (Reverse)
+import Numeric.Log (Log (Exp, ln))
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m n a = Weighted (StateT (Log n) (m n) a)
@@ -96,4 +100,3 @@ toBinsWeighted :: Real n => n -> [(n, Log n)] -> [(n, Log n)]
 toBinsWeighted binWidth = fmap (first (fst . toBin binWidth))
   where
     toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
-

@@ -61,19 +61,18 @@ import Numeric.Log (Log, ln, sum)
 import Prelude hiding (all, sum)
 
 newtype ListTN m n a = ListTN {getList :: ListT m a} deriving (Functor, Applicative, Monad)
+
 -- | A collection of weighted samples, or particles.
 newtype Population m n a = Population {unP :: Weighted (ListTN (m n)) n a}
-  deriving newtype Functor
-
-
+  deriving newtype (Functor)
 
 instance Monad (m n) => Applicative (Population m n) where
   pure x = Population $ Weighted $ pure x
 
 instance Monad (m n) => Monad (Population m n) where
-  return = pure 
-  Population x >>= f = Population (x >>= unP . f) 
-  
+  return = pure
+  Population x >>= f = Population (x >>= unP . f)
+
 instance MonadSample n m => MonadSample n (Population m) where
   randomGeneric = Population $ Weighted $ lift $ ListTN $ lift $ randomGeneric
 
@@ -85,8 +84,11 @@ instance MonadSample n m => MonadSample n (Population m) where
 runPopulation :: RealFloat n => Population m n a -> m n [(a, Log n)]
 runPopulation (Population m) = runListT $ getList $ runWeighted m
 
-independent :: (Monad (m n), RealFloat n) => 
-  Int -> Population m n a -> m n [(a, Log n)]
+independent ::
+  (Monad (m n), RealFloat n) =>
+  Int ->
+  Population m n a ->
+  m n [(a, Log n)]
 independent i ma = runPopulation $ spawn i >> ma
 
 -- | Explicit representation of the weighted sample.

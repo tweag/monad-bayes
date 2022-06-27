@@ -1,10 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# LANGUAGE GADTs #-}
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
@@ -32,7 +32,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
-import Control.Monad.Bayes.Class 
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Control.Monad.Trans.Cont
   ( Cont,
@@ -57,7 +57,8 @@ runIntegrator f (Integrator a) = runCont a f
 instance (n ~ Double) => MonadSample n Integrator where
   randomGeneric = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
-  -- uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
+
+-- uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $

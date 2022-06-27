@@ -88,8 +88,3 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
-
-
-        
-        
-        

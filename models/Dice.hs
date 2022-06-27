@@ -6,7 +6,6 @@ module Dice (diceHard, diceSoft) where
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
 
-
 -- | A toss of a six-sided die.
 die :: MonadSample Double m => m Int
 die = uniformD [1 .. 6]
