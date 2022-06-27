@@ -38,10 +38,10 @@ setup (SMC2 m) = m
 --   lift = SMC2 . lift . lift . lift
 
 instance (MonadSample n m, RealFloat n) => MonadSample n (SMC2 m) where
-  randomGeneric = lift randomGeneric
+  randomGeneric = undefined -- lift randomGeneric
 
 instance (Monad (m n), RealFloat n) => MonadCond n (SMC2 m) where
-  scoreGeneric = SMC2 . scoreGeneric
+  scoreGeneric = undefined -- SMC2 . scoreGeneric
 
 instance (RealFloat n, MonadSample n m) => MonadInfer n (SMC2 m)
 

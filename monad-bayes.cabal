@@ -46,6 +46,7 @@ library
     Control.Monad.Bayes.Traced.Basic
     Control.Monad.Bayes.Traced.Dynamic
     Control.Monad.Bayes.Traced.Static
+    Control.Monad.Bayes.Traced.Grad
     Control.Monad.Bayes.Weighted
 
   hs-source-dirs:     src
@@ -71,6 +72,8 @@ library
     , text
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
+    , linear
+    , microlens
 
   default-extensions:
     BlockArguments

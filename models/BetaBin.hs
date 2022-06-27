@@ -17,14 +17,14 @@ import Pipes ((<-<))
 import Pipes.Prelude qualified as P hiding (show)
 
 -- | Beta-binomial model as an i.i.d. sequence conditionally on weight.
-latent :: MonadSample n m => Int -> m [Bool]
+latent :: MonadSample n m => Int -> m n [Bool]
 latent n = do
   weight <- uniform 0 1
   replicateM n (bernoulli weight)
 
 -- | Beta-binomial as a random process.
 -- Equivalent to the above by De Finetti's theorem.
-urn :: MonadSample n m => Int -> m [Bool]
+urn :: MonadSample n m => Int -> m n [Bool]
 urn n = flip evalStateT (1, 1) $ do
   replicateM n do
     (a, b) <- get
@@ -36,7 +36,7 @@ urn n = flip evalStateT (1, 1) $ do
 
 -- | Beta-binomial as a random process.
 -- This time using the Pipes library, for a more pure functional style
-urnP :: MonadSample n m => Int -> m [Bool]
+urnP :: MonadSample n m => Int -> m n [Bool]
 urnP n = P.toListM $ P.take n <-< P.unfoldr toss (1, 1)
   where
     toss (a, b) = do
@@ -47,7 +47,7 @@ urnP n = P.toListM $ P.take n <-< P.unfoldr toss (1, 1)
 
 -- | A beta-binomial model where the first three states are True,True,False.
 -- The resulting distribution is on the remaining outcomes.
-cond :: MonadInfer n m => m [Bool] -> m [Bool]
+cond :: MonadInfer n m => m n [Bool] -> m n [Bool]
 cond d = do
   ~(first : second : third : rest) <- d
   condition first
@@ -56,7 +56,7 @@ cond d = do
   return rest
 
 -- | The final conditional model, abstracting the representation.
-model :: MonadInfer n m => (Int -> m [Bool]) -> Int -> m Int
+model :: MonadInfer n m => (Int -> m n [Bool]) -> Int -> m n Int
 model repr n = fmap count $ cond $ repr (n + 3)
   where
     -- Post-processing by counting the number of True values.

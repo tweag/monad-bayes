@@ -5,8 +5,8 @@ module StrictlySmallerSupport (model) where
 
 import Control.Monad.Bayes.Class
 
-model :: MonadSample n m => m Bool
-model = do
-  x <- bernoulli 0.5
-  _ <- uniformD (if x then [1, 2] else [1, 2, 3, 4] :: [Int])
-  return x
+-- model :: MonadSample n m => m Bool
+-- model = do
+--   x <- bernoulli 0.5
+--   _ <- uniformD (if x then [1, 2] else [1, 2, 3, 4] :: [Int])
+--   return x

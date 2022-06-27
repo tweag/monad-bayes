@@ -29,6 +29,7 @@ import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
+import Debug.Trace (trace, traceM)
 
 -- | Random sampling functor.
 newtype SamF n a = Random (n -> a)
@@ -63,15 +64,17 @@ interpret (FreeSampler m) = iterT f m
     f (Random k) = randomGeneric >>= k
 
 -- | Execute computation with supplied values for random choices.
-withRandomness :: Monad (m n) => [n] -> FreeSampler m n a -> m n a
+withRandomness :: (Monad (m n), Show n) => [n] -> FreeSampler m n a -> m n a
 withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness
   where
     f (Random k) = do
       xs <- get
-      case xs of
+      -- traceM (show xs <> " P")
+      case trace (show xs <> " P" <> show (length xs) ) xs of
         [] -> error "FreeSampler: the list of randomness was too short"
-        y : ys -> put ys >> k y
+        y : ys -> put (traceIt ys) >> k y
 
+traceIt x = trace (show x <> " L") x
 -- | Execute computation with supplied values for a subset of random choices.
 -- Return the output value and a record of all random choices used, whether
 -- taken as input or drawn using the transformed monad.

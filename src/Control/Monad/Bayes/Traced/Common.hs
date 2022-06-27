@@ -106,23 +106,17 @@ burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls
 
-model :: (RealFloat n, MonadInfer n m) => m n Bool
-model = do
-  x <- randomGeneric
-  y <- randomGeneric
-  scoreGeneric (Exp $ log $ x ** 2 * y)
-  return (x > 0.5)
+
 
 pdf ::
-  RealFloat n =>
+  (RealFloat n, Show n) =>
   Weighted (FreeSampler IdentityN) n a ->
   [n] ->
   n
 pdf model rand =
   ln . exp . snd . runIdentityN . withRandomness rand $ runWeighted model
 
-d2 :: RealFloat n => [n] -> [n]
-d2 = grad (pdf (model)) -- :: RealFloat n => Weighted (FreeSampler IdentityN) (Reverse s n) Bool))
+ -- :: RealFloat n => Weighted (FreeSampler IdentityN) (Reverse s n) Bool))
 
 -- d :: (forall m n a. (RealFloat n, MonadInfer n m) => m n a) -> [n] -> n
 -- d m =  (runWeighted m :: (MonadSample n m, RealFloat n) => Weighted m n a -> m n (a, Log n))

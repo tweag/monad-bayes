@@ -48,10 +48,10 @@ import Numeric.Log (Log (ln))
 import Statistics.Distribution (density)
 import Statistics.Distribution.Uniform qualified as Statistics
 
-newtype Integrator a = Integrator {getCont :: Cont Double a}
+newtype Integrator n a = Integrator {getCont :: Cont n a}
   deriving newtype (Functor, Applicative, Monad)
 
-runIntegrator :: (a -> Double) -> Integrator a -> Double
+runIntegrator :: (a -> Double) -> Integrator Double a -> Double
 runIntegrator f (Integrator a) = runCont a f
 
 instance (n ~ Double) => MonadSample n Integrator where
@@ -60,18 +60,18 @@ instance (n ~ Double) => MonadSample n Integrator where
 
 -- uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
-fromDensityFunction :: (Double -> Double) -> Integrator Double
+fromDensityFunction :: (Double -> Double) -> Integrator Double Double
 fromDensityFunction d = Integrator $
   cont $ \f ->
     integralWithQuadrature (\x -> f x * d x)
   where
     integralWithQuadrature = result . last . (\z -> trap z 0 1)
 
-fromMassFunction :: Foldable f => (a -> Double) -> f a -> Integrator a
+fromMassFunction :: Foldable f => (a -> Double) -> f a -> Integrator Double a
 fromMassFunction f support = Integrator $ cont \g ->
   foldl' (\acc x -> acc + f x * g x) 0 support
 
-empirical :: Foldable f => f a -> Integrator a
+empirical :: Foldable f => f a -> Integrator Double a
 empirical = Integrator . cont . flip weightedAverage
   where
     weightedAverage :: (Foldable f, Fractional r) => (a -> r) -> f a -> r
@@ -83,19 +83,19 @@ empirical = Integrator . cont . flip weightedAverage
     averageFold :: Fractional a => Fold a a
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
 
-expectation :: Integrator Double -> Double
+expectation :: Integrator Double Double -> Double
 expectation = runIntegrator id
 
-variance :: Integrator Double -> Double
+variance :: Integrator Double Double -> Double
 variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
 
-momentGeneratingFunction :: Integrator Double -> Double -> Double
+momentGeneratingFunction :: Integrator Double Double -> Double -> Double
 momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 
-cumulantGeneratingFunction :: Integrator Double -> Double -> Double
+cumulantGeneratingFunction :: Integrator Double Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
-normalize :: (n ~ Double) => Weighted n Integrator a -> Integrator a
+normalize :: (n ~ Double) => Weighted Integrator n a -> Integrator Double a
 normalize m =
   let m' = runWeighted m
       z = runIntegrator (ln . exp . snd) m'
@@ -104,7 +104,7 @@ normalize m =
         Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
         return x
 
-cdf :: Integrator Double -> Double -> Double
+cdf :: Integrator Double Double -> Double -> Double
 cdf nu x = runIntegrator (negativeInfinity `to` x) nu
   where
     negativeInfinity :: Double
@@ -115,7 +115,7 @@ cdf nu x = runIntegrator (negativeInfinity `to` x) nu
       | k >= a && k <= b = 1
       | otherwise = 0
 
-volume :: Integrator Double -> Double
+volume :: Integrator Double Double -> Double
 volume = runIntegrator (const 1)
 
 containing :: (Num a, Eq b) => [b] -> b -> a
@@ -123,7 +123,7 @@ containing xs x
   | x `elem` xs = 1
   | otherwise = 0
 
-instance Num a => Num (Integrator a) where
+instance Num a => Num (Integrator Double a) where
   (+) = liftA2 (+)
   (-) = liftA2 (-)
   (*) = liftA2 (*)
@@ -131,10 +131,10 @@ instance Num a => Num (Integrator a) where
   signum = fmap signum
   fromInteger = pure . fromInteger
 
-probability :: Ord a => (a, a) -> Integrator a -> Double
+probability :: Ord a => (a, a) -> Integrator Double a -> Double
 probability (lower, upper) = runIntegrator (\x -> if x < upper && x >= lower then 1 else 0)
 
-enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
+enumerateWith :: Ord a => Set a -> Integrator Double a -> [(a, Double)]
 enumerateWith ls meas =
   [ ( val,
       runIntegrator
@@ -148,7 +148,7 @@ histogram ::
   (Enum a, Ord a, Fractional a, n ~ Double) =>
   Int ->
   a ->
-  Weighted n Integrator a ->
+  Weighted Integrator Double a ->
   [(a, Double)]
 histogram nBins binSize model = do
   x <- take nBins [1 ..]
@@ -159,7 +159,7 @@ histogram nBins binSize model = do
       probability (transform x, transform (x + 1)) $ normalize model
     )
 
-plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
+plotCdf :: Int -> Double -> Integrator Double Double -> [(T.Text, Double)]
 plotCdf nBins binSize model = do
   x <- take nBins [1 ..]
   let transform k = (k - (fromIntegral nBins / 2)) * binSize

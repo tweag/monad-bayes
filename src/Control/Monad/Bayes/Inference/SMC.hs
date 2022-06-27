@@ -40,16 +40,16 @@ import Control.Monad.Bayes.Sequential as Seq
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
 sir ::
-  (Monad m, RealFloat n) =>
+  (Monad (m n), RealFloat n) =>
   -- | resampler
-  (forall x. Population n m x -> Population n m x) ->
+  (forall x. Population m n x -> Population m n x) ->
   -- | number of timesteps
   Int ->
   -- | population size
   Int ->
   -- | model
-  Sequential (Population n m) a ->
-  Population n m a
+  Sequential (Population m) n a ->
+  Population m n a
 sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
@@ -61,8 +61,8 @@ smcMultinomial ::
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population n m) a ->
-  Population n m a
+  Sequential (Population m) n a ->
+  Population m n a
 smcMultinomial = sir resampleMultinomial
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
@@ -74,8 +74,8 @@ smcSystematic ::
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population n m) a ->
-  Population n m a
+  Sequential (Population m) n a ->
+  Population m n a
 smcSystematic = sir resampleSystematic
 
 -- | Sequential Monte Carlo with stratified resampling at each timestep.
@@ -86,9 +86,9 @@ smcStratified ::
   Int ->
   -- | number of particles
   Int ->
-  Sequential (Population n m) a ->
+  Sequential (Population m) n a ->
   -- | model
-  Population n m a
+  Population m n a
 smcStratified = sir resampleStratified
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
@@ -101,8 +101,8 @@ smcMultinomialPush ::
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population n m) a ->
-  Population n m a
+  Sequential (Population m) n a ->
+  Population m n a
 smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
@@ -115,6 +115,6 @@ smcSystematicPush ::
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population n m) a ->
-  Population n m a
+  Sequential (Population m) n a ->
+  Population m n a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)

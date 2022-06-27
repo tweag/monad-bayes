@@ -43,4 +43,4 @@ pmmh ::
   (b -> Sequential (Population m) n a) ->
   m n [[(a, Log n)]]
 pmmh t k n param model =
-  mh t (param >>= runPopulation . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
+  mh t (param >>= runPopulation . pushEvidence . Pop.hoist undefined . smcSystematic k n . model)
