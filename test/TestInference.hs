@@ -33,7 +33,7 @@ import Data.AEq (AEq ((~==)))
 import Numeric.Log (Log)
 import Sprinkler (soft)
 
-sprinkler :: MonadInfer m => m Bool
+sprinkler :: MonadInfer n m => m Bool
 sprinkler = Sprinkler.soft
 
 -- | Count the number of particles produced by SMC

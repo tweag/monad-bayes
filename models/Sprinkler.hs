@@ -3,7 +3,7 @@ module Sprinkler (hard, soft) where
 import Control.Monad (when)
 import Control.Monad.Bayes.Class
 
-hard :: MonadInfer m => m Bool
+hard :: MonadInfer n m => m Bool
 hard = do
   rain <- bernoulli 0.3
   sprinkler <- bernoulli $ if rain then 0.1 else 0.4
@@ -15,7 +15,7 @@ hard = do
   condition (not wet)
   return rain
 
-soft :: MonadInfer m => m Bool
+soft :: MonadInfer n m => m Bool
 soft = do
   rain <- bernoulli 0.3
   when rain (factor 0.2)

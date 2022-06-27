@@ -30,7 +30,7 @@ import Numeric.Log (Log)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
-  MonadInfer m =>
+  (MonadInfer n m, RealFloat n) =>
   -- | number of Metropolis-Hastings steps
   Int ->
   -- | number of time steps
@@ -38,9 +38,9 @@ pmmh ::
   -- | number of particles
   Int ->
   -- | model parameters prior
-  Traced m b ->
+  Traced m n b ->
   -- | model
-  (b -> Sequential (Population m) a) ->
-  m [[(a, Log Double)]]
+  (b -> Sequential (Population m) n a) ->
+  m n [[(a, Log n)]]
 pmmh t k n param model =
   mh t (param >>= runPopulation . pushEvidence . Pop.hoist lift . smcSystematic k n . model)

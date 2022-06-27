@@ -25,10 +25,6 @@ module Control.Monad.Bayes.Sequential
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, random),
-  )
 import Control.Monad.Coroutine
   ( Coroutine (..),
     bounce,
@@ -47,54 +43,54 @@ import Data.Either (isRight)
 -- useful for implementation of Sequential Monte Carlo related methods.
 -- All the probabilistic effects are lifted from the transformed monad, but
 -- also `suspend` is inserted after each `factor`.
-newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
-  deriving newtype (Functor, Applicative, Monad, MonadTrans, MonadIO)
+newtype Sequential m n a = Sequential {runSequential :: Coroutine (Await ()) (m n) a}
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 extract :: Await () a -> a
 extract (Await f) = f ()
 
-instance MonadSample m => MonadSample (Sequential m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
+instance MonadSample n m => MonadSample n (Sequential m) where
+  randomGeneric = Sequential $ lift randomGeneric
+  bernoulli = Sequential . lift . bernoulli
+  categorical = Sequential . lift . categorical
 
 -- | Execution is 'suspend'ed after each 'score'.
-instance MonadCond m => MonadCond (Sequential m) where
-  score w = lift (score w) >> suspend
+instance MonadCond n m => MonadCond n (Sequential m) where
+  scoreGeneric w = Sequential (lift (scoreGeneric w)) >> suspend
 
-instance MonadInfer m => MonadInfer (Sequential m)
+instance MonadInfer n m => MonadInfer n (Sequential m)
 
 -- | A point where the computation is paused.
-suspend :: Monad m => Sequential m ()
+suspend :: Monad (m n) => Sequential m n ()
 suspend = Sequential await
 
 -- | Remove the remaining suspension points.
-finish :: Monad m => Sequential m a -> m a
+finish :: Monad (m n) => Sequential m n a -> m n a
 finish = pogoStick extract . runSequential
 
 -- | Execute to the next suspension point.
 -- If the computation is finished, do nothing.
 --
 -- > finish = finish . advance
-advance :: Monad m => Sequential m a -> Sequential m a
+advance :: Monad (m n) => Sequential m n a -> Sequential m n a
 advance = Sequential . bounce extract . runSequential
 
 -- | Return True if no more suspension points remain.
-finished :: Monad m => Sequential m a -> m Bool
+finished :: Monad (m n) => Sequential m n a -> m n Bool
 finished = fmap isRight . resume . runSequential
 
 -- | Transform the inner monad.
 -- This operation only applies to computation up to the first suspension.
-hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
+hoistFirst :: (forall x. m n x -> m n x) -> Sequential m n a -> Sequential m n a
 hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 
 -- | Transform the inner monad.
 -- The transformation is applied recursively through all the suspension points.
 hoist ::
-  (Monad m, Monad n) =>
-  (forall x. m x -> n x) ->
-  Sequential m a ->
-  Sequential n a
+  (Monad (m n), Monad (m' n)) =>
+  (forall x. m n x -> m' n x) ->
+  Sequential m n a ->
+  Sequential m' n a
 hoist f = Sequential . mapMonad f . runSequential
 
 -- | Apply a function a given number of times.
@@ -104,11 +100,11 @@ composeCopies k f = foldr (.) id (replicate k f)
 -- | Sequential importance sampling.
 -- Applies a given transformation after each time step.
 sis ::
-  Monad m =>
+  Monad (m n) =>
   -- | transformation
-  (forall x. m x -> m x) ->
+  (forall x. m n x -> m n x) ->
   -- | number of time steps
   Int ->
-  Sequential m a ->
-  m a
+  Sequential m n a ->
+  m n a
 sis f k = finish . composeCopies k (advance . hoistFirst f)

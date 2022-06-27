@@ -1,11 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# LANGUAGE GADTs #-}
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
@@ -33,7 +32,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
-import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
+import Control.Monad.Bayes.Class 
 import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
 import Control.Monad.Trans.Cont
   ( Cont,
@@ -55,10 +54,10 @@ newtype Integrator a = Integrator {getCont :: Cont Double a}
 runIntegrator :: (a -> Double) -> Integrator a -> Double
 runIntegrator f (Integrator a) = runCont a f
 
-instance MonadSample Integrator where
-  random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
+instance (n ~ Double) => MonadSample n Integrator where
+  randomGeneric = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
-  uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
+  -- uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
 fromDensityFunction :: (Double -> Double) -> Integrator Double
 fromDensityFunction d = Integrator $
@@ -95,7 +94,7 @@ momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
-normalize :: Weighted Integrator a -> Integrator a
+normalize :: (n ~ Double) => Weighted n Integrator a -> Integrator a
 normalize m =
   let m' = runWeighted m
       z = runIntegrator (ln . exp . snd) m'
@@ -145,10 +144,10 @@ enumerateWith ls meas =
   ]
 
 histogram ::
-  (Enum a, Ord a, Fractional a) =>
+  (Enum a, Ord a, Fractional a, n ~ Double) =>
   Int ->
   a ->
-  Weighted Integrator a ->
+  Weighted n Integrator a ->
   [(a, Double)]
 histogram nBins binSize model = do
   x <- take nBins [1 ..]

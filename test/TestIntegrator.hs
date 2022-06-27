@@ -6,7 +6,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
   ( MonadCond (score),
     MonadInfer,
-    MonadSample (bernoulli, gamma, normal, random, uniformD),
+    MonadSample n (bernoulli, gamma, normal, random, uniformD),
     condition,
     factor,
     normalPdf,
@@ -31,7 +31,7 @@ normalVariance mean std = variance (normal mean std)
 volumeIsOne :: [Double] -> Bool
 volumeIsOne = (~== 1.0) . volume . uniformD
 
-agg :: MonadSample m => m Int
+agg :: MonadSample n m => m Int
 agg = do
   x <- uniformD [0, 1]
   y <- uniformD [2, 1]
@@ -140,7 +140,7 @@ passed14 =
       quadrature = expectation $ normalize $ model1
    in abs (sample - quadrature) < 0.01
 
-model1 :: MonadInfer m => m Double
+model1 :: MonadInfer n m => m Double
 model1 = do
   x <- random
   y <- random

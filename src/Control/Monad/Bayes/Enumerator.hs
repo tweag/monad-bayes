@@ -23,7 +23,7 @@ module Control.Monad.Bayes.Enumerator
     toEmpirical,
     toEmpiricalWeighted,
     normalizeWeights,
-    enumerateToDistribution,
+    -- enumerateToDistribution,
     removeZeros,
   )
 where
@@ -32,10 +32,6 @@ import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, logCategorical, random),
-  )
 import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
 import Data.List (sortOn)
@@ -49,38 +45,38 @@ import Numeric.Log as Log (Log (..), sum)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
-newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
+newtype Enumerator n a = Enumerator (WriterT (Product (Log n)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
-instance MonadSample Enumerator where
-  random = error "Infinitely supported random variables not supported in Enumerator"
-  bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
-  categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
+instance RealFloat n => MonadSample n (Enumerator) where
+  randomGeneric = error "Infinitely supported random variables not supported in Enumerator"
+  -- bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
+  -- categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
 
-instance MonadCond Enumerator where
-  score w = fromList [((), w)]
+instance RealFloat n => MonadCond n (Enumerator) where
+  scoreGeneric w = fromList [((), w)]
 
-instance MonadInfer Enumerator
+instance RealFloat n => MonadInfer n (Enumerator)
 
 -- | Construct Enumerator from a list of values and associated weights.
-fromList :: [(a, Log Double)] -> Enumerator a
+fromList :: [(a, Log n)] -> Enumerator n a
 fromList = Enumerator . WriterT . map (second Product)
 
 -- | Returns the posterior as a list of weight-value pairs without any post-processing,
 -- such as normalization or aggregation
-logExplicit :: Enumerator a -> [(a, Log Double)]
+logExplicit :: Enumerator n a -> [(a, Log n)]
 logExplicit (Enumerator m) = map (second getProduct) $ runWriterT m
 
 -- | Same as `toList`, only weights are converted from log-domain.
-explicit :: Enumerator a -> [(a, Double)]
+explicit :: RealFloat n => Enumerator n a -> [(a, n)]
 explicit = map (second (exp . ln)) . logExplicit
 
 -- | Returns the model evidence, that is sum of all weights.
-evidence :: Enumerator a -> Log Double
+evidence :: RealFloat n => Enumerator n a -> Log n
 evidence = Log.sum . map snd . logExplicit
 
 -- | Normalized probability mass of a specific value.
-mass :: Ord a => Enumerator a -> a -> Double
+mass :: (Ord a, Num n, RealFloat n) => Enumerator n a -> a -> n
 mass d = f
   where
     f a = fromMaybe 0 $ lookup a m
@@ -95,13 +91,13 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 -- The resulting list is sorted ascendingly according to values.
 --
 -- > enumerate = compact . explicit
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerate :: (RealFloat n, Ord a) => Enumerator n a -> [(a, n)]
 enumerate d = filter ((/= 0) . snd) $ compact (zip xs ws)
   where
     (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
 
 -- | Expectation of a given function computed using normalized weights.
-expectation :: (a -> Double) -> Enumerator a -> Double
+expectation :: RealFloat n => (a -> n) -> Enumerator n a -> n
 expectation f = Prelude.sum . map (\(x, w) -> f x * (exp . ln) w) . normalizeWeights . logExplicit
 
 normalize :: Fractional b => [b] -> [b]
@@ -117,7 +113,7 @@ normalizeWeights ls = zip xs ps
     ps = normalize ws
 
 -- | 'compact' followed by removing values with zero weight.
-normalForm :: Ord a => Enumerator a -> [(a, Double)]
+normalForm :: RealFloat n => Ord a => Enumerator n a -> [(a, n)]
 normalForm = filter ((/= 0) . snd) . compact . explicit
 
 toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
@@ -126,20 +122,20 @@ toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
 toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
 
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
-enumerateToDistribution model = do
-  let samples = logExplicit model
-  let (support, logprobs) = unzip samples
-  i <- logCategorical $ VV.fromList logprobs
-  return $ support !! i
+-- enumerateToDistribution :: (RealFloat n, MonadSample n m) => Enumerator n a -> m a
+-- enumerateToDistribution model = do
+--   let samples = logExplicit model
+--   let (support, logprobs) = unzip samples
+--   i <- logCategorical $ VV.fromList logprobs
+--   return $ support !! i
 
-removeZeros :: Enumerator a -> Enumerator a
+removeZeros :: RealFloat n => Enumerator n a -> Enumerator n a
 removeZeros (Enumerator (WriterT a)) = Enumerator $ WriterT $ filter ((\(Product x) -> x /= 0) . snd) a
 
-instance Ord a => Eq (Enumerator a) where
+instance (Ord a, RealFloat n) => Eq (Enumerator n a) where
   p == q = normalForm p == normalForm q
 
-instance Ord a => AEq (Enumerator a) where
+instance (RealFloat n, Ord a, AEq n) => AEq (Enumerator n a) where
   p === q = xs == ys && ps === qs
     where
       (xs, ps) = unzip (normalForm p)

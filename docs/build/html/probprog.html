@@ -294,7 +294,7 @@
 
 <!-- The most intuitive way to understand `score` is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a `score x` statement, where the value of `x` depends on the previous choices. This statement multiplies the weight of this "trace" by the score. -->
 <!-- ```haskell
-bayesianExample :: (Eq a, MonadInfer m) => m a -> (a -> m b) -> (b -> m a)
+bayesianExample :: (Eq a, MonadInfer n m) => m a -> (a -> m b) -> (b -> m a)
 bayesianExample prior likelihood b = do
     a <- prior
     b' <- likelihood a
@@ -309,7 +309,7 @@ example =  bayesianExample (bernoulli 0.5) (\x -> if x then bernoulli 0.8 else b
 ``` 
 -->
 <!-- ```haskell
-example :: MonadInfer m => m Bool
+example :: MonadInfer n m => m Bool
 example = do 
   x <- normal 0 1
   y <- normal 0 2
@@ -329,7 +329,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 <p>Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given about are sufficient for that.</p>
 <p>The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
 <p>Two of the large classes of inference methods are <strong>sampling based methods</strong> and <strong>gradient based methods</strong>. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.</p>
-<!-- For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on.  -->
+<!-- For the purposes of this section, let `dist :: MonadInfer n m => m a` be the distribution you want to perform inference on.  -->
 <section id="exact-inference">
 <h3>Exact inference<a class="headerlink" href="#exact-inference" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerate</span> <span class="ow">::</span> <span class="kt">Ord</span> <span class="n">a</span> <span class="ow">=&gt;</span> <span class="kt">Enumerator</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span>
@@ -515,12 +515,12 @@ example = do
     return ind
 ```
 
-This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadSample m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
+This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadSample n m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
 
 The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the `models` folder (TODO LINK) for examples.
 
 ```haskell
-betaBernoulli :: MonadSample m => Int -> m [Bool]
+betaBernoulli :: MonadSample n m => Int -> m [Bool]
 betaBernoulli n = do
   weight <- uniform 0 1
   let toss = bernoulli weight

@@ -2,7 +2,7 @@ module TestSampler where
 
 import qualified Control.Foldl as Fold
 import Control.Monad (replicateM)
-import Control.Monad.Bayes.Class (MonadSample (normal))
+import Control.Monad.Bayes.Class (MonadSample n (normal))
 import Control.Monad.Bayes.Sampler (sampleSTfixed)
 
 testMeanAndVariance :: Bool

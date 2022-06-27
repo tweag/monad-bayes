@@ -19,10 +19,6 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
-  )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
@@ -39,51 +35,51 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 --
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
-data Traced m a = Traced
-  { model :: Weighted (FreeSampler m) a,
-    traceDist :: m (Trace a)
+data Traced m n a = Traced
+  { model :: Weighted (FreeSampler m) n a,
+    traceDist :: m n (Trace n a)
   }
 
-instance Monad m => Functor (Traced m) where
+instance Monad (m n) => Functor (Traced m n) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
 
-instance Monad m => Applicative (Traced m) where
+instance (RealFloat n, Monad (m n)) => Applicative (Traced m n) where
   pure x = Traced (pure x) (pure (pure x))
   (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<*>) df dx)
 
-instance Monad m => Monad (Traced m) where
+instance (RealFloat n, Monad (m n)) => Monad (Traced m n) where
   (Traced mx dx) >>= f = Traced my dy
     where
       my = mx >>= model . f
       dy = dx `bind` (traceDist . f)
 
-instance MonadTrans Traced where
-  lift m = Traced (lift $ lift m) (fmap pure m)
+-- instance RealFloat n => MonadTrans (Traced n) where
+--   lift m = Traced (lift $ lift m) (fmap pure m)
 
-instance MonadSample m => MonadSample (Traced m) where
-  random = Traced random (fmap singleton random)
+instance (MonadSample n m, RealFloat n) => MonadSample n (Traced m) where
+  randomGeneric = Traced randomGeneric (fmap singleton randomGeneric)
 
-instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced (score w) (score w >> pure (scored w))
+instance (MonadCond n m, RealFloat n) => MonadCond n (Traced m) where
+  scoreGeneric w = Traced (scoreGeneric w) (scoreGeneric w >> pure (scored w))
 
-instance MonadInfer m => MonadInfer (Traced m)
+instance (RealFloat n, MonadInfer n m) => MonadInfer n (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoistT :: (forall x. m n x -> m n x) -> Traced m n a -> Traced m n a
 hoistT f (Traced m d) = Traced m (f d)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: Monad m => Traced m a -> m a
+marginal :: Monad (m n) => Traced m n a -> m n a
 marginal (Traced _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => Traced m a -> Traced m a
+mhStep :: (MonadSample n m, RealFloat n) => Traced m n a -> Traced m n a
 mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTrans m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: (MonadSample n m, RealFloat n) => Int -> Traced m n a -> m n [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
     f k
@@ -92,3 +88,8 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
+
+
+        
+        
+        

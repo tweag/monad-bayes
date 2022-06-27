@@ -16,13 +16,13 @@ import Data.Vector qualified as V
 import Numeric.Log (Log (ln))
 import Sprinkler (hard, soft)
 
-unnorm :: MonadSample m => m Int
+unnorm :: MonadSample n m => m Int
 unnorm = categorical $ V.fromList [0.5, 0.8]
 
 passed1 :: Bool
 passed1 = (exp . ln) (evidence unnorm) ~== 1
 
-agg :: MonadSample m => m Int
+agg :: MonadSample n m => m Int
 agg = do
   x <- uniformD [0, 1]
   y <- uniformD [2, 1]

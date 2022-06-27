@@ -40,7 +40,7 @@ import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
@@ -48,8 +48,8 @@ rmsmc ::
   -- | number of Metropolis-Hastings transitions after each resampling
   Int ->
   -- | model
-  Sequential (Traced (Population m)) a ->
-  Population m a
+  Sequential (Traced (Population m)) n a ->
+  Population m n a
 rmsmc k n t =
   marginal
     . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
@@ -58,7 +58,7 @@ rmsmc k n t =
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
 rmsmcBasic ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
@@ -66,8 +66,8 @@ rmsmcBasic ::
   -- | number of Metropolis-Hastings transitions after each resampling
   Int ->
   -- | model
-  Sequential (TrBas.Traced (Population m)) a ->
-  Population m a
+  Sequential (TrBas.Traced (Population m)) n a ->
+  Population m n a
 rmsmcBasic k n t =
   TrBas.marginal
     . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
@@ -77,7 +77,7 @@ rmsmcBasic k n t =
 -- where only random variables since last resampling are considered
 -- for rejuvenation.
 rmsmcLocal ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
@@ -85,8 +85,8 @@ rmsmcLocal ::
   -- | number of Metropolis-Hastings transitions after each resampling
   Int ->
   -- | model
-  Sequential (TrDyn.Traced (Population m)) a ->
-  Population m a
+  Sequential (TrDyn.Traced (Population m)) n a ->
+  Population m n a
 rmsmcLocal k n t =
   TrDyn.marginal
     . sis (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoistT resampleSystematic) k

@@ -6,11 +6,12 @@ import Control.Monad (replicateM, when)
 import Control.Monad.Bayes.Class
   ( MonadCond,
     MonadInfer,
-    MonadSample (categorical, normal, uniformD),
+    MonadSample (categorical, normal),
     factor,
+    uniformD,
     normalPdf,
   )
-import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
+-- import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
 import Data.Maybe (fromJust, isJust)
 import Data.Vector (fromList)
 import Pipes (MFunctor (hoist), MonadTrans (lift), each, yield, (>->))
@@ -39,7 +40,7 @@ values =
   ]
 
 -- | The transition model.
-trans :: MonadSample m => Int -> m Int
+trans :: MonadSample Double m => Int -> m Int
 trans 0 = categorical $ fromList [0.1, 0.4, 0.5]
 trans 1 = categorical $ fromList [0.2, 0.6, 0.2]
 trans 2 = categorical $ fromList [0.15, 0.7, 0.15]
@@ -53,11 +54,11 @@ emissionMean 2 = 0
 emissionMean _ = error "unreachable"
 
 -- | Initial state distribution
-start :: MonadSample m => m Int
+start :: MonadSample Double m => m Int
 start = uniformD [0, 1, 2]
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
-hmm :: (MonadInfer m) => [Double] -> m [Int]
+hmm :: (MonadInfer Double m) => [Double] -> m [Int]
 hmm dataset = f dataset (const . return)
   where
     expand x y = do
@@ -67,7 +68,7 @@ hmm dataset = f dataset (const . return)
     f [] k = start >>= k []
     f (y : ys) k = f ys (\xs x -> expand x y >>= k (x : xs))
 
-syntheticData :: MonadSample m => Int -> m [Double]
+syntheticData :: MonadSample Double m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
   where
     syntheticPoint = uniformD [0, 1, 2]
@@ -75,7 +76,7 @@ syntheticData n = replicateM n syntheticPoint
 -- | Equivalent model, but using pipes for simplicity
 
 -- | Prior expressed as a stream
-hmmPrior :: MonadSample m => Producer Int m b
+hmmPrior :: MonadSample Double m => Producer Int m b
 hmmPrior = do
   x <- lift start
   yield x
@@ -86,19 +87,19 @@ hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
 hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
 
 -- | Posterior expressed as a stream
-hmmPosterior :: (MonadInfer m) => [Double] -> Producer Int m ()
+hmmPosterior :: (MonadInfer Double m) => [Double] -> Producer Int m ()
 hmmPosterior dataset =
   zipWithM
     hmmLikelihood
     hmmPrior
     (hmmObservations dataset)
   where
-    hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
+    hmmLikelihood :: MonadCond Double f => (Int, Maybe Double) -> f ()
     hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
 
     zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
 
-hmmPosteriorPredictive :: MonadSample m => [Double] -> Producer Double m ()
-hmmPosteriorPredictive dataset =
-  Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
-    >-> Pipes.mapM (\x -> normal (emissionMean x) 1)
+-- hmmPosteriorPredictive :: MonadSample n m => [Double] -> Producer Double m ()
+-- hmmPosteriorPredictive dataset =
+--   Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
+--     >-> Pipes.mapM (\x -> normal (emissionMean x) 1)

@@ -5,7 +5,7 @@ module TestWeighted (check, passed, result, model) where
 
 import Control.Monad.Bayes.Class
   ( MonadInfer,
-    MonadSample (normal, uniformD),
+    MonadSample n (normal, uniformD),
     factor,
   )
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
@@ -15,7 +15,7 @@ import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
 import Numeric.Log (Log (Exp, ln))
 
-model :: MonadInfer m => m (Int, Double)
+model :: MonadInfer n m => m (Int, Double)
 model = do
   n <- uniformD [0, 1, 2]
   unless (n == 0) (factor 0.5)
@@ -23,7 +23,7 @@ model = do
   when (n == 2) (factor $ (Exp . log) (x * x))
   return (n, x)
 
-result :: MonadSample m => m ((Int, Double), Double)
+result :: MonadSample n m => m ((Int, Double), Double)
 result = second (exp . ln) <$> runWeighted model
 
 passed :: IO Bool

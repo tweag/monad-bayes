@@ -41,7 +41,7 @@ instance Show Model where
   show (HMM xs) = "HMM" ++ show (length xs)
   show (LDA xs) = "LDA" ++ show (length $ head xs)
 
-buildModel :: MonadInfer m => Model -> m String
+buildModel :: MonadInfer n m => Model -> m String
 buildModel (LR dataset) = show <$> LogReg.logisticRegression dataset
 buildModel (HMM dataset) = show <$> HMM.hmm dataset
 buildModel (LDA dataset) = show <$> LDA.lda dataset

@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE GADTs #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -32,17 +33,6 @@ where
 
 import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
-  ( MonadSample
-      ( bernoulli,
-        beta,
-        categorical,
-        gamma,
-        geometric,
-        normal,
-        random,
-        uniform
-      ),
-  )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
@@ -63,49 +53,49 @@ import System.Random.MWC
 import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
-newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
+newtype SamplerIO n a = SamplerIO (ReaderT GenIO IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 -- | Initialize a pseudo-random number generator using randomness supplied by
 -- the operating system.
 -- For efficiency this operation should be applied at the very end, ideally
 -- once per program.
-sampleIO :: SamplerIO a -> IO a
+sampleIO :: SamplerIO n a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 
 -- Useful for reproducibility.
-sampleIOfixed :: SamplerIO a -> IO a
+sampleIOfixed :: SamplerIO n a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO a -> Gen F.RealWorld -> IO a
+sampleIOwith :: SamplerIO n a -> Gen F.RealWorld -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
-fromSamplerST :: SamplerST a -> SamplerIO a
+fromSamplerST :: SamplerST n a -> SamplerIO n a
 fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
-instance MonadSample SamplerIO where
-  random = fromSamplerST random
+instance (Double ~ n) => MonadSample n SamplerIO where
+  randomGeneric = fromSamplerST randomGeneric
 
 -- | An 'ST' based random sampler using the @mwc-random@ package.
-newtype SamplerST a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
+newtype SamplerST n a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
-runSamplerST :: SamplerST a -> ReaderT (GenST s) (ST s) a
+runSamplerST :: SamplerST n a -> ReaderT (GenST s) (ST s) a
 runSamplerST (SamplerST s) = s
 
-instance Functor SamplerST where
+instance Functor (SamplerST n) where
   fmap f (SamplerST s) = SamplerST $ fmap f s
 
-instance Applicative SamplerST where
+instance Applicative (SamplerST n) where
   pure x = SamplerST $ pure x
   (SamplerST f) <*> (SamplerST x) = SamplerST $ f <*> x
 
-instance Monad SamplerST where
+instance Monad (SamplerST n) where
   (SamplerST x) >>= f = SamplerST $ x >>= runSamplerST . f
 
 -- | Run the sampler with a supplied seed.
 -- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
-sampleST :: SamplerST a -> State Seed a
+sampleST :: SamplerST n a -> State Seed a
 sampleST (SamplerST s) =
   state $ \seed -> runST $ do
     gen <- restore seed
@@ -114,26 +104,26 @@ sampleST (SamplerST s) =
     return (y, finalSeed)
 
 -- | Run the sampler with a fixed random seed.
-sampleSTfixed :: SamplerST a -> a
+sampleSTfixed :: SamplerST n a -> a
 sampleSTfixed (SamplerST s) = runST $ do
   gen <- create
   runReaderT s gen
 
 -- | Convert a distribution supplied by @mwc-random@.
-fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST a
+fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST n a
 fromMWC s = SamplerST $ ask >>= lift . s
 
-instance MonadSample SamplerST where
-  random = fromMWC System.Random.MWC.uniform
+instance (Variate n, RealFloat n) => MonadSample n SamplerST where
+  randomGeneric = fromMWC System.Random.MWC.uniform
 
-  uniform a b = fromMWC $ uniformR (a, b)
-  normal m s = fromMWC $ MWC.normal m s
-  gamma shape scale = fromMWC $ MWC.gamma shape scale
-  beta a b = fromMWC $ MWC.beta a b
+  -- uniform a b = fromMWC $ uniformR (a, b)
+  -- normal m s = fromMWC $ MWC.normal m s
+  -- gamma shape scale = fromMWC $ MWC.gamma shape scale
+  -- beta a b = fromMWC $ MWC.beta a b
 
-  bernoulli p = fromMWC $ MWC.bernoulli p
-  categorical ps = fromMWC $ MWC.categorical ps
-  geometric p = fromMWC $ MWC.geometric0 p
+  -- bernoulli p = fromMWC $ MWC.bernoulli p
+  -- categorical ps = fromMWC $ MWC.categorical ps
+  -- geometric p = fromMWC $ MWC.geometric0 p
 
 type Bin = (Double, Double)
 

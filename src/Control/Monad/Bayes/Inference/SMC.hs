@@ -40,81 +40,81 @@ import Control.Monad.Bayes.Sequential as Seq
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
 sir ::
-  Monad m =>
+  (Monad m, RealFloat n) =>
   -- | resampler
-  (forall x. Population m x -> Population m x) ->
+  (forall x. Population n m x -> Population n m x) ->
   -- | number of timesteps
   Int ->
   -- | population size
   Int ->
   -- | model
-  Sequential (Population m) a ->
-  Population m a
+  Sequential (Population n m) a ->
+  Population n m a
 sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.
 smcMultinomial ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population m) a ->
-  Population m a
+  Sequential (Population n m) a ->
+  Population n m a
 smcMultinomial = sir resampleMultinomial
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are not normalized.
 smcSystematic ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population m) a ->
-  Population m a
+  Sequential (Population n m) a ->
+  Population n m a
 smcSystematic = sir resampleSystematic
 
 -- | Sequential Monte Carlo with stratified resampling at each timestep.
 -- Weights are not normalized.
 smcStratified ::
-  MonadSample m =>
+  (MonadSample n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
   Int ->
-  Sequential (Population m) a ->
+  Sequential (Population n m) a ->
   -- | model
-  Population m a
+  Population n m a
 smcStratified = sir resampleStratified
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcMultinomialPush ::
-  MonadInfer m =>
+  (MonadInfer n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population m) a ->
-  Population m a
+  Sequential (Population n m) a ->
+  Population n m a
 smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcSystematicPush ::
-  MonadInfer m =>
+  (MonadInfer n m, RealFloat n) =>
   -- | number of timesteps
   Int ->
   -- | number of particles
   Int ->
   -- | model
-  Sequential (Population m) a ->
-  Population m a
+  Sequential (Population n m) a ->
+  Population n m a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)

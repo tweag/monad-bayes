@@ -7,25 +7,22 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
-    singleton,
-    output,
-    scored,
-    bind,
-    mhTrans,
-    mhTrans',
-    burnIn,
-  )
+  -- ( Trace,
+  --   singleton,
+  --   output,
+  --   scored,
+  --   bind,
+  --   mhTrans,
+  --   mhTrans',
+  --   burnIn,
+  -- )
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadSample (bernoulli, random),
-    discrete,
-  )
 import Control.Monad.Bayes.Free as FreeSampler
   ( FreeSampler,
     hoist,
-    withPartialRandomness,
+    withPartialRandomness, withRandomness
   )
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
@@ -34,23 +31,26 @@ import Control.Monad.Bayes.Weighted as Weighted
   )
 import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
-import Numeric.Log (Log, ln)
+import Numeric.Log (Log (Exp), ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+import Numeric.AD
+import Numeric.AD.Mode.Reverse
+import qualified Data.Vector as V
 
 -- | Collection of random variables sampled during the program's execution.
-data Trace a = Trace
+data Trace n a = Trace
   { -- | Sequence of random variables sampled during the program's execution.
-    variables :: [Double],
+    variables :: [n],
     --
     output :: a,
     -- | The probability of observing this particular sequence.
-    density :: Log Double
+    density :: Log n
   }
 
-instance Functor Trace where
+instance Functor (Trace n) where
   fmap f t = t {output = f (output t)}
 
-instance Applicative Trace where
+instance RealFloat n => Applicative (Trace n) where
   pure x = Trace {variables = [], output = x, density = 1}
   tf <*> tx =
     Trace
@@ -59,44 +59,67 @@ instance Applicative Trace where
         density = density tf * density tx
       }
 
-instance Monad Trace where
+instance RealFloat n => Monad (Trace n) where
   t >>= f =
     let t' = f (output t)
      in t' {variables = variables t ++ variables t', density = density t * density t'}
 
-singleton :: Double -> Trace Double
+singleton :: RealFloat a => a -> Trace a a
 singleton u = Trace {variables = [u], output = u, density = 1}
 
-scored :: Log Double -> Trace ()
+scored :: Log n -> Trace n ()
 scored w = Trace {variables = [], output = (), density = w}
 
-bind :: Monad m => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
+bind :: (Monad m, RealFloat n) => m (Trace n a) -> (a -> m (Trace n b)) -> m (Trace n b)
 bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
+mhTrans :: (MonadSample n m, RealFloat n) => Weighted (FreeSampler m) n a -> Trace n a -> m n (Trace n a)
 mhTrans m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n - 1)
-    u' <- random
+    i <- categorical (V.fromList $ replicate n 1) -- discrete $ discreteUniformAB 0 (n - 1)
+    u' <- randomGeneric
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+  ((b, q), vs) <- undefined -- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
-mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
-mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentity)) m)
+mhTrans' :: (MonadSample n m, RealFloat n) =>
+  Weighted (FreeSampler IdentityN) n a -> Trace n a -> m n (Trace n a)
+mhTrans' m = mhTrans (Weighted.hoist (FreeSampler.hoist (return . runIdentityN)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
 burnIn :: Functor m => Int -> m [a] -> m [a]
 burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls
+
+
+
+model :: (RealFloat n, MonadInfer n m) => m n Bool
+model = do
+  x <- randomGeneric
+  y <- randomGeneric
+  scoreGeneric (Exp $ log $  x**2 * y)
+  return (x > 0.5)
+
+pdf :: RealFloat n =>
+  Weighted (FreeSampler IdentityN) n a -> [n] -> n
+pdf model rand = 
+  ln . exp . snd . runIdentityN . withRandomness rand $ runWeighted model
+
+
+
+d2 :: RealFloat n => [n] -> [n]
+d2 = grad (pdf (model)) -- :: RealFloat n => Weighted (FreeSampler IdentityN) (Reverse s n) Bool)) 
+
+-- d :: (forall m n a. (RealFloat n, MonadInfer n m) => m n a) -> [n] -> n
+-- d m =  (runWeighted m :: (MonadSample n m, RealFloat n) => Weighted m n a -> m n (a, Log n))

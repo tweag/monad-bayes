@@ -17,7 +17,7 @@ import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 
-weightedSampleSize :: MonadSample m => Population m a -> m Int
+weightedSampleSize :: MonadSample n m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
 
 popSize :: IO Int
@@ -26,7 +26,7 @@ popSize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
 manySize :: IO Int
 manySize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
 
-sprinkler :: MonadInfer m => m Bool
+sprinkler :: MonadInfer n m => m Bool
 sprinkler = Sprinkler.soft
 
 sprinklerExact :: [(Bool, Double)]

@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -21,11 +20,7 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
-  )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Free 
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -33,66 +28,68 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Weighted 
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
+newtype Traced m n a = 
+  Traced {runTraced :: m n (Weighted (FreeSampler m) n a, Trace n a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
-pushM = join . lift . lift
+pushM :: Monad (m n) => 
+  m n (Weighted (FreeSampler m) n a) -> Weighted (FreeSampler m) n a
+pushM = join . Weighted . lift . FreeSampler . lift
 
-instance Monad m => Functor (Traced m) where
+instance Monad (m n) => Functor (Traced m n) where
   fmap f (Traced c) = Traced $ do
     (m, t) <- c
     let m' = fmap f m
     let t' = fmap f t
     return (m', t')
 
-instance Monad m => Applicative (Traced m) where
+instance (RealFloat n, Monad (m n)) => Applicative (Traced m n) where
   pure x = Traced $ pure (pure x, pure x)
   (Traced cf) <*> (Traced cx) = Traced $ do
     (mf, tf) <- cf
     (mx, tx) <- cx
     return (mf <*> mx, tf <*> tx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad (m n), RealFloat n) => Monad (Traced m n) where
   (Traced cx) >>= f = Traced $ do
     (mx, tx) <- cx
     let m = mx >>= pushM . fmap fst . runTraced . f
     t <- return tx `bind` (fmap snd . runTraced . f)
     return (m, t)
 
-instance MonadTrans Traced where
-  lift m = Traced $ fmap ((,) (lift $ lift m) . pure) m
+-- instance RealFloat n => MonadTrans (Traced n) where
+--   lift m = Traced $ fmap ((,) (lift $ lift m) . pure) m
 
-instance MonadSample m => MonadSample (Traced m) where
-  random = Traced $ fmap ((,) random . singleton) random
+instance (MonadSample n m, RealFloat n) => MonadSample n (Traced m) where
+  randomGeneric = Traced $ fmap ((,) randomGeneric . singleton) randomGeneric
 
-instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced $ fmap (score w,) (score w >> pure (scored w))
+instance (MonadCond n m, RealFloat n) => MonadCond n (Traced m) where
+  scoreGeneric w = Traced $ fmap (scoreGeneric w,) (scoreGeneric w >> pure (scored w))
 
-instance MonadInfer m => MonadInfer (Traced m)
+instance (RealFloat n, MonadInfer n m) => MonadInfer n (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoistT :: (forall x. m n x -> m n x) -> Traced m n a -> Traced m n a
 hoistT f (Traced c) = Traced (f c)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: Monad m => Traced m a -> m a
+marginal :: Monad (m n) => Traced m n a -> m n a
 marginal (Traced c) = fmap (output . snd) c
 
 -- | Freeze all traced random choices to their current values and stop tracing
 -- them.
-freeze :: Monad m => Traced m a -> Traced m a
+freeze :: (RealFloat n, Monad (m n)) => Traced m n a -> Traced m n a
 freeze (Traced c) = Traced $ do
   (_, t) <- c
   let x = output t
   return (return x, pure x)
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => Traced m a -> Traced m a
+mhStep :: (MonadSample n m, RealFloat n) => Traced m n a -> Traced m n a
 mhStep (Traced c) = Traced $ do
   (m, t) <- c
   t' <- mhTrans m t
@@ -100,7 +97,7 @@ mhStep (Traced c) = Traced $ do
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: (MonadSample n m, RealFloat n) => Int -> Traced m n a -> m n [a]
 mh n (Traced c) = do
   (m, t) <- c
   let f k
