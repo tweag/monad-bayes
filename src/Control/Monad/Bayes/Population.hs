@@ -33,7 +33,6 @@ module Control.Monad.Bayes.Population
     hoist,
     collapse,
     popAvg,
-    independent,
   )
 where
 
@@ -63,6 +62,7 @@ import Data.Maybe (catMaybes)
 import Data.Vector ((!))
 import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
+import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
@@ -76,9 +76,6 @@ instance MonadTrans Population where
 -- domain.
 population :: Population m a -> m [(a, Log Double)]
 population (Population m) = runListT $ weighted m
-
-independent :: Monad m => Int -> Population m a -> m [(a, Log Double)]
-independent i ma = population $ spawn i >> ma
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
@@ -105,7 +102,7 @@ resampleGeneric resampler m = fromWeightedList $ do
   pop <- population m
   let (xs, ps) = unzip pop
   let n = length xs
-  let z = sum ps
+  let z = Log.sum ps
   if z > 0
     then do
       let weights = V.fromList (map (exp . ln . (/ z)) ps)
