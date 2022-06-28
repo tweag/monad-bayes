@@ -1,5 +1,3 @@
-{-# LANGUAGE Trustworthy #-}
-
 module TestSequential (twoSync, finishedTwoSync, checkTwoSync, checkPreserve, pFinished, isFinished, checkSync) where
 
 import Control.Monad.Bayes.Class
@@ -7,7 +5,7 @@ import Control.Monad.Bayes.Class
     MonadSample (uniformD),
     factor,
   )
-import Control.Monad.Bayes.Enumerator as Dist (enumerate, mass)
+import Control.Monad.Bayes.Enumerator as Dist (enumerated, mass)
 import Control.Monad.Bayes.Sequential (advance, finish, finished)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
@@ -36,7 +34,7 @@ sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
 
 checkPreserve :: Bool
-checkPreserve = enumerate (finish sprinkler) ~== enumerate sprinkler
+checkPreserve = enumerated (finish sprinkler) ~== enumerated sprinkler
 
 pFinished :: Int -> Double
 pFinished 0 = 0.8267716535433071

@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE Trustworthy #-}
 
 import Data.AEq (AEq ((~==)))
 import Test.Hspec (context, describe, hspec, it, shouldBe)

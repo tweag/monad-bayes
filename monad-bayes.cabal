@@ -135,6 +135,7 @@ test-suite monad-bayes-test
   other-modules:
     ConjugatePriors
     Sprinkler
+    TestAdvanced
     TestEnumerator
     TestInference
     TestIntegrator

@@ -15,6 +15,7 @@ module Control.Monad.Bayes.Traced.Common
     mhTrans,
     mhTrans',
     burnIn,
+    Proposal (SingleSiteMH),
   )
 where
 
@@ -100,3 +101,5 @@ burnIn :: Functor m => Int -> m [a] -> m [a]
 burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls
+
+data Proposal = SingleSiteMH

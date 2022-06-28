@@ -14,6 +14,8 @@ module Control.Monad.Bayes.Traced.Static
     marginal,
     mhStep,
     mh,
+    mcmc,
+    Proposal (..),
   )
 where
 
@@ -25,7 +27,8 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-  ( Trace (..),
+  ( Proposal (..),
+    Trace (..),
     bind,
     mhTrans,
     scored,
@@ -92,3 +95,6 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
+
+mcmc :: MonadSample m => Proposal -> Int -> Traced m a -> m [a]
+mcmc SingleSiteMH n m = mh n m

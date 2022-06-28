@@ -17,7 +17,7 @@ module Control.Monad.Bayes.Enumerator
     evidence,
     mass,
     compact,
-    enumerate,
+    enumerated,
     expectation,
     normalForm,
     toEmpirical,
@@ -84,7 +84,7 @@ mass :: Ord a => Enumerator a -> a -> Double
 mass d = f
   where
     f a = fromMaybe 0 $ lookup a m
-    m = enumerate d
+    m = enumerated d
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
@@ -94,9 +94,9 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
 --
--- > enumerate = compact . explicit
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
-enumerate d = filter ((/= 0) . snd) $ compact (zip xs ws)
+-- > enumerated = compact . explicit
+enumerated :: Ord a => Enumerator a -> [(a, Double)]
+enumerated d = filter ((/= 0) . snd) $ compact (zip xs ws)
   where
     (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
 

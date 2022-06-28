@@ -1,6 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 
@@ -16,7 +15,7 @@ import ConjugatePriors
   )
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadInfer, posterior)
-import Control.Monad.Bayes.Enumerator (enumerate)
+import Control.Monad.Bayes.Enumerator (enumerated)
 import Control.Monad.Bayes.Inference.SMC
   ( smcMultinomial,
     smcStratified,
@@ -54,8 +53,8 @@ checkTerminateSMC = sampleIOfixed (population $ smcMultinomial 2 5 sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
-  (enumerate . collapse . smcMultinomial 2 2) sprinkler
-    ~== enumerate sprinkler
+  (enumerated . collapse . smcMultinomial 2 2) sprinkler
+    ~== enumerated sprinkler
 
 expectationNearNumeric ::
   Weighted Integrator.Integrator Double ->

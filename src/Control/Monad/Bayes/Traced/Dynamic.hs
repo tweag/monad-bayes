@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic

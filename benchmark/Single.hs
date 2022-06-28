@@ -52,7 +52,7 @@ runAlg model alg =
     MH ->
       let t = 100
           (_, m) = getModel model
-       in show <$> prior (mh t m)
+       in show <$> unweighted (mh t m)
     RMSMC ->
       let n = 10
           t = 1

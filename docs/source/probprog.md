@@ -26,7 +26,7 @@ This is the *model*. To perform *inference* , suppose we have a data set of `xs`
 We could then run the model as follows:
 
 ```haskell   
-mhRunsRegression = sampleIO $ prior $ mh 1000 $ regression xs ys
+mhRunsRegression = sampleIO $ unweighted $ mh 1000 $ regression xs ys
 ```
 
 This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:
@@ -36,7 +36,7 @@ This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one give
 Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
 
 
-<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerated` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
 
 `sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
@@ -207,10 +207,10 @@ Two of the large classes of inference methods are **sampling based methods** and
 ### Exact inference
 
 ```haskell
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerated :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-So `enumerate (bernoulli 0.7)` gives you
+So `enumerated (bernoulli 0.7)` gives you
 
 ```
 [(False,0.3),(True,0.7)]
@@ -227,21 +227,21 @@ model = do
   condition (x || y)
   return x
 
-enumerate model
+enumerated model
 
 > [(True,0.7692307692307692),(False,0.23076923076923078)]
 ```
 
-**Note: enumerate only works on finite discrete distributions**
+**Note: `enumerated` only works on finite discrete distributions**
 
-It will run forever on infinite distributions like `enumerate (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerate (normal 0 1)`:
+It will run forever on infinite distributions like `enumerated (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerated (normal 0 1)`:
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
 **However**, it's totally fine to have the elements of the support themselves be infinite, as in:
 
 ```haskell
-fmap (\(ls,p) -> (take 4 ls, p)) $ enumerate $ uniformD [[1..], [2..]]
+fmap (\(ls,p) -> (take 4 ls, p)) $ enumerated $ uniformD [[1..], [2..]]
 ```
 
 which gives
@@ -327,7 +327,7 @@ is an IO operation which when run, will display either `(False, 0.0)` or `(True,
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:
 
 ```haskell
-(sampleIO . prior . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
+(sampleIO . unweighted . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
 ```
 
 `Traced (Weighted SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance:
@@ -345,7 +345,7 @@ Then
 
 ```haskell
 run :: IO [Bool]
-run = (sampleIO . prior . mh 10) example
+run = (sampleIO . unweighted . mh 10) example
 ```
 
 produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
@@ -431,10 +431,10 @@ This inference method takes a prior and a model separately, so it only applies t
 
 <!-- todo -->
 
-<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerate`, the mass of each element of the support. -->
+<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerated`, the mass of each element of the support. -->
 
 
-<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerate` does. -->
+<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerated` does. -->
 
 
 
@@ -537,7 +537,7 @@ mixture2 point = do
 This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
 
 ```haskell
-enumerate $ mixture2 2
+enumerated $ mixture2 2
 ```
 
 yields

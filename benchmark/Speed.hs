@@ -10,7 +10,7 @@ import Control.Monad.Bayes.Inference.SMC (smcSystematic)
 import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
 import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
   ( Benchmark,
     Benchmarkable,
@@ -59,7 +59,7 @@ instance Show Alg where
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
 runAlg :: Model -> Alg -> SamplerIO String
-runAlg model (MH n) = show <$> prior (mh n (buildModel model))
+runAlg model (MH n) = show <$> unweighted (mh n (buildModel model))
 runAlg model (SMC n) = show <$> population (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> population (rmsmcLocal (modelLength model) n t (buildModel model))
 

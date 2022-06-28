@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE Trustworthy #-}
 
 module TestEnumerator (passed1, passed2, passed3, passed4) where
 
@@ -7,7 +6,7 @@ import Control.Monad.Bayes.Class
   ( MonadSample (categorical, uniformD),
   )
 import Control.Monad.Bayes.Enumerator
-  ( enumerate,
+  ( enumerated,
     evidence,
     expectation,
   )
@@ -29,10 +28,10 @@ agg = do
   return (x + y)
 
 passed2 :: Bool
-passed2 = enumerate agg ~== [(2, 0.5), (1, 0.25), (3, 0.25)]
+passed2 = enumerated agg ~== [(2, 0.5), (1, 0.25), (3, 0.25)]
 
 passed3 :: Bool
-passed3 = enumerate Sprinkler.hard ~== enumerate Sprinkler.soft
+passed3 = enumerated Sprinkler.hard ~== enumerated Sprinkler.soft
 
 passed4 :: Bool
 passed4 =

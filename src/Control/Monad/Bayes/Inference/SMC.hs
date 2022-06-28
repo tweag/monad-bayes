@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC
@@ -13,12 +14,15 @@
 --
 -- Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
 module Control.Monad.Bayes.Inference.SMC
-  ( sir,
+  ( smc,
     smcMultinomial,
     smcSystematic,
     smcStratified,
     smcMultinomialPush,
     smcSystematicPush,
+    smc',
+    SMCConfig (..),
+    config,
   )
 where
 
@@ -39,7 +43,7 @@ import Control.Monad.Bayes.Sequential as Seq
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
-sir ::
+smc ::
   Monad m =>
   -- | resampler
   (forall x. Population m x -> Population m x) ->
@@ -50,71 +54,66 @@ sir ::
   -- | model
   Sequential (Population m) a ->
   Population m a
-sir resampler k n = sequentially resampler k . Seq.hoistFirst (spawn n >>)
+smc resampler k n = sequentially resampler k . Seq.hoistFirst (spawn n >>)
+
+smc' ::
+  MonadSample m =>
+  SMCConfig ->
+  Sequential (Population m) a ->
+  Population m a
+smc' SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (spawn numParticles >>)
+
+data SMCConfig = SMCConfig
+  { resampler :: (forall x m. MonadSample m => Population m x -> Population m x),
+    numSteps :: Int,
+    numParticles :: Int
+  }
+
+class Config a where
+  config :: a
+
+instance Config SMCConfig where
+  config = SMCConfig {}
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.
-smcMultinomial ::
-  MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcMultinomial = sir resampleMultinomial
+smcMultinomial,
+  smcSystematic,
+  smcStratified ::
+    MonadSample m =>
+    -- | number of timesteps
+    Int ->
+    -- | number of particles
+    Int ->
+    -- | model
+    Sequential (Population m) a ->
+    Population m a
+smcMultinomial = smc resampleMultinomial
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are not normalized.
-smcSystematic ::
-  MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcSystematic = sir resampleSystematic
+smcSystematic = smc resampleSystematic
 
 -- | Sequential Monte Carlo with stratified resampling at each timestep.
 -- Weights are not normalized.
-smcStratified ::
-  MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  Sequential (Population m) a ->
-  -- | model
-  Population m a
-smcStratified = sir resampleStratified
+smcStratified = smc resampleStratified
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
-smcMultinomialPush ::
-  MonadInfer m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
+smcMultinomialPush,
+  smcSystematicPush ::
+    MonadInfer m =>
+    -- | number of timesteps
+    Int ->
+    -- | number of particles
+    Int ->
+    -- | model
+    Sequential (Population m) a ->
+    Population m a
+smcMultinomialPush = smc (pushEvidence . resampleMultinomial)
 
 -- | Sequential Monte Carlo with systematic resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
-smcSystematicPush ::
-  MonadInfer m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcSystematicPush = sir (pushEvidence . resampleSystematic)
+smcSystematicPush = smc (pushEvidence . resampleSystematic)

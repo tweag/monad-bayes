@@ -6,7 +6,7 @@ import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
 import Control.Monad.Bayes.Inference.SMC2 as SMC2 (smc2)
 import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler (sampleIO)
-import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Weighted (unweighted)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import NonlinearSSM (generateData, model, param)
 
@@ -22,7 +22,7 @@ main = sampleIO $ do
   smcrmRes <- population $ rmsmcLocal t 10 10 (param >>= model ys)
   liftIO $ print $ show smcrmRes
   liftIO $ print "PMMH"
-  pmmhRes <- prior $ pmmh 2 t 3 param (model ys)
+  pmmhRes <- unweighted $ pmmh 2 t 3 param (model ys)
   liftIO $ print $ show pmmhRes
   liftIO $ print "SMC2"
   smc2Res <- population $ smc2 t 3 2 1 param (model ys)

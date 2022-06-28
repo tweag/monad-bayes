@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Weighted
     withWeight,
     weighted,
     extractWeight,
-    prior,
+    unweighted,
     applyWeight,
     hoist,
     toBinsWeighted,
@@ -54,8 +54,8 @@ weighted (Weighted m) = runStateT m 1
 -- | Compute the sample and discard the weight.
 --
 -- This operation introduces bias.
-prior :: Functor m => Weighted m a -> m a
-prior = fmap fst . weighted
+unweighted :: Functor m => Weighted m a -> m a
+unweighted = fmap fst . weighted
 
 -- | Compute the weight and discard the sample.
 extractWeight :: Functor m => Weighted m a -> m (Log Double)

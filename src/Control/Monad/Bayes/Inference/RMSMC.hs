@@ -1,5 +1,4 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.RMSMC
