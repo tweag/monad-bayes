@@ -436,7 +436,7 @@ rmsmcBasic ::
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population . rmsmc 4 4 4) example
+run = (sampleIO . population . rmsmcBasic 4 4 4) example
 ```
 
 What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.

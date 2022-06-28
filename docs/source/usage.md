@@ -786,7 +786,10 @@ pmmh t k n param model = mh t
     population 
     . pushEvidence 
     . Pop.hoist lift 
-    . smcSystematic k n 
+    . smc SMCConfig 
+        {numSteps = k, 
+        numParticles = n, 
+        resampler = resampleSystematic}
     . model)
 ```
 
@@ -813,7 +816,10 @@ pmmh t k n param model =
       (population :: P (T m) a -> T m [(a, Log Double)]) 
       . (pushEvidence :: P (T m) a -> P (T m) a) 
       . Pop.hoist (lift :: forall x. m x -> T m x) 
-      . (smcSystematic k n :: S (P m) a -> P m a) 
+      . (smc SMCConfig 
+            {numSteps = k, 
+            numParticles = n, 
+            resampler = resampleSystematic} :: S (P m) a -> P m a) 
       . (model :: b -> S (P m) a))
 ```
 
