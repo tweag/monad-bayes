@@ -58,10 +58,11 @@ module Control.Monad.Bayes.Class
     normalPdf,
     Bayesian (..),
     posterior,
+    independent,
   )
 where
 
-import Control.Monad (when)
+import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
@@ -241,6 +242,9 @@ factor = score
 -- | Hard conditioning.
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
+
+independent :: Applicative m => Int -> m a -> m [a]
+independent = replicateM
 
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
