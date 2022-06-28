@@ -12,10 +12,11 @@
 -- Christophe Andrieu, Arnaud Doucet, and Roman Holenstein. 2010. Particle Markov chain Monte Carlo Methods. /Journal of the Royal Statistical Society/ 72 (2010), 269-342. <http://www.stats.ox.ac.uk/~doucet/andrieu_doucet_holenstein_PMCMC.pdf>
 module Control.Monad.Bayes.Inference.PMMH
   ( pmmh,
+    pmmhBayesianModel,
   )
 where
 
-import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, latent)
 import Control.Monad.Bayes.Inference.SMC (smcSystematic)
 import Control.Monad.Bayes.Population as Pop
   ( Population,
@@ -44,3 +45,13 @@ pmmh ::
   m [[(a, Log Double)]]
 pmmh t k n param model =
   mh t (param >>= population . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
+
+-- | provide a Bayesian model as argument
+pmmhBayesianModel ::
+  MonadInfer m =>
+  Int ->
+  Int ->
+  Int ->
+  (forall m. MonadInfer m => Bayesian m b a) ->
+  m [[(a, Log Double)]]
+pmmhBayesianModel t k n bm = pmmh t k n (latent bm) (generative bm)

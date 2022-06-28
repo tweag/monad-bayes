@@ -56,7 +56,7 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
-    Bayesian (Bayesian),
+    Bayesian (..),
     posterior,
   )
 where
