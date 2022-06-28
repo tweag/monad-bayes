@@ -23,28 +23,30 @@ import Control.Monad.Bayes.Weighted
 
 passed1 = do
   sample <- sampleIOfixed $ unweighted $ mh 10000 random
-  print $ expectation id $ fromList $ toEmpirical sample
+  return $ abs (0.5 - (expectation id $ fromList $ toEmpirical sample)) < 0.01
 
 passed2 = do
   sample <- sampleIOfixed $ population $ smcMultinomial 0 10000 random
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  return $ close 0.5 sample
 
 passed3 = do
   sample <- sampleIOfixed $ population $ rmsmcLocal 0 1000 0 random
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  return $ close 0.5 sample
 
 passed4 = do
   sample <- sampleIOfixed $ population $ rmsmcBasic 0 1000 0 random
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  return $ close 0.5 sample
 
 passed5 = do
   sample <- sampleIOfixed $ population $ rmsmc 0 1000 0 random
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  return $ close 0.5 sample
 
 passed6 = do
   sample <- fmap join $ sampleIOfixed $ unweighted $ pmmh 100 0 100 random (normal 0)
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  return $ close 0.0 sample
 
 passed7 = do
-  sample <- fmap join $ sampleIO $ fmap (fmap (\(x, y) -> fmap (second (* y)) x)) $ population $ smc2 0 100 100 100 random (normal 0)
-  print $ expectation id $ fromList $ toEmpiricalWeighted sample
+  sample <- fmap (join . take 50) $ sampleIOfixed $ fmap (fmap (\(x, y) -> fmap (second (* y)) x)) $ population $ smc2 0 100 100 100 random (normal 0)
+  return $ close 0.0 sample
+
+close n sample = abs (n - (expectation id $ fromList $ toEmpiricalWeighted sample)) < 0.01

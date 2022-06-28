@@ -4,6 +4,7 @@ import Data.AEq (AEq ((~==)))
 import Test.Hspec (context, describe, hspec, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (ioProperty, property, (==>))
+import TestAdvanced qualified
 import TestEnumerator qualified
 import TestInference qualified
 import TestIntegrator qualified
@@ -130,3 +131,20 @@ main = hspec do
         observations >= 0 && particles >= 1 ==> ioProperty do
           checkParticles <- TestInference.checkParticlesStratified observations particles
           return $ checkParticles == particles
+
+  describe "Expectation from all inference methods" $
+    it "gives correct answer for the sprinkler model" do
+      passed1 <- TestAdvanced.passed1
+      passed1 `shouldBe` True
+      passed2 <- TestAdvanced.passed2
+      passed2 `shouldBe` True
+      passed3 <- TestAdvanced.passed3
+      passed3 `shouldBe` True
+      passed4 <- TestAdvanced.passed4
+      passed4 `shouldBe` True
+      passed5 <- TestAdvanced.passed5
+      passed5 `shouldBe` True
+      passed6 <- TestAdvanced.passed6
+      passed6 `shouldBe` True
+      passed7 <- TestAdvanced.passed7
+      passed7 `shouldBe` True
