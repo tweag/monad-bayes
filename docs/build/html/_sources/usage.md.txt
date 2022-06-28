@@ -747,7 +747,7 @@ example = replicateM 100 $ do
   return x
 ```
 
-Naive enumeration, as in `enumerate example` is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
+Naive enumeration, as in `enumerated example` is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
 Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with $0$ mass from `Enumerator`. We can then write `enumerated $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 

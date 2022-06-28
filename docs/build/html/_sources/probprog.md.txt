@@ -26,7 +26,13 @@ This is the *model*. To perform *inference* , suppose we have a data set of `xs`
 We could then run the model as follows:
 
 ```haskell   
-mhRunsRegression = sampleIO $ unweighted $ mh 1000 $ regression xs ys
+mhRunsRegression = sampled 
+  $ unweighted 
+  $ mcmc MCMCConfig 
+      {numMCMCSteps = 1500, 
+      proposal = SingleSiteMH, 
+      numBurnIn = 500} 
+  random
 ```
 
 This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:
@@ -188,7 +194,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 
 <!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 
-## Performing inference
+## Inference methods
 
 To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.
 
@@ -359,13 +365,30 @@ The end of the chain is the head of the list, so you can drop samples from the e
 
 ### Sequential Monte Carlo (Particle Filtering)
 
+Run SMC with two resampling steps and two particles as follows, given a model `m`:
+
 ```haskell
-(sampleIO. population . smcSystematic numSteps numParticles) 
-  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+output = 
+  sampled $ 
+  population $ 
+  smc SMCConfig 
+    {numSteps = 2, 
+    numParticles = 2, 
+    resampler = resampleMultinomial} 
+  m
 ```
 
-`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`:
+<!-- Or if you prefer, think of the inference method as:
 
+
+```haskell
+(sampled . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+``` -->
+
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+
+As a concrete example, here is a probabilistic program:
 
 ```haskell
 example :: MonadInfer m => m Bool
@@ -375,12 +398,14 @@ example = do
   return x
 ```
 
-Then 
+And here is the inference: 
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population. smcSystematic 4 4) example
+run = (sampleIO . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) example
 ```
+
+...and the result:
 
 ```
 [(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
@@ -411,7 +436,7 @@ rmsmcBasic ::
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population. smcSystematic 4 4 4) example
+run = (sampleIO . population . rmsmc 4 4 4) example
 ```
 
 What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.

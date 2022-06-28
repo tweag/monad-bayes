@@ -48,7 +48,7 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-       in show <$> population (smcSystematic k n m)
+       in show <$> population (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
     MH ->
       let t = 100
           (_, m) = getModel model

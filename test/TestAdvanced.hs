@@ -26,7 +26,7 @@ passed1 = do
   return $ abs (0.5 - (expectation id $ fromList $ toEmpirical sample)) < 0.01
 
 passed2 = do
-  sample <- sampleIOfixed $ population $ smcMultinomial 0 10000 random
+  sample <- sampleIOfixed $ population $ smc (SMCConfig {numSteps = 0, numParticles = 10000, resampler = resampleMultinomial}) random
   return $ close 0.5 sample
 
 passed3 = do

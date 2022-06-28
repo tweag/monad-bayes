@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 -- |
 -- Module      : Control.Monad.Bayes.Inference.PMMH
 -- Description : Particle Marginal Metropolis-Hastings (PMMH)
@@ -17,12 +19,13 @@ module Control.Monad.Bayes.Inference.PMMH
 where
 
 import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, latent)
-import Control.Monad.Bayes.Inference.SMC (smcSystematic)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population as Pop
   ( Population,
     hoist,
     population,
     pushEvidence,
+    resampleSystematic,
   )
 import Control.Monad.Bayes.Sequential (Sequential)
 import Control.Monad.Bayes.Traced.Static (Traced, mh)
@@ -44,7 +47,15 @@ pmmh ::
   (b -> Sequential (Population m) a) ->
   m [[(a, Log Double)]]
 pmmh t k n param model =
-  mh t (param >>= population . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
+  mh
+    t
+    ( param
+        >>= population
+          . pushEvidence
+          . Pop.hoist lift
+          . smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}
+          . model
+    )
 
 -- | provide a Bayesian model as argument
 pmmhBayesianModel ::

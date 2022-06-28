@@ -17,13 +17,9 @@ import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadInfer, posterior)
 import Control.Monad.Bayes.Enumerator (enumerated)
 import Control.Monad.Bayes.Inference.SMC
-  ( smcMultinomial,
-    smcStratified,
-    smcSystematic,
-  )
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
-import Control.Monad.Bayes.Population (collapse, population)
+import Control.Monad.Bayes.Population (collapse, population, resampleMultinomial, resampleStratified, resampleSystematic)
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
@@ -38,22 +34,22 @@ sprinkler = Sprinkler.soft
 -- | Count the number of particles produced by SMC
 checkParticles :: Int -> Int -> IO Int
 checkParticles observations particles =
-  sampleIOfixed (fmap length (population $ smcMultinomial observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleMultinomial} Sprinkler.soft))
 
 checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
-  sampleIOfixed (fmap length (population $ smcSystematic observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleSystematic} Sprinkler.soft))
 
 checkParticlesStratified :: Int -> Int -> IO Int
 checkParticlesStratified observations particles =
-  sampleIOfixed (fmap length (population $ smcStratified observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleStratified} Sprinkler.soft))
 
 checkTerminateSMC :: IO [(Bool, Log Double)]
-checkTerminateSMC = sampleIOfixed (population $ smcMultinomial 2 5 sprinkler)
+checkTerminateSMC = sampleIOfixed (population $ smc SMCConfig {numSteps = 2, numParticles = 5, resampler = resampleMultinomial} sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
-  (enumerated . collapse . smcMultinomial 2 2) sprinkler
+  (enumerated . collapse . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) sprinkler
     ~== enumerated sprinkler
 
 expectationNearNumeric ::

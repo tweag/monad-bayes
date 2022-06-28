@@ -24,8 +24,8 @@ import Control.Monad.Bayes.Class
     MonadSample (random),
   )
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
-import Control.Monad.Bayes.Inference.SMC (smcSystematicPush)
-import Control.Monad.Bayes.Population as Pop (Population, population)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
+import Control.Monad.Bayes.Population as Pop (Population, population, resampleMultinomial)
 import Control.Monad.Bayes.Sequential (Sequential)
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
@@ -66,4 +66,4 @@ smc2 ::
   (b -> Sequential (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]
 smc2 k n p t param model =
-  rmsmc k p t (param >>= setup . population . smcSystematicPush k n . model)
+  rmsmc k p t (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . model)

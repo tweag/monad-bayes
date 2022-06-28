@@ -96,7 +96,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#hard-and-soft-conditioning">Hard and soft conditioning</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#performing-inference">Performing inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#inference-methods">Inference methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#exact-inference">Exact inference</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#near-exact-inference-for-continuous-distributions">Near exact inference for continuous distributions</a></li>
 </ul>
@@ -200,7 +200,13 @@
 <p>This is the <em>model</em>. To perform <em>inference</em> , suppose we have a data set of <code class="docutils literal notranslate"><span class="pre">xs</span></code> and <code class="docutils literal notranslate"><span class="pre">ys</span></code> like:</p>
 <p><img alt="" src="_images/priorpred.png" /></p>
 <p>We could then run the model as follows:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">mhRunsRegression</span> <span class="ow">=</span> <span class="n">sampleIO</span> <span class="o">$</span> <span class="n">prior</span> <span class="o">$</span> <span class="n">mh</span> <span class="mi">1000</span> <span class="o">$</span> <span class="n">regression</span> <span class="n">xs</span> <span class="n">ys</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">mhRunsRegression</span> <span class="ow">=</span> <span class="n">sampled</span> 
+  <span class="o">$</span> <span class="n">unweighted</span> 
+  <span class="o">$</span> <span class="n">mcmc</span> <span class="kt">MCMCConfig</span> 
+      <span class="p">{</span><span class="n">numMCMCSteps</span> <span class="ow">=</span> <span class="mi">1500</span><span class="p">,</span> 
+      <span class="n">proposal</span> <span class="ow">=</span> <span class="kt">SingleSiteMH</span><span class="p">,</span> 
+      <span class="n">numBurnIn</span> <span class="ow">=</span> <span class="mi">500</span><span class="p">}</span> 
+  <span class="n">random</span>
 </pre></div>
 </div>
 <p>This yields 1000 samples from an MCMC walk using an MH kernel. Plotting one gives:</p>
@@ -321,8 +327,8 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 <!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 </section>
 </section>
-<section id="performing-inference">
-<h2>Performing inference<a class="headerlink" href="#performing-inference" title="Permalink to this headline">¶</a></h2>
+<section id="inference-methods">
+<h2>Inference methods<a class="headerlink" href="#inference-methods" title="Permalink to this headline">¶</a></h2>
 <p>To quote <a class="reference external" href="https://webppl.readthedocs.io/en/master/inference/">this page</a>, “marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.”. That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.</p>
 <p>All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.</p>
 <p>The challenge of inference is that most distributions that are of interest are not as simple as <code class="docutils literal notranslate"><span class="pre">sprinkler</span></code>. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.</p>
@@ -332,10 +338,10 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 <!-- For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on.  -->
 <section id="exact-inference">
 <h3>Exact inference<a class="headerlink" href="#exact-inference" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerate</span> <span class="ow">::</span> <span class="kt">Ord</span> <span class="n">a</span> <span class="ow">=&gt;</span> <span class="kt">Enumerator</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerated</span> <span class="ow">::</span> <span class="kt">Ord</span> <span class="n">a</span> <span class="ow">=&gt;</span> <span class="kt">Enumerator</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Double</span><span class="p">)]</span>
 </pre></div>
 </div>
-<p>So <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(bernoulli</span> <span class="pre">0.7)</span></code> gives you</p>
+<p>So <code class="docutils literal notranslate"><span class="pre">enumerated</span> <span class="pre">(bernoulli</span> <span class="pre">0.7)</span></code> gives you</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">False</span><span class="p">,</span><span class="mf">0.3</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">0.7</span><span class="p">)]</span>
 </pre></div>
 </div>
@@ -347,16 +353,16 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
   <span class="n">condition</span> <span class="p">(</span><span class="n">x</span> <span class="o">||</span> <span class="n">y</span><span class="p">)</span>
   <span class="n">return</span> <span class="n">x</span>
 
-<span class="nf">enumerate</span> <span class="n">model</span>
+<span class="nf">enumerated</span> <span class="n">model</span>
 
 <span class="o">&gt;</span> <span class="p">[(</span><span class="kt">True</span><span class="p">,</span><span class="mf">0.7692307692307692</span><span class="p">),(</span><span class="kt">False</span><span class="p">,</span><span class="mf">0.23076923076923078</span><span class="p">)]</span>
 </pre></div>
 </div>
-<p><strong>Note: enumerate only works on finite discrete distributions</strong></p>
-<p>It will run forever on infinite distributions like <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(poisson</span> <span class="pre">0.7)</span></code> and will throw the following <strong>runtime</strong> error on continuous distributions as in <code class="docutils literal notranslate"><span class="pre">enumerate</span> <span class="pre">(normal</span> <span class="pre">0</span> <span class="pre">1)</span></code>:</p>
+<p><strong>Note: <code class="docutils literal notranslate"><span class="pre">enumerated</span></code> only works on finite discrete distributions</strong></p>
+<p>It will run forever on infinite distributions like <code class="docutils literal notranslate"><span class="pre">enumerated</span> <span class="pre">(poisson</span> <span class="pre">0.7)</span></code> and will throw the following <strong>runtime</strong> error on continuous distributions as in <code class="docutils literal notranslate"><span class="pre">enumerated</span> <span class="pre">(normal</span> <span class="pre">0</span> <span class="pre">1)</span></code>:</p>
 <p><em>“Exception: Infinitely supported random variables not supported in Enumerator”</em></p>
 <p><strong>However</strong>, it’s totally fine to have the elements of the support themselves be infinite, as in:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">fmap</span> <span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span><span class="n">p</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">take</span> <span class="mi">4</span> <span class="n">ls</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span> <span class="o">$</span> <span class="n">enumerate</span> <span class="o">$</span> <span class="n">uniformD</span> <span class="p">[[</span><span class="mi">1</span><span class="o">..</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="o">..</span><span class="p">]]</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">fmap</span> <span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span><span class="n">p</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="p">(</span><span class="n">take</span> <span class="mi">4</span> <span class="n">ls</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span> <span class="o">$</span> <span class="n">enumerated</span> <span class="o">$</span> <span class="n">uniformD</span> <span class="p">[[</span><span class="mi">1</span><span class="o">..</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="o">..</span><span class="p">]]</span>
 </pre></div>
 </div>
 <p>which gives</p>
@@ -422,7 +428,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 <section id="markov-chain-monte-carlo">
 <h3>Markov Chain Monte Carlo<a class="headerlink" href="#markov-chain-monte-carlo" title="Permalink to this headline">¶</a></h3>
 <p>There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">prior</span> <span class="o">.</span> <span class="n">mh</span> <span class="n">numSteps</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Traced</span> <span class="p">(</span><span class="kt">Weighted</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">unweighted</span> <span class="o">.</span> <span class="n">mh</span> <span class="n">numSteps</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Traced</span> <span class="p">(</span><span class="kt">Weighted</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[</span><span class="n">a</span><span class="p">]</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">Traced</span> <span class="pre">(Weighted</span> <span class="pre">SamplerIO)</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this to any distribution. For instance:</p>
@@ -435,7 +441,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </div>
 <p>Then</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[</span><span class="kt">Bool</span><span class="p">]</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">prior</span> <span class="o">.</span> <span class="n">mh</span> <span class="mi">10</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">unweighted</span> <span class="o">.</span> <span class="n">mh</span> <span class="mi">10</span><span class="p">)</span> <span class="n">example</span>
 </pre></div>
 </div>
 <p>produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you’d get:</p>
@@ -446,11 +452,26 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </section>
 <section id="sequential-monte-carlo-particle-filtering">
 <h3>Sequential Monte Carlo (Particle Filtering)<a class="headerlink" href="#sequential-monte-carlo-particle-filtering" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span><span class="o">.</span> <span class="n">population</span> <span class="o">.</span> <span class="n">smcSystematic</span> <span class="n">numSteps</span> <span class="n">numParticles</span><span class="p">)</span> 
-  <span class="ow">::</span> <span class="kt">Sequential</span> <span class="p">(</span><span class="kt">Population</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Numeric</span><span class="o">.</span><span class="kt">Log</span><span class="o">.</span><span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
+<p>Run SMC with two resampling steps and two particles as follows, given a model <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">output</span> <span class="ow">=</span> 
+  <span class="n">sampled</span> <span class="o">$</span> 
+  <span class="n">population</span> <span class="o">$</span> 
+  <span class="n">smc</span> <span class="kt">SMCConfig</span> 
+    <span class="p">{</span><span class="n">numSteps</span> <span class="ow">=</span> <span class="mi">2</span><span class="p">,</span> 
+    <span class="n">numParticles</span> <span class="ow">=</span> <span class="mi">2</span><span class="p">,</span> 
+    <span class="n">resampler</span> <span class="ow">=</span> <span class="n">resampleMultinomial</span><span class="p">}</span> 
+  <span class="n">m</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">Sequential</span> <span class="pre">(Population</span> <span class="pre">SamplerIO)</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this inference method to any distribution. For instance, to use our now familiar <code class="docutils literal notranslate"><span class="pre">example</span></code>:</p>
+<!-- Or if you prefer, think of the inference method as:
+
+
+```haskell
+(sampled . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+``` -->
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+<p>As a concrete example, here is a probabilistic program:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">example</span> <span class="ow">::</span> <span class="kt">MonadInfer</span> <span class="n">m</span> <span class="ow">=&gt;</span> <span class="n">m</span> <span class="kt">Bool</span>
 <span class="nf">example</span> <span class="ow">=</span> <span class="kr">do</span>
   <span class="n">x</span> <span class="ow">&lt;-</span> <span class="n">bernoulli</span> <span class="mf">0.5</span>
@@ -458,11 +479,12 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
   <span class="n">return</span> <span class="n">x</span>
 </pre></div>
 </div>
-<p>Then</p>
+<p>And here is the inference:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span> <span class="o">.</span> <span class="n">smc</span> <span class="kt">SMCConfig</span> <span class="p">{</span><span class="n">numSteps</span> <span class="ow">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">numParticles</span> <span class="ow">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">resampler</span> <span class="ow">=</span> <span class="n">resampleMultinomial</span><span class="p">})</span> <span class="n">example</span>
 </pre></div>
 </div>
+<p>…and the result:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">)]</span>
 </pre></div>
 </div>
@@ -486,7 +508,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </pre></div>
 </div>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span> <span class="o">.</span> <span class="n">rmsmc</span> <span class="mi">4</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
 </pre></div>
 </div>
 <p>What this returns is a population of samples, just like plain <code class="docutils literal notranslate"><span class="pre">SMC</span></code>. The third argument to <code class="docutils literal notranslate"><span class="pre">rmsmcBasic</span></code> is the number of MCMC steps taken after each resampling. More is better, but slower.</p>
@@ -574,7 +596,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
 </pre></div>
 </div>
 <p>This version, while <em>denotational identical</em> (i.e. representing the same mathematical object), is perfectly amenable to exact inference:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerate</span> <span class="o">$</span> <span class="n">mixture2</span> <span class="mi">2</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">enumerated</span> <span class="o">$</span> <span class="n">mixture2</span> <span class="mi">2</span>
 </pre></div>
 </div>
 <p>yields</p>
@@ -637,7 +659,7 @@ We can use monad transformers on top of our probability monad `m`, as in models/
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 1980, Adam Scibior.
+        &copy; Copyright 2021, Adam Scibior.
 
     </p>
   </div>
