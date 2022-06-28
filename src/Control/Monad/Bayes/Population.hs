@@ -16,7 +16,7 @@
 -- 'Population' turns a single sample into a collection of weighted samples.
 module Control.Monad.Bayes.Population
   ( Population,
-    runPopulation,
+    population,
     explicitPopulation,
     fromWeightedList,
     spawn,
@@ -49,7 +49,7 @@ import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,
     extractWeight,
-    runWeighted,
+    weighted,
     withWeight,
   )
 import Control.Monad.Bayes.Weighted hiding (hoist)
@@ -74,15 +74,15 @@ instance MonadTrans Population where
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-runPopulation :: Population m a -> m [(a, Log Double)]
-runPopulation (Population m) = runListT $ runWeighted m
+population :: Population m a -> m [(a, Log Double)]
+population (Population m) = runListT $ weighted m
 
 independent :: Monad m => Int -> Population m a -> m [(a, Log Double)]
-independent i ma = runPopulation $ spawn i >> ma
+independent i ma = population $ spawn i >> ma
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
-explicitPopulation = fmap (map (second (exp . ln))) . runPopulation
+explicitPopulation = fmap (map (second (exp . ln))) . population
 
 -- | Initialize 'Population' with a concrete weighted sample.
 fromWeightedList :: Monad m => m [(a, Log Double)] -> Population m a
@@ -102,7 +102,7 @@ resampleGeneric ::
   Population m a ->
   Population m a
 resampleGeneric resampler m = fromWeightedList $ do
-  pop <- runPopulation m
+  pop <- population m
   let (xs, ps) = unzip pop
   let n = length xs
   let z = sum ps
@@ -216,7 +216,7 @@ extractEvidence ::
   Population m a ->
   Population (Weighted m) a
 extractEvidence m = fromWeightedList $ do
-  pop <- lift $ runPopulation m
+  pop <- lift $ population m
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
@@ -238,7 +238,7 @@ proper ::
   Population m a ->
   Weighted m a
 proper m = do
-  pop <- runPopulation $ extractEvidence m
+  pop <- population $ extractEvidence m
   let (xs, ps) = unzip pop
   index <- logCategorical $ V.fromList ps
   let x = xs !! index
@@ -246,7 +246,7 @@ proper m = do
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: (Monad m) => Population m a -> m (Log Double)
-evidence = extractWeight . runPopulation . extractEvidence
+evidence = extractWeight . population . extractEvidence
 
 -- | Picks one point from the population and uses model evidence as a 'score'
 -- in the transformed monad.
@@ -272,4 +272,4 @@ hoist ::
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a
-hoist f = fromWeightedList . f . runPopulation
+hoist f = fromWeightedList . f . population

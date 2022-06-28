@@ -34,7 +34,7 @@ import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
 import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
-import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Trans.Cont
   ( Cont,
     ContT (ContT),
@@ -97,10 +97,10 @@ cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
 normalize :: Weighted Integrator a -> Integrator a
 normalize m =
-  let m' = runWeighted m
+  let m' = weighted m
       z = runIntegrator (ln . exp . snd) m'
    in do
-        (x, d) <- runWeighted m
+        (x, d) <- weighted m
         Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
         return x
 

@@ -5,6 +5,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
@@ -47,7 +48,7 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-       in show <$> runPopulation (smcSystematic k n m)
+       in show <$> population (smcSystematic k n m)
     MH ->
       let t = 100
           (_, m) = getModel model
@@ -56,7 +57,7 @@ runAlg model alg =
       let n = 10
           t = 1
           (k, m) = getModel model
-       in show <$> runPopulation (rmsmcBasic k n t m)
+       in show <$> population (rmsmcBasic k n t m)
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do

@@ -24,7 +24,7 @@ import Control.Monad.Bayes.Inference.SMC
   )
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
-import Control.Monad.Bayes.Population (collapse, runPopulation)
+import Control.Monad.Bayes.Population (collapse, population)
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
@@ -39,18 +39,18 @@ sprinkler = Sprinkler.soft
 -- | Count the number of particles produced by SMC
 checkParticles :: Int -> Int -> IO Int
 checkParticles observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcMultinomial observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smcMultinomial observations particles Sprinkler.soft))
 
 checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smcSystematic observations particles Sprinkler.soft))
 
 checkParticlesStratified :: Int -> Int -> IO Int
 checkParticlesStratified observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smcStratified observations particles Sprinkler.soft))
 
 checkTerminateSMC :: IO [(Bool, Log Double)]
-checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
+checkTerminateSMC = sampleIOfixed (population $ smcMultinomial 2 5 sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
@@ -67,8 +67,8 @@ expectationNearNumeric x y =
    in (abs (e1 - e2))
 
 expectationNearSampling x y = do
-  e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted x
-  e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted y
+  e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted x
+  e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted y
   return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool

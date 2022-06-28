@@ -26,7 +26,7 @@ import Control.Monad.Bayes.Population
     resampleSystematic,
     spawn,
   )
-import Control.Monad.Bayes.Sequential as Seq (Sequential, sis)
+import Control.Monad.Bayes.Sequential as Seq (Sequential, sequentially)
 import Control.Monad.Bayes.Sequential qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
@@ -52,8 +52,8 @@ rmsmc ::
   Population m a
 rmsmc k n t =
   marginal
-    . sis (composeCopies t mhStep . TrStat.hoistT resampleSystematic) k
-    . S.hoistFirst (TrStat.hoistT (spawn n >>))
+    . sequentially (composeCopies t mhStep . TrStat.hoist resampleSystematic) k
+    . S.hoistFirst (TrStat.hoist (spawn n >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
@@ -70,8 +70,8 @@ rmsmcBasic ::
   Population m a
 rmsmcBasic k n t =
   TrBas.marginal
-    . sis (composeCopies t TrBas.mhStep . TrBas.hoistT resampleSystematic) k
-    . S.hoistFirst (TrBas.hoistT (spawn n >>))
+    . sequentially (composeCopies t TrBas.mhStep . TrBas.hoist resampleSystematic) k
+    . S.hoistFirst (TrBas.hoist (spawn n >>))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
@@ -89,8 +89,8 @@ rmsmcLocal ::
   Population m a
 rmsmcLocal k n t =
   TrDyn.marginal
-    . sis (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoistT resampleSystematic) k
-    . S.hoistFirst (TrDyn.hoistT (spawn n >>))
+    . sequentially (TrDyn.freeze . composeCopies t TrDyn.mhStep . TrDyn.hoist resampleSystematic) k
+    . S.hoistFirst (TrDyn.hoist (spawn n >>))
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)

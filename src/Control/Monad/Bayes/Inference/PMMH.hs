@@ -20,8 +20,8 @@ import Control.Monad.Bayes.Inference.SMC (smcSystematic)
 import Control.Monad.Bayes.Population as Pop
   ( Population,
     hoist,
+    population,
     pushEvidence,
-    runPopulation,
   )
 import Control.Monad.Bayes.Sequential (Sequential)
 import Control.Monad.Bayes.Traced.Static (Traced, mh)
@@ -43,4 +43,4 @@ pmmh ::
   (b -> Sequential (Population m) a) ->
   m [[(a, Log Double)]]
 pmmh t k n param model =
-  mh t (param >>= runPopulation . pushEvidence . Pop.hoist lift . smcSystematic k n . model)
+  mh t (param >>= population . pushEvidence . Pop.hoist lift . smcSystematic k n . model)

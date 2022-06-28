@@ -299,7 +299,7 @@ Because `sampleIO example` is totally pure, it is parallelizable.
 To perform weighted sampling, use:
 
 ```haskell
-(sampleIO . runWeighted) :: Weighted SamplerIO a -> IO (a, Log Double)
+(sampleIO . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
 ```
 
 `Weighted SamplerIO` is an instance of `MonadInfer`, so we can apply this to any distribution. For example, suppose we have the distribution:
@@ -316,7 +316,7 @@ Then:
 
 ```haskell
 run :: IO (Bool, Log Double)
-run = (sampleIO . runWeighted) example
+run = (sampleIO . weighted) example
 ```
 
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
@@ -360,7 +360,7 @@ The end of the chain is the head of the list, so you can drop samples from the e
 ### Sequential Monte Carlo (Particle Filtering)
 
 ```haskell
-(sampleIO. runPopulation . smcSystematic numSteps numParticles) 
+(sampleIO. population . smcSystematic numSteps numParticles) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ```
 
@@ -379,7 +379,7 @@ Then
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . runPopulation. smcSystematic 4 4) example
+run = (sampleIO . population. smcSystematic 4 4) example
 ```
 
 ```
@@ -411,7 +411,7 @@ rmsmcBasic ::
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . runPopulation. smcSystematic 4 4 4) example
+run = (sampleIO . population. smcSystematic 4 4 4) example
 ```
 
 What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.

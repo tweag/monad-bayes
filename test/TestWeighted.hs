@@ -9,7 +9,7 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
-import Control.Monad.Bayes.Weighted (runWeighted)
+import Control.Monad.Bayes.Weighted (weighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
@@ -24,7 +24,7 @@ model = do
   return (n, x)
 
 result :: MonadSample m => m ((Int, Double), Double)
-result = second (exp . ln) <$> runWeighted model
+result = second (exp . ln) <$> weighted model
 
 passed :: IO Bool
 passed = fmap check (sampleIOfixed result)

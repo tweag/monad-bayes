@@ -30,7 +30,7 @@ import Control.Monad.Bayes.Free as FreeSampler
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
     hoist,
-    runWeighted,
+    weighted,
   )
 import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
@@ -86,7 +86,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- runWriterT $ runWeighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
+  ((b, q), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t

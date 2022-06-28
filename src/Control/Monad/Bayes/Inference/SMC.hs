@@ -34,7 +34,7 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sequential as Seq
   ( Sequential,
     hoistFirst,
-    sis,
+    sequentially,
   )
 
 -- | Sequential importance resampling.
@@ -50,7 +50,7 @@ sir ::
   -- | model
   Sequential (Population m) a ->
   Population m a
-sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
+sir resampler k n = sequentially resampler k . Seq.hoistFirst (spawn n >>)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.

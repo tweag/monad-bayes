@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Sequential
     finished,
     hoistFirst,
     hoist,
-    sis,
+    sequentially,
   )
 where
 
@@ -103,7 +103,7 @@ composeCopies k f = foldr (.) id (replicate k f)
 
 -- | Sequential importance sampling.
 -- Applies a given transformation after each time step.
-sis ::
+sequentially ::
   Monad m =>
   -- | transformation
   (forall x. m x -> m x) ->
@@ -111,4 +111,4 @@ sis ::
   Int ->
   Sequential m a ->
   m a
-sis f k = finish . composeCopies k (advance . hoistFirst f)
+sequentially f k = finish . composeCopies k (advance . hoistFirst f)

@@ -401,7 +401,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 <section id="independent-weighted-sampling">
 <h3>Independent weighted sampling<a class="headerlink" href="#independent-weighted-sampling" title="Permalink to this headline">¶</a></h3>
 <p>To perform weighted sampling, use:</p>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runWeighted</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Weighted</span> <span class="kt">SamplerIO</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)</span>
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">weighted</span><span class="p">)</span> <span class="ow">::</span> <span class="kt">Weighted</span> <span class="kt">SamplerIO</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">Weighted</span> <span class="pre">SamplerIO</span></code> is an instance of <code class="docutils literal notranslate"><span class="pre">MonadInfer</span></code>, so we can apply this to any distribution. For example, suppose we have the distribution:</p>
@@ -414,7 +414,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </div>
 <p>Then:</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runWeighted</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">weighted</span><span class="p">)</span> <span class="n">example</span>
 </pre></div>
 </div>
 <p>is an IO operation which when run, will display either <code class="docutils literal notranslate"><span class="pre">(False,</span> <span class="pre">0.0)</span></code> or <code class="docutils literal notranslate"><span class="pre">(True,</span> <span class="pre">1.0)</span></code></p>
@@ -446,7 +446,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </section>
 <section id="sequential-monte-carlo-particle-filtering">
 <h3>Sequential Monte Carlo (Particle Filtering)<a class="headerlink" href="#sequential-monte-carlo-particle-filtering" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span><span class="o">.</span> <span class="n">runPopulation</span> <span class="o">.</span> <span class="n">smcSystematic</span> <span class="n">numSteps</span> <span class="n">numParticles</span><span class="p">)</span> 
+<div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">sampleIO</span><span class="o">.</span> <span class="n">population</span> <span class="o">.</span> <span class="n">smcSystematic</span> <span class="n">numSteps</span> <span class="n">numParticles</span><span class="p">)</span> 
   <span class="ow">::</span> <span class="kt">Sequential</span> <span class="p">(</span><span class="kt">Population</span> <span class="kt">SamplerIO</span><span class="p">)</span> <span class="n">a</span> <span class="ow">-&gt;</span> <span class="kt">IO</span> <span class="p">[(</span><span class="n">a</span><span class="p">,</span> <span class="kt">Numeric</span><span class="o">.</span><span class="kt">Log</span><span class="o">.</span><span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
 </pre></div>
 </div>
@@ -460,7 +460,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </div>
 <p>Then</p>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runPopulation</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
 </pre></div>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">),(</span><span class="kc">True</span><span class="p">,</span><span class="mf">6.25e-2</span><span class="p">)]</span>
@@ -486,7 +486,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 </pre></div>
 </div>
 <div class="highlight-haskell notranslate"><div class="highlight"><pre><span></span><span class="nf">run</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span> <span class="kt">Log</span> <span class="kt">Double</span><span class="p">)]</span>
-<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">runPopulation</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
+<span class="nf">run</span> <span class="ow">=</span> <span class="p">(</span><span class="n">sampleIO</span> <span class="o">.</span> <span class="n">population</span><span class="o">.</span> <span class="n">smcSystematic</span> <span class="mi">4</span> <span class="mi">4</span> <span class="mi">4</span><span class="p">)</span> <span class="n">example</span>
 </pre></div>
 </div>
 <p>What this returns is a population of samples, just like plain <code class="docutils literal notranslate"><span class="pre">SMC</span></code>. The third argument to <code class="docutils literal notranslate"><span class="pre">rmsmcBasic</span></code> is the number of MCMC steps taken after each resampling. More is better, but slower.</p>

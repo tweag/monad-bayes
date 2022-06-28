@@ -87,7 +87,7 @@ class Monad m => MonadCond m where
 
 Now core idea of monad-bayes is that various monads will be made to be instances of `MonadSample`, `MonadCond` or both (i.e. an instance of `MonadInfer`), and different inference algorithms will be written using these instances. This separates the specification of the model (which happens abstractly in `MonadInfer`) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed *inference transformers* to emphasize that it doesn't really matter whether they satisfy the monad laws.
 
-For example, to run weighted rejection sampling on a probabilistic program `p`, we can write `(sampleIO . runWeighted) p`. Here, `(sampleIO . runWeighted) :: Weighted SamplerIO a -> IO a`. So `p` gets understood as being of type `Weighted SamplerIO`, a type we'll encounter soon.
+For example, to run weighted rejection sampling on a probabilistic program `p`, we can write `(sampleIO . weighted) p`. Here, `(sampleIO . weighted) :: Weighted SamplerIO a -> IO a`. So `p` gets understood as being of type `Weighted SamplerIO`, a type we'll encounter soon.
 
 Some of these transformers are easy to understand (like `StateT Double`, while others (like the Church transformed Free monad transformer) lie on the more advanced side of things. The following tour of these types goes from easy to hard.
 
@@ -296,15 +296,15 @@ then the result is that first, we draw a sample from a Bernoulli distribution fr
 To unpack from `Weighted m a`, we use:
 
 ```haskell
-runWeighted :: Weighted m a -> m (a, Log Double)
-runWeighted (Weighted m) = runStateT m 1
+weighted :: Weighted m a -> m (a, Log Double)
+weighted (Weighted m) = runStateT m 1
 ```
 
 `Weighted m` is not an instance of `MonadSample`, but only as instance of `MonadCond` (and that, only when `m` is an instance of `Monad`). However, since `StateT` is a monad transformer, there is a function `lift :: m Double -> Weighted m Double`.
 
 So if we take a `MonadSample` instance like `SamplerIO`, then `Weighted SamplerIO` is an instance of both `MonadSample` and `MonadCond`. Which means it is an instance of `MonadInfer`. 
 
-So we can successfully write `(sampleIO . runWeighted) sprinkler` and get a program of type `IO (Bool, Log Double)`. When run, this will draw a sample from `sprinkler` along with an **unnormalized** density for that sample.
+So we can successfully write `(sampleIO . weighted) sprinkler` and get a program of type `IO (Bool, Log Double)`. When run, this will draw a sample from `sprinkler` along with an **unnormalized** density for that sample.
 
 It's worth stopping here to remark on what's going on. What has happened is that the `m` in `forall m. MonadInfer m => m Bool` has been *instantiated* as `Weighted SamplerIO`. This is an example of how the interpreters for inference can be composed in modular ways.
 
@@ -357,7 +357,7 @@ spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 `spawn` spawns new particles. As an example:
 
 ```haskell
-enumerate $ runPopulation (spawn 2)
+enumerate $ population (spawn 2)
 ```
 
 gives
@@ -642,7 +642,7 @@ example = do
   return x
 ```
 
-`(enumerate . runWeighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . runWeighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
+`(enumerate . weighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . weighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
 
 ### Quadrature
 
@@ -677,12 +677,12 @@ example = do
   return x
 ```
 
-`(runWeighted . sampleIO) example :: IO (Bool, Log Double)` returns a tuple of a truth value and a probability mass (or more generally density). How does this work? Types are clarifying:
+`(weighted . sampleIO) example :: IO (Bool, Log Double)` returns a tuple of a truth value and a probability mass (or more generally density). How does this work? Types are clarifying:
 
 ```haskell
 run = 
   (sampleIO :: SamplerIO (a, Log Double) -> IO (a, Log Double) )
-  . (runWeighted ::  Weighted SamplerIO a -> SamplerIO (a, Log Double)
+  . (weighted ::  Weighted SamplerIO a -> SamplerIO (a, Log Double)
 ```
 
 In other words, the program is being interpreted in the `Weighted SamplerIO` instance of `MonadInfer`.
@@ -706,7 +706,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- 
-      runWriterT $ runWeighted 
+      runWriterT $ weighted 
       $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 
       (q * fromIntegral n / (p * fromIntegral (length vs)))
@@ -749,7 +749,7 @@ example = replicateM 100 $ do
 
 Naive enumeration, as in `enumerate example` is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
-Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with $0$ mass from `Enumerator`. We can then write `enumerate $ sis removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with $0$ mass from `Enumerator`. We can then write `enumerate $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 
 ### Sequential Monte Carlo
 
@@ -767,7 +767,7 @@ sir ::
   -- | model
   Sequential (Population m) a ->
   Population m a
-sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
+sir resampler k n = sequentially resampler k . Seq.hoistFirst (spawn n >>)
 ```
 
 ### Particle Marginal Metropolis Hastings
@@ -783,7 +783,7 @@ Because of the modularity of monad-bayes, the implementation is remarkably simpl
 ```haskell
 pmmh t k n param model = mh t 
   (param >>= 
-    runPopulation 
+    population 
     . pushEvidence 
     . Pop.hoist lift 
     . smcSystematic k n 
@@ -810,7 +810,7 @@ pmmh ::
 pmmh t k n param model =
   (mh t :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
   ((param :: T m b) >>= 
-      (runPopulation :: P (T m) a -> T m [(a, Log Double)]) 
+      (population :: P (T m) a -> T m [(a, Log Double)]) 
       . (pushEvidence :: P (T m) a -> P (T m) a) 
       . Pop.hoist (lift :: forall x. m x -> T m x) 
       . (smcSystematic k n :: S (P m) a -> P m a) 
@@ -846,12 +846,12 @@ rmsmcBasic ::
   P m a
 rmsmcBasic k n t =
   (TrBas.marginal :: T (P m) a -> P m a )
-  . sis 
+  . sequentially 
       (
       (composeCopies t TrBas.mhStep :: T (P m) a -> T (P m) a )
-      . TrBas.hoistT (resampleSystematic :: P m a -> P m a ) ) 
+      . TrBas.hoist (resampleSystematic :: P m a -> P m a ) ) 
       k
-  . (hoistS (TrBas.hoistT (spawn n >>)) :: S (T (P m)) a -> S (T (P m)) a ))
+  . (hoistS (TrBas.hoist (spawn n >>)) :: S (T (P m)) a -> S (T (P m)) a ))
 ```
 
 What is this doing? Recall that `S m a` represents an `m` of coroutines over `a`. Recall that `Traced m a` represents an `m` of  traced computations of `a`. Recall that `P m a` represents an `m` of a list of `a`s.

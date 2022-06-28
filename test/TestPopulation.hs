@@ -8,9 +8,9 @@ import Control.Monad.Bayes.Population as Population
   ( Population,
     collapse,
     popAvg,
+    population,
     pushEvidence,
     resampleMultinomial,
-    runPopulation,
     spawn,
   )
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
@@ -18,7 +18,7 @@ import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 
 weightedSampleSize :: MonadSample m => Population m a -> m Int
-weightedSampleSize = fmap length . runPopulation
+weightedSampleSize = fmap length . population
 
 popSize :: IO Int
 popSize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
