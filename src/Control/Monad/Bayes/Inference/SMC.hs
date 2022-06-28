@@ -22,7 +22,6 @@ module Control.Monad.Bayes.Inference.SMC
     smcSystematicPush,
     smc',
     SMCConfig (..),
-    config,
   )
 where
 
@@ -40,6 +39,12 @@ import Control.Monad.Bayes.Sequential as Seq
     hoistFirst,
     sequentially,
   )
+
+data SMCConfig = SMCConfig
+  { resampler :: (forall x m. MonadSample m => Population m x -> Population m x),
+    numSteps :: Int,
+    numParticles :: Int
+  }
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
@@ -62,18 +67,6 @@ smc' ::
   Sequential (Population m) a ->
   Population m a
 smc' SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (spawn numParticles >>)
-
-data SMCConfig = SMCConfig
-  { resampler :: (forall x m. MonadSample m => Population m x -> Population m x),
-    numSteps :: Int,
-    numParticles :: Int
-  }
-
-class Config a where
-  config :: a
-
-instance Config SMCConfig where
-  config = SMCConfig {}
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are not normalized.

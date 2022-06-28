@@ -25,6 +25,7 @@ module Control.Monad.Bayes.Enumerator
     normalizeWeights,
     enumerateToDistribution,
     removeZeros,
+    fromList,
   )
 where
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Static
@@ -27,9 +28,11 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-  ( Proposal (..),
+  ( MCMCConfig (..),
+    Proposal (..),
     Trace (..),
     bind,
+    burnIn,
     mhTrans,
     scored,
     singleton,
@@ -96,5 +99,5 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         y <- mhTrans m x
         return (y :| x : xs)
 
-mcmc :: MonadSample m => Proposal -> Int -> Traced m a -> m [a]
-mcmc SingleSiteMH n m = mh n m
+mcmc :: MonadSample m => MCMCConfig -> Traced m a -> m [a]
+mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ mh numMCMCSteps m
