@@ -33,7 +33,6 @@ module Control.Monad.Bayes.Population
     hoist,
     collapse,
     popAvg,
-    independent,
   )
 where
 
@@ -76,9 +75,6 @@ instance MonadTrans Population where
 -- domain.
 runPopulation :: Population m a -> m [(a, Log Double)]
 runPopulation (Population m) = runListT $ runWeighted m
-
-independent :: Monad m => Int -> Population m a -> m [(a, Log Double)]
-independent i ma = runPopulation $ spawn i >> ma
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]

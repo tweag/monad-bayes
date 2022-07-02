@@ -64,7 +64,6 @@ library
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
     , pipes
-    , profunctors
     , scientific
     , statistics       >=0.14.0 && <0.17
     , text
@@ -156,7 +155,6 @@ test-suite monad-bayes-test
     , mtl
     , pipes
     , pretty-simple
-    , profunctors
     , QuickCheck
     , statistics
     , text
