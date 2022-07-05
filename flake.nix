@@ -75,7 +75,7 @@
           hooks = {
             alejandra.enable = true;
             cabal-fmt.enable = true;
-            hlint.enable = true;
+            hlint.enable = false;
             ormolu.enable = true;
           };
         };
