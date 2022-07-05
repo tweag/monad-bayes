@@ -90,6 +90,16 @@
         jupyterEnvironment = pkgs.jupyterlabWith {
           kernels = [iHaskell];
         };
+
+        pre-commit = pre-commit-hooks.lib.${system}.run {
+          inherit src;
+          hooks = {
+            alejandra.enable = true;
+            cabal-fmt.enable = true;
+            hlint.enable = false;
+            ormolu.enable = true;
+          };
+        };
       in rec {
         apps.jupterlab = {
           type = "app";

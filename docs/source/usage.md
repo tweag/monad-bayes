@@ -1,9 +1,6 @@
-# Developer Guide
+# The implementation of Monad-Bayes
 
-This document assumes the reader is familiar with:
-- the basics of Bayesian probability theory
-- basic Haskell (the syntax, the type system, do-notation, monad transformers)
-- how to specify distributions in monad-bayes (see the [docs](probprog.md))
+This document assumes the reader is familiar with the basics of Bayesian probability theory, basic Haskell (the syntax, the type system, do-notation, monad transformers), and how to specify distributions in monad-bayes (see the [docs](probprog.md))
 
 That's enough to understand the core ideas, but for the more advanced content, you'll also want to feel comfortable enough with Haskell's type system that free monads, free monad transformers, and coroutines aren't a barrier to entry. And of course, to understand how inference methods like MCMC and SMC are implemented, it doesn't hurt to understand how they work in a statistical sense.
 
@@ -30,7 +27,7 @@ class Monad m => MonadSample m where
   random :: m Double
 ```
 
-This one method, `random`, represents a uniform distribution over $[0,1]$. (`MonadSample` actually has a few other distributions, but that's not essential.)
+This one method, `random`, represents a uniform distribution over {math}`[0,1]`. (`MonadSample` actually has a few other distributions, but that's not essential.)
 
 What comes next is clever: you can define any other distribution you like in terms of `random`. As an example:
 
@@ -47,7 +44,7 @@ normal m s = fmap (quantile (normalDistr m s)) random
 
 `normalDistr` comes from a separate library `Statistics.Distribution.Normal` and `quantile (normalDistr m s) :: Double -> Double` is the inverse CDF of the normal, a deterministic function.
 
-Again, to emphasize: **all of our randomness can be reduced to draws from a uniform distribution over the interval $[0,1]$**. 
+Again, to emphasize: **all of our randomness can be reduced to draws from a uniform distribution over the interval {math}`[0,1]`**. 
 
 So we now have a way of constructing distributions in a monadic fashion. As a simple example:
 
@@ -59,7 +56,7 @@ example = do
     return (x + y > 1.5)
 ```
 
-Think of this as the procedure of first sampling uniformly from $[0,1]$, then from $[0,x]$, and then returning the Boolean $x + y > 1.5$. More precisely, this is the **marginal** probability of $x + y > 1.5$. 
+Think of this as the procedure of first sampling uniformly from {math}`[0,1]`, then from {math}`[0,x]`, and then returning the Boolean {math}`x + y > 1.5`. More precisely, this is the **marginal** probability of {math}`x + y > 1.5`. 
 
 **Technical note**: `MonadSample` actually contains a number of other distributions beyond `random`, which by default are defined in terms of `random`, but allow for different definitions when desired. For example, `SamplerST` (an instance of `MonadSample` in Control.Monad.Sampler) defines `normal` and other distributions independently of `random`.
 
@@ -631,7 +628,7 @@ example = replicateM 100 $ do
   return x
 ```
 
-Doing `enumerate example` will create a list of $2^{100}$ entries, all but one of which have $0$ mass. (See below for a way to perform this inference efficiently). 
+Doing `enumerate example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
 
 The main purpose of `Enumerator` is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like `Weighted`, to get a sense of how they work. For example, consider:
 
@@ -747,9 +744,9 @@ example = replicateM 100 $ do
   return x
 ```
 
-Naive enumeration, as in `enumerate example` is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
+Naive enumeration, as in `enumerate example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
-Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with $0$ mass from `Enumerator`. We can then write `enumerate $ sis removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerate $ sis removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 
 ### Sequential Monte Carlo
 
@@ -860,7 +857,7 @@ This means that an `S (T (P m)) a` is a program "interpreted as a population of 
 
 So the algorithm works by creating `n` particles, and at each of the first `k` calls to `factor`, first resampling the population and then for each particle in the population, doing an MH-MCMC walk for `t` steps to update it. 
 
-### Sequential Monte Carlo squared ($SMC^2$)
+### Sequential Monte Carlo squared ({math}`SMC^2`)
 
 This combines RMSMC and PMMH. That is, it is RMSMC, but for the MCMC rejuvenation procedure, PMMH is used instead of MH.
 
