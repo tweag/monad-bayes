@@ -9,7 +9,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to monad-bayes’s documentation! &mdash; monad-bayes  documentation</title>
+  <title>Documentation for Monad-Bayes &mdash; monad-bayes  documentation</title>
   
 
   
@@ -39,7 +39,7 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="monad-bayes  documentation" href="#"/>
-        <link rel="next" title="User Guide" href="probprog.html"/> 
+        <link rel="next" title="What is probabilistic programming" href="probprog.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -87,8 +87,14 @@
             
                 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html">User Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html">What is probabilistic programming</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#specifying-distributions">Specifying distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#performing-inference">Performing inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#interoperating-with-other-haskell-code">Interoperating with other Haskell code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#tips-on-writing-good-probabilistic-programs">Tips on writing good probabilistic programs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#monad-bayes-vs-other-libraries">Monad-Bayes vs other libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">The implementation of Monad-Bayes</a></li>
 </ul>
 
             
@@ -133,7 +139,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Welcome to monad-bayes’s documentation!</li>
+      <li>Documentation for Monad-Bayes</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -152,25 +158,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="welcome-to-monad-bayes-s-documentation">
-<h1>Welcome to monad-bayes’s documentation!<a class="headerlink" href="#welcome-to-monad-bayes-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Monad-bayes is a library for doing probabilistic programming in Haskell, using probability monads. The emphasis is on specifying advanced inference algorithms in a compositional (and therefore succinct) way.</p>
-<p>This documentation is for <strong>users</strong> to understand how to write probabilistic programs and run inference methods and <strong>developers</strong> to understand how the inference methods work and how to extend them</p>
+  <section id="documentation-for-monad-bayes">
+<h1>Documentation for Monad-Bayes<a class="headerlink" href="#documentation-for-monad-bayes" title="Permalink to this headline">¶</a></h1>
+<p>Monad-bayes is a library for doing probabilistic programming in Haskell.
+You can specify your model independent of the inference method as in other
+probabilistic programming languages.
+A unique feature is the modular construction of inference algorithms from simple parts. See this short paper for details: <a class="reference external" href="http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf">http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf</a></p>
+<p>In addition, Monad-Bayes is a normal Haskell library, not a separate language implemented using Haskell,
+so full interoperation with arbitrary Haskell code is totally straightforward.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="probprog.html">User Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#monad-bayes-vs-other-libraries">monad-bayes vs other libraries</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#references">References</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#specifying-distributions">Specifying distributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#performing-inference">Performing inference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#interoperating-with-other-haskell-code">Interoperating with other Haskell code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#tips-on-writing-good-probabilistic-programs">Tips on writing good probabilistic programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#executables">Executables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html">What is probabilistic programming</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#resources">Resources</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Developer Guide</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#specifying-distributions">Specifying distributions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#constructing-distributions-as-programs">Constructing distributions as programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#hard-and-soft-conditioning">Hard and soft conditioning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#performing-inference">Performing inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#exact-inference">Exact inference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#independent-forward-sampling">Independent forward sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#independent-weighted-sampling">Independent weighted sampling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#markov-chain-monte-carlo">Markov Chain Monte Carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#sequential-monte-carlo-particle-filtering">Sequential Monte Carlo (Particle Filtering)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#resample-move-sequential-monte-carlo">Resample Move Sequential Monte Carlo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="probprog.html#particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#interoperating-with-other-haskell-code">Interoperating with other Haskell code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#tips-on-writing-good-probabilistic-programs">Tips on writing good probabilistic programs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#api-docs">API docs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="probprog.html#monad-bayes-vs-other-libraries">Monad-Bayes vs other libraries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">The implementation of Monad-Bayes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#references">References</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#the-core-typeclasses">The core typeclasses</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage.html#inference-transformers">Inference transformers</a></li>
@@ -188,7 +210,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="probprog.html" class="btn btn-neutral float-right" title="User Guide" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="probprog.html" class="btn btn-neutral float-right" title="What is probabilistic programming" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>
