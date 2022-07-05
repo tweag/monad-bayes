@@ -1,9 +1,6 @@
 # The implementation of Monad-Bayes
 
-This document assumes the reader is familiar with:
-- the basics of Bayesian probability theory
-- basic Haskell (the syntax, the type system, do-notation, monad transformers)
-- how to specify distributions in monad-bayes (see the [docs](probprog.md))
+This document assumes the reader is familiar with the basics of Bayesian probability theory, basic Haskell (the syntax, the type system, do-notation, monad transformers), and how to specify distributions in monad-bayes (see the [docs](probprog.md))
 
 That's enough to understand the core ideas, but for the more advanced content, you'll also want to feel comfortable enough with Haskell's type system that free monads, free monad transformers, and coroutines aren't a barrier to entry. And of course, to understand how inference methods like MCMC and SMC are implemented, it doesn't hurt to understand how they work in a statistical sense.
 
