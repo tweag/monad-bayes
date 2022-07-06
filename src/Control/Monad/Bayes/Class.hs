@@ -56,6 +56,7 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
+    mvNormal,
   )
 where
 

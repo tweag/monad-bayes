@@ -124,6 +124,7 @@ test-suite monad-bayes-test
   hs-source-dirs:     test models
   other-modules:
     Sprinkler
+    TestDistribution
     TestEnumerator
     TestInference
     TestPopulation
@@ -137,8 +138,10 @@ test-suite monad-bayes-test
     , ieee754
     , log-domain
     , math-functions
+    , matrix
     , monad-bayes
     , mtl
+    , mwc-random
     , QuickCheck
     , transformers
     , vector
