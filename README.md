@@ -5,7 +5,7 @@
 [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
 [![Build status](https://badge.buildkite.com/147af088063e8619fcf52ecf93fa7dd3353a2e8a252ef8e6ad.svg?branch=master)](https://buildkite.com/tweag-1/monad-bayes) -->
 
-[See the website](https://monad-bayes-site.netlify.app/about.html) for an overview of the documentation, library, tutorials, examples (and a link to this very source code). 
+[See the website](https://monad-bayes-site.netlify.app/_site/about.html) for an overview of the documentation, library, tutorials, examples (and a link to this very source code). 
 
 <!-- Monad-Bayes is a library for **probabilistic programming in Haskell**. The emphasis is on composition of inference algorithms, and is implemented in terms of monad transformers. -->
 
