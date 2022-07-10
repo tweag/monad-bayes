@@ -8,13 +8,16 @@ import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
-import Data.Time
-import HMM qualified
-import LDA qualified
-import LogReg qualified
-import Options.Applicative
-import System.Random.MWC (createSystemRandom, create)
 import Control.Monad.ST (runST)
+import Data.Time
+import Data.Void
+import qualified HMM
+import qualified LDA
+import qualified LogReg
+import Numeric.Log
+import Options.Applicative
+import System.Random.MWC (create, createSystemRandom)
+import System.Random.Stateful
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
@@ -33,9 +36,9 @@ getModel model = (size model, program model)
     size (LR n) = n
     size (HMM n) = n
     size (LDA (d, w)) = d * w
-    program (LR n) = show <$> (LogReg.logisticRegression (runST $ create >>= sampleSTwith (LogReg.syntheticData n)))
-    program (HMM n) = show <$> (HMM.hmm (runST $ create >>= sampleSTwith (HMM.syntheticData n)))
-    program (LDA (d, w)) = show <$> (LDA.lda (runST $ create >>= sampleSTwith (LDA.syntheticData d w)))
+    program (LR n) = show <$> (LogReg.logisticRegression (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (LogReg.syntheticData n)))
+    program (HMM n) = show <$> (HMM.hmm (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (HMM.syntheticData n)))
+    program (LDA (d, w)) = show <$> (LDA.lda (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (LDA.syntheticData d w)))
 
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)

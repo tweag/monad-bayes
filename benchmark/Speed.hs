@@ -1,5 +1,4 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -Wall #-}
 
 module Main (main) where
@@ -12,23 +11,14 @@ import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (prior)
 import Criterion.Main
-  ( Benchmark,
-    Benchmarkable,
-    bench,
-    defaultConfig,
-    defaultMainWith,
-    nfIO,
-  )
-import Criterion.Types (Config (csvFile, rawDataFile))
-import Data.Functor (void)
-import HMM qualified
-import LDA qualified
-import LogReg qualified
-import System.Process.Typed (runProcess)
-import System.Random.MWC (GenIO, createSystemRandom)
+import Criterion.Types
+import qualified HMM
+import qualified LDA
+import qualified LogReg
+import System.Random.Stateful (IOGenM, StatefulGen, StdGen, mkStdGen, newIOGenM)
 
 -- | Environment to execute benchmarks in.
-newtype Env = Env {rng :: GenIO}
+newtype Env = Env {rng :: IOGenM StdGen}
 
 data ProbProgSys = MonadBayes
   deriving stock (Show)
@@ -62,7 +52,7 @@ runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
-prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable :: StatefulGen r IO => r -> ProbProgSys -> Model -> Alg -> Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
@@ -130,10 +120,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 
 main :: IO ()
 main = do
-  g <- createSystemRandom
-  writeFile "speed-length.csv" ""
-  writeFile "speed-samples.csv" ""
-  writeFile "raw.dat" ""
+  g <- newIOGenM (mkStdGen 1729)
   let e = Env g
   lrData <- sampleIOwith (LogReg.syntheticData 1000) g
   hmmData <- sampleIOwith (HMM.syntheticData 1000) g
