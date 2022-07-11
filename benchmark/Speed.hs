@@ -21,6 +21,7 @@ import Criterion.Main
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
 import Data.Functor (void)
+import Data.Text qualified as T
 import HMM qualified
 import LDA qualified
 import LogReg qualified
@@ -33,7 +34,7 @@ newtype Env = Env {rng :: GenIO}
 data ProbProgSys = MonadBayes
   deriving stock (Show)
 
-data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[String]]
+data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
 
 instance Show Model where
   show (LR xs) = "LR" ++ show (length xs)
@@ -82,7 +83,7 @@ systems =
   [ MonadBayes
   ]
 
-lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
+lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
 lengthBenchmarks e lrData hmmData ldaData = benchmarks
   where
     lrLengths = 10 : map (* 100) [1 :: Int .. 10]
@@ -106,7 +107,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
           a <- algs
           return (s, m, a)
 
-samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[String]] -> [Benchmark]
+samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
 samplesBenchmarks e lrData hmmData ldaData = benchmarks
   where
     lrLengths = [50 :: Int]

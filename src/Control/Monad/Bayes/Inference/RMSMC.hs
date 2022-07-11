@@ -36,7 +36,7 @@ import Control.Monad.Bayes.Traced.Static as Tr
     mhStep,
   )
 import Control.Monad.Bayes.Traced.Static qualified as TrStat
-import Data.Monoid
+import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
