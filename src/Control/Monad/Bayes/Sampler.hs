@@ -37,7 +37,7 @@ import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
-import qualified System.Random.MWC.Distributions as MWC
+import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful
 
 -- | An 'IO' based random sampler using the MWC-Random package.

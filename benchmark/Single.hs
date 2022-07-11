@@ -11,9 +11,9 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.ST (runST)
 import Data.Time
 import Data.Void
-import qualified HMM
-import qualified LDA
-import qualified LogReg
+import HMM qualified
+import LDA qualified
+import LogReg qualified
 import Numeric.Log
 import Options.Applicative
 import System.Random.MWC (create, createSystemRandom)
