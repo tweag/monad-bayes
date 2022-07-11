@@ -23,11 +23,10 @@ module Control.Monad.Bayes.Sampler
     sampleIOfixed,
     sampleIOwith,
     sampleWith,
-    Seed,
     SamplerST (SamplerST),
     runSamplerST,
-    -- sampleST,
-    -- sampleSTfixed,
+    sampleST,
+    sampleSTfixed,
     sampleSTwith,
   )
 where
@@ -38,16 +37,13 @@ import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
-import Data.Void
-import System.Random.MWC
 import qualified System.Random.MWC.Distributions as MWC
-import System.Random.Stateful (IOGenM, STGenM, StdGen, mkStdGen, newIOGenM, newSTGenM)
-import qualified System.Random.Stateful as SR
+import System.Random.Stateful
 
 -- | An 'IO' based random sampler using the MWC-Random package.
-newtype SamplerIO g a = SamplerIO (SR.StatefulGen g IO => ReaderT g IO a)
+newtype SamplerIO g a = SamplerIO (StatefulGen g IO => ReaderT g IO a)
 
-newtype Sampler g m a = Sampler (SR.StatefulGen g m => ReaderT g m a)
+newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
 
 instance Functor (SamplerIO g) where
   fmap f (SamplerIO s) = SamplerIO $ fmap f s
@@ -56,7 +52,7 @@ instance Applicative (SamplerIO g) where
   pure x = SamplerIO $ pure x
   (SamplerIO f) <*> (SamplerIO x) = SamplerIO $ f <*> x
 
-runSamplerIO :: SR.StatefulGen g IO => SamplerIO g a -> ReaderT g IO a
+runSamplerIO :: StatefulGen g IO => SamplerIO g a -> ReaderT g IO a
 runSamplerIO (SamplerIO s) = s
 
 instance Monad (SamplerIO g) where
@@ -69,7 +65,7 @@ instance Applicative (Sampler g m) where
   pure x = Sampler $ pure x
   (Sampler f) <*> (Sampler x) = Sampler $ f <*> x
 
-runSampler :: SR.StatefulGen g m => Sampler g m a -> ReaderT g m a
+runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
 runSampler (Sampler s) = s
 
 instance Monad (Sampler g m) where
@@ -79,7 +75,7 @@ instance Monad (Sampler g m) where
 -- the operating system.
 -- For efficiency this operation should be applied at the very end, ideally
 -- once per program.
-sampleIO :: SamplerIO (IOGenM StdGen) b -> IO b
+sampleIO :: SamplerIO (IOGenM StdGen) a -> IO a
 sampleIO x = newIOGenM (mkStdGen 1729) >>= sampleIOwith x
 
 -- | Like 'sampleIO', but with a fixed random seed.
@@ -88,23 +84,31 @@ sampleIOfixed :: SamplerIO (IOGenM StdGen) a -> IO a
 sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleIOwith x
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SR.StatefulGen r IO => SamplerIO r a -> r -> IO a
+sampleIOwith :: StatefulGen r IO => SamplerIO r a -> r -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
-sampleWith :: (SR.StatefulGen r m) => Sampler r m a -> r -> m a
+sampleWith :: (StatefulGen r m) => Sampler r m a -> r -> m a
 sampleWith (Sampler m) = runReaderT m
 
 instance MonadSample (SamplerIO g) where
   random = SamplerIO ((\s -> ask >>= lift . s) (uniformRM (0, 1))) -- FIXME: There is a special function for this
 
 instance MonadSample (Sampler g m) where
-  random = Sampler ((\s -> ask >>= lift . s) (uniformRM (0, 1))) -- FIXME: There is a special function for this
+  random = Sampler (fromMWC' (uniformRM (0, 1))) -- FIXME: There is a special function for this
+
+  uniform a b = Sampler (fromMWC' $ uniformRM (a, b))
   normal m s = Sampler (fromMWC' (MWC.normal m s))
+  gamma shape scale = Sampler (fromMWC' $ MWC.gamma shape scale)
+  beta a b = Sampler (fromMWC' $ MWC.beta a b)
+
+  bernoulli p = Sampler (fromMWC' $ MWC.bernoulli p)
+  categorical ps = Sampler (fromMWC' $ MWC.categorical ps)
+  geometric p = Sampler (fromMWC' $ MWC.geometric0 p)
 
 -- | An 'ST' based random sampler using the @mwc-random@ package.
-newtype SamplerST g a = SamplerST (forall s. SR.StatefulGen g (ST s) => ReaderT g (ST s) a)
+newtype SamplerST g a = SamplerST (forall s. StatefulGen g (ST s) => ReaderT g (ST s) a)
 
-runSamplerST :: SR.StatefulGen g (ST s) => SamplerST g a -> ReaderT g (ST s) a
+runSamplerST :: StatefulGen g (ST s) => SamplerST g a -> ReaderT g (ST s) a
 runSamplerST (SamplerST s) = s
 
 instance Functor (SamplerST g) where
@@ -117,17 +121,11 @@ instance Applicative (SamplerST g) where
 instance Monad (SamplerST g) where
   (SamplerST x) >>= f = SamplerST $ x >>= runSamplerST . f
 
--- | Run the sampler with a supplied seed.
--- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
-sampleST :: SamplerST g a -> State Seed a
-sampleST (SamplerST s) =
-  undefined
-
--- state $ \seed -> runST $ do
---   gen <- restore seed
---   y <- runReaderT s gen
---   finalSeed <- save gen
---   return (y, finalSeed)
+-- | Run the sampler with a fixed random seed.
+sampleST :: SamplerST (STGenM StdGen s) a -> ST s a
+sampleST (SamplerST s) = do
+  gen <- newSTGenM (mkStdGen 1729)
+  runReaderT s gen
 
 -- | Run the sampler with a fixed random seed.
 sampleSTfixed :: SamplerST (STGenM StdGen s) a -> ST s a
@@ -136,7 +134,7 @@ sampleSTfixed (SamplerST s) = do
   runReaderT s gen
 
 -- | Like 'sampleST' but with a custom pseudo-random number generator.
-sampleSTwith :: SR.StatefulGen r (ST s) => SamplerST r a -> r -> ST s a
+sampleSTwith :: StatefulGen r (ST s) => SamplerST r a -> r -> ST s a
 sampleSTwith (SamplerST s) = runReaderT s
 
 fromMWC :: (g -> (ST s) a) -> ReaderT g (ST s) a
