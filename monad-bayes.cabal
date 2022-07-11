@@ -156,9 +156,9 @@ test-suite monad-bayes-test
     , matrix
     , monad-bayes
     , mtl
+    , mwc-random
     , pipes
     , pretty-simple
-    , mwc-random
     , QuickCheck
     , statistics
     , text
@@ -209,9 +209,9 @@ benchmark speed-bench
     , criterion
     , log-domain
     , monad-bayes
-    , mwc-random
     , pipes
     , pretty-simple
+    , mwc-random
     , process
     , text
     , typed-process
