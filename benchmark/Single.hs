@@ -10,7 +10,6 @@ import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Control.Monad.ST (runST)
 import Data.Time
-import Data.Void
 import HMM qualified
 import LDA qualified
 import LogReg qualified

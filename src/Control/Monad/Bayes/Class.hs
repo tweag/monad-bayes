@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -56,6 +57,8 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
+    Bayesian (Bayesian),
+    posterior,
     mvNormal,
   )
 where
@@ -72,7 +75,7 @@ import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
 import Data.Matrix hiding ((!))
 import Data.Vector qualified as V
-import Data.Vector.Generic as VG (Vector, map, mapM, sum, (!))
+import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
@@ -138,10 +141,7 @@ class Monad m => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
-  bernoulli p =
-    if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
-      then fmap (< p) random
-      else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
+  bernoulli p = fmap (< p) random
 
   -- | Draw from a categorical distribution.
   categorical ::
@@ -150,7 +150,7 @@ class Monad m => MonadSample m where
     v Double ->
     -- | outcome category
     m Int
-  categorical ps = fromPMF (ps !)
+  categorical ps = if VG.null ps then error "empty input list" else fromPMF (ps !)
 
   -- | Draw from a categorical distribution in the log domain.
   logCategorical ::
@@ -257,6 +257,21 @@ normalPdf ::
   Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
+--------------------
+
+-- | a useful datatype for expressing bayesian models
+data Bayesian m z o = Bayesian
+  { latent :: m z, -- prior over latent variable Z
+    generative :: z -> m o, -- distribution over observations given Z=z
+    likelihood :: z -> o -> Log Double -- p(o|z)
+  }
+
+posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
+posterior Bayesian {..} os = do
+  z <- latent
+  factor $ product $ fmap (likelihood z) os
+  return z
+
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
@@ -301,6 +316,7 @@ instance MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score

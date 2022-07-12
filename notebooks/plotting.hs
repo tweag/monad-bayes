@@ -9,6 +9,26 @@ import qualified Data.Text as T
 import Graphics.Vega.VegaLite hiding (filter, length)
 import IHaskell.Display.Hvega
 
+hist (xs, ys) =
+  let enc =
+        encoding
+          . position X [PName "X", PmType Quantitative]
+          . position Y [PName "Y", PmType Quantitative]
+
+      dat =
+        ( dataFromColumns []
+            . dataColumn "X" (Numbers xs)
+            . dataColumn "Y" (Numbers ys)
+        )
+          []
+   in toVegaLite
+        [ dat,
+          mark Bar [],
+          enc [],
+          width 400,
+          height 400
+        ]
+
 barplot (xs, ys) =
   let enc =
         encoding
@@ -25,8 +45,8 @@ barplot (xs, ys) =
         [ dat,
           mark Bar [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 scatterplot ((xs, ys), cs) cE f mode =
@@ -47,8 +67,8 @@ scatterplot ((xs, ys), cs) cE f mode =
         [ dat,
           mark mode [],
           enc [],
-          width 200,
-          height 200
+          width 400,
+          height 400
         ]
 
 class Plottable a where
@@ -68,7 +88,14 @@ instance Plottable [((Double, Double), Double)] where
     vlShow $
       scatterplot
         (first unzip $ unzip (ls))
-        (color [MName "Outlier", MmType Quantitative])
+        ( color
+            [ MName "Outlier",
+              MmType Quantitative,
+              MScale
+                [ SScheme "viridis" []
+                ]
+            ]
+        )
         Numbers
         Circle
 
@@ -87,3 +114,6 @@ instance Plottable ([Double], (Double, Double)) where
 
 instance Plottable [(T.Text, Double)] where
   plotVega ls = vlShow $ barplot $ unzip ls
+
+instance Plottable [(Double, Double)] where
+  plotVega ls = vlShow $ hist $ unzip ls

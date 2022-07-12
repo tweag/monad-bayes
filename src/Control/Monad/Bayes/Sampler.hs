@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -28,15 +29,20 @@ module Control.Monad.Bayes.Sampler
     sampleST,
     sampleSTfixed,
     sampleSTwith,
+    toBins,
+    sampleMean,
   )
 where
 
+import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
 import Control.Monad.Primitive
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+import Data.Fixed (mod')
+import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful
 
@@ -78,7 +84,6 @@ instance Monad (Sampler g m) where
 sampleIO :: SamplerIO (IOGenM StdGen) a -> IO a
 sampleIO x = newIOGenM (mkStdGen 1729) >>= sampleIOwith x
 
--- | Like 'sampleIO', but with a fixed random seed.
 -- Useful for reproducibility.
 sampleIOfixed :: SamplerIO (IOGenM StdGen) a -> IO a
 sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleIOwith x
@@ -154,3 +159,25 @@ instance MonadSample (SamplerST g) where
   bernoulli p = SamplerST (fromMWC $ MWC.bernoulli p)
   categorical ps = SamplerST (fromMWC $ MWC.categorical ps)
   geometric p = SamplerST (fromMWC $ MWC.geometric0 p)
+
+type Bin = (Double, Double)
+
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
+toBin ::
+  -- | bin size
+  Double ->
+  -- | number
+  Double ->
+  Bin
+toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
+
+toBins :: Double -> [Double] -> [Double]
+toBins binWidth = fmap (fst . toBin binWidth)
+
+sampleMean :: [(Double, Log Double)] -> Double
+sampleMean samples =
+  let z = F.premap (ln . exp . snd) F.sum
+      w = (F.premap (\(x, y) -> x * ln (exp y)) F.sum)
+      s = (/) <$> w <*> z
+   in F.fold s samples

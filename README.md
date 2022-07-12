@@ -1,11 +1,11 @@
-# [Monad-Bayes](https://monad-bayes-site.netlify.app/about.html)
+# [Monad-Bayes](https://monad-bayes.netlify.app)
 
 <!-- [![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
 [![Stackage](http://stackage.org/package/monad-bayes/badge/lts)](http://stackage.org/lts/package/monad-bayes)
 [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
 [![Build status](https://badge.buildkite.com/147af088063e8619fcf52ecf93fa7dd3353a2e8a252ef8e6ad.svg?branch=master)](https://buildkite.com/tweag-1/monad-bayes) -->
 
-[See the website](https://monad-bayes-site.netlify.app/about.html) for an overview of the documentation, library, tutorials, examples (and a link to this very source code). 
+[See the website](https://monad-bayes.netlify.app) for an overview of the documentation, library, tutorials, examples (and a link to this very source code). 
 
 <!-- Monad-Bayes is a library for **probabilistic programming in Haskell**. The emphasis is on composition of inference algorithms, and is implemented in terms of monad transformers. -->
 
@@ -47,6 +47,12 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
    ```
 
 Now you can use `stack build`, `stack test` and `stack ghci`.
+
+To use the notebooks in the `notebooks` directory, you will first need `nix`. Then:
+
+1. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes`
+
+2. This should open a shell, from which you can run `jupyter-lab` to load the notebooks
 
 [adam-github]: https://github.com/adscib
 [adam-web]: https://www.cs.ubc.ca/~ascibior/

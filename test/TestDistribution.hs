@@ -66,4 +66,4 @@ passed3 = sampleIOfixed $ do
       ybar2 = (/ nSamples') $ sum $ fmap (\x -> x * x) $ fmap (V.! 1) ss
   let xvar = xbar2 - xbar * xbar
   let yvar = ybar2 - ybar * ybar
-  return $ abs (xvar - sigma11) < 1e-2 && abs (yvar - sigma11) < 1e-2
+  return $ abs (xvar - sigma11) < 1e-2 && abs (yvar - sigma11) < 2e-2

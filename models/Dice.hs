@@ -3,7 +3,7 @@ module Dice (diceHard, diceSoft) where
 -- A toy model for dice rolling from http://dl.acm.org/citation.cfm?id=2804317
 -- Exact results can be obtained using Dist monad
 
-import Control.Monad (liftM2)
+import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
   ( MonadCond (score),
     MonadInfer,
@@ -18,7 +18,7 @@ die = uniformD [1 .. 6]
 -- | A sum of outcomes of n independent tosses of six-sided dice.
 dice :: MonadSample m => Int -> m Int
 dice 1 = die
-dice n = liftM2 (+) die (dice (n - 1))
+dice n = liftA2 (+) die (dice (n - 1))
 
 -- | Toss of two dice where the output is greater than 4.
 diceHard :: MonadInfer m => m Int

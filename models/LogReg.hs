@@ -7,9 +7,13 @@ module LogReg (logisticRegression, syntheticData, xs, labels) where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Numeric.Log
+  ( MonadInfer,
+    MonadSample (bernoulli, gamma, normal, uniform),
+    factor,
+  )
+import Numeric.Log (Log (Exp))
 
-logisticRegression :: (MonadInfer m) => [(Double, Bool)] -> m Double
+logisticRegression :: MonadInfer m => [(Double, Bool)] -> m Double
 logisticRegression dat = do
   m <- normal 0 1
   b <- normal 0 1
