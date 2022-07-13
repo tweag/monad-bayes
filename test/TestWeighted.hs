@@ -8,13 +8,13 @@ import Control.Monad.Bayes.Class
     MonadSample (normal, uniformD),
     factor,
   )
-import Control.Monad.Bayes.Sampler (sampleIOfixed, sampleIOwith)
+import Control.Monad.Bayes.Sampler (sampleIOwith)
 import Control.Monad.Bayes.Weighted (runWeighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
-import Numeric.Log
-import System.Random.Stateful
+import Numeric.Log (Log (Exp, ln))
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 model :: MonadInfer m => m (Int, Double)
 model = do

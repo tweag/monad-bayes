@@ -5,21 +5,31 @@ module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinkl
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Enumerator (enumerate, expectation)
 import Control.Monad.Bayes.Population as Population
-import Control.Monad.Bayes.Sampler
-import Data.AEq
-import System.Random.Stateful
-import Sprinkler
+  ( Population,
+    collapse,
+    popAvg,
+    pushEvidence,
+    resampleMultinomial,
+    runPopulation,
+    spawn,
+  )
+import Control.Monad.Bayes.Sampler (sampleIOwith)
+import Data.AEq (AEq ((~==)))
+import Sprinkler (soft)
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 weightedSampleSize :: MonadSample m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
 
 popSize :: IO Int
-popSize = newIOGenM (mkStdGen 1729) >>=
-          sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler)
+popSize =
+  newIOGenM (mkStdGen 1729)
+    >>= sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler)
 
 manySize :: IO Int
-manySize = newIOGenM (mkStdGen 1729) >>=
-           sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3)
+manySize =
+  newIOGenM (mkStdGen 1729)
+    >>= sampleIOwith (weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft

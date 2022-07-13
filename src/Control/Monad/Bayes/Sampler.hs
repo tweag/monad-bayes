@@ -1,11 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -36,15 +33,24 @@ where
 
 import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
-import Control.Monad.Primitive
-import Control.Monad.ST (ST, runST, stToIO)
-import Control.Monad.State (State, state)
-import Control.Monad.Trans (MonadIO, lift)
-import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+  ( MonadSample
+      ( bernoulli,
+        beta,
+        categorical,
+        gamma,
+        geometric,
+        normal,
+        random,
+        uniform
+      ),
+  )
+import Control.Monad.ST (ST)
+import Control.Monad.Trans (lift)
+import Control.Monad.Trans.Reader (ReaderT, ask, runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
-import System.Random.Stateful
+import System.Random.Stateful (IOGenM, STGenM, StatefulGen, StdGen, mkStdGen, newIOGenM, newSTGenM, uniformRM)
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO g a = SamplerIO (StatefulGen g IO => ReaderT g IO a)
