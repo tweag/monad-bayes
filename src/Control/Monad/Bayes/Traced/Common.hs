@@ -15,8 +15,6 @@ module Control.Monad.Bayes.Traced.Common
     mhTrans,
     mhTrans',
     burnIn,
-    Proposal (SingleSiteMH),
-    MCMCConfig (..),
   )
 where
 
@@ -38,8 +36,6 @@ import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
-
-data MCMCConfig = MCMCConfig {proposal :: Proposal, numMCMCSteps :: Int, numBurnIn :: Int}
 
 -- | Collection of random variables sampler during the program's execution.
 data Trace a = Trace
@@ -104,5 +100,3 @@ burnIn :: Functor m => Int -> m [a] -> m [a]
 burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls
-
-data Proposal = SingleSiteMH

@@ -59,7 +59,7 @@ module Control.Monad.Bayes.Class
     Bayesian (..),
     posterior,
     independent,
-    mvNormal
+    mvNormal,
   )
 where
 

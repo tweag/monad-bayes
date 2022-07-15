@@ -2,6 +2,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
@@ -57,7 +58,7 @@ runAlg model alg =
       let n = 10
           t = 1
           (k, m) = getModel model
-       in show <$> population (rmsmcBasic k n t m)
+       in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do

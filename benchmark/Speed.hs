@@ -5,7 +5,7 @@
 module Main (main) where
 
 import Control.Monad.Bayes.Class (MonadInfer)
-import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population (population, resampleSystematic)
 import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
@@ -61,7 +61,7 @@ instance Show Alg where
 runAlg :: Model -> Alg -> SamplerIO String
 runAlg model (MH n) = show <$> unweighted (mh n (buildModel model))
 runAlg model (SMC n) = show <$> population (smc SMCConfig {numSteps = (modelLength model), numParticles = n, resampler = resampleSystematic} (buildModel model))
-runAlg model (RMSMC n t) = show <$> population (rmsmcLocal (modelLength model) n t (buildModel model))
+runAlg model (RMSMC n t) = show <$> population (rmsmcDynamic (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
 prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g

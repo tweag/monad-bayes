@@ -27,7 +27,7 @@ module Control.Monad.Bayes.Integrator
     momentGeneratingFunction,
     cumulantGeneratingFunction,
     integrated,
-    runIntegrator
+    runIntegrator,
   )
 where
 
@@ -55,7 +55,6 @@ newtype Integrator a = Integrator {getCont :: Cont Double a}
 
 integrated, runIntegrator :: (a -> Double) -> Integrator a -> Double
 integrated f (Integrator a) = runCont a f
-
 runIntegrator = integrated
 
 instance MonadSample Integrator where

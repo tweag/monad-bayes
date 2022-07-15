@@ -12,6 +12,7 @@ import Control.Arrow
 import Control.Monad (join, replicateM)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.PMMH
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
@@ -29,16 +30,20 @@ passed2 = do
   sample <- sampleIOfixed $ population $ smc (SMCConfig {numSteps = 0, numParticles = 10000, resampler = resampleMultinomial}) random
   return $ close 0.5 sample
 
+mcmcConfig = MCMCConfig {numMCMCSteps = 0, numBurnIn = 0, proposal = SingleSiteMH}
+
+smcConfig = SMCConfig {numSteps = 0, numParticles = 1000}
+
 passed3 = do
-  sample <- sampleIOfixed $ population $ rmsmcLocal 0 1000 0 random
+  sample <- sampleIOfixed $ population $ rmsmcDynamic mcmcConfig smcConfig random
   return $ close 0.5 sample
 
 passed4 = do
-  sample <- sampleIOfixed $ population $ rmsmcBasic 0 1000 0 random
+  sample <- sampleIOfixed $ population $ rmsmcBasic mcmcConfig smcConfig random
   return $ close 0.5 sample
 
 passed5 = do
-  sample <- sampleIOfixed $ population $ rmsmc 0 1000 0 random
+  sample <- sampleIOfixed $ population $ rmsmc mcmcConfig smcConfig random
   return $ close 0.5 sample
 
 passed6 = do

@@ -27,7 +27,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
-    sampler
+    sampler,
   )
 where
 

@@ -26,7 +26,7 @@ module Control.Monad.Bayes.Enumerator
     normalizeWeights,
     enumerateToDistribution,
     removeZeros,
-    fromList
+    fromList,
   )
 where
 
@@ -99,7 +99,8 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 -- > enumerated = compact . explicit
 enumerated, enumerate :: Ord a => Enumerator a -> [(a, Double)]
 enumerated d = filter ((/= 0) . snd) $ compact (zip xs ws)
-  where (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
+  where
+    (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
 
 -- | deprecated synonym
 enumerate = enumerated

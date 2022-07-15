@@ -15,8 +15,6 @@ module Control.Monad.Bayes.Traced.Static
     marginal,
     mhStep,
     mh,
-    mcmc,
-    Proposal (..),
   )
 where
 
@@ -28,9 +26,7 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
-  ( MCMCConfig (..),
-    Proposal (..),
-    Trace (..),
+  ( Trace (..),
     bind,
     burnIn,
     mhTrans,
@@ -98,6 +94,3 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
-
-mcmc :: MonadSample m => MCMCConfig -> Traced m a -> m [a]
-mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ mh numMCMCSteps m
