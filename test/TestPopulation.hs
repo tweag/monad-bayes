@@ -30,8 +30,6 @@ sprinkler = Sprinkler.soft
 sprinklerExact :: [(Bool, Double)]
 sprinklerExact = enumerator Sprinkler.soft
 
--- all_check = (mass (Population.all id (spawn 2 >> sprinkler)) True) ~== 0.09
-
 transCheck1 :: Bool
 transCheck1 =
   enumerator (collapse sprinkler)

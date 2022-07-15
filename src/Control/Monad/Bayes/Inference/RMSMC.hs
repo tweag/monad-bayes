@@ -64,7 +64,7 @@ rmsmcBasic ::
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
   TrBas.marginal
     . sequentially (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler) numSteps
-    . S.hoistFirst (TrBas.hoist (spawn numParticles >>))
+    . S.hoistFirst (TrBas.hoist (withParticles numParticles))
 
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
@@ -79,7 +79,7 @@ rmsmcDynamic ::
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
   TrDyn.marginal
     . sequentially (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) numSteps
-    . S.hoistFirst (TrDyn.hoist (spawn numParticles >>))
+    . S.hoistFirst (TrDyn.hoist (withParticles numParticles))
 
 -- | Apply a function a given number of times.
 composeCopies :: Int -> (a -> a) -> (a -> a)

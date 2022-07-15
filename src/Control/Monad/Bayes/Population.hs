@@ -34,6 +34,7 @@ module Control.Monad.Bayes.Population
     hoist,
     collapse,
     popAvg,
+    withParticles,
   )
 where
 
@@ -95,6 +96,9 @@ fromWeightedList = Population . withWeight . ListT
 -- without introducing bias.
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
+
+withParticles :: Monad m => Int -> Population m a -> Population m a
+withParticles n = (spawn n >>)
 
 resampleGeneric ::
   MonadSample m =>

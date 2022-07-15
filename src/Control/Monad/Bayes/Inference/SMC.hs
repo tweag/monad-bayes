@@ -48,7 +48,7 @@ smc ::
   SMCConfig m ->
   Sequential (Population m) a ->
   Population m a
-smc SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (spawn numParticles >>)
+smc SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (withParticles numParticles)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
