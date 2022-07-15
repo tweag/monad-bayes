@@ -797,51 +797,41 @@ Quoting the monad-bayes paper:
 Because of the modularity of monad-bayes, the implementation is remarkably simple, and directly linked to the algorithm:
 
 ```haskell
-pmmh t k n param model = mh t 
-  (param >>= 
-    population 
-    . pushEvidence 
-    . Pop.hoist lift 
-    . smc SMCConfig 
-        {numSteps = k, 
-        numParticles = n, 
-        resampler = resampleSystematic}
-    . model)
+pmmh mcmcConf smcConf param model =
+  mcmc
+    mcmcConf
+    ( param
+        >>= population
+          . pushEvidence
+          . Pop.hoist lift
+          . smc smcConf
+          . model
+    )
 ```
 
 
 There's a lot to unpack here. Here's the definition with more types. To shorten the signatures, the synonyms: `T = Traced, S = Sequential, P = Population` are used:
 
 ```haskell
-pmmh ::
-  MonadInfer m =>
-  -- | number of Metropolis-Hastings steps
-  Int ->
-  -- | number of time steps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model parameters prior
-  T m b ->
-  -- | model
-  (b -> S (P m) a) ->
-  m [[(a, Log Double)]]
-pmmh t k n param model =
-  (mh t :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
+pmmh :: MonadInfer m =>
+  MCMCConfig
+  -> SMCConfig m
+  -> Traced m a1
+  -> (a1 -> Sequential (Population m) a2)
+  -> m [[(a2, Log Double)]]
+pmmh mcmcConf smcConf param model =
+  (mcmc mcmcConf :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
   ((param :: T m b) >>= 
       (population :: P (T m) a -> T m [(a, Log Double)]) 
       . (pushEvidence :: P (T m) a -> P (T m) a) 
       . Pop.hoist (lift :: forall x. m x -> T m x) 
-      . (smc SMCConfig 
-            {numSteps = k, 
-            numParticles = n, 
-            resampler = resampleSystematic} :: S (P m) a -> P m a) 
+      . (smc smcConf :: S (P m) a -> P m a) 
       . (model :: b -> S (P m) a))
 ```
 
-(Note that this uses the version of `mh` from `Control.Monad.Bayes.Traced.Static`.)
+(Note that this uses the version of `mcmc` that uses the `Traced` representation from `Control.Monad.Bayes.Traced.Static`.)
 
-To understand this, note that the outer algorithm is just `mh`. But the probabilistic program that we pass to `mh` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is "visible" to `mh`.
+To understand this, note that the outer algorithm is just `mcmc`. But the probabilistic program that we pass to `mcmc` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is "visible" to `mcmc`.
 
 
 ### Resample-Move Sequential Monte Carlo
@@ -855,25 +845,22 @@ The paper introducing monad-bayes has this to say about resample-move SMC:
 monad-bayes provides three versions of RMSMC, each of which uses one of the three `Traced` implementations respectively. Here is the simplest, which I have annotated with types. To shorten the signatures, the synonyms: `T = Traced, S = Sequential, P = Population` are used:
 
 ```haskell
+
 rmsmcBasic ::
   MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+  MCMCConfig ->
+  SMCConfig m ->
   -- | model
-  S (TrBas.T (P m)) a ->
+  S (T (P m)) a ->
   P m a
-rmsmcBasic k n t =
+rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   (TrBas.marginal :: T (P m) a -> P m a )
   . sequentially 
       (
-      (composeCopies t TrBas.mhStep :: T (P m) a -> T (P m) a )
+      (composeCopies numMCMCSteps TrBas.mhStep :: T (P m) a -> T (P m) a )
       . TrBas.hoist (resampleSystematic :: P m a -> P m a ) ) 
-      k
-  . (hoistS (TrBas.hoist (spawn n >>)) :: S (T (P m)) a -> S (T (P m)) a ))
+      numSteps
+  . (S.hoistFirst (TrBas.hoist (spawn numParticles >>)) :: S (T (P m)) a -> S (T (P m)) a ))
 ```
 
 What is this doing? Recall that `S m a` represents an `m` of coroutines over `a`. Recall that `Traced m a` represents an `m` of  traced computations of `a`. Recall that `P m a` represents an `m` of a list of `a`s.

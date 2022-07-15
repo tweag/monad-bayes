@@ -47,7 +47,7 @@ passed5 = do
   return $ close 0.5 sample
 
 passed6 = do
-  sample <- fmap join $ sampleIOfixed $ unweighted $ pmmh 100 0 100 random (normal 0)
+  sample <- fmap join $ sampleIOfixed $ unweighted $ pmmh mcmcConfig {numMCMCSteps = 100} smcConfig {numSteps = 0, numParticles = 100} random (normal 0)
   return $ close 0.0 sample
 
 passed7 = do

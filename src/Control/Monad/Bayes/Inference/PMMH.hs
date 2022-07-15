@@ -19,6 +19,7 @@ module Control.Monad.Bayes.Inference.PMMH
 where
 
 import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, latent)
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population as Pop
   ( Population,
@@ -35,34 +36,27 @@ import Numeric.Log (Log)
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
   MonadInfer m =>
-  -- | number of Metropolis-Hastings steps
-  Int ->
-  -- | number of time steps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model parameters prior
-  Traced m b ->
-  -- | model
-  (b -> Sequential (Population m) a) ->
-  m [[(a, Log Double)]]
-pmmh t k n param model =
-  mh
-    t
+  MCMCConfig ->
+  SMCConfig m ->
+  Traced m a1 ->
+  (a1 -> Sequential (Population m) a2) ->
+  m [[(a2, Log Double)]]
+pmmh mcmcConf smcConf param model =
+  mcmc
+    mcmcConf
     ( param
         >>= population
           . pushEvidence
           . Pop.hoist lift
-          . smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}
+          . smc smcConf
           . model
     )
 
--- | provide a Bayesian model as argument
+-- | Particle Marginal Metropolis-Hastings sampling from a Bayesian model
 pmmhBayesianModel ::
   MonadInfer m =>
-  Int ->
-  Int ->
-  Int ->
-  (forall m. MonadInfer m => Bayesian m b a) ->
-  m [[(a, Log Double)]]
-pmmhBayesianModel t k n bm = pmmh t k n (latent bm) (generative bm)
+  MCMCConfig ->
+  SMCConfig m ->
+  (forall m. MonadInfer m => Bayesian m a1 a2) ->
+  m [[(a2, Log Double)]]
+pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (latent bm) (generative bm)

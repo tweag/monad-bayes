@@ -58,6 +58,8 @@ module Control.Monad.Bayes.Class
     normalPdf,
     Bayesian (..),
     posterior,
+    priorPredictive,
+    posteriorPredictive,
     independent,
     mvNormal,
   )
@@ -273,6 +275,16 @@ posterior Bayesian {..} os = do
   z <- latent
   factor $ product $ fmap (likelihood z) os
   return z
+
+priorPredictive :: Monad m => Bayesian m a b -> m b
+priorPredictive bm = latent bm >>= generative bm
+
+posteriorPredictive ::
+  (MonadInfer m, Foldable f, Functor f) =>
+  Bayesian m a b ->
+  f b ->
+  m b
+posteriorPredictive bm os = posterior bm os >>= generative bm
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
