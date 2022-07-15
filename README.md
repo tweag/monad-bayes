@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-# [Monad-Bayes](https://monad-bayes-site.netlify.app/about.html)
-=======
-# [Monad-Bayes](https://monad-bayes.netlify.app)
->>>>>>> master
+# [Monad-Bayes](https://monad-bayes-site.netlify.app/_site/about.html)
 
 <!-- [![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
 [![Stackage](http://stackage.org/package/monad-bayes/badge/lts)](http://stackage.org/lts/package/monad-bayes)
