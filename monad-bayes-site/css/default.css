@@ -1,0 +1,85 @@
+@import "base.css";
+
+/* fonts */
+@import url(http://fonts.googleapis.com/css?family=Ubuntu);
+@import url(http://fonts.googleapis.com/css?family=Open+Sans);
+
+body {
+    background-color: #ffffff;
+    color: black;
+    font-size: 16px;
+    margin: 40px auto 0px auto;
+}
+
+header {
+    margin-bottom: 0px;
+    padding: 50px 50px 10px 50px;
+    background: #FFFFFF;
+}
+
+div.logo a {
+    color: #000000;
+    float: left;
+    font-family: Avenir, 'Open Sans', sans-serif;
+    font-size: 36px;
+    text-decoration: none;
+}
+
+header nav {
+    line-height: 45px;
+    text-align: right;
+}
+
+header nav a {
+    color: #BBBBBB;
+    font-family: Avenir, 'Open Sans', sans-serif;
+    font-size: 36px;
+    margin-left: 45px;
+    text-decoration: none;
+    text-transform: capitalize;
+}
+
+header nav a:hover{
+  color: #000000;
+}
+
+main {
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+main h1{
+  color: #222222;
+  font-size: 42px;
+  font-family: Avenir, 'Open Sans', sans-serif;
+  font-weight: 300;
+  line-height: 1.45;
+}
+
+main, /* this line for archives page */
+main p{
+    color: #666666;
+    font-family: Avenir, 'Open Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+main a{
+  color: #428bca;
+  text-decoration: none;
+}
+
+
+
+footer a {
+  color: #428bca;
+  font-size: 16px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+section.header {
+    color: #555;
+    font-size: 10px;
+    font-style: italic;
+}

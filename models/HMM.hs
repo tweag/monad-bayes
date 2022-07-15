@@ -1,20 +1,21 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
-
 -- HMM from Anglican (https://bitbucket.org/probprog/anglican-white-paper)
 
-module HMM
-  ( values,
-    hmm,
-    syntheticData,
-  )
-where
+module HMM where
 
---Hidden Markov Models
-
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, when)
 import Control.Monad.Bayes.Class
+  ( MonadCond,
+    MonadInfer,
+    MonadSample (categorical, normal, uniformD),
+    factor,
+    normalPdf,
+  )
+import Control.Monad.Bayes.Enumerator (enumerateToDistribution)
+import Data.Maybe (fromJust, isJust)
 import Data.Vector (fromList)
+import Pipes (MFunctor (hoist), MonadTrans (lift), each, yield, (>->))
+import Pipes.Core (Producer)
+import qualified Pipes.Prelude as Pipes
 
 -- | Observed values
 values :: [Double]
@@ -70,3 +71,34 @@ syntheticData :: MonadSample m => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
   where
     syntheticPoint = uniformD [0, 1, 2]
+
+-- | Equivalent model, but using pipes for simplicity
+
+-- | Prior expressed as a stream
+hmmPrior :: MonadSample m => Producer Int m b
+hmmPrior = do
+  x <- lift start
+  yield x
+  Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
+
+-- | Observations expressed as a stream
+hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
+hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
+
+-- | Posterior expressed as a stream
+hmmPosterior :: (MonadInfer m) => [Double] -> Producer Int m ()
+hmmPosterior dataset =
+  zipWithM
+    hmmLikelihood
+    hmmPrior
+    (hmmObservations dataset)
+  where
+    hmmLikelihood :: MonadCond f => (Int, Maybe Double) -> f ()
+    hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
+
+    zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
+
+hmmPosteriorPredictive :: MonadSample m => [Double] -> Producer Double m ()
+hmmPosteriorPredictive dataset =
+  Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
+    >-> Pipes.mapM (\x -> normal (emissionMean x) 1)

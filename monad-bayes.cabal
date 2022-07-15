@@ -1,180 +1,237 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.1.0
+version:            0.1.1.3
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        ghc ==8.4.4 ghc ==8.6.5 ghc ==8.8.1
+tested-with:        GHC ==9.2.2
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
 description:
-    A library for probabilistic programming using probability monads. The
-    emphasis is on composition of inference algorithms implemented in
-    terms of monad transformers.
+  A library for probabilistic programming using probability monads. The
+  emphasis is on composition of inference algorithms implemented in
+  terms of monad transformers.
 
 category:           Statistics
 build-type:         Simple
 extra-source-files: CHANGELOG.md
 
 source-repository head
-    type:     git
-    location: https://github.com/tweag/monad-bayes.git
+  type:     git
+  location: https://github.com/tweag/monad-bayes.git
 
 flag dev
-    description: Turn on development settings.
-    default:     False
-    manual:      True
+  description: Turn on development settings.
+  default:     False
+  manual:      True
 
 library
-    exposed-modules:
-        Control.Monad.Bayes.Class
-        Control.Monad.Bayes.Enumerator
-        Control.Monad.Bayes.Free
-        Control.Monad.Bayes.Helpers
-        Control.Monad.Bayes.Inference.PMMH
-        Control.Monad.Bayes.Inference.RMSMC
-        Control.Monad.Bayes.Inference.SMC
-        Control.Monad.Bayes.Inference.SMC2
-        Control.Monad.Bayes.Population
-        Control.Monad.Bayes.Sampler
-        Control.Monad.Bayes.Sequential
-        Control.Monad.Bayes.SequentialCata
-        Control.Monad.Bayes.Traced
-        Control.Monad.Bayes.Traced.Basic
-        Control.Monad.Bayes.Traced.Dynamic
-        Control.Monad.Bayes.Traced.Static
-        Control.Monad.Bayes.Weighted
+  exposed-modules:
+    Control.Monad.Bayes.Class
+    Control.Monad.Bayes.Enumerator
+    Control.Monad.Bayes.Free
+    Control.Monad.Bayes.Inference.PMMH
+    Control.Monad.Bayes.Inference.RMSMC
+    Control.Monad.Bayes.Inference.SMC
+    Control.Monad.Bayes.Inference.SMC2
+    Control.Monad.Bayes.Integrator
+    Control.Monad.Bayes.Population
+    Control.Monad.Bayes.Sampler
+    Control.Monad.Bayes.Sequential
+    Control.Monad.Bayes.SequentialCata
+    Control.Monad.Bayes.Traced
+    Control.Monad.Bayes.Traced.Basic
+    Control.Monad.Bayes.Traced.Dynamic
+    Control.Monad.Bayes.Traced.Static
+    Control.Monad.Bayes.Weighted
 
-    hs-source-dirs:   src
-    other-modules:    Control.Monad.Bayes.Traced.Common
-    default-language: Haskell2010
-    build-depends:
-        base >=4.11 && <4.15,
-        containers >=0.5.10 && <0.7,
-        free >=5.0.2 && <5.2,
-        ieee754 >=0.8.0 && <0.9,
-        log-domain >=0.12 && <0.14,
-        math-functions >=0.2.1 && <0.4,
-        monad-coroutine >=0.9.0 && <0.10,
-        mtl >=2.2.2 && <2.3,
-        mwc-random >=0.13.6 && <0.15,
-        safe >=0.3.17 && <0.4,
-        statistics >=0.14.0 && <0.16,
-        transformers >=0.5.2 && <0.6,
-        vector >=0.12.0 && <0.13,
-        recursion-schemes,
-        comonad
-    
+  hs-source-dirs:     src
+  other-modules:      Control.Monad.Bayes.Traced.Common
+  default-language:   Haskell2010
+  build-depends:
+      base             >=4.11   && <4.17
+    , containers       >=0.5.10 && <0.7
+    , foldl
+    , free             >=5.0.2  && <5.2
+    , ieee754          ^>=0.8.0
+    , integration
+    , log-domain       >=0.12   && <0.14
+    , math-functions   >=0.2.1  && <0.4
+    , matrix
+    , monad-coroutine  ^>=0.9.0
+    , mtl              ^>=2.2.2
+    , mwc-random       >=0.13.6 && <0.16
+    , pipes
+    , scientific
+    , statistics       >=0.14.0 && <0.17
+    , text
+    , transformers     ^>=0.5.2
+    , vector           ^>=0.12.0
+    , recursion-schemes
+    , comonad
 
-    if flag(dev)
-        ghc-options:
-            -Weverything -Wno-missing-local-signatures -Wno-unsafe
-            -Wno-missing-import-lists -Wno-implicit-prelude
-            -Wno-monomorphism-restriction
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
 
-    else
-        ghc-options: -Wall
+  if flag(dev)
+    ghc-options:
+      -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
+      -Wno-missing-import-lists -Wno-implicit-prelude
+      -Wno-monomorphism-restriction
+
+  else
+    ghc-options: -Wall
 
 executable example
-    main-is:          Single.hs
-    hs-source-dirs:   benchmark models
-    other-modules:
-        Dice
-        HMM
-        LDA
-        LogReg
+  main-is:            Single.hs
+  hs-source-dirs:     benchmark models
+  other-modules:
+    Dice
+    HMM
+    LDA
+    LogReg
 
-    default-language: Haskell2010
-    build-depends:
-        base -any,
-        containers -any,
-        log-domain -any,
-        monad-bayes -any,
-        mwc-random -any,
-        optparse-applicative -any,
-        time -any,
-        vector -any
+  default-language:   Haskell2010
+  build-depends:
+      base
+    , containers
+    , log-domain
+    , math-functions
+    , monad-bayes
+    , mwc-random
+    , optparse-applicative
+    , pipes
+    , pretty-simple
+    , text
+    , time
+    , vector
 
-    if flag(dev)
-        ghc-options:
-            -Wall -Wcompat -Wincomplete-record-updates
-            -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
+  if flag(dev)
+    ghc-options:
+      -Wall -Wcompat -Wincomplete-record-updates
+      -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
 
-    else
-        ghc-options: -Wall
+  else
+    ghc-options: -Wall
+
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
 
 test-suite monad-bayes-test
-    type:             exitcode-stdio-1.0
-    main-is:          Spec.hs
-    hs-source-dirs:   test models
-    other-modules:
-        Sprinkler
-        TestEnumerator
-        TestInference
-        TestPopulation
-        TestSequential
-        TestWeighted
+  type:               exitcode-stdio-1.0
+  main-is:            Spec.hs
+  hs-source-dirs:     test models
+  other-modules:
+    ConjugatePriors
+    Sprinkler
+    TestDistribution
+    TestEnumerator
+    TestInference
+    TestIntegrator
+    TestPopulation
+    TestSampler
+    TestSequential
+    TestWeighted
 
-    default-language: Haskell2010
-    build-depends:
-        base -any,
-        QuickCheck -any,
-        hspec -any,
-        ieee754 -any,
-        log-domain -any,
-        math-functions -any,
-        monad-bayes -any,
-        mtl -any,
-        transformers -any,
-        vector -any
+  default-language:   Haskell2010
+  build-depends:
+      base
+    , containers
+    , foldl
+    , hspec
+    , ieee754
+    , log-domain
+    , math-functions
+    , matrix
+    , monad-bayes
+    , mtl
+    , mwc-random
+    , pipes
+    , pretty-simple
+    , QuickCheck
+    , statistics
+    , text
+    , transformers
+    , vector
 
-    if flag(dev)
-        ghc-options:
-            -Weverything -Wno-missing-local-signatures -Wno-unsafe
-            -Wno-missing-import-lists -Wno-implicit-prelude
+  if flag(dev)
+    ghc-options:
+      -Wall -Wno-missing-local-signatures -Wno-unsafe
+      -Wno-missing-import-lists -Wno-implicit-prelude
 
-    else
-        ghc-options: -Wall
+  else
+    ghc-options: -Wall
+
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections
 
 benchmark ssm-bench
-    type:             exitcode-stdio-1.0
-    main-is:          SSM.hs
-    hs-source-dirs:   models benchmark
-    other-modules:    NonlinearSSM
-    default-language: Haskell2010
-    build-depends:
-        base -any,
-        monad-bayes -any
+  type:             exitcode-stdio-1.0
+  main-is:          SSM.hs
+  hs-source-dirs:   models benchmark
+  other-modules:    NonlinearSSM
+  default-language: Haskell2010
+  build-depends:
+      base
+    , monad-bayes
+    , pretty-simple
 
 benchmark speed-bench
-    type:             exitcode-stdio-1.0
-    main-is:          Speed.hs
-    hs-source-dirs:   models benchmark
-    other-modules:
-        HMM
-        LDA
-        LogReg
+  type:               exitcode-stdio-1.0
+  main-is:            Speed.hs
+  hs-source-dirs:     models benchmark
+  other-modules:
+    HMM
+    LDA
+    LogReg
 
-    default-language: Haskell2010
-    build-depends:
-        base -any,
-        abstract-par -any,
-        containers -any,
-        criterion -any,
-        log-domain -any,
-        monad-bayes -any,
-        mwc-random -any,
-        process -any,
-        vector -any
+  default-language:   Haskell2010
+  build-depends:
+      abstract-par
+    , base
+    , containers
+    , criterion
+    , log-domain
+    , monad-bayes
+    , mwc-random
+    , pipes
+    , pretty-simple
+    , process
+    , text
+    , typed-process
+    , vector
 
-    if flag(dev)
-        ghc-options:
-            -Weverything -Wno-missing-local-signatures -Wno-unsafe
-            -Wno-missing-import-lists -Wno-implicit-prelude
+  if flag(dev)
+    ghc-options:
+      -Wall -Wno-missing-local-signatures -Wno-unsafe
+      -Wno-missing-import-lists -Wno-implicit-prelude
 
-    else
-        ghc-options: -Wall
+  else
+    ghc-options: -Wall
+
+  default-extensions:
+    BlockArguments
+    FlexibleContexts
+    ImportQualifiedPost
+    LambdaCase
+    OverloadedStrings
+    TupleSections

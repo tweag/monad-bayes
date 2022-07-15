@@ -1,11 +1,21 @@
-module TestPopulation where
+{-# LANGUAGE Trustworthy #-}
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Enumerator
+module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
+
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+import Control.Monad.Bayes.Enumerator (enumerate, expectation)
 import Control.Monad.Bayes.Population as Population
-import Control.Monad.Bayes.Sampler
-import Data.AEq
-import Sprinkler
+  ( Population,
+    collapse,
+    popAvg,
+    pushEvidence,
+    resampleMultinomial,
+    runPopulation,
+    spawn,
+  )
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Data.AEq (AEq ((~==)))
+import Sprinkler (soft)
 
 weightedSampleSize :: MonadSample m => Population m a -> m Int
 weightedSampleSize = fmap length . runPopulation
@@ -22,7 +32,7 @@ sprinkler = Sprinkler.soft
 sprinklerExact :: [(Bool, Double)]
 sprinklerExact = enumerate Sprinkler.soft
 
---all_check = (mass (Population.all id (spawn 2 >> sprinkler)) True) ~== 0.09
+-- all_check = (mass (Population.all id (spawn 2 >> sprinkler)) True) ~== 0.09
 
 transCheck1 :: Bool
 transCheck1 =

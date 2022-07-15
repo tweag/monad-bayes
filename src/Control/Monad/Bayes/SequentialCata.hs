@@ -17,24 +17,23 @@ import Control.Monad.Identity (Identity(Identity, runIdentity))
 import Control.Comonad (Comonad(extract, extend))
 import Control.Comonad.Cofree
 import Debug.Trace (traceM)
-import Control.Monad.Bayes.Population (resampleMultinomial, runPopulation)
+import Control.Monad.Bayes.Population (resampleMultinomial, runPopulation, spawn)
 
 data SamF a = Random (Double -> a) | Score (Log Double) (() -> a) deriving Functor
 
+type Initial m = FreeT SamF m
 
-type Sequential m = FreeT SamF m
-
-instance Monad m => MonadSample (Sequential m) where
+instance Monad m => MonadSample (Initial m) where
   random =  liftF (Random id)
 
-instance Monad m => MonadCond (Sequential m) where
+instance Monad m => MonadCond (Initial m) where
   score d =  liftF $ Score d id
 
-instance Monad m => MonadInfer (Sequential m)
+instance Monad m => MonadInfer (Initial m)
 
-f :: MonadInfer m => (m a -> m a) -> Sequential m a -> m a
+f :: MonadInfer m => (m a -> m a) -> Initial m a -> m a
 f transform = gprepro distHisto distribute \case
-    Compose (m) -> do
+    Compose m -> do
         m' <- m
         case m' of
           Pure a -> traceM "baz" >> return a
@@ -81,4 +80,4 @@ a = do
     -- z' <- random
     return ( x + y )
 
-test = sampleIO $ runPopulation $ f resampleMultinomial a 
+test = sampleIO $ runPopulation $ f resampleMultinomial (lift (spawn 2) >> a) 

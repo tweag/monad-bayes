@@ -25,10 +25,22 @@ module Control.Monad.Bayes.Sequential
 where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Coroutine hiding (suspend)
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (bernoulli, categorical, random),
+  )
+import Control.Monad.Coroutine
+  ( Coroutine (..),
+    bounce,
+    mapMonad,
+    pogoStick,
+  )
 import Control.Monad.Coroutine.SuspensionFunctors
-import Control.Monad.Trans
-import Data.Either
+  ( Await (..),
+    await,
+  )
+import Control.Monad.Trans (MonadIO, MonadTrans (..))
+import Data.Either (isRight)
 
 -- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly

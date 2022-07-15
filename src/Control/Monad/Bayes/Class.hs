@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -54,28 +57,35 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
+    Bayesian (Bayesian),
+    posterior,
+    mvNormal,
   )
 where
 
+import Control.Monad
 import Control.Monad (when)
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Cont
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS hiding (tell)
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
-import Control.Monad.Trans.Writer
-import qualified Data.Vector as V
-import Data.Vector.Generic as VG
-import Numeric.Log
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Trans.Class (MonadTrans (lift))
+import Control.Monad.Trans.Cont (ContT)
+import Control.Monad.Trans.Identity (IdentityT)
+import Control.Monad.Trans.List (ListT)
+import Control.Monad.Trans.Reader (ReaderT)
+import Control.Monad.Trans.State (StateT)
+import Control.Monad.Trans.Writer (WriterT)
+import Data.Matrix hiding ((!))
+import Data.Vector qualified as V
+import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
+import Numeric.Log (Log (..))
 import Statistics.Distribution
+  ( ContDistr (logDensity, quantile),
+    DiscreteDistr (probability),
+  )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
-import qualified Statistics.Distribution.Poisson as Poisson
+import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
@@ -140,7 +150,7 @@ class Monad m => MonadSample m where
     v Double ->
     -- | outcome category
     m Int
-  categorical ps = fromPMF (ps !)
+  categorical ps = if VG.null ps then error "empty input list" else fromPMF (ps !)
 
   -- | Draw from a categorical distribution in the log domain.
   logCategorical ::
@@ -247,6 +257,21 @@ normalPdf ::
   Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
+--------------------
+
+-- | a useful datatype for expressing bayesian models
+data Bayesian m z o = Bayesian
+  { latent :: m z, -- prior over latent variable Z
+    generative :: z -> m o, -- distribution over observations given Z=z
+    likelihood :: z -> o -> Log Double -- p(o|z)
+  }
+
+posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
+posterior Bayesian {..} os = do
+  z <- latent
+  factor $ product $ fmap (likelihood z) os
+  return z
+
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
@@ -259,13 +284,14 @@ instance MonadCond m => MonadCond (IdentityT m) where
 
 instance MonadInfer m => MonadInfer (IdentityT m)
 
-instance MonadSample m => MonadSample (MaybeT m) where
+instance MonadSample m => MonadSample (ExceptT e m) where
   random = lift random
+  uniformD = lift . uniformD
 
-instance MonadCond m => MonadCond (MaybeT m) where
+instance MonadCond m => MonadCond (ExceptT e m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (MaybeT m)
+instance MonadInfer m => MonadInfer (ExceptT e m)
 
 instance MonadSample m => MonadSample (ReaderT r m) where
   random = lift random
@@ -290,19 +316,12 @@ instance MonadSample m => MonadSample (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
+  uniformD = lift . uniformD
 
 instance MonadCond m => MonadCond (StateT s m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (StateT s m)
-
-instance (MonadSample m, Monoid w) => MonadSample (RWST r w s m) where
-  random = lift random
-
-instance (MonadCond m, Monoid w) => MonadCond (RWST r w s m) where
-  score = lift . score
-
-instance (MonadInfer m, Monoid w) => MonadInfer (RWST r w s m)
 
 instance MonadSample m => MonadSample (ListT m) where
   random = lift random
@@ -321,3 +340,11 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
+
+mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts

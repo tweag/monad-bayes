@@ -1,5 +1,7 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 
 -- |
@@ -23,16 +25,42 @@ module Control.Monad.Bayes.Sampler
     runSamplerST,
     sampleST,
     sampleSTfixed,
+    toBins,
+    sampleMean,
   )
 where
 
+import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
+  ( MonadSample
+      ( bernoulli,
+        beta,
+        categorical,
+        gamma,
+        geometric,
+        normal,
+        random,
+        uniform
+      ),
+  )
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+import Data.Fixed (mod')
+import Numeric.Log (Log (ln))
 import System.Random.MWC
-import qualified System.Random.MWC.Distributions as MWC
+  ( Gen,
+    GenIO,
+    GenST,
+    Seed,
+    Variate (uniform, uniformR),
+    create,
+    createSystemRandom,
+    restore,
+    save,
+  )
+import System.Random.MWC.Distributions qualified as MWC
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
@@ -45,13 +73,12 @@ newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
 sampleIO :: SamplerIO a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
 
--- | Like 'sampleIO', but with a fixed random seed.
 -- Useful for reproducibility.
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed (SamplerIO m) = create >>= runReaderT m
 
 -- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO a -> GenIO -> IO a
+sampleIOwith :: SamplerIO a -> Gen F.RealWorld -> IO a
 sampleIOwith (SamplerIO m) = runReaderT m
 
 fromSamplerST :: SamplerST a -> SamplerIO a
@@ -107,3 +134,25 @@ instance MonadSample SamplerST where
   bernoulli p = fromMWC $ MWC.bernoulli p
   categorical ps = fromMWC $ MWC.categorical ps
   geometric p = fromMWC $ MWC.geometric0 p
+
+type Bin = (Double, Double)
+
+-- | binning function. Useful when you want to return the bin that
+-- a random variable falls into, so that you can show a histogram of samples
+toBin ::
+  -- | bin size
+  Double ->
+  -- | number
+  Double ->
+  Bin
+toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
+
+toBins :: Double -> [Double] -> [Double]
+toBins binWidth = fmap (fst . toBin binWidth)
+
+sampleMean :: [(Double, Log Double)] -> Double
+sampleMean samples =
+  let z = F.premap (ln . exp . snd) F.sum
+      w = (F.premap (\(x, y) -> x * ln (exp y)) F.sum)
+      s = (/) <$> w <*> z
+   in F.fold s samples
