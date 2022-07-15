@@ -27,7 +27,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
-    sampled,
+    sampler,
   )
 where
 
@@ -71,8 +71,8 @@ newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
 -- the operating system.
 -- For efficiency this operation should be applied at the very end, ideally
 -- once per program.
-sampled :: SamplerIO a -> IO a
-sampled = sampleIO
+sampler :: SamplerIO a -> IO a
+sampler = sampleIO
 
 sampleIO :: SamplerIO a -> IO a
 sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m

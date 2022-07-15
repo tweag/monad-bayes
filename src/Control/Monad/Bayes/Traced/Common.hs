@@ -41,9 +41,9 @@ import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
 data MCMCConfig = MCMCConfig {proposal :: Proposal, numMCMCSteps :: Int, numBurnIn :: Int}
 
--- | Collection of random variables sampled during the program's execution.
+-- | Collection of random variables sampler during the program's execution.
 data Trace a = Trace
-  { -- | Sequence of random variables sampled during the program's execution.
+  { -- | Sequence of random variables sampler during the program's execution.
     variables :: [Double],
     --
     output :: a,

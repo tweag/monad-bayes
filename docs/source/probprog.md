@@ -26,7 +26,7 @@ This is the *model*. To perform *inference* , suppose we have a data set of `xs`
 We could then run the model as follows:
 
 ```haskell   
-mhRunsRegression = sampled 
+mhRunsRegression = sampler 
   $ unweighted 
   $ mcmc MCMCConfig 
       {numMCMCSteps = 1500, 
@@ -369,7 +369,7 @@ Run SMC with two resampling steps and two particles as follows, given a model `m
 
 ```haskell
 output = 
-  sampled $ 
+  sampler $ 
   population $ 
   smc SMCConfig 
     {numSteps = 2, 
@@ -382,7 +382,7 @@ output =
 
 
 ```haskell
-(sampled . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
