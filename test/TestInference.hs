@@ -19,7 +19,10 @@ import Control.Monad.Bayes.Enumerator (enumerated)
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
-import Control.Monad.Bayes.Population (collapse, population, resampleMultinomial, resampleStratified, resampleSystematic)
+import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Integrator (normalize)
+import Control.Monad.Bayes.Integrator qualified as Integrator
+import Control.Monad.Bayes.Population (collapse, runPopulation)
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)

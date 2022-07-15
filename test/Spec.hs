@@ -5,6 +5,7 @@ import Test.Hspec (context, describe, hspec, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (ioProperty, property, (==>))
 import TestAdvanced qualified
+import TestDistribution qualified
 import TestEnumerator qualified
 import TestInference qualified
 import TestIntegrator qualified
@@ -17,6 +18,15 @@ import TestWeighted qualified
 
 main :: IO ()
 main = hspec do
+  describe "Distribution" $
+    it "gives correct mean, variance and covariance" $
+      do
+        p1 <- TestDistribution.passed1
+        p1 `shouldBe` True
+        p2 <- TestDistribution.passed2
+        p2 `shouldBe` True
+        p3 <- TestDistribution.passed3
+        p3 `shouldBe` True
   describe "Weighted" $
     it "accumulates likelihood correctly" $
       do

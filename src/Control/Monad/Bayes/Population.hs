@@ -17,6 +17,7 @@
 module Control.Monad.Bayes.Population
   ( Population,
     population,
+    runPopulation,
     explicitPopulation,
     fromWeightedList,
     spawn,
@@ -74,8 +75,11 @@ instance MonadTrans Population where
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-population :: Population m a -> m [(a, Log Double)]
+population, runPopulation :: Population m a -> m [(a, Log Double)]
 population (Population m) = runListT $ weighted m
+
+-- | deprecated synonym
+runPopulation = population
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]

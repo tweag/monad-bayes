@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
@@ -25,6 +26,8 @@ module Control.Monad.Bayes.Integrator
     Integrator,
     momentGeneratingFunction,
     cumulantGeneratingFunction,
+    integrated,
+    runIntegrator
   )
 where
 
@@ -50,8 +53,10 @@ import Statistics.Distribution.Uniform qualified as Statistics
 newtype Integrator a = Integrator {getCont :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
 
-integrated :: (a -> Double) -> Integrator a -> Double
+integrated, runIntegrator :: (a -> Double) -> Integrator a -> Double
 integrated f (Integrator a) = runCont a f
+
+runIntegrator = integrated
 
 instance MonadSample Integrator where
   random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
