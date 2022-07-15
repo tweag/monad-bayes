@@ -769,7 +769,7 @@ Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which 
 
 ### Sequential Monte Carlo
 
-Sequential importance resampling works by doing `sis` with a resampler of your choice, such as `resampleMultinomial`, after first spawning a set of `n` particles.
+Sequential importance resampling works by doing `sequentially` with a resampler of your choice, such as `resampleMultinomial`, after first spawning a set of `n` particles.
 
 ```haskell
 smc ::
