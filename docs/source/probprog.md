@@ -57,7 +57,7 @@ This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a
 Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
 
 
-<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerated` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerator` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
 
 `sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
@@ -217,10 +217,10 @@ Two of the large classes of inference methods are **sampling based methods** and
 ## Exact inference
 
 ```haskell
-enumerated :: Ord a => Enumerator a -> [(a, Double)]
+enumerator :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-So `enumerated (bernoulli 0.7)` gives you
+So `enumerator (bernoulli 0.7)` gives you
 
 ```
 [(False,0.3),(True,0.7)]
@@ -254,21 +254,21 @@ model = do
   condition (x || y)
   return x
 
-enumerated model
+enumerator model
 
 > [(True,0.7692307692307692),(False,0.23076923076923078)]
 ```
 
-**Note: `enumerated` only works on finite discrete distributions**
+**Note: `enumerator` only works on finite discrete distributions**
 
-It will run forever on infinite distributions like `enumerated (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerated (normal 0 1)`:
+It will run forever on infinite distributions like `enumerator (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerator (normal 0 1)`:
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
 **However**, it's totally fine to have the elements of the support themselves be infinite, as in:
 
 ```haskell
-fmap (\(ls,p) -> (take 4 ls, p)) $ enumerated $ uniformD [[1..], [2..]]
+fmap (\(ls,p) -> (take 4 ls, p)) $ enumerator $ uniformD [[1..], [2..]]
 ```
 
 which gives
@@ -477,10 +477,10 @@ This inference method takes a prior and a model separately, so it only applies t
 
 <!-- todo -->
 
-<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerated`, the mass of each element of the support. -->
+<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerator`, the mass of each element of the support. -->
 
 
-<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerated` does. -->
+<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerator` does. -->
 
 
 
@@ -585,7 +585,7 @@ mixture2 point = do
 This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
 
 ```haskell
-enumerated $ mixture2 2
+enumerator $ mixture2 2
 ```
 
 yields

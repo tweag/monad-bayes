@@ -5,7 +5,7 @@ import Control.Monad.Bayes.Class
     MonadSample (uniformD),
     factor,
   )
-import Control.Monad.Bayes.Enumerator as Dist (enumerated, mass)
+import Control.Monad.Bayes.Enumerator as Dist (enumerator, mass)
 import Control.Monad.Bayes.Sequential (advance, finish, finished)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
@@ -34,7 +34,7 @@ sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
 
 checkPreserve :: Bool
-checkPreserve = enumerated (finish sprinkler) ~== enumerated sprinkler
+checkPreserve = enumerator (finish sprinkler) ~== enumerator sprinkler
 
 pFinished :: Int -> Double
 pFinished 0 = 0.8267716535433071

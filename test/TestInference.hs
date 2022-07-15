@@ -15,7 +15,7 @@ import ConjugatePriors
   )
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadInfer, posterior)
-import Control.Monad.Bayes.Enumerator (enumerated)
+import Control.Monad.Bayes.Enumerator (enumerator)
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
@@ -50,8 +50,8 @@ checkTerminateSMC = sampleIOfixed (population $ smc SMCConfig {numSteps = 2, num
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
-  (enumerated . collapse . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) sprinkler
-    ~== enumerated sprinkler
+  (enumerator . collapse . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) sprinkler
+    ~== enumerator sprinkler
 
 expectationNearNumeric ::
   Weighted Integrator.Integrator Double ->

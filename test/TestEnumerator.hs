@@ -6,7 +6,7 @@ import Control.Monad.Bayes.Class
   ( MonadSample (categorical, uniformD),
   )
 import Control.Monad.Bayes.Enumerator
-  ( enumerated,
+  ( enumerator,
     evidence,
     expectation,
   )
@@ -28,10 +28,10 @@ agg = do
   return (x + y)
 
 passed2 :: Bool
-passed2 = enumerated agg ~== [(2, 0.5), (1, 0.25), (3, 0.25)]
+passed2 = enumerator agg ~== [(2, 0.5), (1, 0.25), (3, 0.25)]
 
 passed3 :: Bool
-passed3 = enumerated Sprinkler.hard ~== enumerated Sprinkler.soft
+passed3 = enumerator Sprinkler.hard ~== enumerator Sprinkler.soft
 
 passed4 :: Bool
 passed4 =

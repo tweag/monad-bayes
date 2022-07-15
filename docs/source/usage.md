@@ -121,13 +121,13 @@ So, a value of type `Enumerator Bool`, for instance, is a list of pairs of boole
 [(False,0.8914),(True,0.1086)]
 ```
 
-Also in `Control.Monad.Bayes.Enumerator` is a function `enumerated`, which has type:
+Also in `Control.Monad.Bayes.Enumerator` is a function `enumerator`, which has type:
 
 ```haskell
-enumerated :: Ord a => Enumerator a -> [(a, Double)]
+enumerator :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-We can write `enumerated sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
+We can write `enumerator sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
 
 But for this to be well-typed, we need `Enumerator` to be an instance of `MonadInfer`. For that, we need `Enumerator` to be a `MonadSample`, and a `MonadCond`. For that, we need it to be a `Monad`, and in turn, a `Functor`. In understanding these instance definition, we'll understand what what `Enumerator` is doing for us.
 
@@ -164,7 +164,7 @@ instance MonadCond Enumerator where
   score w = fromList [((), w)]
 ```
 
-Finally, `enumerated` simply unwraps `Enumerator` to get a list of pairs of values and their weights, and then normalizes them into probabilities. It orders the list, which is why `enumerated` requires an `Ord` instance.
+Finally, `enumerator` simply unwraps `Enumerator` to get a list of pairs of values and their weights, and then normalizes them into probabilities. It orders the list, which is why `enumerator` requires an `Ord` instance.
 
 To see how this all works together, consider:
 
@@ -175,7 +175,7 @@ example = do
   return x
 ```
 
-From the way the `MonadSample` instance for `Enumerator` is defined, `bernoulli 0.5` is a list of two pairs: `[(True, 0.5), (False, 0.5)]`. Using the `Monad` instance, the next line multiplies each of the masses by a number (`0` for `True`, `1` for `False`). The final line multiplies both by `1.0`. And then `enumerated` normalizes the result. So the ensuing distribution from `enumerate example` is `{True : 1.0}`.
+From the way the `MonadSample` instance for `Enumerator` is defined, `bernoulli 0.5` is a list of two pairs: `[(True, 0.5), (False, 0.5)]`. Using the `Monad` instance, the next line multiplies each of the masses by a number (`0` for `True`, `1` for `False`). The final line multiplies both by `1.0`. And then `enumerator` normalizes the result. So the ensuing distribution from `enumerate example` is `{True : 1.0}`.
 
 
 
@@ -356,7 +356,7 @@ spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 `spawn` spawns new particles. As an example:
 
 ```haskell
-enumerated $ population (spawn 2)
+enumerator $ population (spawn 2)
 ```
 
 gives
@@ -630,7 +630,7 @@ example = replicateM 100 $ do
   return x
 ```
 
-Doing `enumerated example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
+Doing `enumerator example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
 
 The main purpose of `Enumerator` is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like `Weighted`, to get a sense of how they work. For example, consider:
 
@@ -641,7 +641,7 @@ example = do
   return x
 ```
 
-`(enumerated . weighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . weighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
+`(enumerator . weighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . weighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
 
 ### Quadrature
 
@@ -763,9 +763,9 @@ example = replicateM 100 $ do
   return x
 ```
 
-Naive enumeration, as in `enumerated example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
+Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
-Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerated $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 
 ### Sequential Monte Carlo
 
