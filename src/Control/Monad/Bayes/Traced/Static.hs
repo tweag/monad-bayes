@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Static
@@ -10,34 +11,38 @@
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Static
   ( Traced,
-    hoistT,
+    hoist,
     marginal,
     mhStep,
     mh,
-    estimateMeanVarianceMH,
   )
 where
 
 import Control.Applicative (liftA2)
-import Control.Foldl hiding (map, random)
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced.Common
-import Control.Monad.Bayes.Weighted (Weighted, prior)
+  ( Trace (..),
+    bind,
+    burnIn,
+    mhTrans,
+    scored,
+    singleton,
+  )
+import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Control.Monad.Bayes.Density.State (Density)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
 data Traced m a = Traced
-  { model :: Weighted (FreeSampler m) a,
+  { model :: Weighted (Density m) a,
     traceDist :: m (Trace a)
   }
 
@@ -65,8 +70,8 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistT f (Traced m d) = Traced m (f d)
+hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoist f (Traced m d) = Traced m (f d)
 
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a
@@ -89,6 +94,3 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
         (x :| xs) <- f (k - 1)
         y <- mhTrans m x
         return (y :| x : xs)
-
-estimateMeanVarianceMH :: Fractional a => Traced (Weighted SamplerIO) a -> IO (a, a)
-estimateMeanVarianceMH s = fold (liftA2 (,) mean variance) <$> (fmap (take 2000) . sampleIO . prior . mh 5000) s

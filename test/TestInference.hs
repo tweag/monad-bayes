@@ -15,19 +15,14 @@ import ConjugatePriors
   )
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadInfer, posterior)
-import Control.Monad.Bayes.Enumerator (enumerate)
+import Control.Monad.Bayes.Enumerator (enumerator)
 import Control.Monad.Bayes.Inference.SMC
-  ( smcMultinomial,
-    smcStratified,
-    smcSystematic,
-  )
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
+import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Population (collapse, runPopulation)
-import Control.Monad.Bayes.Sampler
-  ( sampleIOfixed,
-  )
-import Control.Monad.Bayes.Sampler qualified as Sampler
+import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
+import Control.Monad.Bayes.Sampler.Strict qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Weighted qualified as Weighted
 import Data.AEq (AEq ((~==)))
@@ -40,23 +35,23 @@ sprinkler = Sprinkler.soft
 -- | Count the number of particles produced by SMC
 checkParticles :: Int -> Int -> IO Int
 checkParticles observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcMultinomial observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleMultinomial} Sprinkler.soft))
 
 checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleSystematic} Sprinkler.soft))
 
 checkParticlesStratified :: Int -> Int -> IO Int
 checkParticlesStratified observations particles =
-  sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (population $ smc SMCConfig {numSteps = observations, numParticles = particles, resampler = resampleStratified} Sprinkler.soft))
 
 checkTerminateSMC :: IO [(Bool, Log Double)]
-checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
+checkTerminateSMC = sampleIOfixed (population $ smc SMCConfig {numSteps = 2, numParticles = 5, resampler = resampleMultinomial} sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
-  (enumerate . collapse . smcMultinomial 2 2) sprinkler
-    ~== enumerate sprinkler
+  (enumerator . collapse . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) sprinkler
+    ~== enumerator sprinkler
 
 expectationNearNumeric ::
   Weighted Integrator.Integrator Double ->
@@ -68,8 +63,8 @@ expectationNearNumeric x y =
    in (abs (e1 - e2))
 
 expectationNearSampling x y = do
-  e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted x
-  e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted y
+  e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted x
+  e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted y
   return (abs (e1 - e2))
 
 testNormalNormal :: [Double] -> IO Bool

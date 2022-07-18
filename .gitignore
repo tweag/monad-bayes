@@ -1,4 +1,6 @@
 venv
+_cache
+docs/build
 *.csv
 *.pdf
 *.dat
@@ -30,3 +32,5 @@ dist-*
 /result
 /.pre-commit-config.yaml
 /.direnv
+venv/
+.netlify/

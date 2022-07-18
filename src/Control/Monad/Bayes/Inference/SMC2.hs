@@ -23,10 +23,11 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
+import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
-import Control.Monad.Bayes.Inference.SMC (smcSystematicPush)
-import Control.Monad.Bayes.Population as Pop (Population, runPopulation)
-import Control.Monad.Bayes.Sequential (Sequential)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush, NumSteps(..))
+import Control.Monad.Bayes.Population as Pop (Population, population, resampleMultinomial)
+import Control.Monad.Bayes.Sequential.Coroutine (Sequential)
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
 import Numeric.Log (Log)
@@ -53,7 +54,7 @@ instance MonadSample m => MonadInfer (SMC2 m)
 smc2 ::
   MonadSample m =>
   -- | number of time steps
-  Int ->
+  NumSteps ->
   -- | number of inner particles
   Int ->
   -- | number of outer particles
@@ -66,4 +67,7 @@ smc2 ::
   (b -> Sequential (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]
 smc2 k n p t param model =
-  rmsmc k p t (param >>= setup . runPopulation . smcSystematicPush k n . model)
+  rmsmc
+    MCMCConfig {numMCMCSteps = t, proposal = SingleSiteMH, numBurnIn = 0}
+    SMCConfig {numParticles = p, numSteps = k, resampler = resampleMultinomial}
+    (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . model)

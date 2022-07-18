@@ -10,7 +10,7 @@
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Basic
   ( Traced,
-    hoistT,
+    hoist,
     marginal,
     mhStep,
     mh,
@@ -23,7 +23,7 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -38,7 +38,7 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 -- | Tracing monad that records random choices made in the program.
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
-    model :: Weighted (FreeSampler Identity) a,
+    model :: Weighted (Density Identity) a,
     -- | Record trace and output.
     traceDist :: m (Trace a)
   }
@@ -64,8 +64,8 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistT f (Traced m d) = Traced m (f d)
+hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoist f (Traced m d) = Traced m (f d)
 
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a

@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC
@@ -12,15 +13,14 @@
 -- Sequential Monte Carlo (SMC) sampling.
 --
 -- Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
-module Control.Monad.Bayes.Inference.SMC where
-
--- ( sir,
---   smcMultinomial,
---   smcSystematic,
---   smcStratified,
---   smcMultinomialPush,
---   smcSystematicPush,
--- )
+module Control.Monad.Bayes.Inference.SMC
+  ( smc,
+    smcPush,
+    SMCConfig (..),
+    smcFree,
+    NumSteps(..)
+  )
+where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
@@ -30,91 +30,45 @@ import Control.Monad.Bayes.Population
     resampleStratified,
     resampleSystematic,
     spawn,
+    withParticles
   )
-import Control.Monad.Bayes.Sequential as Seq
-  ( Sequential,
-    hoistFirst,
-    sis,
-  )
+import Control.Monad.Bayes.Sequential.Coroutine as Coroutine
+import Control.Monad.Bayes.Sequential.Free as Free
+
+data NumSteps = Only Int | All
+
+data SMCConfig m = SMCConfig
+  { resampler :: forall x. Population m x -> Population m x,
+    numSteps :: NumSteps,
+    numParticles :: Int
+  }
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
-sir ::
-  Monad m =>
-  -- | resampler
-  (forall x. Population m x -> Population m x) ->
-  -- | number of timesteps
-  Int ->
-  -- | population size
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
-
--- | Sequential Monte Carlo with multinomial resampling at each timestep.
--- Weights are not normalized.
-smcMultinomial ::
+smc ::
   MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
+  SMCConfig m ->
+  Coroutine.Sequential (Population m) a ->
   Population m a
-smcMultinomial = sir resampleMultinomial
+smc SMCConfig {..} = 
+  (case numSteps of 
+    Only n -> Coroutine.sequentially resampler n
+    All -> Coroutine.sequentiallyAll resampler)
+  
+  . Coroutine.hoistFirst (withParticles numParticles)
 
--- | Sequential Monte Carlo with systematic resampling at each timestep.
--- Weights are not normalized.
-smcSystematic ::
+-- | Sequential importance resampling.
+-- Doesn't require specification of number of steps: executes the resampler at each factor statement
+smcFree ::
   MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
+  SMCConfig m ->
+  Free.Sequential (Population m) a ->
   Population m a
-smcSystematic = sir resampleSystematic
-
--- | Sequential Monte Carlo with stratified resampling at each timestep.
--- Weights are not normalized.
-smcStratified ::
-  MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  Sequential (Population m) a ->
-  -- | model
-  Population m a
-smcStratified = sir resampleStratified
+smcFree SMCConfig {..} = Free.sequentially resampler . Free.hoistFirst (withParticles numParticles)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
-smcMultinomialPush ::
-  MonadInfer m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcMultinomialPush = sir (pushEvidence . resampleMultinomial)
-
--- | Sequential Monte Carlo with systematic resampling at each timestep.
--- Weights are normalized at each timestep and the total weight is pushed
--- as a score into the transformed monad.
-smcSystematicPush ::
-  MonadInfer m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model
-  Sequential (Population m) a ->
-  Population m a
-smcSystematicPush = sir (pushEvidence . resampleSystematic)
+smcPush ::
+  MonadInfer m => SMCConfig m -> Coroutine.Sequential (Population m) a -> Population m a
+smcPush config = smc config {resampler = (pushEvidence . resampler config)}

@@ -5,12 +5,13 @@
 module Main (main) where
 
 import Control.Monad.Bayes.Class (MonadInfer)
-import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
-import Control.Monad.Bayes.Inference.SMC (smcSystematic)
-import Control.Monad.Bayes.Population (runPopulation)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
+import Control.Monad.Bayes.Population (population, resampleSystematic)
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOwith)
 import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
   ( Benchmark,
     Benchmarkable,
@@ -31,7 +32,7 @@ import System.Random.MWC (GenIO, createSystemRandom)
 -- | Environment to execute benchmarks in.
 newtype Env = Env {rng :: GenIO}
 
-data ProbProgSys = MonadInfer
+data ProbProgSys = MonadBayes
   deriving stock (Show)
 
 data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
@@ -59,28 +60,37 @@ instance Show Alg where
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
 runAlg :: Model -> Alg -> SamplerIO String
-runAlg model (MH n) = show <$> prior (mh n (buildModel model))
-runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
-runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
+runAlg model (MH n) = show <$> unweighted (mh n (buildModel model))
+runAlg model (SMC n) = show <$> population (smc SMCConfig {numSteps = (modelLength model), numParticles = n, resampler = resampleSystematic} (buildModel model))
+runAlg model (RMSMC n t) =
+  show
+    <$> population
+      ( rmsmcDynamic
+          MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH}
+          SMCConfig {numSteps = modelLength model, numParticles = n, resampler = resampleSystematic}
+          (buildModel model)
+      )
+
+-- (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadInfer model alg = nfIO $ sampleIOwith (runAlg model alg) g
+prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
-prepareBenchmark e MonadInfer model alg =
-  bench (show MonadInfer ++ sep ++ show model ++ sep ++ show alg) $
-    prepareBenchmarkable (rng e) MonadInfer model alg
+prepareBenchmark e MonadBayes model alg =
+  bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
+    prepareBenchmarkable (rng e) MonadBayes model alg
   where
     sep = "_" :: String
 
 -- | Checks if the requested benchmark is implemented.
 supported :: (ProbProgSys, Model, Alg) -> Bool
-supported (_, _, RMSMC _ _) = False
+supported (_, _, RMSMC _ _) = True
 supported _ = True
 
 systems :: [ProbProgSys]
 systems =
-  [ MonadInfer
+  [ MonadBayes
   ]
 
 lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]

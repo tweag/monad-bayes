@@ -1,6 +1,6 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.1.3
+version:            0.1.2.1
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
@@ -33,19 +33,21 @@ library
   exposed-modules:
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Enumerator
-    Control.Monad.Bayes.Free
     Control.Monad.Bayes.Inference.Lazy.MH
     Control.Monad.Bayes.Inference.Lazy.WIS
+    Control.Monad.Bayes.Density.Free
+    Control.Monad.Bayes.Density.State
+    Control.Monad.Bayes.Inference.MCMC
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
     Control.Monad.Bayes.Inference.SMC2
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
-    Control.Monad.Bayes.Sampler
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
-    Control.Monad.Bayes.Sequential
+    Control.Monad.Bayes.Sequential.Coroutine
+    Control.Monad.Bayes.Sequential.Free
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
     Control.Monad.Bayes.Traced.Dynamic
@@ -64,6 +66,7 @@ library
     , integration
     , log-domain       >=0.12   && <0.14
     , math-functions   >=0.2.1  && <0.4
+    , matrix
     , monad-coroutine  ^>=0.9.0
     , monad-extras
     , mtl              ^>=2.2.2
@@ -76,6 +79,8 @@ library
     , text
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
+    , recursion-schemes
+    , comonad
 
   default-extensions:
     BlockArguments
@@ -93,14 +98,6 @@ library
 
   else
     ghc-options: -Wall
-
-  default-extensions:
-    BlockArguments
-    FlexibleContexts
-    ImportQualifiedPost
-    LambdaCase
-    OverloadedStrings
-    TupleSections
 
 executable example
   main-is:            Single.hs
@@ -126,8 +123,6 @@ executable example
     , time
     , vector
 
-  -- , hvega
-  -- , ihaskell-hvega
   if flag(dev)
     ghc-options:
       -Wall -Wcompat -Wincomplete-record-updates
@@ -151,10 +146,13 @@ test-suite monad-bayes-test
   other-modules:
     ConjugatePriors
     Sprinkler
+    TestAdvanced
+    TestDistribution
     TestEnumerator
     TestInference
     TestIntegrator
     TestPopulation
+    TestSampler
     TestSequential
     TestWeighted
 
@@ -167,11 +165,13 @@ test-suite monad-bayes-test
     , ieee754
     , log-domain
     , math-functions
+    , matrix
     , monad-bayes
     , mtl
     , pipes
     , pretty-simple
     , profunctors
+    , mwc-random
     , QuickCheck
     , statistics
     , text

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -57,12 +56,16 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
-    Bayesian (Bayesian),
+    Bayesian (..),
     posterior,
+    priorPredictive,
+    posteriorPredictive,
+    independent,
+    mvNormal,
   )
 where
 
-import Control.Monad (when)
+import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
@@ -71,6 +74,7 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
+import Data.Matrix hiding ((!))
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
@@ -140,10 +144,6 @@ class Monad m => MonadSample m where
     -- | \(\sim \mathrm{B}(1, p)\)
     m Bool
   bernoulli p = fmap (< p) random
-
-  -- if (-0.01) <= p && p <= 1.01 -- leave a little room for floating point errors
-  --   then fmap (< p) random
-  --   else error $ "bernoulli parameter p must be in range [0,1], but is: " <> show p
 
   -- | Draw from a categorical distribution.
   categorical ::
@@ -244,6 +244,9 @@ factor = score
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
+independent :: Applicative m => Int -> m a -> m [a]
+independent = replicateM
+
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
 
@@ -273,6 +276,16 @@ posterior Bayesian {..} os = do
   z <- latent
   factor $ product $ fmap (likelihood z) os
   return z
+
+priorPredictive :: Monad m => Bayesian m a b -> m b
+priorPredictive bm = latent bm >>= generative bm
+
+posteriorPredictive ::
+  (MonadInfer m, Foldable f, Functor f) =>
+  Bayesian m a b ->
+  f b ->
+  m b
+posteriorPredictive bm os = posterior bm os >>= generative bm
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
@@ -342,3 +355,11 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
+
+mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts

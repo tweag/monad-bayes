@@ -1,5 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE Trustworthy #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -11,7 +10,7 @@
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Dynamic
   ( Traced,
-    hoistT,
+    hoist,
     marginal,
     freeze,
     mhStep,
@@ -25,7 +24,6 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -36,12 +34,13 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Control.Monad.Bayes.Density.State (Density)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
+newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where
@@ -76,8 +75,8 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistT f (Traced c) = Traced (f c)
+hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoist f (Traced c) = Traced (f c)
 
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a

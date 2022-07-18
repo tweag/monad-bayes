@@ -2,9 +2,11 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
@@ -47,16 +49,16 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-       in show <$> runPopulation (smcSystematic k n m)
+       in show <$> population (smc SMCConfig {numSteps = Only k, numParticles = n, resampler = resampleSystematic} m)
     MH ->
       let t = 100
           (_, m) = getModel model
-       in show <$> prior (mh t m)
+       in show <$> unweighted (mh t m)
     RMSMC ->
       let n = 10
           t = 1
           (k, m) = getModel model
-       in show <$> runPopulation (rmsmcBasic k n t m)
+       in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = Only k, numParticles = n, resampler = resampleSystematic}) m)
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do
