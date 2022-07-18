@@ -354,7 +354,7 @@ is an IO operation which when run, will display either `(False, 0.0)` or `(True,
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:
 
 ```haskell
-(sampleIO . unweighted . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
+(sampleIO . unweighted . mh mcmcConfig) :: Traced (Weighted SamplerIO) a -> IO [a]
 ```
 
 `Traced (Weighted SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance:
@@ -372,7 +372,14 @@ Then
 
 ```haskell
 run :: IO [Bool]
-run = (sampleIO . unweighted . mh 10) example
+run = (
+  sampleIO . 
+  unweighted . 
+  mh MCMCConfig {
+    numMCMCSteps = 10, 
+    burnIn = 0, 
+    proposal = SingleSiteMH}) 
+  example
 ```
 
 produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
@@ -386,14 +393,14 @@ The end of the chain is the head of the list, so you can drop samples from the e
 
 ## Sequential Monte Carlo (Particle Filtering)
 
-Run SMC with two resampling steps and two particles as follows, given a model `m`:
+Run SMC with two particles, and resampling at every factor statement, as follows, given a model `m`:
 
 ```haskell
 output = 
   sampler $ 
   population $ 
   smc SMCConfig 
-    {numSteps = 2, 
+    {numSteps = All, 
     numParticles = 2, 
     resampler = resampleMultinomial} 
   m
@@ -403,7 +410,7 @@ output =
 
 
 ```haskell
-(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+(sampler . population . smc SMCConfig {numSteps = Only 2, numParticles = 2, resampler = resampleMultinomial} random) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
@@ -423,7 +430,7 @@ And here is the inference:
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) example
+run = (sampleIO . population . smc SMCConfig {numSteps = Only 1, numParticles = 2, resampler = resampleMultinomial}) example
 ```
 
 ...and the result:
@@ -434,7 +441,7 @@ run = (sampleIO . population . smc SMCConfig {numSteps = 2, numParticles = 2, re
 
 Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
 
-`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. Specify it as either `All` or `Only n` for `n` an integer. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 
 ## Resample Move Sequential Monte Carlo
@@ -462,7 +469,7 @@ run = (
   population . 
   rmsmcBasic 
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
-    SMCConfig {numParticles = 4, numSteps = 4}) 
+    SMCConfig {numParticles = 4, numSteps = All}) 
   example
 ```
 
