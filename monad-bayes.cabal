@@ -42,7 +42,7 @@ library
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler
     Control.Monad.Bayes.Sequential
-    Control.Monad.Bayes.SequentialCata
+    Control.Monad.Bayes.Sequential.Free
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
     Control.Monad.Bayes.Traced.Dynamic
