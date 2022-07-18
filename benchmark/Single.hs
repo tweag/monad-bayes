@@ -13,10 +13,8 @@ import Data.Time
 import HMM qualified
 import LDA qualified
 import LogReg qualified
-import Numeric.Log
 import Options.Applicative
-import System.Random.MWC (create, createSystemRandom)
-import System.Random.Stateful
+import System.Random.MWC (createSystemRandom)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
@@ -35,14 +33,14 @@ getModel model = (size model, program model)
     size (LR n) = n
     size (HMM n) = n
     size (LDA (d, w)) = d * w
-    program (LR n) = show <$> (LogReg.logisticRegression (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (LogReg.syntheticData n)))
-    program (HMM n) = show <$> (HMM.hmm (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (HMM.syntheticData n)))
-    program (LDA (d, w)) = show <$> (LDA.lda (runST $ (newSTGenM (mkStdGen 1729)) >>= sampleSTwith (LDA.syntheticData d w)))
+    program (LR n) = show <$> (LogReg.logisticRegression (runST $ sampleSTfixed (LogReg.syntheticData n)))
+    program (HMM n) = show <$> (HMM.hmm (runST $ sampleSTfixed (HMM.syntheticData n)))
+    program (LDA (d, w)) = show <$> (LDA.lda (runST $ sampleSTfixed (LDA.syntheticData d w)))
 
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 
-runAlg :: Model -> Alg -> SamplerIO g String
+runAlg :: Model -> Alg -> Sampler g IO String
 runAlg model alg =
   case alg of
     SMC ->
@@ -62,7 +60,7 @@ runAlg model alg =
 infer :: Model -> Alg -> IO ()
 infer model alg = do
   g <- createSystemRandom
-  x <- sampleIOwith (runAlg model alg) g
+  x <- sampleWith (runAlg model alg) g
   print x
 
 opts :: ParserInfo (Model, Alg)
