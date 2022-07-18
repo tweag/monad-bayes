@@ -4,11 +4,11 @@
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
 import Control.Monad.Bayes.Inference.SMC (smcSystematic)
 import Control.Monad.Bayes.Population (runPopulation)
-import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOwith)
+import Control.Monad.Bayes.Sampler (sampleWith)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (prior)
 import Criterion.Main
@@ -58,13 +58,13 @@ instance Show Alg where
   show (SMC n) = "SMC" ++ show n
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
-runAlg :: Model -> Alg -> SamplerIO g String
+runAlg :: MonadSample f => Model -> Alg -> f String
 runAlg model (MH n) = show <$> prior (mh n (buildModel model))
 runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
 runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
 
 prepareBenchmarkable :: StatefulGen r IO => r -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
+prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleWith (runAlg model alg) g
 
 prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
 prepareBenchmark e MonadBayes model alg =
@@ -133,9 +133,9 @@ main :: IO ()
 main = do
   g <- newIOGenM (mkStdGen 1729)
   let e = Env g
-  lrData <- sampleIOwith (LogReg.syntheticData 1000) g
-  hmmData <- sampleIOwith (HMM.syntheticData 1000) g
-  ldaData <- sampleIOwith (LDA.syntheticData 5 1000) g
+  lrData <- sampleWith (LogReg.syntheticData 1000) g
+  hmmData <- sampleWith (HMM.syntheticData 1000) g
+  ldaData <- sampleWith (LDA.syntheticData 5 1000) g
   let configLength = defaultConfig {csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
   defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}

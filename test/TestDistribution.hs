@@ -25,14 +25,14 @@ passed1 = sampleIOfixed $ do
       sigma11 = 2.0
       sigma12 = 1.0
       bigSigma = (fromList 2 2 [sigma11, sigma12, sigma12, sigma11])
-      nSamples = 100000
+      nSamples = 200000
       nSamples' = fromIntegral nSamples
   ss <- replicateM nSamples $ (mvNormal mu bigSigma)
   let xbar = (/ nSamples') $ sum $ fmap (V.! 0) ss
       ybar = (/ nSamples') $ sum $ fmap (V.! 1) ss
   let term1 = (/ nSamples') $ sum $ zipWith (*) (fmap (V.! 0) ss) (fmap (V.! 1) ss)
   let term2 = xbar * ybar
-  return $ abs (sigma12 - (term1 - term2)) < 1e-2
+  return $ abs (sigma12 - (term1 - term2)) < 2e-2
 
 -- Test the sampled means are approximately the same as the specified
 -- means.

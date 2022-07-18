@@ -8,7 +8,7 @@ import Control.Monad.Bayes.Class
     MonadSample (normal, uniformD),
     factor,
   )
-import Control.Monad.Bayes.Sampler (sampleIOwith)
+import Control.Monad.Bayes.Sampler (sampleWith)
 import Control.Monad.Bayes.Weighted (runWeighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
@@ -30,7 +30,7 @@ result = second (exp . ln) <$> runWeighted model
 passed :: IO Bool
 passed = do
   stdGen <- newIOGenM (mkStdGen 1729)
-  fmap check (sampleIOwith result stdGen)
+  fmap check (sampleWith result stdGen)
 
 check :: ((Int, Double), Double) -> Bool
 check ((0, 1), 1) = True

@@ -5,7 +5,7 @@ import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
 import Control.Monad.Bayes.Inference.SMC (smcMultinomial)
 import Control.Monad.Bayes.Inference.SMC2 as SMC2 (smc2)
 import Control.Monad.Bayes.Population (runPopulation)
-import Control.Monad.Bayes.Sampler (sampleIO, sampleIOwith)
+import Control.Monad.Bayes.Sampler (sampleWith)
 import Control.Monad.Bayes.Weighted (prior)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import NonlinearSSM (generateData, model, param)
@@ -15,7 +15,7 @@ main :: IO ()
 main = do
   (smcRes, smcrmRes, pmmhRes, smc2Res) <-
     newIOGenM (mkStdGen 1729)
-      >>= ( sampleIOwith $ do
+      >>= ( sampleWith $ do
               let t = 5
               dat <- generateData t
               let ys = map snd dat
