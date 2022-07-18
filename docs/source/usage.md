@@ -396,6 +396,22 @@ Summary of key info on `Sequential`:
 - `instance MonadSample m => instance MonadSample (Sequential m)`
 - `instance MonadCond m => instance MonadCond (Sequential m)`
 
+There are two implementations, in `Control.Monad.Bayes.Sequential.Free` and `Control.Monad.Bayes.Sequential.Coroutine`. 
+
+#### Control.Monad.Bayes.Sequential.Free
+
+This section assumes some familiarity with the use of the free monad. For free monad's for probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming).
+
+Here, the base functor of the free monad contains constructors `Random` and `Score`, so can represent a `MonadInfer` program with both random choies and factor (score) statements. 
+
+We can *fold* this representation with a catamorphism, performing a specified transformation after each factor statement. This is how we implement `sequentially`.
+
+This representation is rather simpler than the one in `Control.Monad.Bayes.Sequential.Coroutine`, and in particular, does not require a manual specification of the number of steps.
+
+#### Control.Monad.Bayes.Sequential.Coroutine
+
+The former uses the `monad-coroutine` package:
+
 ```haskell
 newtype Sequential m a = 
     Sequential {runSequential :: Coroutine (Await ()) m a}
@@ -479,12 +495,7 @@ hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
 hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 ```
 
-<!-- As an example, consider:
-
-TODO: Enumerator example with `trace` -->
-
 When `m` is `Population n` for some other `n`, then `resampleGeneric` gives us one example of the natural transformation we want. In other words, operating in `Sequential (Population n)` works, and not only works but does something statistically interesting: particle filtering (aka SMC).
-
 
 
 
@@ -741,7 +752,7 @@ MH is then easily defined as taking steps with this kernel, in the usual fashion
 This is provided by 
 
 ```haskell
-sis ::
+sequentially ::
   Monad m =>
   -- | transformation
   (forall x. m x -> m x) ->
@@ -749,10 +760,10 @@ sis ::
   Int ->
   Sequential m a ->
   m a
-sis f k = finish . composeCopies k (advance . hoistFirst f)
+sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 ```
 
-in Control.Monad.Bayes.Sequential. You provide a natural transformation in the underlying monad `m`, and `sis` applies that natural transformation at each point of conditioning in your program. The main use case is in defining `smc`, below, but here is a nice alternative use case:
+in `Control.Monad.Bayes.Sequential.Coroutine`. You provide a natural transformation in the underlying monad `m`, and `sequentially` applies that natural transformation at each point of conditioning in your program. The main use case is in defining `smc`, below, but here is a nice didactic use case:
 
 Consider the program:
 
@@ -766,6 +777,8 @@ example = replicateM 100 $ do
 Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
 Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+
+If you don't want to specify the number of steps, you can use `sequentiallyNoSteps`. 
 
 ### Sequential Monte Carlo
 

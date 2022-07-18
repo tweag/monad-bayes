@@ -22,13 +22,13 @@ where
 
 import Control.Monad.Bayes.Class (MonadSample)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..))
-import Control.Monad.Bayes.Inference.SMC (SMCConfig (..))
+import Control.Monad.Bayes.Inference.SMC 
 import Control.Monad.Bayes.Population
   ( Population,
     spawn,
     withParticles
   )
-import Control.Monad.Bayes.Sequential.Coroutine as Seq (Sequential, sequentially)
+import Control.Monad.Bayes.Sequential.Coroutine as Seq 
 import Control.Monad.Bayes.Sequential.Coroutine qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
@@ -50,7 +50,10 @@ rmsmc ::
   Population m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   marginal
-    . sequentially (composeCopies numMCMCSteps mhStep . TrStat.hoist resampler) numSteps
+    . ( case numSteps of
+        Only n -> S.sequentially (composeCopies numMCMCSteps mhStep . TrStat.hoist resampler) n
+        All -> S.sequentiallyAll (composeCopies numMCMCSteps mhStep . TrStat.hoist resampler)
+      ) 
     . S.hoistFirst (TrStat.hoist (spawn numParticles >>))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
@@ -64,7 +67,12 @@ rmsmcBasic ::
   Population m a
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
   TrBas.marginal
-    . sequentially (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler) numSteps
+    . ( case numSteps of
+      Only n -> S.sequentially (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler) n
+      All -> S.sequentiallyAll (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler)
+    ) 
+
+    
     . S.hoistFirst (TrBas.hoist (withParticles numParticles))
 
 -- | A variant of resample-move Sequential Monte Carlo
@@ -79,7 +87,10 @@ rmsmcDynamic ::
   Population m a
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
   TrDyn.marginal
-    . sequentially (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) numSteps
+    . ( case numSteps of
+        Only n -> S.sequentially (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) n
+        All -> S.sequentiallyAll (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) 
+      ) 
     . S.hoistFirst (TrDyn.hoist (withParticles numParticles))
 
 -- | Apply a function a given number of times.

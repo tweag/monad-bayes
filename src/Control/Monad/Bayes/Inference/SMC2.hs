@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
-import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush, NumSteps(..))
 import Control.Monad.Bayes.Population as Pop (Population, population, resampleMultinomial)
 import Control.Monad.Bayes.Sequential.Coroutine (Sequential)
 import Control.Monad.Bayes.Traced
@@ -54,7 +54,7 @@ instance MonadSample m => MonadInfer (SMC2 m)
 smc2 ::
   MonadSample m =>
   -- | number of time steps
-  Int ->
+  NumSteps ->
   -- | number of inner particles
   Int ->
   -- | number of outer particles
