@@ -41,7 +41,13 @@ This is the *model*. To perform *inference* , suppose we have a data set of `xs`
 We could then run the model as follows:
 
 ```haskell   
-mhRunsRegression = sampleIO $ prior $ mh 1000 $ regression xs ys
+mhRunsRegression = sampler 
+  $ unweighted 
+  $ mcmc MCMCConfig 
+      {numMCMCSteps = 1500, 
+      proposal = SingleSiteMH, 
+      numBurnIn = 500} 
+  random
 ```
 
 This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampleIO` samples a particular chain. Plotting one gives:
@@ -51,7 +57,7 @@ This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a
 Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
 
 
-<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerate` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerator` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
 
 `sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
 
@@ -192,7 +198,7 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 
 <!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 
-# Performing inference
+## Inference methods
 
 To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.
 
@@ -211,16 +217,17 @@ Two of the large classes of inference methods are **sampling based methods** and
 ## Exact inference
 
 ```haskell
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerator :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-So `enumerate (bernoulli 0.7)` gives you
+So `enumerator (bernoulli 0.7)` gives you
 
 ```
 [(False,0.3),(True,0.7)]
 ```
 
 This works for distributions with `factor` statements (i.e. an instance of `MonadInfer`), as in:
+
 
 ```haskell
 
@@ -238,14 +245,30 @@ enumerate model
 
 **Note: enumerate only works on finite discrete distributions**
 
-It will run forever on infinite distributions like `enumerate (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerate (normal 0 1)`:
+```haskell
+
+model :: MonadInfer m => m Bool
+model = do
+  x <- bernoulli 0.5
+  y <- bernoulli 0.3
+  condition (x || y)
+  return x
+
+enumerator model
+
+> [(True,0.7692307692307692),(False,0.23076923076923078)]
+```
+
+**Note: `enumerator` only works on finite discrete distributions**
+
+It will run forever on infinite distributions like `enumerator (poisson 0.7)` and will throw the following **runtime** error on continuous distributions as in `enumerator (normal 0 1)`:
 
 *"Exception: Infinitely supported random variables not supported in Enumerator"*
 
 **However**, it's totally fine to have the elements of the support themselves be infinite, as in:
 
 ```haskell
-fmap (\(ls,p) -> (take 4 ls, p)) $ enumerate $ uniformD [[1..], [2..]]
+fmap (\(ls,p) -> (take 4 ls, p)) $ enumerator $ uniformD [[1..], [2..]]
 ```
 
 which gives
@@ -303,7 +326,7 @@ Because `sampleIO example` is totally pure, it is parallelizable.
 To perform weighted sampling, use:
 
 ```haskell
-(sampleIO . runWeighted) :: Weighted SamplerIO a -> IO (a, Log Double)
+(sampleIO . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
 ```
 
 `Weighted SamplerIO` is an instance of `MonadInfer`, so we can apply this to any distribution. For example, suppose we have the distribution:
@@ -320,7 +343,7 @@ Then:
 
 ```haskell
 run :: IO (Bool, Log Double)
-run = (sampleIO . runWeighted) example
+run = (sampleIO . weighted) example
 ```
 
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
@@ -331,7 +354,7 @@ is an IO operation which when run, will display either `(False, 0.0)` or `(True,
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:
 
 ```haskell
-(sampleIO . prior . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
+(sampleIO . unweighted . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
 ```
 
 `Traced (Weighted SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance:
@@ -349,7 +372,7 @@ Then
 
 ```haskell
 run :: IO [Bool]
-run = (sampleIO . prior . mh 10) example
+run = (sampleIO . unweighted . mh 10) example
 ```
 
 produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
@@ -363,13 +386,30 @@ The end of the chain is the head of the list, so you can drop samples from the e
 
 ## Sequential Monte Carlo (Particle Filtering)
 
+Run SMC with two resampling steps and two particles as follows, given a model `m`:
+
 ```haskell
-(sampleIO. runPopulation . smcSystematic numSteps numParticles) 
-  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+output = 
+  sampler $ 
+  population $ 
+  smc SMCConfig 
+    {numSteps = 2, 
+    numParticles = 2, 
+    resampler = resampleMultinomial} 
+  m
 ```
 
-`Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`:
+<!-- Or if you prefer, think of the inference method as:
 
+
+```haskell
+(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+``` -->
+
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+
+As a concrete example, here is a probabilistic program:
 
 ```haskell
 example :: MonadInfer m => m Bool
@@ -379,12 +419,14 @@ example = do
   return x
 ```
 
-Then 
+And here is the inference: 
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . runPopulation. smcSystematic 4 4) example
+run = (sampleIO . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) example
 ```
+
+...and the result:
 
 ```
 [(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
@@ -415,10 +457,16 @@ rmsmcBasic ::
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . runPopulation. smcSystematic 4 4 4) example
+run = (
+  sampleIO . 
+  population . 
+  rmsmcBasic 
+    MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
+    SMCConfig {numParticles = 4, numSteps = 4}) 
+  example
 ```
 
-What this returns is a population of samples, just like plain `SMC`. The third argument to `rmsmcBasic` is the number of MCMC steps taken after each resampling. More is better, but slower.
+What this returns is a population of samples, just like plain `SMC`. More MCMC steps is of course better, but slower.
 
 
 
@@ -435,10 +483,10 @@ This inference method takes a prior and a model separately, so it only applies t
 
 <!-- todo -->
 
-<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerate`, the mass of each element of the support. -->
+<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerator`, the mass of each element of the support. -->
 
 
-<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerate` does. -->
+<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerator` does. -->
 
 
 
@@ -543,7 +591,7 @@ mixture2 point = do
 This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
 
 ```haskell
-enumerate $ mixture2 2
+enumerator $ mixture2 2
 ```
 
 yields

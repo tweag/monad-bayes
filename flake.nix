@@ -9,31 +9,16 @@
     ];
   };
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-compat.url = "github:edolstra/flake-compat";
-    flake-compat.flake = false;
+    jupyterWith.url = "github:tweag/jupyterWith";
     flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
-    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
   };
   outputs = {
     self,
     nixpkgs,
-    flake-compat,
+    jupyterWith,
     flake-utils,
-    pre-commit-hooks,
   }:
-    flake-utils.lib.eachSystem
-    [
-      # Tier 1 - Tested in CI
-      flake-utils.lib.system.x86_64-linux
-      flake-utils.lib.system.x86_64-darwin
-      # Tier 2 - Not tested in CI (at least for now)
-      flake-utils.lib.system.aarch64-linux
-      flake-utils.lib.system.aarch64-darwin
-    ]
-    (
+    flake-utils.lib.eachDefaultSystem (
       system: let
         inherit (nixpkgs) lib;
         pkgs = nixpkgs.legacyPackages.${system};

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -57,14 +56,16 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
-    Bayesian (Bayesian),
+    Bayesian (..),
     posterior,
+    priorPredictive,
+    posteriorPredictive,
+    independent,
     mvNormal,
   )
 where
 
-import Control.Monad
-import Control.Monad (when)
+import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
@@ -242,6 +243,9 @@ factor = score
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
+independent :: Applicative m => Int -> m a -> m [a]
+independent = replicateM
+
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
 
@@ -271,6 +275,16 @@ posterior Bayesian {..} os = do
   z <- latent
   factor $ product $ fmap (likelihood z) os
   return z
+
+priorPredictive :: Monad m => Bayesian m a b -> m b
+priorPredictive bm = latent bm >>= generative bm
+
+posteriorPredictive ::
+  (MonadInfer m, Foldable f, Functor f) =>
+  Bayesian m a b ->
+  f b ->
+  m b
+posteriorPredictive bm os = posterior bm os >>= generative bm
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
