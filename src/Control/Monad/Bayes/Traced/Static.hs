@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Static
@@ -10,7 +11,7 @@
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Static
   ( Traced,
-    hoistT,
+    hoist,
     marginal,
     mhStep,
     mh,
@@ -23,10 +24,10 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
+    burnIn,
     mhTrans,
     scored,
     singleton,
@@ -34,7 +35,7 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
-import Control.Monad.Bayes.Density (Density)
+import Control.Monad.Bayes.Density.State (Density)
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
@@ -69,8 +70,8 @@ instance MonadCond m => MonadCond (Traced m) where
 
 instance MonadInfer m => MonadInfer (Traced m)
 
-hoistT :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoistT f (Traced m d) = Traced m (f d)
+hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
+hoist f (Traced m d) = Traced m (f d)
 
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad m => Traced m a -> m a

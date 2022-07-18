@@ -1,5 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -19,7 +18,7 @@ module Control.Monad.Bayes.Integrator
     expectation,
     cdf,
     empirical,
-    enumerateWith,
+    enumeratorWith,
     histogram,
     plotCdf,
     volume,
@@ -27,6 +26,8 @@ module Control.Monad.Bayes.Integrator
     Integrator,
     momentGeneratingFunction,
     cumulantGeneratingFunction,
+    integrator,
+    runIntegrator,
   )
 where
 
@@ -34,7 +35,7 @@ import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
 import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
-import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Trans.Cont
   ( Cont,
     ContT (ContT),
@@ -46,17 +47,18 @@ import Data.Set (Set, elems)
 import Data.Text qualified as T
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
-import Statistics.Distribution (density)
+import Statistics.Distribution qualified as Statistics
 import Statistics.Distribution.Uniform qualified as Statistics
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
 
-runIntegrator :: (a -> Double) -> Integrator a -> Double
-runIntegrator f (Integrator a) = runCont a f
+integrator, runIntegrator :: (a -> Double) -> Integrator a -> Double
+integrator f (Integrator a) = runCont a f
+runIntegrator = integrator
 
 instance MonadSample Integrator where
-  random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
+  random = fromDensityFunction $ Statistics.density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
   uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
@@ -84,28 +86,28 @@ empirical = Integrator . cont . flip weightedAverage
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
 
 expectation :: Integrator Double -> Double
-expectation = runIntegrator id
+expectation = integrator id
 
 variance :: Integrator Double -> Double
-variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
+variance nu = integrator (^ 2) nu - expectation nu ^ 2
 
 momentGeneratingFunction :: Integrator Double -> Double -> Double
-momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
+momentGeneratingFunction nu t = integrator (\x -> exp (t * x)) nu
 
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
 normalize :: Weighted Integrator a -> Integrator a
 normalize m =
-  let m' = runWeighted m
-      z = runIntegrator (ln . exp . snd) m'
+  let m' = weighted m
+      z = integrator (ln . exp . snd) m'
    in do
-        (x, d) <- runWeighted m
+        (x, d) <- weighted m
         Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
         return x
 
 cdf :: Integrator Double -> Double -> Double
-cdf nu x = runIntegrator (negativeInfinity `to` x) nu
+cdf nu x = integrator (negativeInfinity `to` x) nu
   where
     negativeInfinity :: Double
     negativeInfinity = negate (1 / 0)
@@ -116,7 +118,7 @@ cdf nu x = runIntegrator (negativeInfinity `to` x) nu
       | otherwise = 0
 
 volume :: Integrator Double -> Double
-volume = runIntegrator (const 1)
+volume = integrator (const 1)
 
 containing :: (Num a, Eq b) => [b] -> b -> a
 containing xs x
@@ -132,12 +134,12 @@ instance Num a => Num (Integrator a) where
   fromInteger = pure . fromInteger
 
 probability :: Ord a => (a, a) -> Integrator a -> Double
-probability (lower, upper) = runIntegrator (\x -> if x < upper && x >= lower then 1 else 0)
+probability (lower, upper) = integrator (\x -> if x < upper && x >= lower then 1 else 0)
 
-enumerateWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
-enumerateWith ls meas =
+enumeratorWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
+enumeratorWith ls meas =
   [ ( val,
-      runIntegrator
+      integrator
         (\x -> if x == val then 1 else 0)
         meas
     )

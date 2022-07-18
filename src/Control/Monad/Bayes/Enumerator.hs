@@ -17,6 +17,7 @@ module Control.Monad.Bayes.Enumerator
     evidence,
     mass,
     compact,
+    enumerator,
     enumerate,
     expectation,
     normalForm,
@@ -25,6 +26,7 @@ module Control.Monad.Bayes.Enumerator
     normalizeWeights,
     enumerateToDistribution,
     removeZeros,
+    fromList,
   )
 where
 
@@ -84,7 +86,7 @@ mass :: Ord a => Enumerator a -> a -> Double
 mass d = f
   where
     f a = fromMaybe 0 $ lookup a m
-    m = enumerate d
+    m = enumerator d
 
 -- | Aggregate weights of equal values.
 -- The resulting list is sorted ascendingly according to values.
@@ -94,11 +96,14 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 -- | Aggregate and normalize of weights.
 -- The resulting list is sorted ascendingly according to values.
 --
--- > enumerate = compact . explicit
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
-enumerate d = filter ((/= 0) . snd) $ compact (zip xs ws)
+-- > enumerator = compact . explicit
+enumerator, enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerator d = filter ((/= 0) . snd) $ compact (zip xs ws)
   where
     (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
+
+-- | deprecated synonym
+enumerate = enumerator
 
 -- | Expectation of a given function computed using normalized weights.
 expectation :: (a -> Double) -> Enumerator a -> Double

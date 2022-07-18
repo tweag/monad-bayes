@@ -1,0 +1,82 @@
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+module Control.Monad.Bayes.Sequential.Free where
+
+import Control.Monad.Bayes.Density.Free (Density)
+import Control.Monad.Trans.Free (runFreeT, FreeT, FreeF (Free, Pure), liftF, MonadFree (wrap), free)
+import Control.Monad.Reader
+import Control.Monad.Bayes.Class 
+import Data.Functor.Foldable (Recursive(cata, prepro, gprepro), gcata, distCata, distHisto, Base)
+import Data.Functor.Compose (Compose(Compose))
+import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Weighted
+import Numeric.Log (Log)
+import Control.Monad.Identity (Identity(Identity, runIdentity))
+import Control.Comonad (Comonad(extract, extend))
+import Control.Comonad.Cofree
+import Debug.Trace (traceM)
+import Control.Monad.Bayes.Population (resampleMultinomial, runPopulation, spawn)
+
+data SamF a = Random (Double -> a) | Score (Log Double) (() -> a) deriving Functor
+
+type Sequential m = FreeT SamF m
+
+instance Monad m => MonadSample (Sequential m) where
+  random = liftF (Random id)
+
+instance Monad m => MonadCond (Sequential m) where
+  score d = liftF $ Score d id
+
+instance Monad m => MonadInfer (Sequential m)
+
+-- | Transform the inner monad.
+-- This operation only applies to computation up to the first suspension.
+hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
+hoistFirst f = undefined . f . runFreeT
+
+sequentially :: MonadInfer m => (forall x. m x -> m x) -> Sequential m a -> m a
+sequentially transform = gprepro distHisto id 
+    \(Compose m) -> 
+        (\case
+          Pure a -> 
+              -- traceM "baz" >> 
+              return a
+          Free ((Random (f))) -> extract . f =<< random
+          Free (Score d f ) -> transform (score d >> extract (f ()))
+        ) =<< m
+
+
+-- tr :: MonadSample m => 
+--     Cofree (Compose m (FreeF SamF a)) (m a) 
+--     -> Cofree (Compose m (FreeF SamF a)) (m a) 
+-- tr = extend \case 
+--     ma :< (Compose com) -> do
+--         undefined
+    
+
+-- distribute :: MonadInfer m => Base (FreeT SamF m a) c -> Base (FreeT SamF m a) c
+-- distribute (Compose m) = Compose do 
+--     m' <- m
+--     case m' of 
+--       Pure a -> do
+--         --   traceM "foo"
+--           return (Pure a)
+--       Free sf@(Random _) -> do
+--         --   traceM "bar"
+--           return (Free sf)
+--       Free sf@(Score a b) -> do
+--         --   traceM "baz"
+--           return (Free sf)
+
+a :: MonadInfer m => m Double
+a = do
+    x <- random
+    condition (x > 0.4)
+    y <- random
+    return ( x + y )
+
+test = sampleIO $ runPopulation $ sequentially resampleMultinomial (lift (spawn 2) >> a) 

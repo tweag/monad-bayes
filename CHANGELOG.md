@@ -1,4 +1,11 @@
 
+# 0.1.2.1 (2021-07-15)
+
+- rename various functions to match the names of the corresponding types (e.g. `Enumerator` goes with `enumerator`)
+- add configs as arguments to inference methods 
+- add rudimentary tests for all inference methods
+- put `mcmc` as inference method in new module `Control.Monad.Bayes.Inference.MCMC`
+
 # 0.1.1.3 (2021-06-15)
 
 Addition of new helper functions, plotting tools, tests, and Integrator monad.
