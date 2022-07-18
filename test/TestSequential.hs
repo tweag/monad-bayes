@@ -6,7 +6,7 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Enumerator as Dist (enumerator, mass)
-import Control.Monad.Bayes.Sequential (advance, finish, finished)
+import Control.Monad.Bayes.Sequential.Coroutine (advance, finish, finished)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 

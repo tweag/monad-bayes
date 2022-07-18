@@ -26,9 +26,10 @@ import Control.Monad.Bayes.Inference.SMC (SMCConfig (..))
 import Control.Monad.Bayes.Population
   ( Population,
     spawn,
+    withParticles
   )
-import Control.Monad.Bayes.Sequential as Seq (Sequential, sequentially)
-import Control.Monad.Bayes.Sequential qualified as S
+import Control.Monad.Bayes.Sequential.Coroutine as Seq (Sequential, sequentially)
+import Control.Monad.Bayes.Sequential.Coroutine qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
 import Control.Monad.Bayes.Traced.Static as Tr

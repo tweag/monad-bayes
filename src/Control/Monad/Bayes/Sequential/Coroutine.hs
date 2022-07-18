@@ -12,7 +12,7 @@
 -- Portability : GHC
 --
 -- 'Sequential' represents a computation that can be suspended.
-module Control.Monad.Bayes.Sequential
+module Control.Monad.Bayes.Sequential.Coroutine
   ( Sequential,
     suspend,
     finish,

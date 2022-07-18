@@ -7,7 +7,7 @@
 module Control.Monad.Bayes.Sequential.Free where
 
 import Control.Monad.Bayes.Free (FreeSampler)
-import Control.Monad.Trans.Free (FreeT, FreeF (Free, Pure), liftF, MonadFree (wrap))
+import Control.Monad.Trans.Free (runFreeT, FreeT, FreeF (Free, Pure), liftF, MonadFree (wrap), free)
 import Control.Monad.Reader
 import Control.Monad.Bayes.Class 
 import Data.Functor.Foldable (Recursive(cata, prepro, gprepro), gcata, distCata, distHisto, Base)
@@ -23,24 +23,31 @@ import Control.Monad.Bayes.Population (resampleMultinomial, runPopulation, spawn
 
 data SamF a = Random (Double -> a) | Score (Log Double) (() -> a) deriving Functor
 
-type Initial m = FreeT SamF m
+type Sequential m = FreeT SamF m
 
-instance Monad m => MonadSample (Initial m) where
-  random =  liftF (Random id)
+instance Monad m => MonadSample (Sequential m) where
+  random = liftF (Random id)
 
-instance Monad m => MonadCond (Initial m) where
-  score d =  liftF $ Score d id
+instance Monad m => MonadCond (Sequential m) where
+  score d = liftF $ Score d id
 
-instance Monad m => MonadInfer (Initial m)
+instance Monad m => MonadInfer (Sequential m)
 
-f :: MonadInfer m => (m a -> m a) -> Initial m a -> m a
-f transform = gprepro distHisto id \case
-    Compose m -> do
-        m' <- m
-        case m' of
-          Pure a -> traceM "baz" >> return a
+-- | Transform the inner monad.
+-- This operation only applies to computation up to the first suspension.
+hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
+hoistFirst f = undefined . f . runFreeT
+
+sequentially :: MonadInfer m => (forall x. m x -> m x) -> Sequential m a -> m a
+sequentially transform = gprepro distHisto id 
+    \(Compose m) -> 
+        (\case
+          Pure a -> 
+              -- traceM "baz" >> 
+              return a
           Free ((Random (f))) -> extract . f =<< random
           Free (Score d f ) -> transform (score d >> extract (f ()))
+        ) =<< m
 
 
 -- tr :: MonadSample m => 
@@ -72,4 +79,4 @@ a = do
     y <- random
     return ( x + y )
 
-test = sampleIO $ runPopulation $ f resampleMultinomial (lift (spawn 2) >> a) 
+test = sampleIO $ runPopulation $ sequentially resampleMultinomial (lift (spawn 2) >> a) 
