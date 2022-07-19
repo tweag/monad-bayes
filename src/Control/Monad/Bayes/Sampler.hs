@@ -19,12 +19,13 @@
 -- transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler
   ( Sampler,
+    SamplerIO,
     sampleIOfixed,
     sampleWith,
     sampleSTfixed,
     toBins,
     sampleMean,
-    sampleIO,
+    sampleIO
   )
 where
 
@@ -51,6 +52,8 @@ import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStd
 -- | The sampling interpretation of a probabilitic program
 -- Here m is typically IO or ST
 newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
+
+type SamplerIO = Sampler (IOGenM StdGen) IO
 
 runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
 runSampler (Sampler s) = s
