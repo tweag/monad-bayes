@@ -47,6 +47,9 @@ import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM, STGenM, StatefulGen, StdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
+-- | 1 + 2 is 3.
+-- >>> 1 + 2
+-- 3
 newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
 
 instance Functor (Sampler g m) where
