@@ -24,7 +24,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
-    sampleIO
+    sampleIO,
   )
 where
 
@@ -46,7 +46,7 @@ import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
-import System.Random.Stateful (IOGenM(..), STGenM, StatefulGen, StdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM, initStdGen)
+import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
 -- | The sampling interpretation of a probabilitic program
 -- Here m is typically IO or ST
@@ -64,7 +64,7 @@ instance Functor (Sampler g m) where
 instance Applicative (Sampler g m) where
   pure x = Sampler $ pure x
   (Sampler f) <*> (Sampler x) = Sampler $ f <*> x
-  
+
 instance Monad (Sampler g m) where
   (Sampler x) >>= f = Sampler $ x >>= runSampler . f
 
@@ -87,7 +87,6 @@ sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
 -- | For convenience
 sampleIOfixed :: Sampler (IOGenM StdGen) IO a -> IO a
 sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
-
 
 -- | Run the sampler with a fixed random seed.
 sampleSTfixed :: Sampler (STGenM StdGen s) (ST s) b -> ST s b

@@ -25,7 +25,7 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Population (collapse, runPopulation)
-import Control.Monad.Bayes.Sampler (Sampler, sampleIOfixed, sampleWith)
+import Control.Monad.Bayes.Sampler (Sampler, sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Weighted qualified as Weighted
@@ -40,23 +40,19 @@ sprinkler = Sprinkler.soft
 -- | Count the number of particles produced by SMC
 checkParticles :: Int -> Int -> IO Int
 checkParticles observations particles =
-  newIOGenM (mkStdGen 1729)
-    >>= sampleWith (fmap length (runPopulation $ smcMultinomial observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (runPopulation $ smcMultinomial observations particles Sprinkler.soft))
 
 checkParticlesSystematic :: Int -> Int -> IO Int
 checkParticlesSystematic observations particles =
-  newIOGenM (mkStdGen 1729)
-    >>= sampleWith (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (runPopulation $ smcSystematic observations particles Sprinkler.soft))
 
 checkParticlesStratified :: Int -> Int -> IO Int
 checkParticlesStratified observations particles =
-  newIOGenM (mkStdGen 1729)
-    >>= sampleWith (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
+  sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
 
 checkTerminateSMC :: IO [(Bool, Log Double)]
 checkTerminateSMC =
-  newIOGenM (mkStdGen 1729)
-    >>= sampleWith (runPopulation $ smcMultinomial 2 5 sprinkler)
+  sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
