@@ -24,6 +24,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
+    sampleIO
   )
 where
 
@@ -45,9 +46,17 @@ import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
-import System.Random.Stateful (IOGenM, STGenM, StatefulGen, StdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
+import System.Random.Stateful (IOGenM(..), STGenM, StatefulGen, StdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM, initStdGen)
 
+-- | The sampling interpretation of a probabilitic program
+-- Here m is typically IO or ST
 newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
+
+runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
+runSampler (Sampler s) = s
+
+sampleWith :: (StatefulGen g m) => Sampler g m a -> g -> m a
+sampleWith (Sampler m) = runReaderT m
 
 instance Functor (Sampler g m) where
   fmap f (Sampler s) = Sampler $ fmap f s
@@ -55,19 +64,9 @@ instance Functor (Sampler g m) where
 instance Applicative (Sampler g m) where
   pure x = Sampler $ pure x
   (Sampler f) <*> (Sampler x) = Sampler $ f <*> x
-
-runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
-runSampler (Sampler s) = s
-
+  
 instance Monad (Sampler g m) where
   (Sampler x) >>= f = Sampler $ x >>= runSampler . f
-
--- For convenience
-sampleIOfixed :: Sampler (IOGenM StdGen) IO a -> IO a
-sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
-
-sampleWith :: (StatefulGen r m) => Sampler r m a -> r -> m a
-sampleWith (Sampler m) = runReaderT m
 
 instance MonadSample (Sampler g m) where
   random = Sampler (ReaderT uniformDouble01M)
@@ -81,11 +80,18 @@ instance MonadSample (Sampler g m) where
   categorical ps = Sampler (ReaderT $ MWC.categorical ps)
   geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
+-- | initialize random seed using system entropy, and sample
+sampleIO :: Sampler (IOGenM StdGen) IO a -> IO a
+sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
+
+-- | For convenience
+sampleIOfixed :: Sampler (IOGenM StdGen) IO a -> IO a
+sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
+
+
 -- | Run the sampler with a fixed random seed.
 sampleSTfixed :: Sampler (STGenM StdGen s) (ST s) b -> ST s b
-sampleSTfixed x = do
-  gen <- newSTGenM (mkStdGen 1729)
-  sampleWith x gen
+sampleSTfixed x = newSTGenM (mkStdGen 1729) >>= sampleWith x
 
 type Bin = (Double, Double)
 
