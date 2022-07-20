@@ -12,6 +12,7 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Free
 import Numeric.AD.Mode.Reverse (Reverse)
 import Numeric.Log (Log(Exp))
+import Data.Number.Erf
 
 
 -- try = stormerVerlet2H
@@ -123,22 +124,22 @@ squish x =
 
 hmcKernel :: (MonadSample n m, Show n) =>
 -- (Weighted (FreeSampler IdentityN) (Reverse s a) a) ->
-  (forall n. (RealFloat n, Show n) => [n] -> n) -> [n] -> m n [n]
+  (forall n. (RealFloat n, Show n, InvErf n) => [n] -> n) -> [n] -> m n [n]
 hmcKernel potential  =
   fmap
     ( view _y
-      . stepForward -- Prelude.foldr (.) id (Prelude.replicate 1 stepForward)
+      . Prelude.foldr (.) id (Prelude.replicate 1 stepForward)
     )
   . getPhasePoints
   where
-    h :: forall n. (Show n, RealFloat n) => [n] -> [n] -> n
+    h :: forall n. (Show n, RealFloat n, InvErf n) => [n] -> [n] -> n
     h = hamiltonian potential
     stepForward = stormerVerlet2H 0.1 ((grad $ h 0)) (grad (flip (h) 0))
 
 model :: (RealFloat n, MonadInfer n m) => m n Bool
 model = do
   -- return True
-  x <- randomGeneric
+  x <- normal 0 1
   -- y <- randomGeneric
   scoreGeneric (Exp $ log $ x)
   return (x > 0.5)

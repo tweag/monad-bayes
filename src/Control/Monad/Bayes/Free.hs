@@ -30,6 +30,7 @@ import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iter
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
 import Debug.Trace (trace, traceM)
+import Data.Number.Erf
 
 -- | Random sampling functor.
 newtype SamF n a = Random (n -> a)
@@ -46,7 +47,7 @@ newtype FreeSampler m n a = FreeSampler {runFreeSampler :: FT (SamF n) (m n) a}
 instance MonadFree (SamF n) (FreeSampler m n) where
   wrap = FreeSampler . wrap . fmap runFreeSampler
 
-instance (Monad (m n), RealFloat n) => MonadSample n (FreeSampler m) where
+instance (Monad (m n), RealFloat n, InvErf n) => MonadSample n (FreeSampler m) where
   randomGeneric = FreeSampler $ liftF (Random id)
 
 -- | Hoist 'FreeSampler' through a monad transform.

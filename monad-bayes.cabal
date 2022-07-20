@@ -74,6 +74,7 @@ library
     , vector           ^>=0.12.0
     , linear
     , microlens
+    , erf
 
   default-extensions:
     BlockArguments

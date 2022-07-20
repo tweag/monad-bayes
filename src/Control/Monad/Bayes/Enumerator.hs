@@ -42,13 +42,14 @@ import Data.Ord (Down (Down))
 import Data.Vector qualified as VV
 import Data.Vector.Generic qualified as V
 import Numeric.Log as Log (Log (..), sum)
+import Data.Number.Erf
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
 newtype Enumerator n a = Enumerator (WriterT (Product (Log n)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
-instance RealFloat n => MonadSample n (Enumerator) where
+instance (RealFloat n, InvErf n) => MonadSample n (Enumerator) where
   randomGeneric = error "Infinitely supported random variables not supported in Enumerator"
 
 -- bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
@@ -57,7 +58,7 @@ instance RealFloat n => MonadSample n (Enumerator) where
 instance RealFloat n => MonadCond n (Enumerator) where
   scoreGeneric w = fromList [((), w)]
 
-instance RealFloat n => MonadInfer n (Enumerator)
+instance (RealFloat n, InvErf n) => MonadInfer n (Enumerator)
 
 -- | Construct Enumerator from a list of values and associated weights.
 fromList :: [(a, Log n)] -> Enumerator n a

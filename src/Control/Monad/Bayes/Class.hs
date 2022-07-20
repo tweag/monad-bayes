@@ -85,12 +85,13 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+import Data.Number.Erf
 
 random :: MonadSample Double m => m Double Double
 random = randomGeneric
 
 -- | Monads that can draw random variables.
-class (RealFloat n, Monad (m n)) => MonadSample n m where
+class (RealFloat n, InvErf n, Monad (m n)) => MonadSample n m where
   -- | Draw from a uniform distribution.
   randomGeneric ::
     -- | \(\sim \mathcal{U}(0, 1)\)
@@ -114,7 +115,7 @@ class (RealFloat n, Monad (m n)) => MonadSample n m where
     n ->
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m n n
-  normal m s = undefined -- draw (normalDistr m s)
+  normal m s = invnormcdf <$> randomGeneric -- draw (normalDistr m s)
 
   -- | Draw from a gamma distribution.
   gamma ::

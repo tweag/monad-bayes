@@ -51,6 +51,7 @@ import System.Random.MWC
     save,
   )
 import System.Random.MWC.Distributions qualified as MWC
+import Data.Number.Erf
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO n a = SamplerIO (ReaderT GenIO IO a)
@@ -113,7 +114,7 @@ sampleSTfixed (SamplerST s) = runST $ do
 fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST n a
 fromMWC s = SamplerST $ ask >>= lift . s
 
-instance (Variate n, RealFloat n) => MonadSample n SamplerST where
+instance (Variate n, RealFloat n, InvErf n) => MonadSample n SamplerST where
   randomGeneric = fromMWC System.Random.MWC.uniform
 
 -- uniform a b = fromMWC $ uniformR (a, b)
