@@ -27,6 +27,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
+    sampleWith,
   )
 where
 
@@ -46,7 +47,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
-import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+import Control.Monad.Trans.Reader (ReaderT (..), ask, mapReaderT, runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (ln))
 import System.Random.MWC
@@ -61,6 +62,37 @@ import System.Random.MWC
     save,
   )
 import System.Random.MWC.Distributions qualified as MWC
+import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
+
+newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
+
+runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
+runSampler (Sampler s) = s
+
+sampleWith :: (StatefulGen g m) => Sampler g m a -> g -> m a
+sampleWith (Sampler m) = runReaderT m
+
+instance Functor (Sampler g m) where
+  fmap f (Sampler s) = Sampler $ fmap f s
+
+instance Applicative (Sampler g m) where
+  pure x = Sampler $ pure x
+  (Sampler f) <*> (Sampler x) = Sampler $ f <*> x
+
+instance Monad (Sampler g m) where
+  (Sampler x) >>= f = Sampler $ x >>= runSampler . f
+
+instance MonadSample (Sampler g m) where
+  random = Sampler (ReaderT uniformDouble01M)
+
+  uniform a b = Sampler (ReaderT $ uniformRM (a, b))
+  normal m s = Sampler (ReaderT (MWC.normal m s))
+  gamma shape scale = Sampler (ReaderT $ MWC.gamma shape scale)
+  beta a b = Sampler (ReaderT $ MWC.beta a b)
+
+  bernoulli p = Sampler (ReaderT $ MWC.bernoulli p)
+  categorical ps = Sampler (ReaderT $ MWC.categorical ps)
+  geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
 -- | An 'IO' based random sampler using the MWC-Random package.
 newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)

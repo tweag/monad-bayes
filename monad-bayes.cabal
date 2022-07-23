@@ -65,6 +65,7 @@ library
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
     , pipes
+    , random
     , scientific
     , statistics       >=0.14.0 && <0.17
     , text
@@ -232,3 +233,15 @@ benchmark speed-bench
     LambdaCase
     OverloadedStrings
     TupleSections
+
+benchmark perf-test
+  type:             exitcode-stdio-1.0
+  main-is:          PerfTest.hs
+  hs-source-dirs:   models .
+  other-modules:
+  default-language: Haskell2010
+  build-depends:
+      base
+    , monad-bayes
+    , mtl
+    , mwc-random
