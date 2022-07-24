@@ -257,3 +257,27 @@ benchmark perf-test-new
     , monad-bayes
     , mtl
     , mwc-random
+
+benchmark replicate-random
+  type:             exitcode-stdio-1.0
+  main-is:          replicateRandom.hs
+  hs-source-dirs:   models .
+  other-modules:
+  default-language: Haskell2010
+  build-depends:
+      base
+    , monad-bayes
+    , mtl
+    , mwc-random
+
+benchmark replicate-random-new
+  type:             exitcode-stdio-1.0
+  main-is:          replicateRandomNew.hs
+  hs-source-dirs:   models .
+  other-modules:
+  default-language: Haskell2010
+  build-depends:
+      base
+    , monad-bayes
+    , mtl
+    , mwc-random
