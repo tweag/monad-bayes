@@ -159,10 +159,10 @@ test-suite monad-bayes-test
     , matrix
     , monad-bayes
     , mtl
+    , mwc-random
     , pipes
     , pretty-simple
     , profunctors
-    , mwc-random
     , QuickCheck
     , statistics
     , text
