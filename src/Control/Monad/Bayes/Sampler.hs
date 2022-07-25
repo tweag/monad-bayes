@@ -42,10 +42,11 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
-import Control.Monad.ST (ST)
+import Control.Monad.ST (ST, runST)
 import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (..))
+import System.Random.MWC
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
@@ -55,12 +56,11 @@ import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStd
 
 -- | The sampling interpretation of a probabilitic program
 -- Here m is typically IO or ST
-newtype Sampler g m a = Sampler (ReaderT g m a)
+newtype Sampler g m a = Sampler {runSampler :: ReaderT g m a}
 
 type SamplerIO = Sampler (IOGenM StdGen) IO
 
-runSampler :: StatefulGen g m => Sampler g m a -> ReaderT g m a
-runSampler (Sampler s) = s
+type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
 sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
 sampleWith (Sampler m) = runReaderT m
@@ -88,15 +88,15 @@ instance StatefulGen g m => MonadSample (Sampler g m) where
   geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
 -- | initialize random seed using system entropy, and sample
-sampleIO :: Sampler (IOGenM StdGen) IO a -> IO a
+sampleIO :: SamplerIO a -> IO a
 sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
 
 -- | For convenience
-sampleIOfixed :: Sampler (IOGenM StdGen) IO a -> IO a
+sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
 
 -- | Run the sampler with a fixed random seed.
-sampleSTfixed :: Sampler (STGenM StdGen s) (ST s) b -> ST s b
+sampleSTfixed :: SamplerST s b -> ST s b
 sampleSTfixed x = newSTGenM (mkStdGen 1729) >>= sampleWith x
 
 type Bin = (Double, Double)
