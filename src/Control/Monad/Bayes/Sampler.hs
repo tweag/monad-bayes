@@ -3,8 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wall #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -42,17 +40,13 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
-import Control.Monad.ST (ST, runST)
+import Control.Monad.ST (ST)
 import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
 import Numeric.Log (Log (..))
-import System.Random.MWC
+import System.Random.MWC (UniformRange (uniformRM))
 import System.Random.MWC.Distributions qualified as MWC
-import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
-
--- | 1 + 2 is 3.
--- >>> 1 + 2
--- 3
+import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M)
 
 -- | The sampling interpretation of a probabilitic program
 -- Here m is typically IO or ST
