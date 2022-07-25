@@ -24,10 +24,7 @@ import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
   ( Population,
     pushEvidence,
-    resampleMultinomial,
-    resampleStratified,
-    resampleSystematic,
-    spawn,
+    withParticles,
   )
 import Control.Monad.Bayes.Sequential as Seq
   ( Sequential,
