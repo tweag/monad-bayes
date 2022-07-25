@@ -14,7 +14,7 @@ import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
-import System.Random.MWC (createSystemRandom)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
@@ -40,7 +40,7 @@ getModel model = (size model, program model)
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 
-runAlg :: Model -> Alg -> Sampler g IO String
+runAlg :: Model -> Alg -> Sampler GenIO IO String
 runAlg model alg =
   case alg of
     SMC ->
