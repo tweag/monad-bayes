@@ -49,6 +49,10 @@ import Numeric.Log (Log (..))
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
+-- | 1 + 2 is 3.
+-- >>> 1 + 2
+-- 3
+
 -- | The sampling interpretation of a probabilitic program
 -- Here m is typically IO or ST
 newtype Sampler g m a = Sampler (ReaderT g m a)
