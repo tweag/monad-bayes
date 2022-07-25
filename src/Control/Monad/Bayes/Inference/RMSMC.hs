@@ -26,6 +26,7 @@ import Control.Monad.Bayes.Inference.SMC (SMCConfig (..))
 import Control.Monad.Bayes.Population
   ( Population,
     spawn,
+    withParticles,
   )
 import Control.Monad.Bayes.Sequential as Seq (Sequential, sequentially)
 import Control.Monad.Bayes.Sequential qualified as S

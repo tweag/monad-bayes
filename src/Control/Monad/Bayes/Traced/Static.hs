@@ -28,7 +28,6 @@ import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
-    burnIn,
     mhTrans,
     scored,
     singleton,
