@@ -22,6 +22,7 @@ module Control.Monad.Bayes.Weighted
     applyWeight,
     hoist,
     toBinsWeighted,
+    runWeighted,
   )
 where
 
@@ -48,8 +49,9 @@ instance Monad m => MonadCond (Weighted m) where
 instance MonadSample m => MonadInfer (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-weighted :: Weighted m a -> m (a, Log Double)
+weighted, runWeighted :: Weighted m a -> m (a, Log Double)
 weighted (Weighted m) = runStateT m 1
+runWeighted = weighted
 
 -- | Compute the sample and discard the weight.
 --
