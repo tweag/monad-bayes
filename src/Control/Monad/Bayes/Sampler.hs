@@ -70,6 +70,13 @@ instance StatefulGen g m => MonadSample (Sampler g m) where
   categorical ps = Sampler (ReaderT $ MWC.categorical ps)
   geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
+-- | Sample with a random number generator of your choice e.g. the one
+-- from `System.Random`.
+--
+-- >>> import Control.Monad.Bayes.Class
+-- >>> import System.Random.Stateful hiding (random)
+-- >>> newIOGenM (mkStdGen 1729) >>= sampleWith random
+-- 4.690861245089605e-2
 sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
 sampleWith (Sampler m) = runReaderT m
 
