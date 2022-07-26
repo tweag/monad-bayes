@@ -5,6 +5,7 @@
 - add rudimentary tests for all inference methods
 - put `mcmc` as inference method in new module `Control.Monad.Bayes.Inference.MCMC`
 - update history of changelog in line with semantic versioning conventions
+- bumped to GHC 9.2.3
 
 # 0.1.5 (2021-07-26)
 

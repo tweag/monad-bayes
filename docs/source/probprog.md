@@ -50,7 +50,7 @@ mhRunsRegression = sampler
   random
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampleIO` samples a particular chain. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampler` samples a particular chain. Plotting one gives:
 
 ![](_static/regress.png)
 
@@ -238,22 +238,6 @@ model = do
   condition (x || y)
   return x
 
-enumerate model
-
-> [(True,0.7692307692307692),(False,0.23076923076923078)]
-```
-
-**Note: enumerate only works on finite discrete distributions**
-
-```haskell
-
-model :: MonadInfer m => m Bool
-model = do
-  x <- bernoulli 0.5
-  y <- bernoulli 0.3
-  condition (x || y)
-  return x
-
 enumerator model
 
 > [(True,0.7692307692307692),(False,0.23076923076923078)]
@@ -277,7 +261,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-#### Near exact inference for continuous distributions
+### Near exact inference for continuous distributions
 
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
@@ -288,7 +272,7 @@ model = do
   normal 0 (sqrt var)
 ```
 
-you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly $0.5$, since the PDF of `model` is symmetric around $0$.
+you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly {math}`0.5`, since the PDF of `model` is symmetric around {math}`0`.
 
 You can also try `expectation model`, `variance model`, `momentGeneratingFunction model n` or `cdf model n`. 
 
@@ -307,7 +291,7 @@ we must first `normalize` the model, as in `probability (0, 0.1) (normalize mode
 
 ### Independent forward sampling
 
-For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampleIO p` or `sampleSTfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
+For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampler p` or `sampleIOfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
 
 ```haskell
 example = do
@@ -315,18 +299,20 @@ example = do
   if x then normal 0 1 else normal 1 2
 ```
 
-`sampleIO example` will produce a sample from a Bernoulli distribution with {math}`p=0.5`, and if it is {math}`True`, return a sample from a standard normal, else from a normal with mean 1 and std 2. '
+`sampler example` will produce a sample from a Bernoulli distribution with {math}`p=0.5`, and if it is {math}`True`, return a sample from a standard normal, else from a normal with mean 1 and std 2.
 
-`(replicateM n . sampleIO) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampleIO . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
+`(replicateM n . sampler) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampler . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
 
-Because `sampleIO example` is totally pure, it is parallelizable. 
+Because `sampler example` is totally pure, it is parallelizable. 
+
+Monad-bayes gives the user freedom in the random number generator of the sampler: use `sampleWith` for full control.
 
 ## Independent weighted sampling
 
 To perform weighted sampling, use:
 
 ```haskell
-(sampleIO . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
+(sampler . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
 ```
 
 `Weighted SamplerIO` is an instance of `MonadInfer`, so we can apply this to any distribution. For example, suppose we have the distribution:
@@ -343,7 +329,7 @@ Then:
 
 ```haskell
 run :: IO (Bool, Log Double)
-run = (sampleIO . weighted) example
+run = (sampler . weighted) example
 ```
 
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
@@ -351,11 +337,16 @@ is an IO operation which when run, will display either `(False, 0.0)` or `(True,
 
 ## Markov Chain Monte Carlo
 
-There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in Control.Monad.Bayes.Traced. You can use it as follows:
+There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in `Control.Monad.Bayes.Inference.MCMC`. You can use it as follows:
 
 ```haskell
-(sampleIO . unweighted . mh numSteps) :: Traced (Weighted SamplerIO) a -> IO [a]
+(sampler . mcmc (MCMCConfig {
+  numMCMCSteps = 10, 
+  numBurnIn = 5, 
+  proposal = SingleSiteMH})) :: Traced (Weighted SamplerIO) a -> IO [a]
 ```
+
+As you can see, `mcmc` takes a `MCMCConfig` object, which is where you specify the number of steps in the MCMC chain, and the number of burn in steps. `SingleSiteMH` refers to the proposal used in the chain.
 
 `Traced (Weighted SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance:
 
@@ -372,17 +363,19 @@ Then
 
 ```haskell
 run :: IO [Bool]
-run = (sampleIO . unweighted . mh 10) example
+run = (sampler . mcmc (MCMCConfig {
+  numMCMCSteps = 10, 
+  numBurnIn = 5, 
+  proposal = SingleSiteMH})) example
 ```
 
-produces 10 unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
+produces {math}`5` unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
 
 ```
-[True,True,True,True,True,True,True,True,True,True,True]
+[True,True,True,True,True]
 ```
 
-The end of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
-
+The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
 ## Sequential Monte Carlo (Particle Filtering)
 
@@ -392,10 +385,10 @@ Run SMC with two resampling steps and two particles as follows, given a model `m
 output = 
   sampler $ 
   population $ 
-  smc SMCConfig 
+  smc (SMCConfig 
     {numSteps = 2, 
     numParticles = 2, 
-    resampler = resampleMultinomial} 
+    resampler = resampleMultinomial} )
   m
 ```
 
@@ -423,10 +416,13 @@ And here is the inference:
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial}) example
+run = (sampler . population . smc (SMCConfig {
+  numSteps = 2, 
+  numParticles = 4, 
+  resampler = resampleMultinomial})) example
 ```
 
-...and the result:
+The result:
 
 ```
 [(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
@@ -436,6 +432,7 @@ Each of these is a particle with a weight. In this simple case, there are all id
 
 `numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
+`resampler` is the mechanism used to resampling the population of particles after each `factor` statement.
 
 ## Resample Move Sequential Monte Carlo
 
@@ -444,21 +441,19 @@ This is a fancier variant of SMC, which has the particles take an MCMC walk thro
 ```haskell
 rmsmcBasic ::
   MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+  MCMCConfig ->
+  SMCConfig m ->
   -- | model
-  Sequential (Traced (Population m)) a ->
+  Sequential (TrBas.Traced (Population m)) a ->
   Population m a
 ```
+
+For instance:
 
 ```haskell
 run :: IO [(Bool, Log Double)]
 run = (
-  sampleIO . 
+  sampler . 
   population . 
   rmsmcBasic 
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
@@ -468,18 +463,22 @@ run = (
 
 What this returns is a population of samples, just like plain `SMC`. More MCMC steps is of course better, but slower.
 
-
-
-<!-- todo -->
-
 ## Particle Marginal Metropolis Hastings
 
 This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
 
-<!-- Run it like this: -->
+Run it like this:
 
+```haskell
+sampler $ pmmh 
+    mcmcConfig {numMCMCSteps = 100} 
+    smcConfig {numSteps = 0, numParticles = 100} 
+    random (normal 0)
+```
 
+The model is specified in two parts, the prior is `random` and the likelihood is `(\x -> normal 0 x)`.
 
+This produces a list, representing the MCMC chain. Each element in the chain is a population of particles.
 
 <!-- todo -->
 
@@ -553,6 +552,8 @@ example = whileM (bernoulli 0.99) (normal 0 1)
 
 You may write distributions over artibrary types. For example, rather than drawing a sample from a distribution and then using the sample to construct a histogram or a plot, you can directly define a distribution over histograms or plots, and sample from that.
 
+You can have distributions over arbitrary data structures, such as trees, JSONs, databases, and so on. You can use `MonadInfer m => m` as the monad in libraries which are parametric in a monad, such as `megaparsec` or `pipes`.
+
 <!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 
 We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
@@ -588,7 +589,7 @@ mixture2 point = do
     return cluster
 ```
 
-This version, while *denotational identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
+This version, while *denotationally identical* (i.e. representing the same mathematical object), is perfectly amenable to exact inference:
 
 ```haskell
 enumerator $ mixture2 2
