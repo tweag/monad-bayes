@@ -242,12 +242,3 @@ benchmark speed-bench
     LambdaCase
     OverloadedStrings
     TupleSections
-
--- test-suite doctests
---     type:             exitcode-stdio-1.0
---     main-is:          doctests.hs
---     hs-source-dirs:   test
---     default-language: Haskell2010
---     build-depends:
---         base,
---         doctest >=0.15 && <0.21
