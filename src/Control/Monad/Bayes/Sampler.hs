@@ -48,26 +48,15 @@ import System.Random.MWC (UniformRange (uniformRM))
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M)
 
--- | The sampling interpretation of a probabilitic program
+-- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
-newtype Sampler g m a = Sampler {runSampler :: ReaderT g m a}
+newtype Sampler g m a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad)
 
+-- | convenient type synonyms to show specializations of Sampler
+-- to particular pairs of monad and RNG
 type SamplerIO = Sampler (IOGenM StdGen) IO
 
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
-
-sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
-sampleWith (Sampler m) = runReaderT m
-
-instance Functor m => Functor (Sampler g m) where
-  fmap f (Sampler s) = Sampler $ fmap f s
-
-instance Applicative m => Applicative (Sampler g m) where
-  pure x = Sampler $ pure x
-  (Sampler f) <*> (Sampler x) = Sampler $ f <*> x
-
-instance (StatefulGen g m, Monad m) => Monad (Sampler g m) where
-  (Sampler x) >>= f = Sampler $ x >>= runSampler . f
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
   random = Sampler (ReaderT uniformDouble01M)
@@ -81,15 +70,18 @@ instance StatefulGen g m => MonadSample (Sampler g m) where
   categorical ps = Sampler (ReaderT $ MWC.categorical ps)
   geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
+sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
+sampleWith (Sampler m) = runReaderT m
+
 -- | initialize random seed using system entropy, and sample
 sampleIO :: SamplerIO a -> IO a
 sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
 
--- | For convenience
+-- | Run the sampler with a fixed random seed
 sampleIOfixed :: SamplerIO a -> IO a
 sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
 
--- | Run the sampler with a fixed random seed.
+-- | Run the sampler with a fixed random seed
 sampleSTfixed :: SamplerST s b -> ST s b
 sampleSTfixed x = newSTGenM (mkStdGen 1729) >>= sampleWith x
 
