@@ -58,7 +58,7 @@ example = do
 
 Think of this as the procedure of first sampling uniformly from {math}`[0,1]`, then from {math}`[0,x]`, and then returning the Boolean {math}`x + y > 1.5`. More precisely, this is the **marginal** probability of {math}`x + y > 1.5`. 
 
-**Technical note**: `MonadSample` actually contains a number of other distributions beyond `random`, which by default are defined in terms of `random`, but allow for different definitions when desired. For example, `SamplerST` (an instance of `MonadSample` in Control.Monad.Sampler) defines `normal` and other distributions independently of `random`.
+**Technical note**: `MonadSample` actually contains a number of other distributions beyond `random`, which by default are defined in terms of `random`, but allow for different definitions when desired. For example, `Sampler` (an instance of `MonadSample` in Control.Monad.Sampler) defines `normal` and other distributions independently of `random`.
 
 <!-- Inference is TODO
  `example1`, of type `MonadSample m => m Double`, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with *interpreting* `MonadSample` as something more concrete, namely an inference algorithm. -->
@@ -196,42 +196,33 @@ Summary of key info on `SamplerIO`:
 - `instance MonadSample SamplerIO`
 - **No** instance for `MonadCond`
 
-Summary of key info on `SamplerST`:
-
-- `SamplerST :: Type -> Type`
-- `instance MonadSample SamplerST`
-- **No** instance for `MonadCond`
-
-
 ```haskell
-newtype SamplerIO a = SamplerIO (ReaderT GenIO IO a)
+newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
+type SamplerIO = Sampler (IOGenM StdGen) IO
+
 ```
 
-There are various different implementations of samplers that you could write, depending on the statistical details of how you want to sample. Two are in monad-bayes (SamplerIO and SamplerST). 
+There are various different implementations of samplers that you could write, depending on the statistical details of how you want to sample. Monad-bayes provides a few, giving you the choice of which random number generator (RNG) or IO monad to use, in the generic `Sampler` monad. `SamplerIO` is a default choice of RNG and `IO` monad. 
 
 As the names suggest, these instances of `MonadSample` instantiate an abstract distribution as a sampling procedure. We have
 
 
 
 ```haskell
-instance MonadSample SamplerST where
-  random = fromMWC System.Random.MWC.uniform
-  uniform a b = fromMWC $ uniformR (a, b)
-  normal m s = fromMWC $ MWC.normal m s
-  gamma shape scale = fromMWC $ MWC.gamma shape scale
-  beta a b = fromMWC $ MWC.beta a b
-  bernoulli p = fromMWC $ MWC.bernoulli p
-  categorical ps = fromMWC $ MWC.categorical ps
-  geometric p = fromMWC $ MWC.geometric0 p
-  
+instance MonadSample (Sampler g m) where
+  random = Sampler (ReaderT uniformDouble01M)
+
+  uniform a b = Sampler (ReaderT $ uniformRM (a, b))
+  normal m s = Sampler (ReaderT (MWC.normal m s))
+  gamma shape scale = Sampler (ReaderT $ MWC.gamma shape scale)
+  beta a b = Sampler (ReaderT $ MWC.beta a b)
+
+  ...
 ```
 
 Were the lines from `uniform` to `geometric` commented out, they would be instantiated with the defaults defined in terms of `random` in the `MonadSample` class. The reason they are not is that there are more statistically efficient ways to sample.
 
-We can unpack values from `SamplerIO a` using `sampleIO :: SamperIO a -> IO a` and from `SamplerST` using `sampleSTfixed`.
-<!-- The idea is that we have a function `sampleIO :: SamperIO a -> IO a`, then: -->
-
-So for example:
+We can unpack values from `SamplerIO a` using `sampleIO :: SamperIO a -> IO a`. So for example:
 
 
 ```haskell
@@ -240,13 +231,13 @@ print =<< sampleIO random
 
 will print a sample from `random`. Similarly for other distributions. 
 
-But note that `SamplerIO` and `SamplerST` only have `MonadSample` instances. This means that `sampleIO sprinkler` does not type check and gives the type error: 
+But note that `SamplerIO` only has a `MonadSample` instance. This means that `sampleIO sprinkler` does not type check and gives the type error: 
 
 ```haskell
 No instance for (MonadInfer SamplerIO)
 ```
 
-This is to be expected. `SamplerIO` and `SamplerST` have no instance for `MonadCond`. 
+This is to be expected. `SamplerIO` has no instance for `MonadCond`. 
 
 ### Weighted m
 
@@ -660,7 +651,7 @@ is really an unnormalized measure, rather than a probability distribution. `norm
 
 ### Independent forward sampling
 
-For any program of type `p = MonadSample m => m a`, we may do `sampleIO p` or `sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample m`. 
+For any program of type `p = MonadSample m => m a`, we may do `sampleIO p` or `runST $ sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample m`. 
 
 ### Independent weighted sampling
 

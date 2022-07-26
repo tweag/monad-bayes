@@ -15,7 +15,7 @@ import Control.Monad.Bayes.Class
     MonadSample (categorical, dirichlet, uniformD),
     factor,
   )
-import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (prior)
 import Data.Map qualified as Map
@@ -80,5 +80,5 @@ syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
 
 runLDA :: IO ()
 runLDA = do
-  s <- sampleIO $ prior $ mh 1000 $ lda documents
+  s <- sampleIOfixed $ prior $ mh 1000 $ lda documents
   pPrint (head s)

@@ -25,13 +25,14 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Population (collapse, runPopulation)
-import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Control.Monad.Bayes.Sampler (Sampler, sampleIOfixed)
 import Control.Monad.Bayes.Sampler qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Weighted qualified as Weighted
 import Data.AEq (AEq ((~==)))
 import Numeric.Log (Log)
 import Sprinkler (soft)
+import System.Random.Stateful (IOGenM, StdGen, mkStdGen, newIOGenM)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -50,7 +51,8 @@ checkParticlesStratified observations particles =
   sampleIOfixed (fmap length (runPopulation $ smcStratified observations particles Sprinkler.soft))
 
 checkTerminateSMC :: IO [(Bool, Log Double)]
-checkTerminateSMC = sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
+checkTerminateSMC =
+  sampleIOfixed (runPopulation $ smcMultinomial 2 5 sprinkler)
 
 checkPreserveSMC :: Bool
 checkPreserveSMC =
@@ -66,6 +68,10 @@ expectationNearNumeric x y =
       e2 = Integrator.expectation $ normalize y
    in (abs (e1 - e2))
 
+expectationNearSampling ::
+  Weighted (Sampler (IOGenM StdGen) IO) Double ->
+  Weighted (Sampler (IOGenM StdGen) IO) Double ->
+  IO Double
 expectationNearSampling x y = do
   e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted x
   e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.runWeighted y

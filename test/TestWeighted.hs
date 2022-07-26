@@ -14,6 +14,7 @@ import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
 import Numeric.Log (Log (Exp, ln))
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 model :: MonadInfer m => m (Int, Double)
 model = do

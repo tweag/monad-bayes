@@ -64,7 +64,6 @@ module Control.Monad.Bayes.Class
 where
 
 import Control.Monad
-import Control.Monad (when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)

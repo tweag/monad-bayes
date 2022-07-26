@@ -1,3 +1,8 @@
+# 0.2.0 (2021-07-18)
+
+  * Addition of `sampleIOwith` and `sampleSTwith` allowing the usage
+    of your favourite RNG with seed of your choice.
+  * 
 
 # 0.1.1.3 (2021-06-15)
 
