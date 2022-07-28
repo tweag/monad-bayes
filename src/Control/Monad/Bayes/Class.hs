@@ -264,6 +264,15 @@ normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 --------------------
 
+-- | multivariate normal
+mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts
+
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian
   { latent :: m z, -- prior over latent variable Z
@@ -355,11 +364,3 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
-
-mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
-mvNormal mu bigSigma = do
-  let n = length mu
-  ss <- replicateM n (normal 0 1)
-  let bigL = cholDecomp bigSigma
-  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
-  return $ getCol 1 ts

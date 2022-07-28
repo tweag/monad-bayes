@@ -1,13 +1,13 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.1.2.1
+version:            0.2.0
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC ==9.2.2
+tested-with:        GHC ==9.2.3
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
@@ -32,11 +32,11 @@ flag dev
 library
   exposed-modules:
     Control.Monad.Bayes.Class
+    Control.Monad.Bayes.Density.Free
+    Control.Monad.Bayes.Density.State
     Control.Monad.Bayes.Enumerator
     Control.Monad.Bayes.Inference.Lazy.MH
     Control.Monad.Bayes.Inference.Lazy.WIS
-    Control.Monad.Bayes.Density.Free
-    Control.Monad.Bayes.Density.State
     Control.Monad.Bayes.Inference.MCMC
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
@@ -57,29 +57,31 @@ library
   other-modules:      Control.Monad.Bayes.Traced.Common
   default-language:   Haskell2010
   build-depends:
-      base             >=4.11   && <4.17
-    , containers       >=0.5.10 && <0.7
+      base               >=4.11   && <4.17
+    , comonad
+    , containers         >=0.5.10 && <0.7
     , foldl
-    , free             >=5.0.2  && <5.2
-    , ieee754          ^>=0.8.0
+    , free               >=5.0.2  && <5.2
+    , ieee754            ^>=0.8.0
     , integration
-    , log-domain       >=0.12   && <0.14
-    , math-functions   >=0.2.1  && <0.4
+    , log-domain         >=0.12   && <0.14
+    , math-functions     >=0.2.1  && <0.4
     , matrix
-    , monad-coroutine  ^>=0.9.0
+    , monad-coroutine    ^>=0.9.0
     , monad-extras
-    , mtl              ^>=2.2.2
-    , mwc-random       >=0.13.6 && <0.16
+    , mtl                ^>=2.2.2
+    , mwc-random         >=0.13.6 && <0.16
     , pipes
+    , primitive
     , profunctors
     , random
-    , scientific
-    , statistics       >=0.14.0 && <0.17
-    , text
-    , transformers     ^>=0.5.2
-    , vector           ^>=0.12.0
     , recursion-schemes
-    , comonad
+    , safe               ^>=0.3.17
+    , scientific
+    , statistics         >=0.14.0 && <0.17
+    , text
+    , transformers       ^>=0.5.2
+    , vector             ^>=0.12.0
 
   default-extensions:
     BlockArguments
@@ -118,6 +120,7 @@ executable example
     , optparse-applicative
     , pipes
     , pretty-simple
+    , random
     , text
     , time
     , vector
@@ -143,13 +146,16 @@ test-suite monad-bayes-test
   main-is:            Spec.hs
   hs-source-dirs:     test models
   other-modules:
+    BetaBin
     ConjugatePriors
+    HMM
     Sprinkler
     TestAdvanced
     TestDistribution
     TestEnumerator
     TestInference
     TestIntegrator
+    TestPipes
     TestPopulation
     TestSampler
     TestSequential
@@ -167,11 +173,12 @@ test-suite monad-bayes-test
     , matrix
     , monad-bayes
     , mtl
+    , mwc-random
     , pipes
     , pretty-simple
     , profunctors
-    , mwc-random
     , QuickCheck
+    , random
     , statistics
     , text
     , transformers
@@ -203,6 +210,7 @@ benchmark ssm-bench
       base
     , monad-bayes
     , pretty-simple
+    , random
 
 benchmark speed-bench
   type:               exitcode-stdio-1.0
@@ -225,6 +233,7 @@ benchmark speed-bench
     , pipes
     , pretty-simple
     , process
+    , random
     , text
     , typed-process
     , vector

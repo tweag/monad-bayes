@@ -7,13 +7,14 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.SMC2 as SMC2 (smc2)
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Population (population, resampleMultinomial)
-import Control.Monad.Bayes.Sampler.Strict (sampleIO)
+import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed, sampleWith)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import NonlinearSSM (generateData, model, param)
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 main :: IO ()
-main = sampleIO $ do
+main = sampleIOfixed $ do
   let t = 5
   dat <- generateData t
   let ys = map snd dat

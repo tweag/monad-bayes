@@ -4,12 +4,12 @@
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population (population, resampleSystematic)
-import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOwith)
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed, sampleIOwith)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
@@ -27,10 +27,7 @@ import HMM qualified
 import LDA qualified
 import LogReg qualified
 import System.Process.Typed (runProcess)
-import System.Random.MWC (GenIO, createSystemRandom)
-
--- | Environment to execute benchmarks in.
-newtype Env = Env {rng :: GenIO}
+import System.Random.Stateful (IOGenM, StatefulGen, StdGen, mkStdGen, newIOGenM)
 
 data ProbProgSys = MonadBayes
   deriving stock (Show)
@@ -71,15 +68,13 @@ runAlg model (RMSMC n t) =
           (buildModel model)
       )
 
--- (modelLength model) n t (buildModel model))
+prepareBenchmarkable :: ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable MonadBayes model alg = nfIO $ sampleIOfixed (runAlg model alg)
 
-prepareBenchmarkable :: GenIO -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleIOwith (runAlg model alg) g
-
-prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
-prepareBenchmark e MonadBayes model alg =
+prepareBenchmark :: ProbProgSys -> Model -> Alg -> Benchmark
+prepareBenchmark MonadBayes model alg =
   bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
-    prepareBenchmarkable (rng e) MonadBayes model alg
+    prepareBenchmarkable MonadBayes model alg
   where
     sep = "_" :: String
 
@@ -93,8 +88,8 @@ systems =
   [ MonadBayes
   ]
 
-lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
-lengthBenchmarks e lrData hmmData ldaData = benchmarks
+lengthBenchmarks :: [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
+lengthBenchmarks lrData hmmData ldaData = benchmarks
   where
     lrLengths = 10 : map (* 100) [1 :: Int .. 10]
     hmmLengths = 10 : map (* 100) [1 :: Int .. 10]
@@ -108,7 +103,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
         SMC 100,
         RMSMC 10 1
       ]
-    benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs
+    benchmarks = map (uncurry3 (prepareBenchmark)) $ filter supported xs
       where
         uncurry3 f (x, y, z) = f x y z
         xs = do
@@ -117,8 +112,8 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
           a <- algs
           return (s, m, a)
 
-samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
-samplesBenchmarks e lrData hmmData ldaData = benchmarks
+samplesBenchmarks :: [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
+samplesBenchmarks lrData hmmData ldaData = benchmarks
   where
     lrLengths = [50 :: Int]
     hmmLengths = [20 :: Int]
@@ -130,7 +125,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
     algs =
       map (\x -> MH (100 * x)) [1 .. 10] ++ map (\x -> SMC (100 * x)) [1 .. 10]
         ++ map (\x -> RMSMC 10 (10 * x)) [1 .. 10]
-    benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs
+    benchmarks = map (uncurry3 (prepareBenchmark)) $ filter supported xs
       where
         uncurry3 f (x, y, z) = f x y z
         xs = do
@@ -141,16 +136,11 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 
 main :: IO ()
 main = do
-  g <- createSystemRandom
-  writeFile "speed-length.csv" ""
-  writeFile "speed-samples.csv" ""
-  writeFile "raw.dat" ""
-  let e = Env g
-  lrData <- sampleIOwith (LogReg.syntheticData 1000) g
-  hmmData <- sampleIOwith (HMM.syntheticData 1000) g
-  ldaData <- sampleIOwith (LDA.syntheticData 5 1000) g
+  lrData <- sampleIOfixed (LogReg.syntheticData 1000)
+  hmmData <- sampleIOfixed (HMM.syntheticData 1000)
+  ldaData <- sampleIOfixed (LDA.syntheticData 5 1000)
   let configLength = defaultConfig {csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configLength (lengthBenchmarks lrData hmmData ldaData)
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configSamples (samplesBenchmarks lrData hmmData ldaData)
   void $ runProcess "python plots.py"

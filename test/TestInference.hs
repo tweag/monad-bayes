@@ -28,6 +28,7 @@ import Control.Monad.Bayes.Weighted qualified as Weighted
 import Data.AEq (AEq ((~==)))
 import Numeric.Log (Log)
 import Sprinkler (soft)
+import System.Random.Stateful (IOGenM, StdGen, mkStdGen, newIOGenM)
 
 sprinkler :: MonadInfer m => m Bool
 sprinkler = Sprinkler.soft
@@ -62,6 +63,10 @@ expectationNearNumeric x y =
       e2 = Integrator.expectation $ normalize y
    in (abs (e1 - e2))
 
+expectationNearSampling ::
+  Weighted (Sampler (IOGenM StdGen) IO) Double ->
+  Weighted (Sampler (IOGenM StdGen) IO) Double ->
+  IO Double
 expectationNearSampling x y = do
   e1 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted x
   e2 <- sampleIOfixed $ fmap Sampler.sampleMean $ replicateM 10 $ Weighted.weighted y
