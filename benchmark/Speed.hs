@@ -9,7 +9,7 @@ import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, nu
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population (population, resampleSystematic)
-import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed, sampleIOwith)
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
