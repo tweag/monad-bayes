@@ -62,6 +62,9 @@ module Control.Monad.Bayes.Class
     posteriorPredictive,
     independent,
     mvNormal,
+    Distribution,
+    Measure,
+    Kernel,
   )
 where
 
@@ -239,6 +242,13 @@ factor ::
   m ()
 factor = score
 
+-- | synonym for pretty type signatures, but note that (A -> Distribution B) won't work as intended: for that, use Kernel
+type Distribution a = forall m. MonadSample m => m a
+
+type Measure a = forall m. MonadInfer m => m a
+
+type Kernel a b = forall m. MonadInfer m => a -> m b
+
 -- | Hard conditioning.
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
@@ -261,8 +271,6 @@ normalPdf ::
   Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
---------------------
-
 -- | multivariate normal
 mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
 mvNormal mu bigSigma = do
@@ -271,6 +279,8 @@ mvNormal mu bigSigma = do
   let bigL = cholDecomp bigSigma
   let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
   return $ getCol 1 ts
+
+--------------------
 
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian
