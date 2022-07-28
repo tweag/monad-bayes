@@ -654,7 +654,7 @@ For API docs in the normal Haskell style, see [hackage](https://hackage.haskell.
 
 # Monad-Bayes vs other libraries
 
-Monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
+Monad-bayes is a universal probabilistic programming system, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
 There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
 
@@ -664,6 +664,7 @@ A lot of engineering work has been put into the above libraries and languages to
 
 **What Monad-Bayes has that is unique**: 
 
+Monad-Bayes is just a library, unlike almost all other PPLs, which are separate languages written inside another language. As such, probabilistic programs in monad-bayes are first class programs in Haskell with no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like `pipes`, `lens` and `Parsec`. Everything is pure. Everything is strongly typed. You can make use of laziness.
+
 Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
-Probabilistic programs in monad-bayes are first class programs in Haskell. There's no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. Everything is strongly typed. You can make use of laziness.
