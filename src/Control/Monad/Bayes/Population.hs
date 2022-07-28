@@ -53,10 +53,7 @@ import Control.Monad.Bayes.Weighted
     weighted,
     withWeight,
   )
-import Control.Monad.Bayes.Weighted hiding (hoist)
-import Control.Monad.Trans
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
-import Control.Monad.Trans.List
 import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
 import Data.List qualified

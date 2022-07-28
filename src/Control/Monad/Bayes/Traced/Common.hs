@@ -22,6 +22,7 @@ import Control.Monad.Bayes.Class
   ( MonadSample (bernoulli, random),
     discrete,
   )
+import Control.Monad.Bayes.Density.State
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
     hoist,
@@ -31,7 +32,6 @@ import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
-import Control.Monad.Bayes.Density.State
 
 -- | Collection of random variables sampler during the program's execution.
 data Trace a = Trace
@@ -42,7 +42,6 @@ data Trace a = Trace
     -- | The probability of observing this particular sequence.
     probDensity :: Log Double
   }
-
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}

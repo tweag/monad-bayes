@@ -14,6 +14,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Integrator
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Weighted (weighted)
+import Control.Monad.ST (ST, runST)
 import Data.AEq (AEq ((~==)))
 import Data.List (sortOn)
 import Data.Set (fromList)
@@ -136,7 +137,7 @@ passed13 =
     ~== 1
 -- sampler and integrator agree on a non-trivial model
 passed14 =
-  let sample = sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ weighted $ model1
+  let sample = runST $ sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ weighted $ model1
       quadrature = expectation $ normalize $ model1
    in abs (sample - quadrature) < 0.01
 

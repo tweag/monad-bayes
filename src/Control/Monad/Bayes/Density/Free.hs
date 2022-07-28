@@ -24,17 +24,15 @@ module Control.Monad.Bayes.Density.Free
 where
 
 import Control.Monad.Bayes.Class (MonadSample (random))
+import Control.Monad.RWS
 import Control.Monad.State (evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
-import Control.Monad.RWS
-
-
 
 -- | Random sampling functor.
-newtype SamF a = Random (Double -> a) deriving Functor
+newtype SamF a = Random (Double -> a) deriving (Functor)
 
 -- | Free monad transformer over random sampling.
 --

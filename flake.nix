@@ -2,8 +2,14 @@
   description = "JupyterLab Flake";
 
   inputs = {
-    jupyterWith.url = "github:tweag/jupyterWith";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
+    flake-compat.url = "github:edolstra/flake-compat";
+    flake-compat.flake = false;
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
+    haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
   };
 
   inputs.nixpkgs.url = "nixpkgs/22.05";
@@ -11,10 +17,21 @@
   outputs = {
     self,
     nixpkgs,
-    jupyterWith,
+    flake-compat,
     flake-utils,
+    pre-commit-hooks,
+    haskell-nix-utils,
   }:
-    flake-utils.lib.eachDefaultSystem (
+    flake-utils.lib.eachSystem
+    [
+      # Tier 1 - Tested in CI
+      flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.x86_64-darwin
+      # Tier 2 - Not tested in CI (at least for now)
+      flake-utils.lib.system.aarch64-linux
+      flake-utils.lib.system.aarch64-darwin
+    ]
+    (
       system: let
         myHaskellPackageOverlay = self: super: {
           myHaskellPackages = super.haskellPackages.override {
