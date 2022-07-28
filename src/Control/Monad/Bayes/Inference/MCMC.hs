@@ -16,6 +16,7 @@ import qualified Control.Monad.Bayes.Traced.Basic as Basic
 import Control.Monad.Bayes.Traced.Common (burnIn)
 import qualified Control.Monad.Bayes.Traced.Dynamic as Dynamic
 import qualified Control.Monad.Bayes.Traced.Static as Static
+import Control.Monad.Bayes.Weighted
 
 data Proposal = SingleSiteMH
 
@@ -24,11 +25,11 @@ data MCMCConfig = MCMCConfig {proposal :: Proposal, numMCMCSteps :: Int, numBurn
 defaultMCMCConfig :: MCMCConfig
 defaultMCMCConfig = MCMCConfig {proposal = SingleSiteMH, numMCMCSteps = 1, numBurnIn = 0}
 
-mcmc :: MonadSample m => MCMCConfig -> Static.Traced m a -> m [a]
-mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ Static.mh numMCMCSteps m
+mcmc :: MonadSample m => MCMCConfig -> Static.Traced (Weighted m) a -> m [a]
+mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Static.mh numMCMCSteps m
 
-mcmcBasic :: MonadSample m => MCMCConfig -> Basic.Traced m a -> m [a]
-mcmcBasic (MCMCConfig {..}) m = burnIn numBurnIn $ Basic.mh numMCMCSteps m
+mcmcBasic :: MonadSample m => MCMCConfig -> Basic.Traced (Weighted m) a -> m [a]
+mcmcBasic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Basic.mh numMCMCSteps m
 
-mcmcDynamic :: MonadSample m => MCMCConfig -> Dynamic.Traced m a -> m [a]
-mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ Dynamic.mh numMCMCSteps m
+mcmcDynamic :: MonadSample m => MCMCConfig -> Dynamic.Traced (Weighted m) a -> m [a]
+mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Dynamic.mh numMCMCSteps m

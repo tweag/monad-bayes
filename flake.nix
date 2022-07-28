@@ -3,22 +3,41 @@
   nixConfig = {
     extra-substituters = [
       "https://tweag-monad-bayes.cachix.org"
+      "https://tweag-wasm.cachix.org"
     ];
     extra-trusted-public-keys = [
       "tweag-monad-bayes.cachix.org-1:tmmTZ+WvtUMpYWD4LAkfSuNKqSuJyL3N8ZVm/qYtqdc="
+      "tweag-wasm.cachix.org-1:Eu5eBNIJvleiWMEzRBmH3/fzA6a604Umt4lZguKtAU4="
     ];
   };
   inputs = {
-    jupyterWith.url = "github:tweag/jupyterWith";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
+    flake-compat.url = "github:edolstra/flake-compat";
+    flake-compat.flake = false;
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
+    haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
   };
   outputs = {
     self,
     nixpkgs,
-    jupyterWith,
+    flake-compat,
     flake-utils,
+    pre-commit-hooks,
+    haskell-nix-utils,
   }:
-    flake-utils.lib.eachDefaultSystem (
+    flake-utils.lib.eachSystem
+    [
+      # Tier 1 - Tested in CI
+      flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.x86_64-darwin
+      # Tier 2 - Not tested in CI (at least for now)
+      flake-utils.lib.system.aarch64-linux
+      flake-utils.lib.system.aarch64-darwin
+    ]
+    (
       system: let
         inherit (nixpkgs) lib;
         pkgs = nixpkgs.legacyPackages.${system};
@@ -32,6 +51,15 @@
           "^.*\.md"
         ];
         monad-bayes = pkgs.haskell.packages.ghc902.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
+        cabal-docspec = let
+          ce =
+            haskell-nix-utils.packages.${system}.pkgs.callPackage
+            (import "${haskell-nix-utils}/project/cabal-extras.nix") {
+              self = haskell-nix-utils;
+              inherit (haskell-nix-utils.packages.${system}) compiler-nix-name index-state;
+            };
+        in
+          ce.cabal-docspec.components.exes.cabal-docspec;
         monad-bayes-dev = pkgs.mkShell {
           inputsFrom = [monad-bayes.env];
           packages = with pre-commit-hooks.packages.${system}; [
@@ -39,6 +67,7 @@
             cabal-fmt
             hlint
             ormolu
+            cabal-docspec
           ];
           shellHook =
             pre-commit.shellHook
@@ -66,4 +95,3 @@
       }
     );
 }
-

@@ -10,12 +10,13 @@ import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
+import Control.Monad.ST (runST)
 import Data.Time
 import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
-import System.Random.MWC (createSystemRandom)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)
@@ -34,16 +35,14 @@ getModel model = (size model, program model)
     size (LR n) = n
     size (HMM n) = n
     size (LDA (d, w)) = d * w
-    synthesize :: SamplerST a -> (a -> b) -> b
-    synthesize dataGen prog = prog (sampleSTfixed dataGen)
-    program (LR n) = show <$> synthesize (LogReg.syntheticData n) LogReg.logisticRegression
-    program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
-    program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
+    program (LR n) = show <$> (LogReg.logisticRegression (runST $ sampleSTfixed (LogReg.syntheticData n)))
+    program (HMM n) = show <$> (HMM.hmm (runST $ sampleSTfixed (HMM.syntheticData n)))
+    program (LDA (d, w)) = show <$> (LDA.lda (runST $ sampleSTfixed (LDA.syntheticData d w)))
 
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 
-runAlg :: Model -> Alg -> SamplerIO String
+runAlg :: Model -> Alg -> Sampler GenIO IO String
 runAlg model alg =
   case alg of
     SMC ->
@@ -63,7 +62,7 @@ runAlg model alg =
 infer :: Model -> Alg -> IO ()
 infer model alg = do
   g <- createSystemRandom
-  x <- sampleIOwith (runAlg model alg) g
+  x <- sampleWith (runAlg model alg) g
   print x
 
 opts :: ParserInfo (Model, Alg)
