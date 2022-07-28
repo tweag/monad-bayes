@@ -21,7 +21,6 @@ module Control.Monad.Bayes.Sequential.Coroutine
     hoistFirst,
     hoist,
     sequentially,
-    sequentiallyAll,
     sis,
   )
 where
@@ -74,10 +73,6 @@ suspend = Sequential await
 finish :: Monad m => Sequential m a -> m a
 finish = pogoStick extract . runSequential
 
--- | Remove the remaining suspension points.
-sequentiallyAll :: Monad m => (forall x . m x -> m x) -> Sequential m a -> m a
-sequentiallyAll f = pogoStick (Coroutine . f . resume . extract) . runSequential
-
 -- | Execute to the next suspension point.
 -- If the computation is finished, do nothing.
 --
@@ -120,5 +115,5 @@ sequentially,
     m a
 sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 
--- | deprecated synonym
+-- | synonym
 sis = sequentially

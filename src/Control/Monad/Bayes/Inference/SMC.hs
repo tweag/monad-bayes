@@ -17,8 +17,6 @@ module Control.Monad.Bayes.Inference.SMC
   ( smc,
     smcPush,
     SMCConfig (..),
-    smcFree,
-    NumSteps(..)
   )
 where
 
@@ -33,13 +31,11 @@ import Control.Monad.Bayes.Population
     withParticles
   )
 import Control.Monad.Bayes.Sequential.Coroutine as Coroutine
-import Control.Monad.Bayes.Sequential.Free as Free
 
-data NumSteps = Only Int | All
 
 data SMCConfig m = SMCConfig
   { resampler :: forall x. Population m x -> Population m x,
-    numSteps :: NumSteps,
+    numSteps :: Int,
     numParticles :: Int
   }
 
@@ -51,20 +47,8 @@ smc ::
   Coroutine.Sequential (Population m) a ->
   Population m a
 smc SMCConfig {..} = 
-  (case numSteps of 
-    Only n -> Coroutine.sequentially resampler n
-    All -> Coroutine.sequentiallyAll resampler)
-  
+  Coroutine.sequentially resampler numSteps
   . Coroutine.hoistFirst (withParticles numParticles)
-
--- | Sequential importance resampling.
--- Doesn't require specification of number of steps: executes the resampler at each factor statement
-smcFree ::
-  MonadSample m =>
-  SMCConfig m ->
-  Free.Sequential (Population m) a ->
-  Population m a
-smcFree SMCConfig {..} = Free.sequentially resampler . Free.hoistFirst (withParticles numParticles)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
