@@ -1,4 +1,4 @@
-# What is probabilistic programming
+# Quickstart
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
@@ -18,23 +18,23 @@ y_{n}=\alpha+\beta x_{n}+\epsilon_{n}
 but in code as:
 
 ```haskell
-paramPriorRegression :: MonadSample m => m (Double, Double, Double)
+paramPriorRegression :: Distribution (Double, Double, Double)
 paramPriorRegression = do
     slope <- normal 0 2
     intercept <- normal 0 2
     noise <- gamma 4 4
     return (slope, intercept, noise)
 
-regression :: (MonadInfer m) => [Double] -> [Double] -> m (Double, Double, Double)
-regression xs ys = do
+regression :: Kernel [(Double, Double)] (Double, Double, Double)
+regression xsys = do
     params@(slope, intercept, noise) <- paramPriorRegression
-    forM_ (zip xs ys) \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
+    forM_ xsys \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
     return (slope, intercept, noise)
 ```
 
-`regression` takes observations of `xs` and `ys`, and using the prior expressed by `paramPriorRegression`, returns the posterior conditioned on the observations.
+`regression` takes observations (a list of pairs of x and y values), and using the prior expressed by `paramPriorRegression`, returns the posterior conditioned on the observations.
 
-This is the *model*. To perform *inference* , suppose we have a data set of `xs` and `ys` like:
+This is the *model*. To perform *inference* , suppose we have a data set `xsys` like:
 
 ![](_static/priorpred.png)
 
@@ -42,15 +42,14 @@ We could then run the model as follows:
 
 ```haskell   
 mhRunsRegression = sampler 
-  $ unweighted 
   $ mcmc MCMCConfig 
       {numMCMCSteps = 1500, 
       proposal = SingleSiteMH, 
       numBurnIn = 500} 
-  random
+  (regression xsys)
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampler` samples a particular chain. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `unweighted` throws away that weight (we don't care about the probability of the chain itself), and `sampler` samples a particular chain. Plotting one gives:
 
 ![](_static/regress.png)
 
@@ -74,15 +73,22 @@ A distribution in monad-bayes over a set {math}`X`, is of type:
 MonadInfer m => m X
 ```
 
-monad-bayes provides standard distributions, such as:
+For beginner friendliness, a synonym `type Measure a = forall m . MonadSample m => m a` is provided (as well as `Distribution` shown above, for normalized distributions, and `Kernel` for functions into distributions).
 
-- `random :: MonadInfer m => m Double` : sample uniformly from {math}`[0,1]`
+Monad-bayes provides standard distributions, such as
+
+```haskell
+random :: Distribution Double
+```
+
+which is distributed uniformly over {math}`[0,1]`.
 
 The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html
 
 Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over `(+) :: Int -> Int -> Int` and `(-) :: Int -> Int -> Int`:
 
 ```haskell
+distributionOverFunctions :: Distribution (Int -> Int -> Int)
 distributionOverFunctions = uniformD [(+), (-)]
 ```
 
