@@ -2,14 +2,8 @@
   description = "JupyterLab Flake";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-compat.url = "github:edolstra/flake-compat";
-    flake-compat.flake = false;
+    jupyterWith.url = "github:tweag/jupyterWith";
     flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
-    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
-    haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
   };
 
   inputs.nixpkgs.url = "nixpkgs/22.05";
@@ -17,21 +11,10 @@
   outputs = {
     self,
     nixpkgs,
-    flake-compat,
+    jupyterWith,
     flake-utils,
-    pre-commit-hooks,
-    haskell-nix-utils,
   }:
-    flake-utils.lib.eachSystem
-    [
-      # Tier 1 - Tested in CI
-      flake-utils.lib.system.x86_64-linux
-      flake-utils.lib.system.x86_64-darwin
-      # Tier 2 - Not tested in CI (at least for now)
-      flake-utils.lib.system.aarch64-linux
-      flake-utils.lib.system.aarch64-darwin
-    ]
-    (
+    flake-utils.lib.eachDefaultSystem (
       system: let
         myHaskellPackageOverlay = self: super: {
           myHaskellPackages = super.haskellPackages.override {
@@ -91,10 +74,6 @@
               pkgs.myHaskellPackages.imatrix-sundials
               pkgs.myHaskellPackages.hvega
               pkgs.myHaskellPackages.lens
-              pkgs.myHaskellPackages.lens-aeson
-              pkgs.myHaskellPackages.aeson
-              pkgs.myHaskellPackages.megaparsec
-              pkgs.myHaskellPackages.hamilton
               pkgs.myHaskellPackages.log-domain
               pkgs.myHaskellPackages.katip
               pkgs.myHaskellPackages.ihaskell-hvega
@@ -102,6 +81,24 @@
               pkgs.myHaskellPackages.text
               pkgs.myHaskellPackages.diagrams
               pkgs.myHaskellPackages.diagrams-cairo
+              pkgs.myHaskellPackages.aeson
+              pkgs.myHaskellPackages.lens
+              pkgs.myHaskellPackages.lens-aeson
+              pkgs.myHaskellPackages.pretty-simple
+              pkgs.myHaskellPackages.monad-loops
+              pkgs.myHaskellPackages.hamilton
+              pkgs.myHaskellPackages.hmatrix
+              pkgs.myHaskellPackages.vector-sized
+              pkgs.myHaskellPackages.linear
+              pkgs.myHaskellPackages.recursion-schemes
+              pkgs.myHaskellPackages.data-fix
+              pkgs.myHaskellPackages.free
+              pkgs.myHaskellPackages.comonad
+              pkgs.myHaskellPackages.adjunctions
+              pkgs.myHaskellPackages.distributive
+              pkgs.myHaskellPackages.vector
+              pkgs.myHaskellPackages.megaparsec
+              pkgs.myHaskellPackages.histogram-fill
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.
