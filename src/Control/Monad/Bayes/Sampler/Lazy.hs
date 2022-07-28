@@ -19,7 +19,7 @@ import Control.Monad
 -- import Unsafe.Coerce
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample (normal, random), condition)
-import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
 import Control.Monad.State.Lazy (State, get, put, runState)
 import Numeric.Log (Log (..))
@@ -89,7 +89,7 @@ independent = sequence . repeat
 
 -- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs
 weightedsamples :: forall a. Weighted Sampler a -> IO [(a, Log Double)]
-weightedsamples = sample . independent . runWeighted
+weightedsamples = sample . independent . weighted
 
 -- wiener :: Prob (Double -> State (Data.Map.Map Double Double) Double)
 -- wiener = Prob $ \(Tree _ gs) x -> do

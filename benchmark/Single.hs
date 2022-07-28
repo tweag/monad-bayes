@@ -7,7 +7,7 @@ import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Population (population)
-import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Data.Time

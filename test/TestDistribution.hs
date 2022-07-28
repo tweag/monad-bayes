@@ -10,7 +10,7 @@ where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadSample, mvNormal)
-import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Identity (runIdentity)
 import Control.Monad.State (evalStateT)
 import Data.Matrix (fromList)

@@ -6,7 +6,7 @@ module Control.Monad.Bayes.Inference.Lazy.MH where
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler.Lazy
-import Control.Monad.Bayes.Weighted (Weighted, runWeighted)
+import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
 import Control.Monad.State.Lazy (MonadState (get, put), State, runState)
 import Numeric.Log
@@ -22,7 +22,7 @@ import System.Random qualified as R
 --   g <- newStdGen >> getStdGen
 --   let (g1, g2) = split g
 --   let t = randomTree g1
---   let (x, w) = runSampler (runWeighted m) t
+--   let (x, w) = runSampler (weighted m) t
 --   -- Now run step over and over to get a stream of (tree,result,weight)s.
 --   let (samples, _) = runState (iterateM step (t, x, w)) g2
 --   -- The stream of seeds is used to produce a stream of result/weight pairs.
@@ -43,7 +43,7 @@ import System.Random qualified as R
 --       let t' = mutateTree p g1 t
 --       -- Rerun the model with the new tree, to get a new
 --       -- weight w'.
---       let (x', w') = runSampler (runWeighted m) t'
+--       let (x', w') = runSampler (weighted m) t'
 --       -- MH acceptance ratio. This is the probability of either
 --       -- returning the new seed or the old one.
 --       let ratio = w' / w
