@@ -16,7 +16,9 @@
 -- 'SamplerIO' and 'SamplerST' are instances of 'MonadSample'. Apply a 'MonadCond'
 -- transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler.Strict
-  ( SamplerIO,
+  ( Sampler,
+    SamplerIO,
+    SamplerST,
     sampleIO,
     sampleIOfixed,
     sampleWith,
@@ -40,6 +42,7 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
+import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
@@ -72,6 +75,10 @@ type SamplerIO = Sampler (IOGenM StdGen) IO
 -- | convenient type synonym to show specializations of Sampler
 -- to particular pairs of monad and RNG
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
+
+data Tree = Tree Double [Tree]
+
+type SamplerL = Sampler Tree Identity
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
   random = Sampler (ReaderT uniformDouble01M)

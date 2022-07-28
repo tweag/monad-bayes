@@ -7,17 +7,6 @@
 module Control.Monad.Bayes.Sampler.Lazy where
 
 import Control.Monad
--- import Control.Monad.Extra
-
--- import Control.DeepSeq
--- import Control.Exception (evaluate)
-
--- import System.IO.Unsafe
-
--- import GHC.Exts.Heap
--- import System.Mem
--- import Unsafe.Coerce
-
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample (normal, random), condition)
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
@@ -30,11 +19,6 @@ import System.Random
     newStdGen,
   )
 import qualified System.Random as R
-
--- | This module defines
---    1. A monad 'Sampler'
---    2. the inference method 'lwis' (likelihood weighted importance sampling)
---    3. 'mh' (Metropolis-Hastings algorithm based on lazily mutating parts of the tree at random)
 
 -- | A 'Tree' is a lazy, infinitely wide and infinitely deep tree, labelled by Doubles
 -- | Our source of randomness will be a Tree, populated by uniform [0,1] choices for each label.
@@ -54,8 +38,7 @@ splitTree :: Tree -> (Tree, Tree)
 splitTree (Tree r (t : ts)) = (t, Tree r ts)
 splitTree (Tree _ []) = error "empty tree"
 
--- | Preliminaries for the simulation methods. Generate a tree with uniform random labels
---    This uses 'split' to split a random seed
+-- | Preliminaries for the simulation methods. Generate a tree with uniform random labels. This uses 'split' to split a random seed
 randomTree :: RandomGen g => g -> Tree
 randomTree g = let (a, g') = R.random g in Tree a (randomTrees g')
 
@@ -81,15 +64,15 @@ instance Monad Sampler where
 instance MonadSample Sampler where
   random = Sampler \(Tree r _) -> r
 
-sample :: Sampler a -> IO a
-sample m = newStdGen *> (runSampler m . randomTree <$> getStdGen)
+sampler :: Sampler a -> IO a
+sampler m = newStdGen *> (runSampler m . randomTree <$> getStdGen)
 
 independent :: Monad m => m a -> m [a]
 independent = sequence . repeat
 
 -- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs
-weightedsamples :: forall a. Weighted Sampler a -> IO [(a, Log Double)]
-weightedsamples = sample . independent . weighted
+weightedsamples :: Weighted Sampler a -> IO [(a, Log Double)]
+weightedsamples = sampler . independent . weighted
 
 -- wiener :: Prob (Double -> State (Data.Map.Map Double Double) Double)
 -- wiener = Prob $ \(Tree _ gs) x -> do

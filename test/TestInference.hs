@@ -21,7 +21,7 @@ import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Population (collapse, runPopulation)
-import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
+import Control.Monad.Bayes.Sampler.Strict (Sampler, sampleIOfixed)
 import Control.Monad.Bayes.Sampler.Strict qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Bayes.Weighted qualified as Weighted
