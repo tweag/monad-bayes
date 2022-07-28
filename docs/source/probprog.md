@@ -410,7 +410,7 @@ output =
 
 
 ```haskell
-(sampler . population . smc SMCConfig {numSteps = Only 2, numParticles = 2, resampler = resampleMultinomial} random) 
+(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
@@ -430,7 +430,7 @@ And here is the inference:
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampleIO . population . smc SMCConfig {numSteps = Only 1, numParticles = 2, resampler = resampleMultinomial}) example
+run = (sampleIO . population . smc SMCConfig {numSteps = 1, numParticles = 2, resampler = resampleMultinomial}) example
 ```
 
 ...and the result:
