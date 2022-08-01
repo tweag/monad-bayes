@@ -94,11 +94,13 @@
               pkgs.myHaskellPackages.data-fix
               pkgs.myHaskellPackages.free
               pkgs.myHaskellPackages.comonad
+              pkgs.myHaskellPackages.gloss
               pkgs.myHaskellPackages.adjunctions
               pkgs.myHaskellPackages.distributive
               pkgs.myHaskellPackages.vector
               pkgs.myHaskellPackages.megaparsec
               pkgs.myHaskellPackages.histogram-fill
+               pkgs.myHaskellPackages.ihaskell-widgets
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.

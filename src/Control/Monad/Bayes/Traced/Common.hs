@@ -88,7 +88,7 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   return $ if accept then Trace vs b q else t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
--- mhTrans' :: MonadSample m => Weighted (Free.Density Identity) a -> Trace a -> m (Trace a)
+-- mhTrans' :: MonadSample m => Weighted (Density Identity) a -> Trace a -> m (Trace a)
 mhTrans' m = undefined -- mhTrans (Weighted.hoist (Density.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)

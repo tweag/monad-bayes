@@ -23,23 +23,32 @@
         <main role="main">
             <h1></h1>
             <p>Monad-Bayes is a library for <strong>probabilistic programming</strong> written in <strong>Haskell</strong>.</p>
-<p><strong>Define distributions</strong> <a href>as programs</a></p>
-<p><strong>Perform inference</strong> <a href>with a variety of methods</a></p>
+<p><strong>Define distributions</strong> <a href="../Introduction.html">as programs</a></p>
+<p><strong>Perform inference</strong> <a href="./tutorials.html">with a variety of standard methods, which you can extend</a></p>
+<p><strong>Integrate with arbitrary Haskell code</strong> <a href="./examples.html">like this</a> because Monad-Bayes is just a library, not a separate language</p>
 <!-- ```haskell
-mh $ ...
+example :: Distribution Histogram
+example = fmap histogram (replicateM 1000 (normal 0 1))
 ``` -->
-<p><strong>Distributions over anything</strong> including <a href>plots</a>, <a href>diagrams</a>, <a href>JSONs</a> and <a href>streams</a></p>
-<html>
-<head>
-</head>
-<body>
-<div style="position:relative; left:480px; top:2px; background-color:white;">
+<h1 id="example">Example</h1>
+<p><img src="../images/code_example.png" width="720" height="300" /></p>
+<p><code>model</code> is a mixture of Gaussians, defined as a program. Its type <code>Distribution Double</code> shows that it is a distribution over reals. <code>image</code> is a program too: as its type shows, it is a distribution over plots. In particular, plots that arise from forming a 200 bin histogram out of 100000 iid draws from <code>model</code>. To sample from <code>image</code>, we simply write <code>sampler image</code>, with the result shown below:</p>
+<p><img src="../images/plot.png" width="450" height="300" /></p>
+<!-- <html>
+   <head>
+   </head>
 
+   <body>
+      <div style = "position:relative; left:480px; top:2px; background-color:white;">
+         
+         
+   </body>
 
-</body>
 </html>
-<p><img src="../randomwalk.png" width="400" height="500" /></p>
-<p>(A sample from a distribution over diagrams, built by transforming a distribution over infinite lists, i.e. a random walk)
+<img src="../images/randomwalk.png" 
+     width="400" 
+     height="500" /> -->
+<!-- (A sample from a distribution over diagrams, built by transforming a distribution over infinite lists, i.e. a random walk) -->
 <!-- ](../randomwalk.png) -->
 <!-- - why draw a sample and then make a plot when you can just define a distribution over plots instead (see todo). Sample from distributions over JSONs (see todo) or diagrams
 - distributions over infinite (lazily evaluated) lists  are great for non-parametrics (see todo)
@@ -47,7 +56,7 @@ mh $ ...
 
 inference methods are built modularly:
 
-- write a particle filter that performs an MH step after every resampling step in one line (see todo) --></p>
+- write a particle filter that performs an MH step after every resampling step in one line (see todo) -->
         </main>
 
         <footer>

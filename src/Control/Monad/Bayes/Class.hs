@@ -1,6 +1,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
+
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -62,9 +64,12 @@ module Control.Monad.Bayes.Class
     posteriorPredictive,
     independent,
     mvNormal,
+    Histogram,
+    histogram,
     Distribution,
     Measure,
     Kernel,
+    Log(ln, Exp)
   )
 where
 
@@ -83,15 +88,17 @@ import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
-    DiscreteDistr (logProbability, probability),
+    DiscreteDistr (probability),
   )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
-import Statistics.Distribution.Poisson qualified as S
 import Statistics.Distribution.Uniform (uniformDistr)
+import qualified Data.Histogram as H
+import qualified Data.Histogram.Fill as H
+import Control.Arrow (Arrow(second))
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
@@ -244,6 +251,7 @@ factor ::
 factor = score
 
 -- | synonym for pretty type signatures, but note that (A -> Distribution B) won't work as intended: for that, use Kernel
+-- Also note that the use of RankNTypes means performance may take a hit: really the main point of these signatures is didactic
 type Distribution a = forall m. MonadSample m => m a
 
 type Measure a = forall m. MonadInfer m => m a
@@ -305,6 +313,20 @@ posteriorPredictive ::
   f b ->
   m b
 posteriorPredictive bm os = posterior bm os >>= generative bm
+
+-- helper funcs
+--------------------
+
+type Histogram = H.Histogram H.BinD Double
+
+histogram :: Int -> [(Double, Log Double)] -> Histogram
+histogram n v = H.fillBuilder buildr $ fmap (second (ln . exp)) v
+  where
+    v1 = fmap fst v
+    mi = Prelude.minimum v1
+    ma = Prelude.maximum v1
+    bins = H.binD mi n ma
+    buildr = H.mkWeighted bins
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
