@@ -1,8 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
-
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -69,10 +68,11 @@ module Control.Monad.Bayes.Class
     Distribution,
     Measure,
     Kernel,
-    Log(ln, Exp)
+    Log (ln, Exp),
   )
 where
 
+import Control.Arrow (Arrow (second))
 import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
@@ -82,6 +82,8 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
+import Data.Histogram qualified as H
+import Data.Histogram.Fill qualified as H
 import Data.Matrix hiding ((!))
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
@@ -96,9 +98,6 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
-import qualified Data.Histogram as H
-import qualified Data.Histogram.Fill as H
-import Control.Arrow (Arrow(second))
 
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
