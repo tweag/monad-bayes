@@ -10,6 +10,10 @@ title: Tutorials
 
 ## [Sequential Monte Carlo](../SMC.html)
 
+## [Lazy Sampling](../Lazy.html)
+
+## [Advanced Inference Methods](../AdvancedSampling.html)
+
 <!-- ## [Advanced Inference Methods](../AdvancedSampling.html)
 
 ## [Building your own inference methods]() -->

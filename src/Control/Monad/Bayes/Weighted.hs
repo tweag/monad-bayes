@@ -21,7 +21,6 @@ module Control.Monad.Bayes.Weighted
     unweighted,
     applyWeight,
     hoist,
-    toBinsWeighted,
     runWeighted,
   )
 where
@@ -82,8 +81,3 @@ applyWeight m = do
 -- | Apply a transformation to the transformed monad.
 hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
 hoist t (Weighted m) = Weighted $ mapStateT t m
-
-toBinsWeighted :: Double -> [(Double, Log Double)] -> [(Double, Log Double)]
-toBinsWeighted binWidth = fmap (first (fst . toBin binWidth))
-  where
-    toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)

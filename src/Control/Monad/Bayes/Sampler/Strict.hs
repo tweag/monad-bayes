@@ -23,7 +23,6 @@ module Control.Monad.Bayes.Sampler.Strict
     sampleIOfixed,
     sampleWith,
     sampleSTfixed,
-    toBins,
     sampleMean,
     sampler,
   )
@@ -42,25 +41,9 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
-import Control.Monad.Identity
-import Control.Monad.Reader
-import Control.Monad.ST (ST, runST, stToIO)
-import Control.Monad.State (State, state)
-import Control.Monad.Trans (MonadIO, lift)
-import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
-import Data.Fixed (mod')
+import Control.Monad.Reader ( ReaderT(..), MonadIO )
+import Control.Monad.ST (ST)
 import Numeric.Log (Log (ln))
-import System.Random.MWC
-  ( Gen,
-    GenIO,
-    GenST,
-    Seed,
-    Variate (uniform, uniformR),
-    create,
-    createSystemRandom,
-    restore,
-    save,
-  )
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
@@ -75,10 +58,6 @@ type SamplerIO = Sampler (IOGenM StdGen) IO
 -- | convenient type synonym to show specializations of Sampler
 -- to particular pairs of monad and RNG
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
-
-data Tree = Tree Double [Tree]
-
-type SamplerL = Sampler Tree Identity
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
   random = Sampler (ReaderT uniformDouble01M)
@@ -114,21 +93,6 @@ sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
 -- | Run the sampler with a fixed random seed
 sampleSTfixed :: SamplerST s b -> ST s b
 sampleSTfixed x = newSTGenM (mkStdGen 1729) >>= sampleWith x
-
-type Bin = (Double, Double)
-
--- | binning function. Useful when you want to return the bin that
--- a random variable falls into, so that you can show a histogram of samples
-toBin ::
-  -- | bin size
-  Double ->
-  -- | number
-  Double ->
-  Bin
-toBin binSize n = let lb = n `mod'` binSize in (n - lb, n - lb + binSize)
-
-toBins :: Double -> [Double] -> [Double]
-toBins binWidth = fmap (fst . toBin binWidth)
 
 sampleMean :: [(Double, Log Double)] -> Double
 sampleMean samples =

@@ -65,6 +65,7 @@ module Control.Monad.Bayes.Class
     mvNormal,
     Histogram,
     histogram,
+    histogramToList,
     Distribution,
     Measure,
     Kernel,
@@ -326,6 +327,9 @@ histogram n v = H.fillBuilder buildr $ fmap (second (ln . exp)) v
     ma = Prelude.maximum v1
     bins = H.binD mi n ma
     buildr = H.mkWeighted bins
+
+histogramToList :: Histogram -> [(Double, Double)]
+histogramToList = H.asList
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.

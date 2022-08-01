@@ -6,19 +6,20 @@
 -- | This is a port of the implementation of LazyPPL: https://lazyppl.bitbucket.io/
 module Control.Monad.Bayes.Sampler.Lazy where
 
-import Control.Monad
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample (normal, random), condition)
+import Control.Monad ( ap, liftM )
+import Control.Monad.Bayes.Class (MonadSample (random, normal))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
-import Control.Monad.Extra (iterateM)
-import Control.Monad.State.Lazy (State, get, put, runState)
 import Numeric.Log (Log (..))
 import System.Random
-  ( Random (randoms),
-    RandomGen (split),
+  ( RandomGen (split),
     getStdGen,
     newStdGen,
   )
 import qualified System.Random as R
+import qualified Data.Map as M
+import GHC.IO (unsafePerformIO)
+import Data.IORef
+import Data.List (find)
 
 -- | A 'Tree' is a lazy, infinitely wide and infinitely deep tree, labelled by Doubles
 -- | Our source of randomness will be a Tree, populated by uniform [0,1] choices for each label.
@@ -74,36 +75,41 @@ independent = sequence . repeat
 weightedsamples :: Weighted Sampler a -> IO [(a, Log Double)]
 weightedsamples = sampler . independent . weighted
 
--- wiener :: Prob (Double -> State (Data.Map.Map Double Double) Double)
--- wiener = Prob $ \(Tree _ gs) x -> do
---         modify (Data.Map.insert 0 0)
---         table <- get
---         case Data.Map.lookup x table of
---             Just y -> return y
---             Nothing -> return $ fromMaybe undefined $ do
---                         let lower = do
---                                         l <- findMaxLower x (keys table)
---                                         v <- Data.Map.lookup l table
---                                         return (l,v)
---                         let upper = do {u <- find (> x) (keys table) ;
---                                         v    <- Data.Map.lookup u table ; return (u,v) }
---                         let m = bridge lower x upper
---                         let y = runSampler m (gs !! (1 + size table))
---                         return y
+wiener :: Sampler (Double -> Double)
+wiener = Sampler $ \(Tree _ gs) ->
+    unsafePerformIO $ do
+      ref <- newIORef M.empty
+      modifyIORef' ref (M.insert 0 0)
+      return \x -> unsafePerformIO do
+        table <- readIORef ref
+        case M.lookup x table of
+          Just y -> return y
+          Nothing -> do 
+            let lower = do l <- findMaxLower x (M.keys table)
+                           v <- M.lookup l table
+                           return (l,v) 
+            let upper = do 
+                        u <- find (> x) (M.keys table)
+                        v <- M.lookup u table
+                        return (u,v) 
+            let m = bridge lower x upper
+            let y = runSampler m (gs !! (1 + M.size table))
+            modifyIORef' ref (M.insert x y)
+            return y
 
---                                 --  modify (Data.Map.insert x y)
+  where
+    
+  bridge :: Maybe (Double,Double) -> Double -> Maybe (Double,Double) -> Sampler Double
+  -- not needed since the table is always initialized with (0, 0)
+  -- bridge Nothing y Nothing = if y==0 then return 0 else normal 0 (sqrt y) 
+  bridge (Just (x,x')) y Nothing = normal x' (sqrt (y-x))
+  bridge Nothing y (Just (z,z')) = normal z' (sqrt (z-y))
+  bridge (Just (x,x')) y (Just (z,z')) = normal (x' + ((y-x)*(z'-x')/(z-x))) (sqrt ((z-y)*(y-x)/(z-x)))
+  bridge _ _ _ = error "undefined behavior for bridge"
 
--- findMaxLower :: Double -> [Double] -> Maybe Double
--- findMaxLower d [] = Nothing
--- findMaxLower d (x:xs) = let y = findMaxLower d xs in
---                        case y of
---                            Nothing -> if x < d then Just x else Nothing
---                            Just m -> do
---                                           if x > m && x < d then Just x else Just m
-
--- bridge :: Maybe (Double,Double) -> Double -> Maybe (Double,Double) -> Prob Double
--- -- not needed since the table is always initialized with (0, 0)
--- -- bridge Nothing y Nothing = if y==0 then return 0 else normal 0 (sqrt y)
--- bridge (Just (x,x')) y Nothing = normal x' (sqrt (y-x))
--- bridge Nothing y (Just (z,z')) = normal z' (sqrt (z-y))
--- bridge (Just (x,x')) y (Just (z,z')) = normal (x' + ((y-x)*(z'-x')/(z-x))) (sqrt ((z-y)*(y-x)/(z-x)))
+  findMaxLower :: Double -> [Double] -> Maybe Double 
+  findMaxLower _ [] = Nothing
+  findMaxLower d (x:xs) =
+    case findMaxLower d xs of 
+        Nothing -> if x < d then Just x else Nothing 
+        Just m -> if x > m && x < d then Just x else Just m 

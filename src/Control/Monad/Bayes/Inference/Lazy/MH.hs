@@ -6,17 +6,17 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Control.Monad.Bayes.Inference.Lazy.MH where
 
-import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Class ( Log(ln) )
 import Control.Monad.Bayes.Sampler.Lazy
+    ( Sampler(runSampler), Tree(..), randomTree )
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
-import Control.Monad.State.Lazy (MonadState (get, put), State, runState)
-import Numeric.Log
-import System.Random
+import Control.Monad.State.Lazy (MonadState (get, put), runState)
+import System.Random ( RandomGen(split), getStdGen, newStdGen )
 import System.Random qualified as R
 
 mh :: forall a. Double -> Weighted Sampler a -> IO [(a, Log Double)]
