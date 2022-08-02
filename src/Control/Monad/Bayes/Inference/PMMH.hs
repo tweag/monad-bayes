@@ -59,4 +59,4 @@ pmmhBayesianModel ::
   SMCConfig (Weighted m) ->
   (forall m'. MonadInfer m' => Bayesian m' a1 a2) ->
   m [[(a2, Log Double)]]
-pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (latent bm) (generative bm)
+pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (prior bm) (generative bm)
