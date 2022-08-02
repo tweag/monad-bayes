@@ -383,27 +383,13 @@ pushEvidence ::
 
 In other words, `pushEvidence` takes a `Population m a` where `m` is a `MonadCond` instance. It takes the sum of the weights, divides the weights by it, and then factors by the sum in `m`.
 
-### Sequential 
+### Sequential
 
 Summary of key info on `Sequential`:
 
 - `Sequential :: (Type -> Type) -> (Type -> Type)`
 - `instance MonadSample m => instance MonadSample (Sequential m)`
 - `instance MonadCond m => instance MonadCond (Sequential m)`
-
-There are two implementations, in `Control.Monad.Bayes.Sequential.Free` and `Control.Monad.Bayes.Sequential.Coroutine`. 
-
-#### Control.Monad.Bayes.Sequential.Free
-
-This section assumes some familiarity with the use of the free monad. For free monad's for probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming).
-
-Here, the base functor of the free monad contains constructors `Random` and `Score`, so can represent a `MonadInfer` program with both random choies and factor (score) statements. 
-
-We can *fold* this representation with a catamorphism, performing a specified transformation after each factor statement. This is how we implement `sequentially`.
-
-This representation is rather simpler than the one in `Control.Monad.Bayes.Sequential.Coroutine`, and in particular, does not require a manual specification of the number of steps.
-
-#### Control.Monad.Bayes.Sequential.Coroutine
 
 The former uses the `monad-coroutine` package:
 
@@ -492,6 +478,7 @@ hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 
 When `m` is `Population n` for some other `n`, then `resampleGeneric` gives us one example of the natural transformation we want. In other words, operating in `Sequential (Population n)` works, and not only works but does something statistically interesting: particle filtering (aka SMC).
 
+**Note**: the running of `Sequential`, i.e. getting from `Sequential m a` to `m a` is surprisingly subtle, and there are many incorrect ways to do it, such as plain folds of the recursive structure. These can result in a semantics in which the transformation gets applied an exponentially large number of times.
 
 
 
