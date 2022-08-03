@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DerivingStrategies #-}
 
     
     
@@ -18,12 +19,27 @@ module Control.Monad.Bayes.Inference.Lazy.MH where
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler.Lazy
-import Control.Monad.Bayes.Weighted (Weighted, weighted)
+import Control.Monad.Bayes.Weighted (Weighted, weighted, unweighted)
 import Control.Monad.Extra (iterateM)
 import Control.Monad.State.Lazy (MonadState (get, put), State, runState)
 import Numeric.Log
 import System.Random
 import System.Random qualified as R
+import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
+import qualified Control.Monad.Bayes.Population as P
+import Control.Monad.Bayes.Traced (marginal)
+import Control.Monad.Bayes.Sequential.Coroutine (sequentially, sis, finish)
+import Control.Arrow
+import Control.Monad.List (ListT(..), ap, MonadTrans (lift), MonadIO (liftIO), replicateM)
+import Control.Monad.Bayes.Inference.SMC (smc, SMCConfig (SMCConfig, numSteps))
+import qualified Control.Monad.Bayes.Sequential.Coroutine as Seq
+import Control.Monad.Bayes.Sampler.Strict (sampleIO, SamplerIO)
+import Debug.Trace (trace)
+import qualified Pipes as P
+import qualified Pipes.Prelude as P
+import Pipes ((>->))
+import qualified Pipes as Pr
+import Control.Monad.Bayes.Enumerator
 
 mh :: forall a. Double -> Weighted Sampler a -> IO [(a, Log Double)]
 mh p m = do
@@ -76,3 +92,54 @@ mutateTree p g (Tree a ts) =
 mutateTrees :: RandomGen g => Double -> g -> [Tree] -> [Tree]
 mutateTrees p g (t : ts) = let (g1, g2) = split g in mutateTree p g1 t : mutateTrees p g2 ts
 mutateTrees _ _ [] = error "empty tree"
+
+
+a = take 4 <$> (Lazy.sampler $ population $ sis (resampleMultinomial . fromWeightedList . ap (take <$> poisson 1000) . population) 2
+  $ (Seq.hoist (infiniteParticles) $ do
+    x <- normal 0 1
+    factor $ Exp x
+    return x))
+
+traceIt x = trace (show x) x
+
+b :: (MonadSample m, MonadCond m) => m [Double]
+b = do
+  x <- normal 0 1
+  factor 0.5
+  fmap (x :) (b)
+  
+  -- return (repeat 1)
+
+-- run = do 
+--   x <- Lazy.sampler $ Lazy.independent $ population $ normal 0 1
+--   print $ (take 2 ) $ fmap (take 2) x -- fmap (first (take 10)) x
+
+infiniteParticles :: MonadSample m => Population m a -> Population m a
+infiniteParticles = (P.fromWeightedList (return (repeat ((), 1))) >>)
+
+
+-- newtype Seq m a = Seq {runSeq :: P.Producer (Log Double) m a} deriving newtype (Functor, Applicative, Monad, MonadTrans)
+
+-- instance MonadSample m => MonadSample (Seq m) where
+--   random = lift Control.Monad.Bayes.Class.random
+--   bernoulli = lift . bernoulli
+
+-- instance Functor m => MonadCond (Seq m) where
+--   score = Seq . P.yield
+
+-- -- ex :: (MonadInfer m, MonadIO m, MonadSample m0) => m Double
+-- ex :: Enumerator [Bool]
+-- ex = P.runEffect $ 
+--   (runSeq model >-> P.scan undefined () undefined)
+--   >-> P.mapM_ (\x -> 
+--       -- liftIO (print x) >> 
+--       score x)
+
+-- hoistS f = Seq . f . runSeq
+
+-- -- model :: MonadInfer m => Seq m Double
+-- model = -- hoistS (lift (spawn 10) >>) 
+--   replicateM 100 do
+--   x <- bernoulli 0.5
+--   condition x -- (x > 0.5)
+--   return x
