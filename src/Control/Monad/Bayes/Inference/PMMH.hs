@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, MonadSample, latent)
+import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, MonadSample, prior)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (smc, SMCConfig)
 import Control.Monad.Bayes.Population as Pop
