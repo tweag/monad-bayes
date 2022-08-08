@@ -39,8 +39,8 @@ import Control.Monad.Bayes.Class
     runIdentityN,
     score,
   )
-import Control.Monad.Bayes.Free (FreeSampler, runWith, withRandomness)
-import Control.Monad.Bayes.Sampler (sampleIO)
+-- import Control.Monad.Bayes.Free (FreeSampler, runWith, withRandomness)
+-- import Control.Monad.Bayes.Sampler (sampleIO)
 import Control.Monad.Identity (Identity (..))
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
@@ -63,22 +63,23 @@ instance MonadSample n m => MonadSample n (Weighted m) where
 instance (RealFloat n, MonadSample n m) => MonadInfer n (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-runWeighted :: RealFloat n => Weighted m n a -> m n (a, Log n)
-runWeighted (Weighted m) = runStateT m 1
+weighted, runWeighted :: RealFloat n => Weighted m n a -> m n (a, Log n)
+weighted (Weighted m) = runStateT m 1
+runWeighted = weighted
 
 -- | Compute the sample and discard the weight.
 --
 -- This operation introduces bias.
-prior :: (Functor (m n), RealFloat n) => Weighted m n a -> m n a
-prior = fmap fst . runWeighted
+unweighted :: (Functor (m n), RealFloat n) => Weighted m n a -> m n a
+unweighted = fmap fst . weighted
 
 -- | Compute the weight and discard the sample.
 extractWeight :: (Functor (m n), RealFloat n) => Weighted m n a -> m n (Log n)
-extractWeight = fmap snd . runWeighted
+extractWeight = fmap snd . weighted
 
 -- | Embed a random variable with explicitly given likelihood.
 --
--- > runWeighted . withWeight = id
+-- > weighted . withWeight = id
 withWeight :: (Monad (m n), RealFloat n) => m n (a, Log n) -> Weighted m n a
 withWeight m = Weighted $ do
   (x, w) <- lift m
@@ -88,7 +89,7 @@ withWeight m = Weighted $ do
 -- | Use the weight as a factor in the transformed monad.
 applyWeight :: (MonadCond n m, RealFloat n) => Weighted m n a -> m n a
 applyWeight m = do
-  (x, w) <- runWeighted m
+  (x, w) <- weighted m
   scoreGeneric w
   return x
 

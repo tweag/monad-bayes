@@ -1,9 +1,9 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE RankNTypes #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -17,114 +17,93 @@
 -- 'SamplerIO' and 'SamplerST' are instances of 'MonadSample'. Apply a 'MonadCond'
 -- transformer to obtain a 'MonadInfer' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler
-  ( SamplerIO,
-    sampleIO,
-    sampleIOfixed,
-    sampleIOwith,
-    Seed,
-    SamplerST (SamplerST),
-    runSamplerST,
-    sampleST,
-    sampleSTfixed,
-    toBins,
-    sampleMean,
-  )
+  -- ( Sampler,
+  --   SamplerIO,
+  --   sampleIOfixed,
+  --   sampleWith,
+  --   sampleSTfixed,
+  --   toBins,
+  --   sampleMean,
+  --   sampler,
+  --   sampleIO,
+  -- )
 where
 
 import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Traced.Grad
+import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.Free
 import Control.Monad.ST (ST, runST, stToIO)
 import Control.Monad.State (State, state)
 import Control.Monad.Trans (MonadIO, lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, mapReaderT, runReaderT)
+
+import Control.Monad.IO.Class
+import Control.Monad.ST (ST)
+import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
-import Numeric.Log (Log (ln))
-import System.Random.MWC
-  ( Gen,
-    GenIO,
-    GenST,
-    Seed,
-    Variate (uniform, uniformR),
-    create,
-    createSystemRandom,
-    restore,
-    save,
-  )
+import Numeric.Log (Log (..))
+import System.Random.MWC (UniformRange (uniformRM))
 import System.Random.MWC.Distributions qualified as MWC
 import Data.Number.Erf
+import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M)
 
--- | An 'IO' based random sampler using the MWC-Random package.
-newtype SamplerIO n a = SamplerIO (ReaderT GenIO IO a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO)
+-- | The sampling interpretation of a probabilistic program
+-- Here m is typically IO or ST
+newtype Sampler g m any a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad, MonadIO)
 
--- | Initialize a pseudo-random number generator using randomness supplied by
--- the operating system.
--- For efficiency this operation should be applied at the very end, ideally
--- once per program.
-sampleIO :: SamplerIO n a -> IO a
-sampleIO (SamplerIO m) = createSystemRandom >>= runReaderT m
+-- | convenient type synonym to show specializations of Sampler
+-- to particular pairs of monad and RNG
+type SamplerIO = Sampler (IOGenM StdGen) IO
 
--- Useful for reproducibility.
-sampleIOfixed :: SamplerIO n a -> IO a
-sampleIOfixed (SamplerIO m) = create >>= runReaderT m
+-- | convenient type synonym to show specializations of Sampler
+-- to particular pairs of monad and RNG
+type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
--- | Like 'sampleIO' but with a custom pseudo-random number generator.
-sampleIOwith :: SamplerIO n a -> Gen F.RealWorld -> IO a
-sampleIOwith (SamplerIO m) = runReaderT m
+exam :: MonadInfer n m => m n n
+exam = do
+  x <- randomGeneric
+  return x
 
-fromSamplerST :: SamplerST n a -> SamplerIO n a
-fromSamplerST (SamplerST m) = SamplerIO $ mapReaderT stToIO m
 
-instance (Double ~ n) => MonadSample n SamplerIO where
-  randomGeneric = fromSamplerST randomGeneric
 
--- | An 'ST' based random sampler using the @mwc-random@ package.
-newtype SamplerST n a = SamplerST (forall s. ReaderT (GenST s) (ST s) a)
 
-runSamplerST :: SamplerST n a -> ReaderT (GenST s) (ST s) a
-runSamplerST (SamplerST s) = s
+instance StatefulGen g m => MonadSample Double (Sampler g m) where
+  randomGeneric = Sampler (ReaderT uniformDouble01M)
 
-instance Functor (SamplerST n) where
-  fmap f (SamplerST s) = SamplerST $ fmap f s
+  uniform a b = Sampler (ReaderT $ uniformRM (a, b))
+  normal m s = Sampler (ReaderT (MWC.normal m s))
+  gamma shape scale = Sampler (ReaderT $ MWC.gamma shape scale)
+  beta a b = Sampler (ReaderT $ MWC.beta a b)
 
-instance Applicative (SamplerST n) where
-  pure x = SamplerST $ pure x
-  (SamplerST f) <*> (SamplerST x) = SamplerST $ f <*> x
+  bernoulli p = Sampler (ReaderT $ MWC.bernoulli p)
+  categorical ps = Sampler (ReaderT $ MWC.categorical ps)
+  geometric p = Sampler (ReaderT $ MWC.geometric0 p)
 
-instance Monad (SamplerST n) where
-  (SamplerST x) >>= f = SamplerST $ x >>= runSamplerST . f
+-- | Sample with a random number generator of your choice e.g. the one
+-- from `System.Random`.
+--
+-- >>> import Control.Monad.Bayes.Class
+-- >>> import System.Random.Stateful hiding (random)
+-- >>> newIOGenM (mkStdGen 1729) >>= sampleWith random
+-- 4.690861245089605e-2
+sampleWith :: StatefulGen g m => Sampler g m n a -> g -> m a
+sampleWith (Sampler m) = runReaderT m
 
--- | Run the sampler with a supplied seed.
--- Note that 'State Seed' is much less efficient than 'SamplerST' for composing computation.
-sampleST :: SamplerST n a -> State Seed a
-sampleST (SamplerST s) =
-  state $ \seed -> runST $ do
-    gen <- restore seed
-    y <- runReaderT s gen
-    finalSeed <- save gen
-    return (y, finalSeed)
+-- | initialize random seed using system entropy, and sample
+sampleIO, sampler :: SamplerIO any a -> IO a
+sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
+sampler = sampleIO
 
--- | Run the sampler with a fixed random seed.
-sampleSTfixed :: SamplerST n a -> a
-sampleSTfixed (SamplerST s) = runST $ do
-  gen <- create
-  runReaderT s gen
+-- | Run the sampler with a fixed random seed
+sampleIOfixed :: SamplerIO any a -> IO a
+sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
 
--- | Convert a distribution supplied by @mwc-random@.
-fromMWC :: (forall s. GenST s -> ST s a) -> SamplerST n a
-fromMWC s = SamplerST $ ask >>= lift . s
-
-instance (Variate n, RealFloat n, InvErf n) => MonadSample n SamplerST where
-  randomGeneric = fromMWC System.Random.MWC.uniform
-
--- uniform a b = fromMWC $ uniformR (a, b)
--- normal m s = fromMWC $ MWC.normal m s
--- gamma shape scale = fromMWC $ MWC.gamma shape scale
--- beta a b = fromMWC $ MWC.beta a b
-
--- bernoulli p = fromMWC $ MWC.bernoulli p
--- categorical ps = fromMWC $ MWC.categorical ps
--- geometric p = fromMWC $ MWC.geometric0 p
+-- | Run the sampler with a fixed random seed
+sampleSTfixed :: SamplerST s any b -> ST s b
+sampleSTfixed x = newSTGenM (mkStdGen 1729) >>= sampleWith x
 
 type Bin = (Double, Double)
 

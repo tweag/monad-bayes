@@ -16,9 +16,9 @@ import Control.Monad.Bayes.Class
     factor,
     uniformD,
   )
-import Control.Monad.Bayes.Sampler (sampleIO)
+import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Weighted (unweighted)
 import Data.Map qualified as Map
 import Data.Text (Text, words)
 import Data.Vector as V (Vector, replicate, (!))
@@ -79,7 +79,14 @@ import Prelude hiding (words)
 --   where
 --     syntheticWord = uniformD vocabulary
 
+<<<<<<< HEAD
 -- -- runLDA :: IO ()
 -- -- runLDA = do
 -- --   s <- sampleIO $ prior $ mh 1000 $ lda documents
 -- --   pPrint (head s)
+=======
+runLDA :: IO ()
+runLDA = do
+  s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
+  pPrint (head s)
+>>>>>>> api

@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC
@@ -13,12 +14,9 @@
 --
 -- Arnaud Doucet and Adam M. Johansen. 2011. A tutorial on particle filtering and smoothing: fifteen years later. In /The Oxford Handbook of Nonlinear Filtering/, Dan Crisan and Boris Rozovskii (Eds.). Oxford University Press, Chapter 8.
 module Control.Monad.Bayes.Inference.SMC
-  ( sir,
-    smcMultinomial,
-    smcSystematic,
-    smcStratified,
-    smcMultinomialPush,
-    smcSystematicPush,
+  ( smc,
+    smcPush,
+    SMCConfig (..),
   )
 where
 
@@ -26,19 +24,23 @@ import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Population
   ( Population,
     pushEvidence,
-    resampleMultinomial,
-    resampleStratified,
-    resampleSystematic,
-    spawn,
+    withParticles,
   )
 import Control.Monad.Bayes.Sequential as Seq
   ( Sequential,
     hoistFirst,
-    sis,
+    sequentially,
   )
+
+data SMCConfig m = SMCConfig
+  { resampler :: forall x. Population m x -> Population m x,
+    numSteps :: Int,
+    numParticles :: Int
+  }
 
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
+<<<<<<< HEAD
 sir ::
   (Monad (m n), RealFloat n) =>
   -- | resampler
@@ -90,10 +92,19 @@ smcStratified ::
   -- | model
   Population m n a
 smcStratified = sir resampleStratified
+=======
+smc ::
+  MonadSample m =>
+  SMCConfig m ->
+  Sequential (Population m) a ->
+  Population m a
+smc SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (withParticles numParticles)
+>>>>>>> api
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
+<<<<<<< HEAD
 smcMultinomialPush ::
   (MonadInfer n m, RealFloat n) =>
   -- | number of timesteps
@@ -118,3 +129,8 @@ smcSystematicPush ::
   Sequential (Population m) n a ->
   Population m n a
 smcSystematicPush = sir (pushEvidence . resampleSystematic)
+=======
+smcPush ::
+  MonadInfer m => SMCConfig m -> Sequential (Population m) a -> Population m a
+smcPush config = smc config {resampler = (pushEvidence . resampler config)}
+>>>>>>> api

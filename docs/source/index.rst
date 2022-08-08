@@ -3,17 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to monad-bayes's documentation!
+Documentation for Monad-Bayes
 =======================================
 
-Monad-bayes is a library for doing probabilistic programming in Haskell, using probability monads. The emphasis is on specifying advanced inference algorithms in a compositional (and therefore succinct) way.
+Monad-bayes is a library for doing probabilistic programming in Haskell. 
+You can specify your model independent of the inference method as in other 
+probabilistic programming languages. 
+A unique feature is the modular construction of inference algorithms from simple parts. See this short paper for details: http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf
 
-This documentation is for **users** to understand how to write probabilistic programs and run inference methods and **developers** to understand how the inference methods work and how to extend them
+In addition, Monad-Bayes is a normal Haskell library, not a separate language implemented using Haskell, 
+so full interoperation with arbitrary Haskell code is totally straightforward.
+
+.. The *user guide* shows how to write models in Monad-Bayes and perform inference.
+.. The *developer guide* shows how the library works under the hood.
+
 
 .. toctree::
    probprog
    usage
    :maxdepth: 2
    :caption: Contents:
-
-

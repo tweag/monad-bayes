@@ -2,18 +2,21 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
+import Control.Monad.ST (runST)
 import Data.Time
 import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
-import System.Random.MWC (createSystemRandom)
+import System.Random.MWC (GenIO, createSystemRandom)
 
 -- data Model = LR Int | HMM Int | LDA (Int, Int)
 --   deriving stock (Show, Read)
@@ -26,6 +29,7 @@ import System.Random.MWC (createSystemRandom)
 --     'L' : 'D' : 'A' : n -> Just $ LDA (5, read n)
 --     _ -> Nothing
 
+<<<<<<< HEAD
 -- getModel :: MonadInfer Double m => Model -> (Int, m String)
 -- getModel model = (size model, program model)
 --   where
@@ -37,10 +41,22 @@ import System.Random.MWC (createSystemRandom)
 --     program (LR n) = show <$> synthesize (LogReg.syntheticData n) LogReg.logisticRegression
 --     program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
 --     program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
+=======
+getModel :: MonadInfer m => Model -> (Int, m String)
+getModel model = (size model, program model)
+  where
+    size (LR n) = n
+    size (HMM n) = n
+    size (LDA (d, w)) = d * w
+    program (LR n) = show <$> (LogReg.logisticRegression (runST $ sampleSTfixed (LogReg.syntheticData n)))
+    program (HMM n) = show <$> (HMM.hmm (runST $ sampleSTfixed (HMM.syntheticData n)))
+    program (LDA (d, w)) = show <$> (LDA.lda (runST $ sampleSTfixed (LDA.syntheticData d w)))
+>>>>>>> api
 
 -- data Alg = SMC | MH | RMSMC
 --   deriving stock (Read, Show)
 
+<<<<<<< HEAD
 -- runAlg :: Model -> Alg -> SamplerIO String
 -- runAlg model alg =
 --   case alg of
@@ -63,6 +79,30 @@ import System.Random.MWC (createSystemRandom)
 --   g <- createSystemRandom
 --   x <- sampleIOwith (runAlg model alg) g
 --   print x
+=======
+runAlg :: Model -> Alg -> Sampler GenIO IO String
+runAlg model alg =
+  case alg of
+    SMC ->
+      let n = 100
+          (k, m) = getModel model
+       in show <$> population (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
+    MH ->
+      let t = 100
+          (_, m) = getModel model
+       in show <$> unweighted (mh t m)
+    RMSMC ->
+      let n = 10
+          t = 1
+          (k, m) = getModel model
+       in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
+
+infer :: Model -> Alg -> IO ()
+infer model alg = do
+  g <- createSystemRandom
+  x <- sampleWith (runAlg model alg) g
+  print x
+>>>>>>> api
 
 -- opts :: ParserInfo (Model, Alg)
 -- opts = flip info fullDesc $ liftA2 (,) model alg

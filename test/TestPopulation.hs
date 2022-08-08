@@ -1,52 +1,51 @@
-{-# LANGUAGE Trustworthy #-}
-
 module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
-import Control.Monad.Bayes.Enumerator (enumerate, expectation)
+import Control.Monad.Bayes.Enumerator (enumerator, expectation)
 import Control.Monad.Bayes.Population as Population
   ( Population,
     collapse,
     popAvg,
+    population,
     pushEvidence,
     resampleMultinomial,
-    runPopulation,
     spawn,
   )
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 weightedSampleSize :: MonadSample n m => Population m a -> m Int
-weightedSampleSize = fmap length . runPopulation
+weightedSampleSize = fmap length . population
 
 popSize :: IO Int
-popSize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler
+popSize =
+  sampleIOfixed (weightedSampleSize $ spawn 5 >> sprinkler)
 
 manySize :: IO Int
-manySize = sampleIOfixed $ weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3
+manySize =
+  sampleIOfixed (weightedSampleSize $ spawn 5 >> sprinkler >> spawn 3)
 
 sprinkler :: MonadInfer n m => m Bool
 sprinkler = Sprinkler.soft
 
 sprinklerExact :: [(Bool, Double)]
-sprinklerExact = enumerate Sprinkler.soft
-
--- all_check = (mass (Population.all id (spawn 2 >> sprinkler)) True) ~== 0.09
+sprinklerExact = enumerator Sprinkler.soft
 
 transCheck1 :: Bool
 transCheck1 =
-  enumerate (collapse sprinkler)
+  enumerator (collapse sprinkler)
     ~== sprinklerExact
 
 transCheck2 :: Bool
 transCheck2 =
-  enumerate (collapse (spawn 2 >> sprinkler))
+  enumerator (collapse (spawn 2 >> sprinkler))
     ~== sprinklerExact
 
 resampleCheck :: Int -> Bool
 resampleCheck n =
-  (enumerate . collapse . resampleMultinomial) (spawn n >> sprinkler)
+  (enumerator . collapse . resampleMultinomial) (spawn n >> sprinkler)
     ~== sprinklerExact
 
 popAvgCheck :: Bool

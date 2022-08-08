@@ -1,4 +1,3 @@
-{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module TestWeighted (check, passed, result, model) where
@@ -9,11 +8,12 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Sampler (sampleIOfixed)
-import Control.Monad.Bayes.Weighted (runWeighted)
+import Control.Monad.Bayes.Weighted (weighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
 import Numeric.Log (Log (Exp, ln))
+import System.Random.Stateful (mkStdGen, newIOGenM)
 
 model :: MonadInfer n m => m (Int, Double)
 model = do
@@ -24,7 +24,7 @@ model = do
   return (n, x)
 
 result :: MonadSample n m => m ((Int, Double), Double)
-result = second (exp . ln) <$> runWeighted model
+result = second (exp . ln) <$> weighted model
 
 passed :: IO Bool
 passed = fmap check (sampleIOfixed result)

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -60,10 +59,16 @@ module Control.Monad.Bayes.Class
     -- posterior,
     uniformD,
     IdentityN (..),
+    Bayesian (..),
+    -- posterior,
+    -- priorPredictive,
+    -- posteriorPredictive,
+    independent,
+    mvNormal,
   )
 where
 
-import Control.Monad (when)
+import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
@@ -72,6 +77,7 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
+import Data.Matrix hiding ((!))
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
@@ -242,6 +248,9 @@ factor = score
 condition :: (RealFloat n, MonadCond n m) => Bool -> m n ()
 condition b = scoreGeneric $ if b then 1 else 0
 
+independent :: Applicative m => Int -> m a -> m [a]
+independent = replicateM
+
 -- | Monads that support both sampling and scoring.
 class (MonadSample n m, MonadCond n m) => MonadInfer n m
 
@@ -271,18 +280,37 @@ uniformD xs = do
 
 --------------------
 
--- -- | a useful datatype for expressing bayesian models
--- data Bayesian m z o = Bayesian
---   { latent :: m z, -- prior over latent variable Z
---     generative :: z -> m o, -- distribution over observations given Z=z
---     likelihood :: z -> o -> Log Double -- p(o|z)
---   }
+-- | multivariate normal
+mvNormal :: MonadSample n m => V.Vector n -> Matrix n -> m n (V.Vector n)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts
+
+-- | a useful datatype for expressing bayesian models
+data Bayesian m z o = Bayesian
+  { latent :: m z, -- prior over latent variable Z
+    generative :: z -> m o, -- distribution over observations given Z=z
+    likelihood :: z -> o -> Log Double -- p(o|z)
+  }
 
 -- posterior :: (MonadInfer Double m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
 -- posterior Bayesian {..} os = do
 --   z <- latent
 --   factor $ product $ fmap (likelihood z) os
 --   return z
+
+-- priorPredictive :: Monad m => Bayesian m a b -> m b
+-- priorPredictive bm = latent bm >>= generative bm
+
+-- posteriorPredictive ::
+--   (MonadInfer n m, Foldable f, Functor f) =>
+--   Bayesian m a b ->
+--   f b ->
+--   m n b
+-- posteriorPredictive bm os = posterior bm os >>= generative bm
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.

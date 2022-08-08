@@ -10,7 +10,7 @@
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Dynamic
   ( Traced,
-    hoistT,
+    hoist,
     marginal,
     freeze,
     mhStep,
@@ -74,8 +74,8 @@ instance (MonadCond n m, RealFloat n) => MonadCond n (Traced m) where
 
 instance (RealFloat n, MonadInfer n m) => MonadInfer n (Traced m)
 
-hoistT :: (forall x. m n x -> m n x) -> Traced m n a -> Traced m n a
-hoistT f (Traced c) = Traced (f c)
+hoist :: (forall x. m n x -> m n x) -> Traced m n a -> Traced m n a
+hoist f (Traced c) = Traced (f c)
 
 -- | Discard the trace and supporting infrastructure.
 marginal :: Monad (m n) => Traced m n a -> m n a

@@ -19,7 +19,7 @@ module Control.Monad.Bayes.Free
     interpret,
     withRandomness,
     withPartialRandomness,
-    runWith,
+    -- traced,
   )
 where
 
@@ -98,3 +98,5 @@ withPartialRandomness randomness (FreeSampler m) =
 -- runWith :: MonadSample n m => [n] -> FreeSampler n Identity a -> m (a, [n])
 runWith :: MonadSample n m => [n] -> FreeSampler IdentityN n a -> m n (a, [n])
 runWith randomness m = withPartialRandomness randomness $ hoist (return . runIdentityN) m
+-- traced :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
+-- traced randomness m = withPartialRandomness randomness $ hoist (return . runIdentity) m
