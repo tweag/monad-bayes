@@ -139,12 +139,15 @@ hmcKernel potential  =
 model :: (RealFloat n, MonadInfer n m) => m n Bool
 model = do
   -- return True
-  x <- normal 0 1
+  x <- randomGeneric -- normal 0 1
   -- y <- randomGeneric
-  scoreGeneric (Exp $ log $ x)
+  scoreGeneric (Exp $ log $ x ** 2)
   return (x > 0.5)
   -- scoreGeneric (Exp $ log $ x ** 2 * y)
   -- return (x > 0.5)
+
+-- foo :: (Num n, RealFloat n, Show n, InvErf n) => [n] -> n
+foo = grad (pdf model) [0.5 :: Double]
   
 -- example :: RealFloat n => [n] -> [n]
 example :: (Show n, MonadSample n m) => [n]
@@ -287,23 +290,23 @@ example = hmcKernel (pdf model)
 -- verlet :: (Applicative f, Fractional a, Traversable f, Num (f a)) =>
 --   (V1 a -> V1 a -> a) -> V2 (f a) -> V2 (f a)
 
-data HasDensity n a = HD (a -> n)
+-- data HasDensity n a = HD (a -> n)
 
--- instance Num n => Contravariant (HasDensity n) where
-diffmap ::
-  (Floating n) =>
-  (forall m. Floating m => m -> m) ->
-  HasDensity n n ->
-  HasDensity n n
--- diffmap :: (n -> a) -> HasDensity n a -> HasDensity n n
-diffmap f (HD g) = HD (\x -> (g . f) x * abs (diff f x)) -- HD (f . undefned)
+-- -- instance Num n => Contravariant (HasDensity n) where
+-- diffmap ::
+--   (Floating n) =>
+--   (forall m. Floating m => m -> m) ->
+--   HasDensity n n ->
+--   HasDensity n n
+-- -- diffmap :: (n -> a) -> HasDensity n a -> HasDensity n n
+-- diffmap f (HD g) = HD (\x -> (g . f) x * abs (diff f x)) -- HD (f . undefned)
 
-r :: HasDensity Double Double
-r = HD f
-  where
-    f x
-      | x > (-0.5) && x <= 0.5 = 1.0
-      | otherwise = 0.0
+-- r :: HasDensity Double Double
+-- r = HD f
+--   where
+--     f x
+--       | x > (-0.5) && x <= 0.5 = 1.0
+--       | otherwise = 0.0
 
--- ch :: HasDensity Unit Double
-ch = diffmap (exp . negate . (** 2)) r
+-- -- ch :: HasDensity Unit Double
+-- ch = diffmap (exp . negate . (** 2)) r

@@ -71,7 +71,7 @@ withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness
     f (Random k) = do
       xs <- get
       -- traceM (show xs <> " P")
-      case trace (show xs <> " P" <> show (length xs) ) xs of
+      case trace (show xs <> " with trace of length " <> show (length xs) ) xs of
         [] -> error "FreeSampler: the list of randomness was too short"
         y : ys -> put (traceIt ys) >> k y
 
