@@ -13,7 +13,7 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Integrator
 import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted (runWeighted)
+import Control.Monad.Bayes.Weighted (runWeighted, weighted)
 import Control.Monad.ST (ST, runST)
 import Data.AEq (AEq ((~==)))
 import Data.List (sortOn)
@@ -58,12 +58,12 @@ passed1,
     Bool
 -- enumerator from Integrator works
 passed1 =
-  sortOn fst (enumerateWith (fromList [3, 1, 2]) agg)
+  sortOn fst (enumeratorWith (fromList [3, 1, 2]) agg)
     ~== sortOn fst [(2, 0.5), (1, 0.25), (3, 0.25)]
 -- hard and soft sprinkers are equivalent under enumerator from Integrator
 passed2 =
-  enumerateWith (fromList [True, False]) (normalize (Sprinkler.hard))
-    ~== enumerateWith (fromList [True, False]) (normalize (Sprinkler.soft))
+  enumeratorWith (fromList [True, False]) (normalize (Sprinkler.hard))
+    ~== enumeratorWith (fromList [True, False]) (normalize (Sprinkler.soft))
 -- expectation is as expected
 passed3 =
   expectation (fmap ((** 2) . (+ 1)) $ uniformD [0, 1]) == 2.5
@@ -71,14 +71,14 @@ passed3 =
 passed4 = volume (uniformD [1, 2]) ~== 1.0
 -- enumerator is as expected
 passed5 =
-  sortOn fst (enumerateWith (fromList [0, 1 :: Int]) (empirical [0 :: Int, 1, 1, 1]))
+  sortOn fst (enumeratorWith (fromList [0, 1 :: Int]) (empirical [0 :: Int, 1, 1, 1]))
     == sortOn fst [(1, 0.75), (0, 0.25)]
 -- normalization works right for enumerator, when there is conditioning
 passed6 =
   sortOn fst [(2, 0.5), (3, 0.5), (1, 0.0)]
     == sortOn
       fst
-      ( enumerateWith (fromList [1, 2, 3]) $
+      ( enumeratorWith (fromList [1, 2, 3]) $
           normalize $ do
             x <- uniformD [1 :: Int, 2, 3]
             condition (x > 1)
@@ -89,7 +89,7 @@ passed7 =
   sortOn fst [(True, 0.75), (False, 0.25)]
     ~== sortOn
       fst
-      ( enumerateWith (fromList [True, False]) $ normalize do
+      ( enumeratorWith (fromList [True, False]) $ normalize do
           x <- bernoulli 0.5
           factor $ if x then 0.3 else 0.1
           return x
@@ -98,7 +98,7 @@ passed7 =
 passed8 =
   1
     == ( volume $
-           fmap (ln . exp . snd) $ runWeighted do
+           fmap (ln . exp . snd) $ weighted do
              x <- bernoulli 0.5
              factor $ if x then 0.2 else 0.1
              return x
@@ -137,7 +137,7 @@ passed13 =
     ~== 1
 -- sampler and integrator agree on a non-trivial model
 passed14 =
-  let sample = runST $ sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ runWeighted $ model1
+  let sample = runST $ sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ weighted $ model1
       quadrature = expectation $ normalize $ model1
    in abs (sample - quadrature) < 0.01
 

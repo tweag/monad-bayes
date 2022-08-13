@@ -23,6 +23,7 @@ module Control.Monad.Bayes.Sampler
     sampleSTfixed,
     toBins,
     sampleMean,
+    sampler,
     sampleIO,
   )
 where
@@ -40,6 +41,7 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
+import Control.Monad.IO.Class
 import Control.Monad.ST (ST)
 import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
 import Data.Fixed (mod')
@@ -50,12 +52,14 @@ import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStd
 
 -- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
-newtype Sampler g m a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad)
+newtype Sampler g m a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad, MonadIO)
 
--- | convenient type synonyms to show specializations of Sampler
+-- | convenient type synonym to show specializations of Sampler
 -- to particular pairs of monad and RNG
 type SamplerIO = Sampler (IOGenM StdGen) IO
 
+-- | convenient type synonym to show specializations of Sampler
+-- to particular pairs of monad and RNG
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
@@ -81,8 +85,9 @@ sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
 sampleWith (Sampler m) = runReaderT m
 
 -- | initialize random seed using system entropy, and sample
-sampleIO :: SamplerIO a -> IO a
+sampleIO, sampler :: SamplerIO a -> IO a
 sampleIO x = initStdGen >>= newIOGenM >>= sampleWith x
+sampler = sampleIO
 
 -- | Run the sampler with a fixed random seed
 sampleIOfixed :: SamplerIO a -> IO a

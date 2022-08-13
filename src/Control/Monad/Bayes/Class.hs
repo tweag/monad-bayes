@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
@@ -57,13 +56,16 @@ module Control.Monad.Bayes.Class
     MonadInfer,
     discrete,
     normalPdf,
-    Bayesian (Bayesian),
+    Bayesian (..),
     posterior,
+    priorPredictive,
+    posteriorPredictive,
+    independent,
     mvNormal,
   )
 where
 
-import Control.Monad
+import Control.Monad (replicateM, when)
 import Control.Monad.Except (ExceptT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Cont (ContT)
@@ -241,6 +243,9 @@ factor = score
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
+independent :: Applicative m => Int -> m a -> m [a]
+independent = replicateM
+
 -- | Monads that support both sampling and scoring.
 class (MonadSample m, MonadCond m) => MonadInfer m
 
@@ -258,6 +263,15 @@ normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 --------------------
 
+-- | multivariate normal
+mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal mu bigSigma = do
+  let n = length mu
+  ss <- replicateM n (normal 0 1)
+  let bigL = cholDecomp bigSigma
+  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
+  return $ getCol 1 ts
+
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian
   { latent :: m z, -- prior over latent variable Z
@@ -270,6 +284,16 @@ posterior Bayesian {..} os = do
   z <- latent
   factor $ product $ fmap (likelihood z) os
   return z
+
+priorPredictive :: Monad m => Bayesian m a b -> m b
+priorPredictive bm = latent bm >>= generative bm
+
+posteriorPredictive ::
+  (MonadInfer m, Foldable f, Functor f) =>
+  Bayesian m a b ->
+  f b ->
+  m b
+posteriorPredictive bm os = posterior bm os >>= generative bm
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
@@ -339,11 +363,3 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
-
-mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
-mvNormal mu bigSigma = do
-  let n = length mu
-  ss <- replicateM n (normal 0 1)
-  let bigL = cholDecomp bigSigma
-  let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
-  return $ getCol 1 ts

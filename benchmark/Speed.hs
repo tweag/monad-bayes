@@ -5,12 +5,13 @@
 module Main (main) where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
-import Control.Monad.Bayes.Inference.RMSMC (rmsmcLocal)
-import Control.Monad.Bayes.Inference.SMC (smcSystematic)
-import Control.Monad.Bayes.Population (runPopulation)
-import Control.Monad.Bayes.Sampler (sampleWith)
+import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
+import Control.Monad.Bayes.Population (population, resampleSystematic, runPopulation)
+import Control.Monad.Bayes.Sampler (SamplerIO, sampleIOfixed, sampleWith)
 import Control.Monad.Bayes.Traced (mh)
-import Control.Monad.Bayes.Weighted (prior)
+import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
   ( Benchmark,
     Benchmarkable,
@@ -27,9 +28,6 @@ import LDA qualified
 import LogReg qualified
 import System.Process.Typed (runProcess)
 import System.Random.Stateful (IOGenM, StatefulGen, StdGen, mkStdGen, newIOGenM)
-
--- | Environment to execute benchmarks in.
-newtype Env = Env {rng :: IOGenM StdGen}
 
 data ProbProgSys = MonadBayes
   deriving stock (Show)
@@ -58,18 +56,25 @@ instance Show Alg where
   show (SMC n) = "SMC" ++ show n
   show (RMSMC n t) = "RMSMC" ++ show n ++ "-" ++ show t
 
-runAlg :: MonadSample f => Model -> Alg -> f String
-runAlg model (MH n) = show <$> prior (mh n (buildModel model))
-runAlg model (SMC n) = show <$> runPopulation (smcSystematic (modelLength model) n (buildModel model))
-runAlg model (RMSMC n t) = show <$> runPopulation (rmsmcLocal (modelLength model) n t (buildModel model))
+runAlg :: Model -> Alg -> SamplerIO String
+runAlg model (MH n) = show <$> unweighted (mh n (buildModel model))
+runAlg model (SMC n) = show <$> population (smc SMCConfig {numSteps = (modelLength model), numParticles = n, resampler = resampleSystematic} (buildModel model))
+runAlg model (RMSMC n t) =
+  show
+    <$> population
+      ( rmsmcDynamic
+          MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH}
+          SMCConfig {numSteps = modelLength model, numParticles = n, resampler = resampleSystematic}
+          (buildModel model)
+      )
 
-prepareBenchmarkable :: StatefulGen r IO => r -> ProbProgSys -> Model -> Alg -> Benchmarkable
-prepareBenchmarkable g MonadBayes model alg = nfIO $ sampleWith (runAlg model alg) g
+prepareBenchmarkable :: ProbProgSys -> Model -> Alg -> Benchmarkable
+prepareBenchmarkable MonadBayes model alg = nfIO $ sampleIOfixed (runAlg model alg)
 
-prepareBenchmark :: Env -> ProbProgSys -> Model -> Alg -> Benchmark
-prepareBenchmark e MonadBayes model alg =
+prepareBenchmark :: ProbProgSys -> Model -> Alg -> Benchmark
+prepareBenchmark MonadBayes model alg =
   bench (show MonadBayes ++ sep ++ show model ++ sep ++ show alg) $
-    prepareBenchmarkable (rng e) MonadBayes model alg
+    prepareBenchmarkable MonadBayes model alg
   where
     sep = "_" :: String
 
@@ -83,8 +88,8 @@ systems =
   [ MonadBayes
   ]
 
-lengthBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
-lengthBenchmarks e lrData hmmData ldaData = benchmarks
+lengthBenchmarks :: [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
+lengthBenchmarks lrData hmmData ldaData = benchmarks
   where
     lrLengths = 10 : map (* 100) [1 :: Int .. 10]
     hmmLengths = 10 : map (* 100) [1 :: Int .. 10]
@@ -98,7 +103,7 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
         SMC 100,
         RMSMC 10 1
       ]
-    benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs
+    benchmarks = map (uncurry3 (prepareBenchmark)) $ filter supported xs
       where
         uncurry3 f (x, y, z) = f x y z
         xs = do
@@ -107,8 +112,8 @@ lengthBenchmarks e lrData hmmData ldaData = benchmarks
           a <- algs
           return (s, m, a)
 
-samplesBenchmarks :: Env -> [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
-samplesBenchmarks e lrData hmmData ldaData = benchmarks
+samplesBenchmarks :: [(Double, Bool)] -> [Double] -> [[T.Text]] -> [Benchmark]
+samplesBenchmarks lrData hmmData ldaData = benchmarks
   where
     lrLengths = [50 :: Int]
     hmmLengths = [20 :: Int]
@@ -120,7 +125,7 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
     algs =
       map (\x -> MH (100 * x)) [1 .. 10] ++ map (\x -> SMC (100 * x)) [1 .. 10]
         ++ map (\x -> RMSMC 10 (10 * x)) [1 .. 10]
-    benchmarks = map (uncurry3 (prepareBenchmark e)) $ filter supported xs
+    benchmarks = map (uncurry3 (prepareBenchmark)) $ filter supported xs
       where
         uncurry3 f (x, y, z) = f x y z
         xs = do
@@ -131,13 +136,11 @@ samplesBenchmarks e lrData hmmData ldaData = benchmarks
 
 main :: IO ()
 main = do
-  g <- newIOGenM (mkStdGen 1729)
-  let e = Env g
-  lrData <- sampleWith (LogReg.syntheticData 1000) g
-  hmmData <- sampleWith (HMM.syntheticData 1000) g
-  ldaData <- sampleWith (LDA.syntheticData 5 1000) g
+  lrData <- sampleIOfixed (LogReg.syntheticData 1000)
+  hmmData <- sampleIOfixed (HMM.syntheticData 1000)
+  ldaData <- sampleIOfixed (LDA.syntheticData 5 1000)
   let configLength = defaultConfig {csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configLength (lengthBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configLength (lengthBenchmarks lrData hmmData ldaData)
   let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
-  defaultMainWith configSamples (samplesBenchmarks e lrData hmmData ldaData)
+  defaultMainWith configSamples (samplesBenchmarks lrData hmmData ldaData)
   void $ runProcess "python plots.py"

@@ -16,6 +16,7 @@
 -- 'Population' turns a single sample into a collection of weighted samples.
 module Control.Monad.Bayes.Population
   ( Population,
+    population,
     runPopulation,
     explicitPopulation,
     fromWeightedList,
@@ -33,6 +34,7 @@ module Control.Monad.Bayes.Population
     hoist,
     collapse,
     popAvg,
+    withParticles,
   )
 where
 
@@ -48,13 +50,10 @@ import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,
     extractWeight,
-    runWeighted,
+    weighted,
     withWeight,
   )
-import Control.Monad.Bayes.Weighted hiding (hoist)
-import Control.Monad.Trans
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
-import Control.Monad.Trans.List
 import Control.Monad.Trans.List (ListT (..))
 import Data.List (unfoldr)
 import Data.List qualified
@@ -62,6 +61,7 @@ import Data.Maybe (catMaybes)
 import Data.Vector ((!))
 import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
+import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
@@ -73,12 +73,15 @@ instance MonadTrans Population where
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-runPopulation :: Population m a -> m [(a, Log Double)]
-runPopulation (Population m) = runListT $ runWeighted m
+population, runPopulation :: Population m a -> m [(a, Log Double)]
+population (Population m) = runListT $ weighted m
+
+-- | deprecated synonym
+runPopulation = population
 
 -- | Explicit representation of the weighted sample.
 explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
-explicitPopulation = fmap (map (second (exp . ln))) . runPopulation
+explicitPopulation = fmap (map (second (exp . ln))) . population
 
 -- | Initialize 'Population' with a concrete weighted sample.
 fromWeightedList :: Monad m => m [(a, Log Double)] -> Population m a
@@ -91,6 +94,9 @@ fromWeightedList = Population . withWeight . ListT
 spawn :: Monad m => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
+withParticles :: Monad m => Int -> Population m a -> Population m a
+withParticles n = (spawn n >>)
+
 resampleGeneric ::
   MonadSample m =>
   -- | resampler
@@ -98,10 +104,10 @@ resampleGeneric ::
   Population m a ->
   Population m a
 resampleGeneric resampler m = fromWeightedList $ do
-  pop <- runPopulation m
+  pop <- population m
   let (xs, ps) = unzip pop
   let n = length xs
-  let z = sum ps
+  let z = Log.sum ps
   if z > 0
     then do
       let weights = V.fromList (map (exp . ln . (/ z)) ps)
@@ -212,7 +218,7 @@ extractEvidence ::
   Population m a ->
   Population (Weighted m) a
 extractEvidence m = fromWeightedList $ do
-  pop <- lift $ runPopulation m
+  pop <- lift $ population m
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
@@ -234,7 +240,7 @@ proper ::
   Population m a ->
   Weighted m a
 proper m = do
-  pop <- runPopulation $ extractEvidence m
+  pop <- population $ extractEvidence m
   let (xs, ps) = unzip pop
   index <- logCategorical $ V.fromList ps
   let x = xs !! index
@@ -242,7 +248,7 @@ proper m = do
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
 evidence :: (Monad m) => Population m a -> m (Log Double)
-evidence = extractWeight . runPopulation . extractEvidence
+evidence = extractWeight . population . extractEvidence
 
 -- | Picks one point from the population and uses model evidence as a 'score'
 -- in the transformed monad.
@@ -268,4 +274,4 @@ hoist ::
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a
-hoist f = fromWeightedList . f . runPopulation
+hoist f = fromWeightedList . f . population

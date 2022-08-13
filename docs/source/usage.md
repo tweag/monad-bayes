@@ -84,7 +84,7 @@ class Monad m => MonadCond m where
 
 Now core idea of monad-bayes is that various monads will be made to be instances of `MonadSample`, `MonadCond` or both (i.e. an instance of `MonadInfer`), and different inference algorithms will be written using these instances. This separates the specification of the model (which happens abstractly in `MonadInfer`) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed *inference transformers* to emphasize that it doesn't really matter whether they satisfy the monad laws.
 
-For example, to run weighted rejection sampling on a probabilistic program `p`, we can write `(sampleIO . runWeighted) p`. Here, `(sampleIO . runWeighted) :: Weighted SamplerIO a -> IO a`. So `p` gets understood as being of type `Weighted SamplerIO`, a type we'll encounter soon.
+For example, to run weighted rejection sampling on a probabilistic program `p`, we can write `(sampler . weighted) p`. Here, `(sampler . weighted) :: Weighted SamplerIO a -> IO a`. So `p` gets understood as being of type `Weighted SamplerIO`, a type we'll encounter soon.
 
 Some of these transformers are easy to understand (like `StateT Double`, while others (like the Church transformed Free monad transformer) lie on the more advanced side of things. The following tour of these types goes from easy to hard.
 
@@ -121,13 +121,13 @@ So, a value of type `Enumerator Bool`, for instance, is a list of pairs of boole
 [(False,0.8914),(True,0.1086)]
 ```
 
-Also in `Control.Monad.Bayes.Enumerator` is a function `enumerate`, which has type:
+Also in `Control.Monad.Bayes.Enumerator` is a function `enumerator`, which has type:
 
 ```haskell
-enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerator :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-We can write `enumerate sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
+We can write `enumerator sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
 
 But for this to be well-typed, we need `Enumerator` to be an instance of `MonadInfer`. For that, we need `Enumerator` to be a `MonadSample`, and a `MonadCond`. For that, we need it to be a `Monad`, and in turn, a `Functor`. In understanding these instance definition, we'll understand what what `Enumerator` is doing for us.
 
@@ -164,7 +164,7 @@ instance MonadCond Enumerator where
   score w = fromList [((), w)]
 ```
 
-Finally, `enumerate` simply unwraps `Enumerator` to get a list of pairs of values and their weights, and then normalizes them into probabilities. It orders the list, which is why `enumerate` requires an `Ord` instance.
+Finally, `enumerator` simply unwraps `Enumerator` to get a list of pairs of values and their weights, and then normalizes them into probabilities. It orders the list, which is why `enumerator` requires an `Ord` instance.
 
 To see how this all works together, consider:
 
@@ -175,7 +175,9 @@ example = do
   return x
 ```
 
-From the way the `MonadSample` instance for `Enumerator` is defined, `bernoulli 0.5` is a list of two pairs: `[(True, 0.5), (False, 0.5)]`. Using the `Monad` instance, the next line multiplies each of the masses by a number (`0` for `True`, `1` for `False`). The final line multiplies both by `1.0`. And then `enumerate` normalizes the result. So the ensuing distribution from `enumerate example` is `{True : 1.0}`.
+From the way the `MonadSample` instance for `Enumerator` is defined, `bernoulli 0.5` is a list of two pairs: `[(True, 0.5), (False, 0.5)]`. Using the `Monad` instance, the next line multiplies each of the masses by a number (`0` for `True`, `1` for `False`). The final line multiplies both by `1.0`. And then `enumerator` normalizes the result. So the ensuing distribution from `enumerator example` is `{True : 1.0}`.
+
+
 
 
 
@@ -196,17 +198,21 @@ Summary of key info on `SamplerIO`:
 - `instance MonadSample SamplerIO`
 - **No** instance for `MonadCond`
 
-```haskell
-newtype Sampler g m a = Sampler (StatefulGen g m => ReaderT g m a)
-type SamplerIO = Sampler (IOGenM StdGen) IO
+Monad-Bayes actually provides a more general constructor:
 
+```haskell
+newtype Sampler g m a = Sampler (ReaderT g m a)
 ```
 
-There are various different implementations of samplers that you could write, depending on the statistical details of how you want to sample. Monad-bayes provides a few, giving you the choice of which random number generator (RNG) or IO monad to use, in the generic `Sampler` monad. `SamplerIO` is a default choice of RNG and `IO` monad. 
+`SamplerIO` just specializes `g`, which is the random number generator, and `m`, the IO-handling monad:
 
-As the names suggest, these instances of `MonadSample` instantiate an abstract distribution as a sampling procedure. We have
+```haskell
+type SamplerIO = Sampler (IOGenM StdGen) IO
+```
 
+But you can specialize many other ways (see the `random` package), depending on your use case.
 
+As the names suggest, `SamplerIO` instantiates an abstract distribution as a sampling procedure. We have
 
 ```haskell
 instance MonadSample (Sampler g m) where
@@ -220,18 +226,18 @@ instance MonadSample (Sampler g m) where
   ...
 ```
 
-Were the lines from `uniform` to `geometric` commented out, they would be instantiated with the defaults defined in terms of `random` in the `MonadSample` class. The reason they are not is that there are more statistically efficient ways to sample.
+Were the lines from `uniform` to `beta` commented out, they would be instantiated with the defaults defined in terms of `random` in the `MonadSample` class. The reason they are not is that there are more statistically efficient ways to sample.
 
-We can unpack values from `SamplerIO a` using `sampleIO :: SamperIO a -> IO a`. So for example:
+We can unpack values from `SamplerIO a` using `sampler :: SamperIO a -> IO a`. So for example:
 
 
 ```haskell
-print =<< sampleIO random
+print =<< sampler random
 ```
 
 will print a sample from `random`. Similarly for other distributions. 
 
-But note that `SamplerIO` only has a `MonadSample` instance. This means that `sampleIO sprinkler` does not type check and gives the type error: 
+But note that `SamplerIO` only has a `MonadSample` instance. This means that `sampler sprinkler` does not type check and gives the type error: 
 
 ```haskell
 No instance for (MonadInfer SamplerIO)
@@ -284,15 +290,15 @@ then the result is that first, we draw a sample from a Bernoulli distribution fr
 To unpack from `Weighted m a`, we use:
 
 ```haskell
-runWeighted :: Weighted m a -> m (a, Log Double)
-runWeighted (Weighted m) = runStateT m 1
+weighted :: Weighted m a -> m (a, Log Double)
+weighted (Weighted m) = runStateT m 1
 ```
 
 `Weighted m` is not an instance of `MonadSample`, but only as instance of `MonadCond` (and that, only when `m` is an instance of `Monad`). However, since `StateT` is a monad transformer, there is a function `lift :: m Double -> Weighted m Double`.
 
 So if we take a `MonadSample` instance like `SamplerIO`, then `Weighted SamplerIO` is an instance of both `MonadSample` and `MonadCond`. Which means it is an instance of `MonadInfer`. 
 
-So we can successfully write `(sampleIO . runWeighted) sprinkler` and get a program of type `IO (Bool, Log Double)`. When run, this will draw a sample from `sprinkler` along with an **unnormalized** density for that sample.
+So we can successfully write `(sampler . weighted) sprinkler` and get a program of type `IO (Bool, Log Double)`. When run, this will draw a sample from `sprinkler` along with an **unnormalized** density for that sample.
 
 It's worth stopping here to remark on what's going on. What has happened is that the `m` in `forall m. MonadInfer m => m Bool` has been *instantiated* as `Weighted SamplerIO`. This is an example of how the interpreters for inference can be composed in modular ways.
 
@@ -345,7 +351,7 @@ spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 `spawn` spawns new particles. As an example:
 
 ```haskell
-enumerate $ runPopulation (spawn 2)
+enumerator $ population (spawn 2)
 ```
 
 gives
@@ -598,11 +604,11 @@ newtype Integrator a = Integrator {getCont :: Cont Double a}
 This `MonadSample` instance interprets a probabilistic program as a numerical integrator. For a nice explanation, see [this blog post](https://jtobin.io/giry-monad-implementation).
 
 `Integrator a` is isomorphic to `(a -> Double) -> Double`. 
-A program `model` of type `Integrator a` will take a function `f` and calculate $E_{p}[f] = \int f(x)*p(x)$ where $p$ is the density of `model`. 
+A program `model` of type `Integrator a` will take a function `f` and calculate {math}`E_{p}[f] = \int f(x)*p(x)` where {math}`p` is the density of `model`. 
 
-The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, `random :: Integrator Double` is the program which takes a function `f` and integrates `f` over the $(0,1)$ range.
+The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, `random :: Integrator Double` is the program which takes a function `f` and integrates `f` over the {math}`(0,1)` range.
 
-We can calculate the probability for an interval $(a,b)$ of any model of type `Integrator Double` by setting `f` to be the function that returns $1$ for that range, else $0$. Similarly for the CDF, MGF and so on.
+We can calculate the probability for an interval {math}`(a,b)` of any model of type `Integrator Double` by setting `f` to be the function that returns {math}`1` for that range, else {math}`0`. Similarly for the CDF, MGF and so on.
 
 ## Inference methods under the hood
 
@@ -619,7 +625,7 @@ example = replicateM 100 $ do
   return x
 ```
 
-Doing `enumerate example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
+Doing `enumerator example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
 
 The main purpose of `Enumerator` is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like `Weighted`, to get a sense of how they work. For example, consider:
 
@@ -630,7 +636,7 @@ example = do
   return x
 ```
 
-`(enumerate . runWeighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampleIO . runWeighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
+`(enumerator . weighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampler . weighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`. 
 
 ### Quadrature
 
@@ -649,9 +655,26 @@ model = do
 
 is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `(Double -> (Double, Log Double) -> Double)`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`. 
 
+### Quadrature
+
+As described on the section on `Integrator`, we can interpret our probabilistic program of type `MonadSample m => m a` as having concrete type `Integrator a`. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).
+
+This can also handle programs of type `MonadInfer m => m a`, that is, programs with `factor` statements. For these cases, a function `normalize :: Weighted Integrator a -> Integrator a` is employed. For example, 
+
+```haskell
+model :: MonadInfer m => m Double
+model = do
+  var <- gamma 1 1
+  n <- normal 0 (sqrt var)
+  condition (n > 0)
+  return var
+```
+
+is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `((Double -> (Double, Log Double)) -> (Double, Log Double))`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`. 
+
 ### Independent forward sampling
 
-For any program of type `p = MonadSample m => m a`, we may do `sampleIO p` or `runST $ sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample m`. 
+For any program of type `p = MonadSample m => m a`, we may do `sampler p` or `runST $ sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample m`. 
 
 ### Independent weighted sampling
 
@@ -665,12 +688,12 @@ example = do
   return x
 ```
 
-`(runWeighted . sampleIO) example :: IO (Bool, Log Double)` returns a tuple of a truth value and a probability mass (or more generally density). How does this work? Types are clarifying:
+`(weighted . sampler) example :: IO (Bool, Log Double)` returns a tuple of a truth value and a probability mass (or more generally density). How does this work? Types are clarifying:
 
 ```haskell
 run = 
-  (sampleIO :: SamplerIO (a, Log Double) -> IO (a, Log Double) )
-  . (runWeighted ::  Weighted SamplerIO a -> SamplerIO (a, Log Double)
+  (sampler :: SamplerIO (a, Log Double) -> IO (a, Log Double) )
+  . (weighted ::  Weighted SamplerIO a -> SamplerIO (a, Log Double)
 ```
 
 In other words, the program is being interpreted in the `Weighted SamplerIO` instance of `MonadInfer`.
@@ -694,7 +717,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- 
-      runWriterT $ runWeighted 
+      runWriterT $ weighted 
       $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 
       (q * fromIntegral n / (p * fromIntegral (length vs)))
@@ -735,16 +758,16 @@ example = replicateM 100 $ do
   return x
 ```
 
-Naive enumeration, as in `enumerate example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
+Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
-Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerate $ sis removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 
 ### Sequential Monte Carlo
 
-Sequential importance resampling works by doing `sis` with a resampler of your choice, such as `resampleMultinomial`, after first spawning a set of `n` particles.
+Sequential importance resampling works by doing `sequentially` with a resampler of your choice, such as `resampleMultinomial`, after first spawning a set of `n` particles.
 
 ```haskell
-sir ::
+smc ::
   Monad m =>
   -- | resampler
   (forall x. Population m x -> Population m x) ->
@@ -755,7 +778,7 @@ sir ::
   -- | model
   Sequential (Population m) a ->
   Population m a
-sir resampler k n = sis resampler k . Seq.hoistFirst (spawn n >>)
+smc resampler k n = sequentially resampler k . Seq.hoistFirst (spawn n >>)
 ```
 
 ### Particle Marginal Metropolis Hastings
@@ -769,13 +792,16 @@ Quoting the monad-bayes paper:
 Because of the modularity of monad-bayes, the implementation is remarkably simple, and directly linked to the algorithm:
 
 ```haskell
-pmmh t k n param model = mh t 
-  (param >>= 
-    runPopulation 
-    . pushEvidence 
-    . Pop.hoist lift 
-    . smcSystematic k n 
-    . model)
+pmmh mcmcConf smcConf param model =
+  mcmc
+    mcmcConf
+    ( param
+        >>= population
+          . pushEvidence
+          . Pop.hoist lift
+          . smc smcConf
+          . model
+    )
 ```
 
 
@@ -783,31 +809,25 @@ There's a lot to unpack here. Here's the definition with more types. To shorten 
 
 ```haskell
 pmmh ::
-  MonadInfer m =>
-  -- | number of Metropolis-Hastings steps
-  Int ->
-  -- | number of time steps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model parameters prior
-  T m b ->
-  -- | model
-  (b -> S (P m) a) ->
-  m [[(a, Log Double)]]
-pmmh t k n param model =
-  (mh t :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
+  MonadSample m =>
+  MCMCConfig ->
+  SMCConfig (Weighted m) ->
+  Traced (Weighted m) a1 ->
+  (a1 -> Sequential (Population (Weighted m)) a2) ->
+  m [[(a2, Log Double)]]
+pmmh mcmcConf smcConf param model =
+  (mcmc mcmcConf :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
   ((param :: T m b) >>= 
-      (runPopulation :: P (T m) a -> T m [(a, Log Double)]) 
+      (population :: P (T m) a -> T m [(a, Log Double)]) 
       . (pushEvidence :: P (T m) a -> P (T m) a) 
       . Pop.hoist (lift :: forall x. m x -> T m x) 
-      . (smcSystematic k n :: S (P m) a -> P m a) 
+      . (smc smcConf :: S (P m) a -> P m a) 
       . (model :: b -> S (P m) a))
 ```
 
-(Note that this uses the version of `mh` from `Control.Monad.Bayes.Traced.Static`.)
+(Note that this uses the version of `mcmc` that uses the `Traced` representation from `Control.Monad.Bayes.Traced.Static`.)
 
-To understand this, note that the outer algorithm is just `mh`. But the probabilistic program that we pass to `mh` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is "visible" to `mh`.
+To understand this, note that the outer algorithm is just `mcmc`. But the probabilistic program that we pass to `mcmc` does the following: run `param` to get values for the parameters and then pass these to `model`. Then run `n` steps of SMC with `k` particles. Then lift the underlying monad `m` into `Traced m`. Then calculate the sum of the weights of the particles and `factor` on this (this is what `pushEvidence` does). This `factor` takes place in `Traced m`, so it is "visible" to `mcmc`.
 
 
 ### Resample-Move Sequential Monte Carlo
@@ -821,25 +841,22 @@ The paper introducing monad-bayes has this to say about resample-move SMC:
 monad-bayes provides three versions of RMSMC, each of which uses one of the three `Traced` implementations respectively. Here is the simplest, which I have annotated with types. To shorten the signatures, the synonyms: `T = Traced, S = Sequential, P = Population` are used:
 
 ```haskell
+
 rmsmcBasic ::
   MonadSample m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+  MCMCConfig ->
+  SMCConfig m ->
   -- | model
-  S (TrBas.T (P m)) a ->
+  S (T (P m)) a ->
   P m a
-rmsmcBasic k n t =
+rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   (TrBas.marginal :: T (P m) a -> P m a )
-  . sis 
+  . sequentially 
       (
-      (composeCopies t TrBas.mhStep :: T (P m) a -> T (P m) a )
-      . TrBas.hoistT (resampleSystematic :: P m a -> P m a ) ) 
-      k
-  . (hoistS (TrBas.hoistT (spawn n >>)) :: S (T (P m)) a -> S (T (P m)) a ))
+      (composeCopies numMCMCSteps TrBas.mhStep :: T (P m) a -> T (P m) a )
+      . TrBas.hoist (resampleSystematic :: P m a -> P m a ) ) 
+      numSteps
+  . (S.hoistFirst (TrBas.hoist (spawn numParticles >>)) :: S (T (P m)) a -> S (T (P m)) a ))
 ```
 
 What is this doing? Recall that `S m a` represents an `m` of coroutines over `a`. Recall that `Traced m a` represents an `m` of  traced computations of `a`. Recall that `P m a` represents an `m` of a list of `a`s.
