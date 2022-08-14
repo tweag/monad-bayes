@@ -15,9 +15,15 @@ import TestPopulation qualified
 import TestSampler qualified
 import TestSequential qualified
 import TestWeighted qualified
+import TestStormerVerlet qualified
 
 main :: IO ()
 main = hspec do
+  describe "Stormer Verlet" $
+    it "conserves energy" $
+      do
+        p1 <- TestStormerVerlet.passed1
+        p1 `shouldBe` True
   describe "Distribution" $
     it "gives correct mean, variance and covariance" $
       do
