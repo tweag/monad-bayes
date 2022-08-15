@@ -14,8 +14,8 @@ import TestPipes qualified
 import TestPopulation qualified
 import TestSampler qualified
 import TestSequential qualified
-import TestWeighted qualified
 import TestStormerVerlet qualified
+import TestWeighted qualified
 
 main :: IO ()
 main = hspec do
