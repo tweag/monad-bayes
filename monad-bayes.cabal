@@ -164,6 +164,7 @@ test-suite monad-bayes-test
     , foldl
     , hspec
     , ieee754
+    , lens
     , linear
     , log-domain
     , math-functions
