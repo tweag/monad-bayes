@@ -43,7 +43,7 @@ library
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler
-    Control.Monad.Bayes.Sequential.Coroutine
+    Control.Monad.Bayes.Sequential
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
     Control.Monad.Bayes.Traced.Dynamic
@@ -57,6 +57,7 @@ library
       base               >=4.11   && <4.17
     , comonad
     , containers         >=0.5.10 && <0.7
+    , dlist
     , foldl
     , free               >=5.0.2  && <5.2
     , ieee754            ^>=0.8.0
@@ -122,7 +123,7 @@ executable example
 
   if flag(dev)
     ghc-options:
-      -Wall -Wcompat -Wincomplete-record-updates
+      -threaded -O2 -Wall -Wcompat -Wincomplete-record-updates
       -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
 
   else

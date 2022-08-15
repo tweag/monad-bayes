@@ -730,8 +730,7 @@ mhTrans m t@Trace {variables = us, density = p} = do
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- 
-      runWriterT $ weighted 
-      $ Weighted.hoist (WriterT . density us') m
+      runWriterT $ weighted $ Weighted.hoist (WriterT . density us') m
   let ratio = (exp . ln) $ min 1 
       (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
@@ -774,8 +773,6 @@ example = replicateM 100 $ do
 Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
 Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
-
-If you don't want to specify the number of steps, you can use `sequentiallyNoSteps`. 
 
 ### Sequential Monte Carlo
 

@@ -379,7 +379,7 @@ The final element of the chain is the head of the list, so you can drop samples 
 
 ## Sequential Monte Carlo (Particle Filtering)
 
-Run SMC with two particles, and resampling at every factor statement, as follows, given a model `m`:
+Run SMC with two resampling steps and two particles as follows, given a model `m`:
 
 ```haskell
 output = 
@@ -457,7 +457,7 @@ run = (
   population . 
   rmsmcBasic 
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
-    SMCConfig {numParticles = 4, numSteps = All}) 
+    SMCConfig {numParticles = 4, numSteps = 4}) 
   example
 ```
 

@@ -13,6 +13,7 @@ module Control.Monad.Bayes.Traced.Common
     scored,
     bind,
     mhTrans,
+    mhTransFree,
     mhTrans',
     burnIn,
   )
@@ -22,8 +23,8 @@ import Control.Monad.Bayes.Class
   ( MonadSample (bernoulli, random),
     discrete,
   )
-import Control.Monad.Bayes.Density.State
 import qualified Control.Monad.Bayes.Density.Free as Free
+import Control.Monad.Bayes.Density.State
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
     hoist,

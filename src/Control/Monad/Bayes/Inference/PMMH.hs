@@ -28,8 +28,8 @@ import Control.Monad.Bayes.Population as Pop
     pushEvidence,
     resampleSystematic,
   )
-import Control.Monad.Bayes.Sequential.Coroutine (Sequential)
-import Control.Monad.Bayes.Traced.Static (Traced, mh)
+import Control.Monad.Bayes.Sequential (Sequential)
+import Control.Monad.Bayes.Traced.Static (Traced)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (lift)
 import Numeric.Log (Log)

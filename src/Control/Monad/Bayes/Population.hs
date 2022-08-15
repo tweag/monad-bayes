@@ -182,11 +182,11 @@ stratified weights = do
       cumulativeSum = V.scanl (+) 0.0 weights
       coalg (i, j)
         | i < bigN =
-          if (positions ! i) < (cumulativeSum ! j)
-            then Just (Just j, (i + 1, j))
-            else Just (Nothing, (i, j + 1))
+            if (positions ! i) < (cumulativeSum ! j)
+              then Just (Just j, (i + 1, j))
+              else Just (Nothing, (i, j + 1))
         | otherwise =
-          Nothing
+            Nothing
   return $ map (\i -> i - 1) $ catMaybes $ unfoldr coalg (0, 0)
 
 -- | Resample the population using the underlying monad and a stratified resampling scheme.
