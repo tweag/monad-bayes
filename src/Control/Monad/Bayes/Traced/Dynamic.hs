@@ -24,13 +24,13 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Density.State (Density)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
     mhTrans,
     scored,
-    singleton,
+    singleton, mhTransFree
   )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
@@ -94,7 +94,7 @@ freeze (Traced c) = Traced $ do
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced c) = Traced $ do
   (m, t) <- c
-  t' <- mhTrans m t
+  t' <- mhTransFree m t
   return (m, t')
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
@@ -105,7 +105,7 @@ mh n (Traced c) = do
   let f k
         | k <= 0 = return (t :| [])
         | otherwise = do
-            (x :| xs) <- f (k - 1)
-            y <- mhTrans m x
-            return (y :| x : xs)
+          (x :| xs) <- f (k - 1)
+          y <- mhTransFree m x
+          return (y :| x : xs)
   fmap (map output . NE.toList) (f n)

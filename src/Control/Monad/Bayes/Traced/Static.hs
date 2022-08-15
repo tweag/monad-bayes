@@ -91,6 +91,6 @@ mh n (Traced m d) = fmap (map output . NE.toList) (f n)
     f k
       | k <= 0 = fmap (:| []) d
       | otherwise = do
-          (x :| xs) <- f (k - 1)
-          y <- mhTransFree m x
-          return (y :| x : xs)
+        (x :| xs) <- f (k - 1)
+        y <- mhTransFree m x
+        return (y :| x : xs)
