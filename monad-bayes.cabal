@@ -49,6 +49,7 @@ library
     Control.Monad.Bayes.Traced.Dynamic
     Control.Monad.Bayes.Traced.Static
     Control.Monad.Bayes.Weighted
+    Math.Integrators.StormerVerlet
 
   hs-source-dirs:     src
   other-modules:      Control.Monad.Bayes.Traced.Common
@@ -62,8 +63,10 @@ library
     , free               >=5.0.2  && <5.2
     , ieee754            ^>=0.8.0
     , integration
-    , log-domain         >=0.12   && <0.14
-    , math-functions     >=0.2.1  && <0.4
+    , lens
+    , linear
+    , log-domain       >=0.12   && <0.14
+    , math-functions   >=0.2.1  && <0.4
     , matrix
     , monad-coroutine    ^>=0.9.0
     , mtl                ^>=2.2.2
@@ -155,6 +158,7 @@ test-suite monad-bayes-test
     TestPopulation
     TestSampler
     TestSequential
+    TestStormerVerlet
     TestWeighted
 
   default-language:   Haskell2010
@@ -164,6 +168,8 @@ test-suite monad-bayes-test
     , foldl
     , hspec
     , ieee754
+    , lens
+    , linear
     , log-domain
     , math-functions
     , matrix
@@ -172,7 +178,6 @@ test-suite monad-bayes-test
     , mwc-random
     , pipes
     , pretty-simple
-    , profunctors
     , QuickCheck
     , random
     , statistics
