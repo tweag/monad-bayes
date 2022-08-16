@@ -391,21 +391,6 @@ Summary of key info on `Sequential`:
 - `instance MonadSample m => instance MonadSample (Sequential m)`
 - `instance MonadCond m => instance MonadCond (Sequential m)`
 
-There are two implementations, in `Control.Monad.Bayes.Sequential.Free` and `Control.Monad.Bayes.Sequential.Coroutine`. 
-
-#### Control.Monad.Bayes.Sequential.Free
-
-This section assumes some familiarity with the use of the free monad. For free monad's for probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming).
-
-Here, the base functor of the free monad contains constructors `Random` and `Score`, so can represent a `MonadInfer` program with both random choies and factor (score) statements. 
-
-We can *fold* this representation with a catamorphism, performing a specified transformation after each factor statement. This is how we implement `sequentially`.
-
-This representation is rather simpler than the one in `Control.Monad.Bayes.Sequential.Coroutine`, and in particular, does not require a manual specification of the number of steps.
-
-#### Control.Monad.Bayes.Sequential.Coroutine
-
-The former uses the `monad-coroutine` package:
 
 ```haskell
 newtype Sequential m a = 
@@ -507,7 +492,7 @@ A *trace* of a program of type `MonadSample m => m a` is an execution of the pro
 
 With this in mind, a `Density m a` is an interpretation of a probabilistic program as a function from a trace to the *density* of that execution of the program.
 
-Monad-bayes offers two implementations, in `Control.Monad.Bayes.Density.State` and `Control.Monad.Bayes.Density.Free`. 
+Monad-bayes offers two implementations, in `Control.Monad.Bayes.Density.State` and `Control.Monad.Bayes.Density.Free`. The first is slow but easy to understand, the second is more sophisticated, but faster.
 
 The former is relatively straightforward: the `MonadSample` instance implements `random` as `get`ting the trace (using `get` from `MonadState`), using (and removing) the first element (`put` from `MonadState`), and writing that element to the output (using `tell` from `MonadWriter`). If the trace is empty, the `random` from the underlying monad is used, but the result is still written with `tell`.
 

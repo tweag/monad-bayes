@@ -430,7 +430,7 @@ The result:
 
 Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
 
-`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. Specify it as either `All` or `Only n` for `n` an integer. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 `resampler` is the mechanism used to resampling the population of particles after each `factor` statement.
 
