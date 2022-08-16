@@ -39,6 +39,7 @@ library
     Control.Monad.Bayes.Inference.RMSMC
     Control.Monad.Bayes.Inference.SMC
     Control.Monad.Bayes.Inference.SMC2
+    Control.Monad.Bayes.Inference.TUI
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler
@@ -77,6 +78,10 @@ library
     , text
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
+    , streamly
+    , brick
+    , vty
+    , pretty-simple
 
   default-extensions:
     BlockArguments

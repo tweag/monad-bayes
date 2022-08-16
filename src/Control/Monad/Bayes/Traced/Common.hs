@@ -7,14 +7,16 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
+  ( Trace(..),
     singleton,
     output,
     scored,
     bind,
     mhTrans,
+    mhTransWithBool,
     mhTrans',
     burnIn,
+    MHResult(..)
   )
 where
 
@@ -36,6 +38,11 @@ import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+
+data MHResult a = MHResult {
+  success :: Bool,
+  trace :: Trace a
+  }
 
 -- | Collection of random variables sampler during the program's execution.
 data Trace a = Trace
@@ -76,20 +83,28 @@ bind dx f = do
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
--- | A single Metropolis-corrected transition of single-site Trace MCMC.
+
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+mhTrans m t = trace <$> mhTransWithBool m t
+  
+-- | A single Metropolis-corrected transition of single-site Trace MCMC.
+mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (MHResult a)
+mhTransWithBool m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
-      (xs, _ : ys) -> return $ xs ++ (u' : ys)
-      _ -> error "impossible"
+      (xs, _ : ys) -> pure $ xs ++ (u' : ys)
+      _ -> pure [] -- error "impossible"
   ((b, q), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . withPartialRandomness us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
+  -- error $ show q
   accept <- bernoulli ratio
-  return $ if accept then Trace vs b q else t
+  -- if not accept then error $ show ratio else return ()
+  return if accept then MHResult True (Trace vs b q) else MHResult False t 
+  
+  
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
