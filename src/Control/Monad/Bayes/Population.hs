@@ -42,7 +42,7 @@ import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted
-  ( Weighted,
+  ( Weighted(..),
     applyWeight,
     extractWeight,
     weighted,
@@ -81,7 +81,7 @@ instance MonadSample n m => MonadSample n (Population m) where
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
 population, runPopulation :: RealFloat n => Population m n a -> m n [(a, Log n)]
-population (Population m) = runListT $ weighted m
+population (Population m) = runListT $ getList $ weighted m
 
 -- | deprecated synonym
 runPopulation = population
@@ -101,7 +101,7 @@ fromWeightedList = Population . withWeight . ListTN . ListT
 spawn :: (Monad (m n), RealFloat n) => Int -> Population m n ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
-withParticles :: Monad m => Int -> Population m a -> Population m a
+withParticles :: (RealFloat n, Monad (m n)) => Int -> Population m n a -> Population m n a
 withParticles n = (spawn n >>)
 
 resampleGeneric ::
@@ -225,7 +225,7 @@ extractEvidence ::
   Population m n a ->
   Population (Weighted m) n a
 extractEvidence m = fromWeightedList $ do
-  pop <- lift $ population m
+  pop <- undefined -- lift $ population m
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps

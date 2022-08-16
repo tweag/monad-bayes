@@ -29,103 +29,64 @@ import System.Random.MWC (GenIO, createSystemRandom)
 --     'L' : 'D' : 'A' : n -> Just $ LDA (5, read n)
 --     _ -> Nothing
 
-<<<<<<< HEAD
--- getModel :: MonadInfer Double m => Model -> (Int, m String)
+-- getModel :: MonadInfer m => Model -> (Int, m String)
 -- getModel model = (size model, program model)
 --   where
 --     size (LR n) = n
 --     size (HMM n) = n
 --     size (LDA (d, w)) = d * w
---     synthesize :: SamplerST a -> (a -> b) -> b
---     synthesize dataGen prog = prog (sampleSTfixed dataGen)
---     program (LR n) = show <$> synthesize (LogReg.syntheticData n) LogReg.logisticRegression
---     program (HMM n) = show <$> synthesize (HMM.syntheticData n) HMM.hmm
---     program (LDA (d, w)) = show <$> synthesize (LDA.syntheticData d w) LDA.lda
-=======
-getModel :: MonadInfer m => Model -> (Int, m String)
-getModel model = (size model, program model)
-  where
-    size (LR n) = n
-    size (HMM n) = n
-    size (LDA (d, w)) = d * w
-    program (LR n) = show <$> (LogReg.logisticRegression (runST $ sampleSTfixed (LogReg.syntheticData n)))
-    program (HMM n) = show <$> (HMM.hmm (runST $ sampleSTfixed (HMM.syntheticData n)))
-    program (LDA (d, w)) = show <$> (LDA.lda (runST $ sampleSTfixed (LDA.syntheticData d w)))
->>>>>>> api
+--     program (LR n) = show <$> (LogReg.logisticRegression (runST $ sampleSTfixed (LogReg.syntheticData n)))
+--     program (HMM n) = show <$> (HMM.hmm (runST $ sampleSTfixed (HMM.syntheticData n)))
+--     program (LDA (d, w)) = show <$> (LDA.lda (runST $ sampleSTfixed (LDA.syntheticData d w)))
 
--- data Alg = SMC | MH | RMSMC
---   deriving stock (Read, Show)
+-- -- data Alg = SMC | MH | RMSMC
+-- --   deriving stock (Read, Show)
 
-<<<<<<< HEAD
--- runAlg :: Model -> Alg -> SamplerIO String
+-- runAlg :: Model -> Alg -> Sampler GenIO IO String
 -- runAlg model alg =
 --   case alg of
 --     SMC ->
 --       let n = 100
 --           (k, m) = getModel model
---        in show <$> runPopulation (smcSystematic k n m)
+--        in show <$> population (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
 --     MH ->
 --       let t = 100
 --           (_, m) = getModel model
---        in show <$> prior (mh t m)
+--        in show <$> unweighted (mh t m)
 --     RMSMC ->
 --       let n = 10
 --           t = 1
 --           (k, m) = getModel model
---        in show <$> runPopulation (rmsmcBasic k n t m)
+--        in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
 
 -- infer :: Model -> Alg -> IO ()
 -- infer model alg = do
 --   g <- createSystemRandom
---   x <- sampleIOwith (runAlg model alg) g
+--   x <- sampleWith (runAlg model alg) g
 --   print x
-=======
-runAlg :: Model -> Alg -> Sampler GenIO IO String
-runAlg model alg =
-  case alg of
-    SMC ->
-      let n = 100
-          (k, m) = getModel model
-       in show <$> population (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
-    MH ->
-      let t = 100
-          (_, m) = getModel model
-       in show <$> unweighted (mh t m)
-    RMSMC ->
-      let n = 10
-          t = 1
-          (k, m) = getModel model
-       in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
 
-infer :: Model -> Alg -> IO ()
-infer model alg = do
-  g <- createSystemRandom
-  x <- sampleWith (runAlg model alg) g
-  print x
->>>>>>> api
+-- -- opts :: ParserInfo (Model, Alg)
+-- -- opts = flip info fullDesc $ liftA2 (,) model alg
+-- --   where
+-- --     model =
+-- --       option
+-- --         (maybeReader parseModel)
+-- --         ( long "model"
+-- --             <> short 'm'
+-- --             <> help "Model"
+-- --         )
+-- --     alg =
+-- --       option
+-- --         auto
+-- --         ( long "alg"
+-- --             <> short 'a'
+-- --             <> help "Inference algorithm"
+-- --         )
 
--- opts :: ParserInfo (Model, Alg)
--- opts = flip info fullDesc $ liftA2 (,) model alg
---   where
---     model =
---       option
---         (maybeReader parseModel)
---         ( long "model"
---             <> short 'm'
---             <> help "Model"
---         )
---     alg =
---       option
---         auto
---         ( long "alg"
---             <> short 'a'
---             <> help "Inference algorithm"
---         )
-
--- main :: IO ()
--- main = do
---   (model, alg) <- execParser opts
---   startTime <- getCurrentTime
---   infer model alg
---   endTime <- getCurrentTime
---   print (diffUTCTime endTime startTime)
+-- -- main :: IO ()
+-- -- main = do
+-- --   (model, alg) <- execParser opts
+-- --   startTime <- getCurrentTime
+-- --   infer model alg
+-- --   endTime <- getCurrentTime
+-- --   print (diffUTCTime endTime startTime)

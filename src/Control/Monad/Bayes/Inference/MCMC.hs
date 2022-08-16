@@ -25,11 +25,11 @@ data MCMCConfig = MCMCConfig {proposal :: Proposal, numMCMCSteps :: Int, numBurn
 defaultMCMCConfig :: MCMCConfig
 defaultMCMCConfig = MCMCConfig {proposal = SingleSiteMH, numMCMCSteps = 1, numBurnIn = 0}
 
-mcmc :: MonadSample m => MCMCConfig -> Static.Traced (Weighted m) a -> m [a]
+mcmc :: MonadSample n m => MCMCConfig -> Static.Traced (Weighted m) n a -> m n [a]
 mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Static.mh numMCMCSteps m
 
-mcmcBasic :: MonadSample m => MCMCConfig -> Basic.Traced (Weighted m) a -> m [a]
+mcmcBasic :: MonadSample n m => MCMCConfig -> Basic.Traced (Weighted m) n a -> m n [a]
 mcmcBasic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Basic.mh numMCMCSteps m
 
-mcmcDynamic :: MonadSample m => MCMCConfig -> Dynamic.Traced (Weighted m) a -> m [a]
+mcmcDynamic :: MonadSample n m => MCMCConfig -> Dynamic.Traced (Weighted m) n a -> m n [a]
 mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Dynamic.mh numMCMCSteps m

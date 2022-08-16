@@ -127,11 +127,7 @@ Also in `Control.Monad.Bayes.Enumerator` is a function `enumerator`, which has t
 enumerator :: Ord a => Enumerator a -> [(a, Double)]
 ```
 
-<<<<<<< HEAD
-We can write `enumerate sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer n m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
-=======
-We can write `enumerator sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
->>>>>>> api
+We can write `enumerator sprinkler`. Why is this well typed? The idea is that `sprinkler` has type `forall m. MonadInfer n m => m Bool`, and we *instantiate* that `m` as `Enumerator`.
 
 But for this to be well-typed, we need `Enumerator` to be an instance of `MonadInfer`. For that, we need `Enumerator` to be a `MonadSample`, and a `MonadCond`. For that, we need it to be a `Monad`, and in turn, a `Functor`. In understanding these instance definition, we'll understand what what `Enumerator` is doing for us.
 
@@ -678,11 +674,7 @@ is really an unnormalized measure, rather than a probability distribution. `norm
 
 ### Independent forward sampling
 
-<<<<<<< HEAD
-For any program of type `p = MonadSample n m => m a`, we may do `sampleIO p` or `sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample n m`. 
-=======
-For any program of type `p = MonadSample m => m a`, we may do `sampler p` or `runST $ sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample m`. 
->>>>>>> api
+For any program of type `p = MonadSample n m => m a`, we may do `sampler p` or `runST $ sampleSTfixed p`. Note that if there are any calls to `factor` in the program, then it cannot have type `MonadSample n m`. 
 
 ### Independent weighted sampling
 
@@ -817,37 +809,20 @@ There's a lot to unpack here. Here's the definition with more types. To shorten 
 
 ```haskell
 pmmh ::
-<<<<<<< HEAD
-  MonadInfer n m =>
-  -- | number of Metropolis-Hastings steps
-  Int ->
-  -- | number of time steps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model parameters prior
-  T m b ->
-  -- | model
-  (b -> S (P m) a) ->
-  m [[(a, Log Double)]]
-pmmh t k n param model =
-  (mh t :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
-=======
-  MonadSample m =>
+  MonadSample n m =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
   Traced (Weighted m) a1 ->
-  (a1 -> Sequential (Population (Weighted m)) a2) ->
-  m [[(a2, Log Double)]]
+  (a1 -> Sequential (Population (Weighted m)) n a2) ->
+  m [[(a2, Log n)]]
 pmmh mcmcConf smcConf param model =
-  (mcmc mcmcConf :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
->>>>>>> api
-  ((param :: T m b) >>= 
-      (population :: P (T m) a -> T m [(a, Log Double)]) 
-      . (pushEvidence :: P (T m) a -> P (T m) a) 
-      . Pop.hoist (lift :: forall x. m x -> T m x) 
-      . (smc smcConf :: S (P m) a -> P m a) 
-      . (model :: b -> S (P m) a))
+  (mcmc mcmcConf :: T m [(a, Log n)] -> m [[(a, Log n)]])
+  ((param :: T m n b) >>= 
+      (population :: P (T m) n a -> T m n [(a, Log n)]) 
+      . (pushEvidence :: P (T m) a -> P (T m) n a) 
+      . Pop.hoist (lift :: forall x. m x -> T m n x) 
+      . (smc smcConf :: S (P m) n a -> P m n a) 
+      . (model :: b -> S (P m) n a))
 ```
 
 (Note that this uses the version of `mcmc` that uses the `Traced` representation from `Control.Monad.Bayes.Traced.Static`.)
@@ -868,22 +843,12 @@ monad-bayes provides three versions of RMSMC, each of which uses one of the thre
 ```haskell
 
 rmsmcBasic ::
-<<<<<<< HEAD
   MonadSample n m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
-=======
-  MonadSample m =>
   MCMCConfig ->
   SMCConfig m ->
->>>>>>> api
   -- | model
-  S (T (P m)) a ->
-  P m a
+  S (T (P m)) n a ->
+  P m n a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   (TrBas.marginal :: T (P m) a -> P m a )
   . sequentially 

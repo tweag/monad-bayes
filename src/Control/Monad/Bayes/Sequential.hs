@@ -107,7 +107,7 @@ sequentially,
     (forall x. m n x -> m n x) ->
     -- | number of time steps
     Int ->
-    Sequential m n a -> m a
+    Sequential m n a -> m n a
 sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 
 -- | deprecated synonym

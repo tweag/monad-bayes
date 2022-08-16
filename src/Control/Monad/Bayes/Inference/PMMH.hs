@@ -36,45 +36,28 @@ import Numeric.Log (Log)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
-<<<<<<< HEAD
-  (MonadInfer n m, RealFloat n) =>
-  -- | number of Metropolis-Hastings steps
-  Int ->
-  -- | number of time steps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | model parameters prior
-  Traced m n b ->
-  -- | model
-  (b -> Sequential (Population m) n a) ->
-  m n [[(a, Log n)]]
-pmmh t k n param model =
-  mh t (param >>= runPopulation . pushEvidence . Pop.hoist undefined . smcSystematic k n . model)
-=======
-  MonadSample m =>
+  MonadSample n m =>
   MCMCConfig ->
-  SMCConfig (Weighted m) ->
-  Traced (Weighted m) a1 ->
-  (a1 -> Sequential (Population (Weighted m)) a2) ->
-  m [[(a2, Log Double)]]
+  SMCConfig (Weighted m) n ->
+  Traced (Weighted m) n a1 ->
+  (a1 -> Sequential (Population (Weighted m)) n a2) ->
+  m n [[(a2, Log n)]]
 pmmh mcmcConf smcConf param model =
   mcmc
     mcmcConf
     ( param
         >>= population
           . pushEvidence
-          . Pop.hoist lift
+          . Pop.hoist undefined
           . smc smcConf
           . model
     )
 
 -- | Particle Marginal Metropolis-Hastings sampling from a Bayesian model
-pmmhBayesianModel ::
-  MonadInfer m =>
-  MCMCConfig ->
-  SMCConfig (Weighted m) ->
-  (forall m. MonadInfer m => Bayesian m a1 a2) ->
-  m [[(a2, Log Double)]]
-pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (latent bm) (generative bm)
->>>>>>> api
+-- pmmhBayesianModel ::
+--   MonadInfer n m =>
+--   MCMCConfig ->
+--   SMCConfig (Weighted m) ->
+--   (forall m. MonadInfer n m => Bayesian m a1 a2) ->
+--   m [[(a2, Log Double)]]
+-- pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (latent bm) (generative bm)

@@ -20,7 +20,7 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free
+import Control.Monad.Bayes.Free hiding (hoist)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -28,7 +28,7 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted
+import Control.Monad.Bayes.Weighted hiding (hoist)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 

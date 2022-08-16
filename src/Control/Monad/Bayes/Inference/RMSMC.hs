@@ -42,27 +42,13 @@ import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
-<<<<<<< HEAD
-  (MonadSample n m, RealFloat n) =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+  MonadSample n m =>
+  MCMCConfig ->
+  SMCConfig m n ->
   -- | model
   Sequential (Traced (Population m)) n a ->
   Population m n a
-rmsmc k n t =
-=======
-  MonadSample m =>
-  MCMCConfig ->
-  SMCConfig m ->
-  -- | model
-  Sequential (Traced (Population m)) a ->
-  Population m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
->>>>>>> api
   marginal
     . sequentially (composeCopies numMCMCSteps mhStep . TrStat.hoist resampler) numSteps
     . S.hoistFirst (TrStat.hoist (spawn numParticles >>))
@@ -70,27 +56,13 @@ rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
 rmsmcBasic ::
-<<<<<<< HEAD
-  (MonadSample n m, RealFloat n) =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+  MonadSample n m =>
+  MCMCConfig ->
+  SMCConfig m n ->
   -- | model
   Sequential (TrBas.Traced (Population m)) n a ->
   Population m n a
-rmsmcBasic k n t =
-=======
-  MonadSample m =>
-  MCMCConfig ->
-  SMCConfig m ->
-  -- | model
-  Sequential (TrBas.Traced (Population m)) a ->
-  Population m a
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
->>>>>>> api
   TrBas.marginal
     . sequentially (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler) numSteps
     . S.hoistFirst (TrBas.hoist (withParticles numParticles))
@@ -98,29 +70,14 @@ rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
 -- | A variant of resample-move Sequential Monte Carlo
 -- where only random variables since last resampling are considered
 -- for rejuvenation.
-<<<<<<< HEAD
-rmsmcLocal ::
-  (MonadSample n m, RealFloat n) =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
+rmsmcDynamic ::
+  MonadSample n m =>
+  MCMCConfig ->
+  SMCConfig m n ->
   -- | model
   Sequential (TrDyn.Traced (Population m)) n a ->
   Population m n a
-rmsmcLocal k n t =
-=======
-rmsmcDynamic ::
-  MonadSample m =>
-  MCMCConfig ->
-  SMCConfig m ->
-  -- | model
-  Sequential (TrDyn.Traced (Population m)) a ->
-  Population m a
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
->>>>>>> api
   TrDyn.marginal
     . sequentially (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) numSteps
     . S.hoistFirst (TrDyn.hoist (withParticles numParticles))

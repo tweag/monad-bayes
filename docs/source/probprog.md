@@ -76,11 +76,7 @@ MonadInfer n m => m X
 
 monad-bayes provides standard distributions, such as:
 
-<<<<<<< HEAD
-- `random :: MonadInfer n m => m Double` : sample uniformly from $[0,1]$
-=======
-- `random :: MonadInfer m => m Double` : sample uniformly from {math}`[0,1]`
->>>>>>> api
+- `random :: MonadInfer n m => m Double` : sample uniformly from {math}`[0,1]`
 
 The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html
 
@@ -100,11 +96,7 @@ fmap (> 0.5) random :: MonadInfer n m => m Bool
 
 This is the uniform distribution over {math}`(0.5, 1]`.
 
-<<<<<<< HEAD
-As an important special case, if `x :: MonadInfer n m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer n m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution $p(a)$, where $p(a) = \int_b p(a,b)$
-=======
-As an important special case, if `x :: MonadInfer m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
->>>>>>> api
+As an important special case, if `x :: MonadInfer n m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer n m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
 
 The above example use only the functor instance for `m`, but we also have the monad instance, as used in:
 
@@ -404,20 +396,7 @@ output =
 
 
 ```haskell
-<<<<<<< HEAD
 example :: MonadInfer n m => m Bool
-=======
-(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
-  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
-``` -->
-
-<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
-
-As a concrete example, here is a probabilistic program:
-
-```haskell
-example :: MonadInfer m => m Bool
->>>>>>> api
 example = do
   x <- bernoulli 0.5
   condition x
@@ -452,19 +431,9 @@ This is a fancier variant of SMC, which has the particles take an MCMC walk thro
 
 ```haskell
 rmsmcBasic ::
-<<<<<<< HEAD
   MonadSample n m =>
-  -- | number of timesteps
-  Int ->
-  -- | number of particles
-  Int ->
-  -- | number of Metropolis-Hastings transitions after each resampling
-  Int ->
-=======
-  MonadSample m =>
   MCMCConfig ->
   SMCConfig m ->
->>>>>>> api
   -- | model
   Sequential (TrBas.Traced (Population m)) a ->
   Population m a

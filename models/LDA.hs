@@ -79,14 +79,7 @@ import Prelude hiding (words)
 --   where
 --     syntheticWord = uniformD vocabulary
 
-<<<<<<< HEAD
--- -- runLDA :: IO ()
--- -- runLDA = do
--- --   s <- sampleIO $ prior $ mh 1000 $ lda documents
--- --   pPrint (head s)
-=======
-runLDA :: IO ()
-runLDA = do
-  s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
-  pPrint (head s)
->>>>>>> api
+-- runLDA :: IO ()
+-- runLDA = do
+--   s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
+--   pPrint (head s)
