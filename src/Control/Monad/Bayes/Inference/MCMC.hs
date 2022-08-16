@@ -19,9 +19,6 @@ import qualified Control.Monad.Bayes.Traced.Dynamic as Dynamic
 import qualified Control.Monad.Bayes.Traced.Static as Static
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (lift)
-
-import qualified Streamly.Prelude as S
-import qualified Streamly.Internal.Data.Stream.IsStream.Lift as S
 import qualified Pipes.Prelude as P
 import qualified Pipes as P
 import Pipes ((>->))

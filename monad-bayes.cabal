@@ -78,7 +78,6 @@ library
     , text
     , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
-    , streamly
     , brick
     , vty
     , pretty-simple
