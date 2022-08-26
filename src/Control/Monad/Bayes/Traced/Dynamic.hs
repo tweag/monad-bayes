@@ -29,8 +29,9 @@ import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
     mhTrans,
+    mhTransFree,
     scored,
-    singleton, mhTransFree
+    singleton,
   )
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
