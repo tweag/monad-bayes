@@ -47,9 +47,9 @@ independentSamples (Static.Traced w d) =
     >-> P.map (MHResult False)
 
 -- | convert a probabilistic program into a producer of samples
-runTraced :: MonadSample m => Int -> Static.Traced m a -> P.Producer (MHResult a) m ()
-runTraced burnIn m@(Static.Traced w _) = do
+mcmcP :: MonadSample m => MCMCConfig -> Static.Traced m a -> P.Producer (MHResult a) m ()
+mcmcP MCMCConfig {..} m@(Static.Traced w _) = do
   initialValue <- independentSamples m >-> P.drain
   ( P.unfoldr (fmap (Right . (\k -> (k, trace k))) . mhTransWithBool w) initialValue
-      >-> P.drop burnIn
+      >-> P.drop numBurnIn
     )

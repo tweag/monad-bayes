@@ -377,22 +377,9 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
-### Terminal User Interface for MCMC
+### Piped MCMC
 
-You can also run MCMC with a progress bar and visualization. For example:
-
-```haskell
-tui (normal 0 1) showHistogram 
-```
-
-or
-
-```haskell
-tui (bernoulli 0.6) showEmpirical
-```
-
-
-This has an additional feature: the chain doesn't start until a trace with strictly positive density is sampled first. This avoids a common failure, because an MH chain that starts with a 0 density trace is not going to ever accept proposals.
+You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
 
 ## Sequential Monte Carlo (Particle Filtering)
 
