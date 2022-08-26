@@ -65,8 +65,8 @@ library
     , integration
     , lens
     , linear
-    , log-domain       >=0.12   && <0.14
-    , math-functions   >=0.2.1  && <0.4
+    , log-domain         >=0.12   && <0.14
+    , math-functions     >=0.2.1  && <0.4
     , matrix
     , monad-coroutine    ^>=0.9.0
     , mtl                ^>=2.2.2
