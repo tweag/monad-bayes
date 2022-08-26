@@ -335,6 +335,26 @@ run = (sampler . weighted) example
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
 
 
+## Lazy sampling
+
+If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,
+
+```haskell
+import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
+
+example :: MonadSample m => m [Double]
+example = do 
+  x <- random
+  fmap (x:) example
+
+infiniteList <- Lazy.sampler example
+take 4 infiniteList
+```
+
+To perform weighted sampling, use `lwis` from `Control.Monad.Bayes.Inference.Lazy.WIS` as in `lwis 10 example`. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution. 
+
+LazyPPL's `mh` implementation is also available.
+
 ## Markov Chain Monte Carlo
 
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in `Control.Monad.Bayes.Inference.MCMC`. You can use it as follows:
@@ -376,22 +396,6 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 ```
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
-
-## Lazy sampling
-
-If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,
-
-```haskell
-import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
-
-example :: MonadSample m => m [Double]
-example = do 
-  x <- random
-  fmap (x:) example
-
-infiniteList <- Lazy.sampler example
-take 4 infiniteList
-```
 
 ## Sequential Monte Carlo (Particle Filtering)
 
