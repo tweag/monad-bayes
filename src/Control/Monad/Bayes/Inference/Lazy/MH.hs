@@ -1,45 +1,39 @@
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE RankNTypes #-}
-
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DerivingStrategies #-}
-
-    
-    
-    
+{-# LANGUAGE TupleSections #-}
 
 module Control.Monad.Bayes.Inference.Lazy.MH where
 
+import Control.Arrow
 import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Enumerator
+import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numSteps), smc)
 import Control.Monad.Bayes.Population
+import Control.Monad.Bayes.Population qualified as P
 import Control.Monad.Bayes.Sampler.Lazy
-import Control.Monad.Bayes.Weighted (Weighted, weighted, unweighted)
+import Control.Monad.Bayes.Sampler.Lazy qualified as Lazy
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
+import Control.Monad.Bayes.Sequential (finish, sequentially, sis)
+import Control.Monad.Bayes.Sequential qualified as Seq
+import Control.Monad.Bayes.Traced (marginal)
+import Control.Monad.Bayes.Weighted (Weighted, unweighted, weighted)
 import Control.Monad.Extra (iterateM)
+import Control.Monad.List (ListT (..), MonadIO (liftIO), MonadTrans (lift), ap, replicateM)
 import Control.Monad.State.Lazy (MonadState (get, put), State, runState)
+import Debug.Trace (trace)
 import Numeric.Log
+import Pipes ((>->))
+import Pipes qualified as P
+import Pipes qualified as Pr
+import Pipes.Prelude qualified as P
 import System.Random
 import System.Random qualified as R
-import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
-import qualified Control.Monad.Bayes.Population as P
-import Control.Monad.Bayes.Traced (marginal)
-import Control.Monad.Bayes.Sequential.Coroutine (sequentially, sis, finish)
-import Control.Arrow
-import Control.Monad.List (ListT(..), ap, MonadTrans (lift), MonadIO (liftIO), replicateM)
-import Control.Monad.Bayes.Inference.SMC (smc, SMCConfig (SMCConfig, numSteps))
-import qualified Control.Monad.Bayes.Sequential.Coroutine as Seq
-import Control.Monad.Bayes.Sampler.Strict (sampleIO, SamplerIO)
-import Debug.Trace (trace)
-import qualified Pipes as P
-import qualified Pipes.Prelude as P
-import Pipes ((>->))
-import qualified Pipes as Pr
-import Control.Monad.Bayes.Enumerator
 
 mh :: forall a. Double -> Weighted Sampler a -> IO [(a, Log Double)]
 mh p m = do
@@ -55,7 +49,8 @@ mh p m = do
   let (samples, _) = runState (iterateM step (t, x, w)) g2
   -- The stream of seeds is used to produce a stream of result/weight pairs.
   return $ map (\(_, x, w) -> (x, w)) samples
---   where
+  where
+    --   where
     {- NB There are three kinds of randomness in the step function.
     1. The start tree 't', which is the source of randomness for simulating the
     program m to start with. This is sort-of the point in the "state space".
@@ -63,7 +58,7 @@ mh p m = do
     3. The randomness needed to decide whether to accept or reject that ('g2')
     The tree t is an argument and result,
     but we use a state monad ('get'/'put') to deal with the other randomness '(g,g1,g2)' -}
-    where
+
     -- step :: RandomGen g => (Tree, a, Log Double) -> State g (Tree, a, Log Double)
     step (t, x, w) = do
       -- Randomly change some sites
@@ -84,21 +79,26 @@ mh p m = do
 
 -- Replace the labels of a tree randomly, with probability p
 mutateTree :: forall g. RandomGen g => Double -> g -> Tree -> Tree
-mutateTree p g (Tree a ts) = 
-    let (a', g') = (R.random g :: (Double, g))
-        (a'', g'') = R.random g'
-    in Tree (if a' < p then a'' else a) (mutateTrees p g'' ts)
+mutateTree p g (Tree a ts) =
+  let (a', g') = (R.random g :: (Double, g))
+      (a'', g'') = R.random g'
+   in Tree (if a' < p then a'' else a) (mutateTrees p g'' ts)
 
 mutateTrees :: RandomGen g => Double -> g -> [Tree] -> [Tree]
 mutateTrees p g (t : ts) = let (g1, g2) = split g in mutateTree p g1 t : mutateTrees p g2 ts
 mutateTrees _ _ [] = error "empty tree"
 
-
-a = take 4 <$> (Lazy.sampler $ population $ sis (resampleMultinomial . fromWeightedList . ap (take <$> poisson 1000) . population) 2
-  $ (Seq.hoist (infiniteParticles) $ do
-    x <- normal 0 1
-    factor $ Exp x
-    return x))
+a =
+  take 4
+    <$> ( Lazy.sampler $
+            population $
+              sis (resampleMultinomial . fromWeightedList . ap (take <$> poisson 1000) . population) 2 $
+                ( Seq.hoist (infiniteParticles) $ do
+                    x <- normal 0 1
+                    factor $ Exp x
+                    return x
+                )
+        )
 
 traceIt x = trace (show x) x
 
@@ -107,16 +107,15 @@ b = do
   x <- normal 0 1
   factor 0.5
   fmap (x :) (b)
-  
-  -- return (repeat 1)
 
--- run = do 
+-- return (repeat 1)
+
+-- run = do
 --   x <- Lazy.sampler $ Lazy.independent $ population $ normal 0 1
 --   print $ (take 2 ) $ fmap (take 2) x -- fmap (first (take 10)) x
 
 infiniteParticles :: MonadSample m => Population m a -> Population m a
 infiniteParticles = (P.fromWeightedList (return (repeat ((), 1))) >>)
-
 
 -- newtype Seq m a = Seq {runSeq :: P.Producer (Log Double) m a} deriving newtype (Functor, Applicative, Monad, MonadTrans)
 
@@ -129,16 +128,16 @@ infiniteParticles = (P.fromWeightedList (return (repeat ((), 1))) >>)
 
 -- -- ex :: (MonadInfer m, MonadIO m, MonadSample m0) => m Double
 -- ex :: Enumerator [Bool]
--- ex = P.runEffect $ 
+-- ex = P.runEffect $
 --   (runSeq model >-> P.scan undefined () undefined)
---   >-> P.mapM_ (\x -> 
---       -- liftIO (print x) >> 
+--   >-> P.mapM_ (\x ->
+--       -- liftIO (print x) >>
 --       score x)
 
 -- hoistS f = Seq . f . runSeq
 
 -- -- model :: MonadInfer m => Seq m Double
--- model = -- hoistS (lift (spawn 10) >>) 
+-- model = -- hoistS (lift (spawn 10) >>)
 --   replicateM 100 do
 --   x <- bernoulli 0.5
 --   condition x -- (x > 0.5)

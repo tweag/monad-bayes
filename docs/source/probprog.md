@@ -261,7 +261,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-### Near exact inference for continuous distributions
+## Near exact inference for continuous distributions
 
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
@@ -289,7 +289,7 @@ model = do
 
 we must first `normalize` the model, as in `probability (0, 0.1) (normalize model)`.
 
-### Independent forward sampling
+## Independent forward sampling
 
 For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampler p` or `sampleIOfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
 
@@ -377,9 +377,25 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
+## Lazy sampling
+
+If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,
+
+```haskell
+import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
+
+example :: MonadSample m => m [Double]
+example = do 
+  x <- random
+  fmap (x:) example
+
+infiniteList <- Lazy.sampler example
+take 4 infiniteList
+```
+
 ## Sequential Monte Carlo (Particle Filtering)
 
-Run SMC with two particles, and resampling at every factor statement, as follows, given a model `m`:
+Run SMC with two resampling steps and two particles as follows, given a model `m`:
 
 ```haskell
 output = 
@@ -430,7 +446,7 @@ The result:
 
 Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
 
-`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. Specify it as either `All` or `Only n` for `n` an integer. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 `resampler` is the mechanism used to resampling the population of particles after each `factor` statement.
 
@@ -457,7 +473,7 @@ run = (
   population . 
   rmsmcBasic 
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
-    SMCConfig {numParticles = 4, numSteps = All}) 
+    SMCConfig {numParticles = 4, numSteps = 4}) 
   example
 ```
 
