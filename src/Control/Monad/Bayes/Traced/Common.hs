@@ -7,7 +7,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace(..),
+  ( Trace (..),
     singleton,
     output,
     scored,
@@ -16,7 +16,7 @@ module Control.Monad.Bayes.Traced.Common
     mhTransWithBool,
     mhTrans',
     burnIn,
-    MHResult(..)
+    MHResult (..),
   )
 where
 
@@ -39,9 +39,9 @@ import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 
-data MHResult a = MHResult {
-  success :: Bool,
-  trace :: Trace a
+data MHResult a = MHResult
+  { success :: Bool,
+    trace :: Trace a
   }
 
 -- | Collection of random variables sampler during the program's execution.
@@ -83,10 +83,9 @@ bind dx f = do
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, density = density t1 * density t2}
 
-
 mhTrans :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
 mhTrans m t = trace <$> mhTransWithBool m t
-  
+
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTransWithBool :: MonadSample m => Weighted (FreeSampler m) a -> Trace a -> m (MHResult a)
 mhTransWithBool m t@Trace {variables = us, density = p} = do
@@ -102,9 +101,7 @@ mhTransWithBool m t@Trace {variables = us, density = p} = do
   -- error $ show q
   accept <- bernoulli ratio
   -- if not accept then error $ show ratio else return ()
-  return if accept then MHResult True (Trace vs b q) else MHResult False t 
-  
-  
+  return if accept then MHResult True (Trace vs b q) else MHResult False t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (FreeSampler Identity) a -> Trace a -> m (Trace a)
