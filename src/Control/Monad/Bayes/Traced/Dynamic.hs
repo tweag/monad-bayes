@@ -22,7 +22,7 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -37,9 +37,9 @@ import Prelude hiding (Real)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace (Real m) a)}
+newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace (Real m) a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where

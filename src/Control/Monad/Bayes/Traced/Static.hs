@@ -22,7 +22,7 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -40,7 +40,7 @@ import Prelude hiding (Real)
 -- The random choices that are not to be traced should be lifted from the
 -- transformed monad.
 data Traced m a = Traced
-  { model :: Weighted (FreeSampler m) a,
+  { model :: Weighted (Density m) a,
     traceDist :: m (Trace (Real m) a)
   }
 

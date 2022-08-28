@@ -114,5 +114,5 @@ sequentially,
     m a
 sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 
--- | deprecated synonym
+-- | synonym
 sis = sequentially

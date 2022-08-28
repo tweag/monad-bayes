@@ -11,17 +11,15 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Basic
-  ( Traced,
-    hoist,
-    marginal,
-    mhStep,
-    mh,
-  )
 where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Free (FreeSampler)
+  ( MonadCond (..),
+    MonadInfer,
+    MonadSample (random, Real),
+  )
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -37,7 +35,7 @@ import Prelude hiding (Real)
 -- | Tracing monad that records random choices made in the program.
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
-    model :: Weighted (FreeSampler Identity) a,
+    model :: Weighted (Density Identity) a,
     -- | Record trace and output.
     traceDist :: m (Trace (Real m) a)
   }

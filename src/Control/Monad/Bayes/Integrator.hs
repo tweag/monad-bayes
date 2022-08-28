@@ -48,7 +48,7 @@ import Data.Set (Set, elems)
 import Data.Text qualified as T
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
-import Statistics.Distribution (density)
+import Statistics.Distribution qualified as Statistics
 import Statistics.Distribution.Uniform qualified as Statistics
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
@@ -60,7 +60,7 @@ runIntegrator = integrator
 
 instance MonadSample Integrator where
   type Real Integrator = Double
-  random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
+  random = fromDensityFunction $ Statistics.density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
   uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 
