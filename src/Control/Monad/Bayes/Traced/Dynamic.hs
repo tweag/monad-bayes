@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -22,7 +22,6 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-
 import Control.Monad.Bayes.Free (FreeSampler)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
@@ -66,9 +65,9 @@ instance (Monad m, RealFloat (Real m)) => Monad (Traced m) where
 
 instance MonadTrans Traced where
   lift m = undefined -- Traced $ fmap ((,) (lift $ lift m) . pure) m
-  
+
 instance MonadSample m => MonadSample (Traced m) where
-  type (Real (Traced m)) = Real m
+  type Real (Traced m) = Real m
   random = Traced $ fmap ((,) random . singleton) random
 
 instance (MonadCond m, RealFloat (Real m)) => MonadCond (Traced m) where

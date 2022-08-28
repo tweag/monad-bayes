@@ -3,9 +3,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
@@ -59,7 +59,7 @@ integrator f (Integrator a) = runCont a f
 runIntegrator = integrator
 
 instance MonadSample Integrator where
-  type (Real Integrator) = Double
+  type Real Integrator = Double
   random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
   uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls

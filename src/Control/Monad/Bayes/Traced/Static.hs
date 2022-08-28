@@ -61,7 +61,7 @@ instance MonadTrans Traced where
   lift m = undefined -- Traced (lift $ lift m) (fmap pure m)
 
 instance MonadSample m => MonadSample (Traced m) where
-  type (Real (Traced m)) = Real m
+  type Real (Traced m) = Real m
   random = Traced random (fmap singleton random)
 
 instance (MonadCond m, RealFloat (Real m)) => MonadCond (Traced m) where

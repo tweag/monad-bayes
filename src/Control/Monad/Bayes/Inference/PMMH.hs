@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class 
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population as Pop

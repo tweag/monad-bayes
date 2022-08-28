@@ -48,7 +48,7 @@ instance (Monad m, RealFloat (Real m)) => MonadCond (Weighted m) where
   score w = Weighted (modify (* w))
 
 instance MonadSample m => MonadSample (Weighted m) where
-  type (Real (Weighted m)) = Real m
+  type Real (Weighted m) = Real m
   random = lift random
 
 instance MonadSample m => MonadInfer (Weighted m)

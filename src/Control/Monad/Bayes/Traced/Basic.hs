@@ -56,8 +56,9 @@ instance (Monad m, RealFloat (Real m)) => Monad (Traced m) where
       dy = dx `bind` (traceDist . f)
 
 instance MonadSample m => MonadSample (Traced m) where
-  type (Real (Traced m)) = Real m
-  -- random = Traced random (fmap singleton random)
+  type Real (Traced m) = Real m
+
+-- random = Traced random (fmap singleton random)
 
 instance (MonadCond m, RealFloat (Real m)) => MonadCond (Traced m) where
   score w = undefined -- Traced (score w) (score w >> pure (scored w))

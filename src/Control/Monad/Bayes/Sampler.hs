@@ -53,7 +53,7 @@ type SamplerIO = Sampler (IOGenM StdGen) IO
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
-  type (Real (Sampler g m)) = Double
+  type Real (Sampler g m) = Double
   random = Sampler (ReaderT uniformDouble01M)
 
   uniform a b = Sampler (ReaderT $ uniformRM (a, b))

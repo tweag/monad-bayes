@@ -45,7 +45,7 @@ instance Functor (SamF n) where
 newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT (SamF (Real m)) m a}
   deriving newtype (Functor, Applicative, Monad)
 
-instance MonadTrans (FreeSampler) where
+instance MonadTrans (FreeSampler)
 
 instance (Real m ~ n, RealFloat (n)) => MonadFree (SamF n) (FreeSampler m) where
   wrap = FreeSampler . wrap . fmap runFreeSampler

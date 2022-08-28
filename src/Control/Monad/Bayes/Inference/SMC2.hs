@@ -41,11 +41,12 @@ setup (SMC2 m) = m
 instance MonadTrans SMC2 where
   lift = undefined -- SMC2 . lift . lift . lift
 
-instance Monad m => (Applicative (SMC2 m)) where
-instance Monad m => (Monad (SMC2 m)) where
+instance Monad m => (Applicative (SMC2 m))
+
+instance Monad m => (Monad (SMC2 m))
 
 instance MonadSample m => MonadSample (SMC2 m) where
-  type (Real (SMC2 m)) = Real m
+  type Real (SMC2 m) = Real m
   random = lift random
 
 instance (Monad m, RealFloat (Real m), MonadCond m) => MonadCond (SMC2 m) where

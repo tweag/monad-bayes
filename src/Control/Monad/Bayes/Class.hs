@@ -1,7 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Class
@@ -37,7 +37,7 @@
 --   return rain
 -- @
 module Control.Monad.Bayes.Class
-  ( MonadSample(..),
+  ( MonadSample (..),
     random,
     uniform,
     normal,
@@ -75,6 +75,7 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
+import Data.Kind (Type)
 import Data.Matrix hiding ((!))
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
@@ -90,15 +91,15 @@ import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 import Prelude hiding (Real)
-import Data.Kind (Type)
 
 class (RealFloat (Real m), Monad m) => MonadSample m where
   type Real m :: Type
+
   -- random :: m (Real m)
 
--- | Monads that can draw random variables.
--- class Monad m => MonadSample m where
-  -- | Draw from a uniform distribution.
+  -- Monads that can draw random variables.
+  --  class Monad m => MonadSample m where
+  --  | Draw from a uniform distribution.
   random ::
     -- | \(\sim \mathcal{U}(0, 1)\)
     m (Real m)
@@ -111,6 +112,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     (Real m) ->
     -- | \(\sim \mathcal{U}(a, b)\).
     m (Real m)
+
   -- uniform a b = draw (uniformDistr a b)
 
   -- | Draw from a normal distribution.
@@ -121,6 +123,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     (Real m) ->
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m (Real m)
+
   -- normal m s = draw (normalDistr m s)
 
   -- | Draw from a gamma distribution.
@@ -131,6 +134,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     (Real m) ->
     -- | \(\sim \Gamma(k, \theta)\)
     m (Real m)
+
   -- gamma shape scale = draw (gammaDistr shape scale)
 
   -- | Draw from a beta distribution.
@@ -141,6 +145,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     (Real m) ->
     -- | \(\sim \mathrm{Beta}(\alpha, \beta)\)
     m (Real m)
+
   -- beta a b = draw (betaDistr a b)
 
   -- | Draw from a Bernoulli distribution.
@@ -158,6 +163,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     v (Real m) ->
     -- | outcome category
     m Int
+
   -- categorical ps = if VG.null ps then error "empty input list" else fromPMF (ps !)
 
   -- | Draw from a categorical distribution in the log domain.
@@ -186,6 +192,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     Double ->
     -- | \(\sim\) number of failed Bernoulli trials with success probability p before first success
     m Int
+
   -- geometric = discrete . geometric0
 
   -- | Draw from a Poisson distribution.
@@ -194,6 +201,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     Double ->
     -- | \(\sim \mathrm{Pois}(\lambda)\)
     m Int
+
   -- poisson = discrete . Poisson.poisson
 
   -- | Draw from a Dirichlet distribution.

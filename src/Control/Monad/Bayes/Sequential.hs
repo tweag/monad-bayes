@@ -53,7 +53,7 @@ extract :: Await () a -> a
 extract (Await f) = f ()
 
 instance MonadSample m => MonadSample (Sequential m) where
-  type (Real (Sequential m)) = Real m
+  type Real (Sequential m) = Real m
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical

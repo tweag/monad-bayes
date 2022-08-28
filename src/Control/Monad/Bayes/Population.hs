@@ -2,8 +2,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
-{-# OPTIONS_GHC -Wno-deprecations #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Population
@@ -65,7 +65,7 @@ newtype Population m a = Population (Weighted (ListT m) a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 instance MonadSample m => MonadSample (Population m) where
-  type (Real (Population m)) = Real m
+  type Real (Population m) = Real m
 
 instance MonadCond m => MonadCond (Population m) where
   score = lift . score
@@ -226,7 +226,7 @@ extractEvidence m = fromWeightedList $ do
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
-  factor z 
+  factor z
   return $ zip xs ws
 
 -- | Push the evidence estimator as a score to the transformed monad.
