@@ -26,59 +26,59 @@ import Numeric.Log (Log (Exp))
 import Text.Pretty.Simple (pPrint)
 import Prelude hiding (words)
 
-vocabulary :: [Text]
-vocabulary = ["bear", "wolf", "python", "prolog"]
+-- vocabulary :: [Text]
+-- vocabulary = ["bear", "wolf", "python", "prolog"]
 
-topics :: [Text]
-topics = ["topic1", "topic2"]
+-- topics :: [Text]
+-- topics = ["topic1", "topic2"]
 
-type Documents = [[Text]]
+-- type Documents = [[Text]]
 
-documents :: Documents
-documents =
-  [ words "bear wolf bear wolf bear wolf python wolf bear wolf",
-    words "python prolog python prolog python prolog python prolog python prolog",
-    words "bear wolf bear wolf bear wolf bear wolf bear wolf",
-    words "python prolog python prolog python prolog python prolog python prolog",
-    words "bear wolf bear python bear wolf bear wolf bear wolf"
-  ]
+-- documents :: Documents
+-- documents =
+--   [ words "bear wolf bear wolf bear wolf python wolf bear wolf",
+--     words "python prolog python prolog python prolog python prolog python prolog",
+--     words "bear wolf bear wolf bear wolf bear wolf bear wolf",
+--     words "python prolog python prolog python prolog python prolog python prolog",
+--     words "bear wolf bear python bear wolf bear wolf bear wolf"
+--   ]
 
-wordDistPrior :: MonadSample m => m (V.Vector Double)
-wordDistPrior = dirichlet $ V.replicate (length vocabulary) 1
+-- wordDistPrior :: MonadSample m => m (V.Vector Double)
+-- wordDistPrior = dirichlet $ V.replicate (length vocabulary) 1
 
-topicDistPrior :: MonadSample m => m (V.Vector Double)
-topicDistPrior = dirichlet $ V.replicate (length topics) 1
+-- topicDistPrior :: MonadSample m => m (V.Vector Double)
+-- topicDistPrior = dirichlet $ V.replicate (length topics) 1
 
-wordIndex :: Map.Map Text Int
-wordIndex = Map.fromList $ zip vocabulary [0 ..]
+-- wordIndex :: Map.Map Text Int
+-- wordIndex = Map.fromList $ zip vocabulary [0 ..]
 
-lda ::
-  MonadInfer m =>
-  Documents ->
-  m (Map.Map Text (V.Vector (Text, Double)), [(Text, V.Vector (Text, Double))])
-lda docs = do
-  word_dist_for_topic <- do
-    ts <- List.replicateM (length topics) wordDistPrior
-    return $ Map.fromList $ zip topics ts
-  let obs doc = do
-        topic_dist <- topicDistPrior
-        let f word = do
-              topic <- (fmap (topics !!) . categorical) topic_dist
-              factor $ (Exp . log) $ (word_dist_for_topic Map.! topic) V.! (wordIndex Map.! word)
-        mapM_ f doc
-        return topic_dist
-  td <- mapM obs docs
-  return
-    ( fmap (V.zip (V.fromList vocabulary)) word_dist_for_topic,
-      zip (fmap (foldr1 (\x y -> x <> " " <> y)) docs) (fmap (V.zip $ V.fromList ["topic1", "topic2"]) td)
-    )
+-- lda ::
+--   MonadInfer m =>
+--   Documents ->
+--   m (Map.Map Text (V.Vector (Text, Double)), [(Text, V.Vector (Text, Double))])
+-- lda docs = do
+--   word_dist_for_topic <- do
+--     ts <- List.replicateM (length topics) wordDistPrior
+--     return $ Map.fromList $ zip topics ts
+--   let obs doc = do
+--         topic_dist <- topicDistPrior
+--         let f word = do
+--               topic <- (fmap (topics !!) . categorical) topic_dist
+--               factor $ (Exp . log) $ (word_dist_for_topic Map.! topic) V.! (wordIndex Map.! word)
+--         mapM_ f doc
+--         return topic_dist
+--   td <- mapM obs docs
+--   return
+--     ( fmap (V.zip (V.fromList vocabulary)) word_dist_for_topic,
+--       zip (fmap (foldr1 (\x y -> x <> " " <> y)) docs) (fmap (V.zip $ V.fromList ["topic1", "topic2"]) td)
+--     )
 
-syntheticData :: MonadSample m => Int -> Int -> m [[Text]]
-syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
-  where
-    syntheticWord = uniformD vocabulary
+-- syntheticData :: MonadSample m => Int -> Int -> m [[Text]]
+-- syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
+--   where
+--     syntheticWord = uniformD vocabulary
 
-runLDA :: IO ()
-runLDA = do
-  s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
-  pPrint (head s)
+-- runLDA :: IO ()
+-- runLDA = do
+--   s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
+--   pPrint (head s)

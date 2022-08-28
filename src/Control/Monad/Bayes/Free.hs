@@ -2,6 +2,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Free
@@ -23,33 +25,37 @@ module Control.Monad.Bayes.Free
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample (random))
+import Control.Monad.Bayes.Class (MonadSample (..))
 import Control.Monad.State (evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Data.Functor.Identity (Identity, runIdentity)
+import Prelude hiding (Real)
 
 -- | Random sampling functor.
-newtype SamF a = Random (Double -> a)
+newtype SamF n a = Random (n -> a)
 
-instance Functor SamF where
+instance Functor (SamF n) where
   fmap f (Random k) = Random (f . k)
 
 -- | Free monad transformer over random sampling.
 --
 -- Uses the Church-encoded version of the free monad for efficiency.
-newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT SamF m a}
-  deriving newtype (Functor, Applicative, Monad, MonadTrans)
+newtype FreeSampler m a = FreeSampler {runFreeSampler :: FT (SamF (Real m)) m a}
+  deriving newtype (Functor, Applicative, Monad)
 
-instance MonadFree SamF (FreeSampler m) where
+instance MonadTrans (FreeSampler) where
+
+instance (Real m ~ n, RealFloat (n)) => MonadFree (SamF n) (FreeSampler m) where
   wrap = FreeSampler . wrap . fmap runFreeSampler
 
-instance Monad m => MonadSample (FreeSampler m) where
+instance (Monad m, RealFloat (Real m)) => MonadSample (FreeSampler m) where
+  type Real (FreeSampler m) = Real m
   random = FreeSampler $ liftF (Random id)
 
 -- | Hoist 'FreeSampler' through a monad transform.
-hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
+hoist :: (Real m ~ Real n, Monad m, Monad n) => (forall x. m x -> n x) -> FreeSampler m a -> FreeSampler n a
 hoist f (FreeSampler m) = FreeSampler (hoistFT f m)
 
 -- | Execute random sampling in the transformed monad.
@@ -59,7 +65,7 @@ interpret (FreeSampler m) = iterT f m
     f (Random k) = random >>= k
 
 -- | Execute computation with supplied values for random choices.
-withRandomness :: Monad m => [Double] -> FreeSampler m a -> m a
+withRandomness :: Monad m => [Real m] -> FreeSampler m a -> m a
 withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness
   where
     f (Random k) = do
@@ -71,7 +77,7 @@ withRandomness randomness (FreeSampler m) = evalStateT (iterTM f m) randomness
 -- | Execute computation with supplied values for a subset of random choices.
 -- Return the output value and a record of all random choices used, whether
 -- taken as input or drawn using the transformed monad.
-withPartialRandomness :: MonadSample m => [Double] -> FreeSampler m a -> m (a, [Double])
+withPartialRandomness :: MonadSample m => [Real m] -> FreeSampler m a -> m (a, [Real m])
 withPartialRandomness randomness (FreeSampler m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness
   where
@@ -87,5 +93,5 @@ withPartialRandomness randomness (FreeSampler m) =
       k x
 
 -- | Like 'withPartialRandomness', but use an arbitrary sampling monad.
-traced :: MonadSample m => [Double] -> FreeSampler Identity a -> m (a, [Double])
-traced randomness m = withPartialRandomness randomness $ hoist (return . runIdentity) m
+traced :: MonadSample m => [Real m] -> FreeSampler Identity a -> m (a, [Real m])
+traced randomness m = undefined -- withPartialRandomness randomness $ hoist (return . runIdentity) m

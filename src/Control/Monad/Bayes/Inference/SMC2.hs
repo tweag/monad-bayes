@@ -1,5 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC2
@@ -19,10 +21,6 @@ module Control.Monad.Bayes.Inference.SMC2
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
-  )
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
@@ -31,28 +29,33 @@ import Control.Monad.Bayes.Sequential (Sequential)
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
 import Numeric.Log (Log)
+import Prelude hiding (Real)
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
 newtype SMC2 m a = SMC2 (Sequential (Traced (Population m)) a)
-  deriving newtype (Functor, Applicative, Monad)
+  deriving newtype (Functor)
 
 setup :: SMC2 m a -> Sequential (Traced (Population m)) a
 setup (SMC2 m) = m
 
 instance MonadTrans SMC2 where
-  lift = SMC2 . lift . lift . lift
+  lift = undefined -- SMC2 . lift . lift . lift
+
+instance Monad m => (Applicative (SMC2 m)) where
+instance Monad m => (Monad (SMC2 m)) where
 
 instance MonadSample m => MonadSample (SMC2 m) where
+  type (Real (SMC2 m)) = Real m
   random = lift random
 
-instance Monad m => MonadCond (SMC2 m) where
+instance (Monad m, RealFloat (Real m), MonadCond m) => MonadCond (SMC2 m) where
   score = SMC2 . score
 
-instance MonadSample m => MonadInfer (SMC2 m)
+instance MonadInfer m => MonadInfer (SMC2 m)
 
 -- | Sequential Monte Carlo squared.
 smc2 ::
-  MonadSample m =>
+  (MonadSample m, MonadInfer m) =>
   -- | number of time steps
   Int ->
   -- | number of inner particles
@@ -65,7 +68,7 @@ smc2 ::
   Sequential (Traced (Population m)) b ->
   -- | model
   (b -> Sequential (Population (SMC2 m)) a) ->
-  Population m [(a, Log Double)]
+  Population m [(a, Log (Real m))]
 smc2 k n p t param model =
   rmsmc
     MCMCConfig {numMCMCSteps = t, proposal = SingleSiteMH, numBurnIn = 0}

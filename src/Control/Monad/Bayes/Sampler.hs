@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -30,17 +31,6 @@ where
 
 import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
-  ( MonadSample
-      ( bernoulli,
-        beta,
-        categorical,
-        gamma,
-        geometric,
-        normal,
-        random,
-        uniform
-      ),
-  )
 import Control.Monad.IO.Class
 import Control.Monad.ST (ST)
 import Control.Monad.Trans.Reader (ReaderT (..), runReaderT)
@@ -63,6 +53,7 @@ type SamplerIO = Sampler (IOGenM StdGen) IO
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
 instance StatefulGen g m => MonadSample (Sampler g m) where
+  type (Real (Sampler g m)) = Double
   random = Sampler (ReaderT uniformDouble01M)
 
   uniform a b = Sampler (ReaderT $ uniformRM (a, b))

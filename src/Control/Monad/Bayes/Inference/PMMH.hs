@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, MonadSample, latent)
+import Control.Monad.Bayes.Class 
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population as Pop
@@ -33,6 +33,7 @@ import Control.Monad.Bayes.Traced.Static (Traced)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (lift)
 import Numeric.Log (Log)
+import Prelude hiding (Real)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
@@ -41,7 +42,7 @@ pmmh ::
   SMCConfig (Weighted m) ->
   Traced (Weighted m) a1 ->
   (a1 -> Sequential (Population (Weighted m)) a2) ->
-  m [[(a2, Log Double)]]
+  m [[(a2, Log (Real m))]]
 pmmh mcmcConf smcConf param model =
   mcmc
     mcmcConf
@@ -59,5 +60,5 @@ pmmhBayesianModel ::
   MCMCConfig ->
   SMCConfig (Weighted m) ->
   (forall m. MonadInfer m => Bayesian m a1 a2) ->
-  m [[(a2, Log Double)]]
+  m [[(a2, Log (Real m))]]
 pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (latent bm) (generative bm)

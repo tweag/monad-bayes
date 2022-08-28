@@ -3,6 +3,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Population
@@ -41,11 +42,6 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadCond,
-    MonadInfer,
-    MonadSample (categorical, logCategorical, random, uniform),
-    factor,
-  )
 import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,
@@ -62,45 +58,53 @@ import Data.Vector ((!))
 import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
 import Numeric.Log qualified as Log
-import Prelude hiding (all, sum)
+import Prelude hiding (Real, all, sum)
 
 -- | A collection of weighted samples, or particles.
 newtype Population m a = Population (Weighted (ListT m) a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
+
+instance MonadSample m => MonadSample (Population m) where
+  type (Real (Population m)) = Real m
+
+instance MonadCond m => MonadCond (Population m) where
+  score = lift . score
+
+instance MonadInfer m => MonadInfer (Population m)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-population, runPopulation :: Population m a -> m [(a, Log Double)]
+population, runPopulation :: RealFloat (Real m) => Population m a -> m [(a, Log (Real m))]
 population (Population m) = runListT $ weighted m
 
 -- | deprecated synonym
 runPopulation = population
 
 -- | Explicit representation of the weighted sample.
-explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
+explicitPopulation :: (Floating (Real m), Functor m, RealFloat (Real m)) => Population m a -> m [(a, Real m)]
 explicitPopulation = fmap (map (second (exp . ln))) . population
 
 -- | Initialize 'Population' with a concrete weighted sample.
-fromWeightedList :: Monad m => m [(a, Log Double)] -> Population m a
+fromWeightedList :: (Monad m, RealFloat (Real m)) => m [(a, Log (Real m))] -> Population m a
 fromWeightedList = Population . withWeight . ListT
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
 -- It is therefore safe to use 'spawn' in arbitrary places in the program
 -- without introducing bias.
-spawn :: Monad m => Int -> Population m ()
+spawn :: (Monad m, RealFloat (Real m)) => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
-withParticles :: Monad m => Int -> Population m a -> Population m a
+withParticles :: (Monad m, RealFloat (Real m)) => Int -> Population m a -> Population m a
 withParticles n = (spawn n >>)
 
 resampleGeneric ::
   MonadSample m =>
   -- | resampler
-  (V.Vector Double -> m [Int]) ->
+  (V.Vector (Real m) -> m [Int]) ->
   Population m a ->
   Population m a
 resampleGeneric resampler m = fromWeightedList $ do
@@ -135,7 +139,7 @@ resampleGeneric resampler m = fromWeightedList $ do
 -- Q^{(m)}=\sum_{k=1}^{m} w^{(k)}
 -- \]
 -- and \(w^{(k)}\) are the weights. See also [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
-systematic :: Double -> V.Vector Double -> [Int]
+systematic :: RealFloat n => n -> V.Vector n -> [Int]
 systematic u ps = f 0 (u / fromIntegral n) 0 0 []
   where
     prob i = ps V.! i
@@ -172,7 +176,7 @@ resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 -- and \(w^{(k)}\) are the weights.
 --
 -- The conditional variance of stratified sampling is always smaller than that of multinomial sampling and it is also unbiased - see  [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
-stratified :: MonadSample m => V.Vector Double -> m [Int]
+stratified :: MonadSample m => V.Vector (Real m) -> m [Int]
 stratified weights = do
   let bigN = V.length weights
   dithers <- V.replicateM bigN (uniform 0.0 1.0)
@@ -200,7 +204,7 @@ resampleStratified = resampleGeneric stratified
 -- | Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 -- times drawn at random according to the weights where \(n\) is the
 -- length of vector of weights.
-multinomial :: MonadSample m => V.Vector Double -> m [Int]
+multinomial :: MonadSample m => V.Vector (Real m) -> m [Int]
 multinomial ps = replicateM (V.length ps) (categorical ps)
 
 -- | Resample the population using the underlying monad and a multinomial resampling scheme.
@@ -214,7 +218,7 @@ resampleMultinomial = resampleGeneric multinomial
 -- | Separate the sum of weights into the 'Weighted' transformer.
 -- Weights are normalized after this operation.
 extractEvidence ::
-  Monad m =>
+  (Monad m, RealFloat (Real m)) =>
   Population m a ->
   Population (Weighted m) a
 extractEvidence m = fromWeightedList $ do
@@ -222,13 +226,13 @@ extractEvidence m = fromWeightedList $ do
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
-  factor z
+  factor z 
   return $ zip xs ws
 
 -- | Push the evidence estimator as a score to the transformed monad.
 -- Weights are normalized after this operation.
 pushEvidence ::
-  MonadCond m =>
+  (MonadCond m, RealFloat (Real m)) =>
   Population m a ->
   Population m a
 pushEvidence = hoist applyWeight . extractEvidence
@@ -247,7 +251,7 @@ proper m = do
   return x
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
-evidence :: (Monad m) => Population m a -> m (Log Double)
+evidence :: (Monad m, RealFloat (Real m)) => Population m a -> m (Log (Real m))
 evidence = extractWeight . population . extractEvidence
 
 -- | Picks one point from the population and uses model evidence as a 'score'
@@ -261,7 +265,7 @@ collapse ::
 collapse = applyWeight . proper
 
 -- | Population average of a function, computed using unnormalized weights.
-popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
+popAvg :: (Monad m, Floating (Real m), RealFloat (Real m)) => (a -> (Real m)) -> Population m a -> m (Real m)
 popAvg f p = do
   xs <- explicitPopulation p
   let ys = map (\(x, w) -> f x * w) xs
@@ -270,7 +274,7 @@ popAvg f p = do
 
 -- | Applies a transformation to the inner monad.
 hoist ::
-  Monad n =>
+  (Real m ~ Real n, Monad n, RealFloat (Real n)) =>
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a

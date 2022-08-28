@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Enumerator
@@ -34,10 +35,6 @@ import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, logCategorical, random),
-  )
 import Control.Monad.Trans.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
 import Data.List (sortOn)
@@ -48,6 +45,7 @@ import Data.Ord (Down (Down))
 import Data.Vector qualified as VV
 import Data.Vector.Generic qualified as V
 import Numeric.Log as Log (Log (..), sum)
+import Prelude hiding (Real)
 
 -- | An exact inference transformer that integrates
 -- discrete random variables by enumerating all execution paths.
@@ -55,6 +53,7 @@ newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
 instance MonadSample Enumerator where
+  type Real Enumerator = Double
   random = error "Infinitely supported random variables not supported in Enumerator"
   bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
   categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
@@ -131,7 +130,7 @@ toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
 toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
 
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution :: (MonadSample n, Real n ~ Double) => Enumerator a -> n a
 enumerateToDistribution model = do
   let samples = logExplicit model
   let (support, logprobs) = unzip samples
