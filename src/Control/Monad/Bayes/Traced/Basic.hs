@@ -1,4 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Basic
@@ -9,21 +11,15 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Basic
-  ( Traced,
-    hoist,
-    marginal,
-    mhStep,
-    mh,
-  )
 where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
-    MonadSample (random),
+    MonadSample (random, Real),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -34,33 +30,36 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Prelude hiding (Real)
 
 -- | Tracing monad that records random choices made in the program.
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
-    model :: Weighted (FreeSampler Identity) a,
+    model :: Weighted (Density Identity) a,
     -- | Record trace and output.
-    traceDist :: m (Trace a)
+    traceDist :: m (Trace (Real m) a)
   }
 
 instance Monad m => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
 
-instance Monad m => Applicative (Traced m) where
+instance (Monad m, RealFloat (Real m)) => Applicative (Traced m) where
   pure x = Traced (pure x) (pure (pure x))
   (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<*>) df dx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad m, RealFloat (Real m)) => Monad (Traced m) where
   (Traced mx dx) >>= f = Traced my dy
     where
       my = mx >>= model . f
       dy = dx `bind` (traceDist . f)
 
 instance MonadSample m => MonadSample (Traced m) where
-  random = Traced random (fmap singleton random)
+  type Real (Traced m) = Real m
 
-instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced (score w) (score w >> pure (scored w))
+-- random = Traced random (fmap singleton random)
+
+instance (MonadCond m, RealFloat (Real m)) => MonadCond (Traced m) where
+  score w = undefined -- Traced (score w) (score w >> pure (scored w))
 
 instance MonadInfer m => MonadInfer (Traced m)
 

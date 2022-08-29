@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sequential
@@ -26,10 +27,6 @@ module Control.Monad.Bayes.Sequential
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, random),
-  )
 import Control.Monad.Coroutine
   ( Coroutine (..),
     bounce,
@@ -42,6 +39,7 @@ import Control.Monad.Coroutine.SuspensionFunctors
   )
 import Control.Monad.Trans (MonadIO, MonadTrans (..))
 import Data.Either (isRight)
+import Prelude hiding (Real)
 
 -- | Represents a computation that can be suspended at certain points.
 -- The intermediate monadic effects can be extracted, which is particularly
@@ -55,6 +53,7 @@ extract :: Await () a -> a
 extract (Await f) = f ()
 
 instance MonadSample m => MonadSample (Sequential m) where
+  type Real (Sequential m) = Real m
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
@@ -115,5 +114,5 @@ sequentially,
     m a
 sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 
--- | deprecated synonym
+-- | synonym
 sis = sequentially

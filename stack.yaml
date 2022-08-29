@@ -1,7 +1,10 @@
-resolver: nightly-2022-07-26
+resolver: nightly-2022-03-19
 packages:
   - "."
 flags:
   monad-bayes:
     dev: True
 
+extra-deps:
+- monad-coroutine-0.9.2@sha256:33b0851419996ddacf665101369bc9e5e80263758564841eba9c9f65a8a75553,1302
+- monad-parallel-0.8@sha256:44f64399061036580acfa627c1f07f5481553f058de7d54ab9953801f75d5e86,1155

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
@@ -34,7 +35,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
-import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
+import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Trans.Cont
   ( Cont,
@@ -47,7 +48,7 @@ import Data.Set (Set, elems)
 import Data.Text qualified as T
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
-import Statistics.Distribution (density)
+import Statistics.Distribution qualified as Statistics
 import Statistics.Distribution.Uniform qualified as Statistics
 
 newtype Integrator a = Integrator {getCont :: Cont Double a}
@@ -58,7 +59,8 @@ integrator f (Integrator a) = runCont a f
 runIntegrator = integrator
 
 instance MonadSample Integrator where
-  random = fromDensityFunction $ density $ Statistics.uniformDistr 0 1
+  type Real Integrator = Double
+  random = fromDensityFunction $ Statistics.density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
   uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls
 

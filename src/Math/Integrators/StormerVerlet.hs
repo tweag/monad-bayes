@@ -25,7 +25,7 @@ type Integrator a =
 -- | Störmer-Verlet integration scheme for systems of the form
 -- \(\mathbb{H}(p,q) = T(p) + V(q)\)
 stormerVerlet2H ::
-  (Applicative f, Num (f a), Show (f a), Fractional a) =>
+  (Applicative f, Num (f a), Fractional a) =>
   -- | Step size
   a ->
   -- | \(\frac{\partial H}{\partial q}\)

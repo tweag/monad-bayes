@@ -1,4 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
@@ -20,11 +22,7 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
-  )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -35,12 +33,13 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (Weighted)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+import Prelude hiding (Real)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
+newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace (Real m) a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where
@@ -50,14 +49,14 @@ instance Monad m => Functor (Traced m) where
     let t' = fmap f t
     return (m', t')
 
-instance Monad m => Applicative (Traced m) where
+instance (Monad m, RealFloat (Real m)) => Applicative (Traced m) where
   pure x = Traced $ pure (pure x, pure x)
   (Traced cf) <*> (Traced cx) = Traced $ do
     (mf, tf) <- cf
     (mx, tx) <- cx
     return (mf <*> mx, tf <*> tx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad m, RealFloat (Real m)) => Monad (Traced m) where
   (Traced cx) >>= f = Traced $ do
     (mx, tx) <- cx
     let m = mx >>= pushM . fmap fst . runTraced . f
@@ -65,13 +64,14 @@ instance Monad m => Monad (Traced m) where
     return (m, t)
 
 instance MonadTrans Traced where
-  lift m = Traced $ fmap ((,) (lift $ lift m) . pure) m
+  lift m = undefined -- Traced $ fmap ((,) (lift $ lift m) . pure) m
 
 instance MonadSample m => MonadSample (Traced m) where
+  type Real (Traced m) = Real m
   random = Traced $ fmap ((,) random . singleton) random
 
-instance MonadCond m => MonadCond (Traced m) where
-  score w = Traced $ fmap (score w,) (score w >> pure (scored w))
+instance (MonadCond m, RealFloat (Real m)) => MonadCond (Traced m) where
+  score w = undefined -- Traced $ fmap (score w,) (score w >> pure (scored w))
 
 instance MonadInfer m => MonadInfer (Traced m)
 
@@ -84,7 +84,7 @@ marginal (Traced c) = fmap (output . snd) c
 
 -- | Freeze all traced random choices to their current values and stop tracing
 -- them.
-freeze :: Monad m => Traced m a -> Traced m a
+freeze :: (Monad m, RealFloat (Real m)) => Traced m a -> Traced m a
 freeze (Traced c) = Traced $ do
   (_, t) <- c
   let x = output t
