@@ -51,6 +51,7 @@ module Control.Monad.Bayes.Class
     poisson,
     dirichlet,
     MonadCond,
+    CustomReal,
     score,
     factor,
     condition,
@@ -91,8 +92,11 @@ import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 import Prelude hiding (Real)
+import Data.Number.Erf (InvErf (inverf))
 
-class (RealFloat (Real m), Monad m) => MonadSample m where
+type CustomReal a = (RealFloat a, InvErf a)
+
+class (CustomReal (Real m), Monad m) => MonadSample m where
   type Real m :: Type
 
   -- random :: m (Real m)
@@ -123,8 +127,7 @@ class (RealFloat (Real m), Monad m) => MonadSample m where
     (Real m) ->
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m (Real m)
-
-  -- normal m s = draw (normalDistr m s)
+  normal m s = inverf <$> random -- draw (normalDistr m s)
 
   -- | Draw from a gamma distribution.
   gamma ::

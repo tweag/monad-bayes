@@ -7,7 +7,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
+  ( Trace(..),
     singleton,
     output,
     scored,
@@ -15,6 +15,7 @@ module Control.Monad.Bayes.Traced.Common
     mhTrans,
     mhTrans',
     burnIn,
+    _variables
   )
 where
 
@@ -40,6 +41,10 @@ data Trace n a = Trace
     -- | The probability of observing this particular sequence.
     probDensity :: Log n
   }
+
+_variables :: Functor m => ([Real m] -> m [Real m])
+  -> Trace (Real m) a -> m (Trace (Real m) a)
+_variables f tr@Trace {variables = v, output = o, probDensity = p} = fmap (\v -> tr {variables = v}) (f v) 
 
 instance Functor (Trace n) where
   fmap f t = t {output = f (output t)}
@@ -69,6 +74,8 @@ bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
+
+
 
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.

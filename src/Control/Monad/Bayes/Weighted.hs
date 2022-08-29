@@ -50,6 +50,7 @@ instance (Monad m, RealFloat (Real m)) => MonadCond (Weighted m) where
 instance MonadSample m => MonadSample (Weighted m) where
   type Real (Weighted m) = Real m
   random = lift random
+  normal m v = lift $ normal m v
 
 instance MonadSample m => MonadInfer (Weighted m)
 

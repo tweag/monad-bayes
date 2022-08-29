@@ -25,7 +25,7 @@ module Control.Monad.Bayes.Density.Free
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample (..))
+import Control.Monad.Bayes.Class 
 import Control.Monad.State (evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
@@ -47,10 +47,10 @@ newtype Density m a = Density {runDensity :: FT (SamF (Real m)) m a}
 
 instance MonadTrans (Density)
 
-instance (Real m ~ n, RealFloat (n)) => MonadFree (SamF n) (Density m) where
+instance (Real m ~ n, CustomReal (n)) => MonadFree (SamF n) (Density m) where
   wrap = Density . wrap . fmap runDensity
 
-instance (Monad m, RealFloat (Real m)) => MonadSample (Density m) where
+instance (Monad m, CustomReal (Real m)) => MonadSample (Density m) where
   type Real (Density m) = Real m
   random = Density $ liftF (Random id)
 
