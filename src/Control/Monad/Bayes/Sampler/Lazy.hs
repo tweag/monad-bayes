@@ -6,15 +6,12 @@
 -- | This is a port of the implementation of LazyPPL: https://lazyppl.bitbucket.io/
 module Control.Monad.Bayes.Sampler.Lazy where
 
-import Control.Monad
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample (normal, random), condition)
+import Control.Monad (ap, liftM)
+import Control.Monad.Bayes.Class (MonadSample (random))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
-import Control.Monad.Extra (iterateM)
-import Control.Monad.State.Lazy (State, get, put, runState)
 import Numeric.Log (Log (..))
 import System.Random
-  ( Random (randoms),
-    RandomGen (split),
+  ( RandomGen (split),
     getStdGen,
     newStdGen,
   )
@@ -70,40 +67,5 @@ sampler m = newStdGen *> (runSampler m . randomTree <$> getStdGen)
 independent :: Monad m => m a -> m [a]
 independent = sequence . repeat
 
--- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs
 weightedsamples :: Weighted Sampler a -> IO [(a, Log Double)]
 weightedsamples = sampler . independent . weighted
-
--- wiener :: Prob (Double -> State (Data.Map.Map Double Double) Double)
--- wiener = Prob $ \(Tree _ gs) x -> do
---         modify (Data.Map.insert 0 0)
---         table <- get
---         case Data.Map.lookup x table of
---             Just y -> return y
---             Nothing -> return $ fromMaybe undefined $ do
---                         let lower = do
---                                         l <- findMaxLower x (keys table)
---                                         v <- Data.Map.lookup l table
---                                         return (l,v)
---                         let upper = do {u <- find (> x) (keys table) ;
---                                         v    <- Data.Map.lookup u table ; return (u,v) }
---                         let m = bridge lower x upper
---                         let y = runSampler m (gs !! (1 + size table))
---                         return y
-
---                                 --  modify (Data.Map.insert x y)
-
--- findMaxLower :: Double -> [Double] -> Maybe Double
--- findMaxLower d [] = Nothing
--- findMaxLower d (x:xs) = let y = findMaxLower d xs in
---                        case y of
---                            Nothing -> if x < d then Just x else Nothing
---                            Just m -> do
---                                           if x > m && x < d then Just x else Just m
-
--- bridge :: Maybe (Double,Double) -> Double -> Maybe (Double,Double) -> Prob Double
--- -- not needed since the table is always initialized with (0, 0)
--- -- bridge Nothing y Nothing = if y==0 then return 0 else normal 0 (sqrt y)
--- bridge (Just (x,x')) y Nothing = normal x' (sqrt (y-x))
--- bridge Nothing y (Just (z,z')) = normal z' (sqrt (z-y))
--- bridge (Just (x,x')) y (Just (z,z')) = normal (x' + ((y-x)*(z'-x')/(z-x))) (sqrt ((z-y)*(y-x)/(z-x)))

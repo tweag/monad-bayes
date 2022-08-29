@@ -517,7 +517,7 @@ Density m a ~ m (Either a (Double -> (Density m a)))
 
 Since `FreeT` is a transformer, we can use `lift` to get a `MonadSample` instance.
 
-`density` is then defined using the canonical property of the free monad (transformer), embodied by `iterFT`, which interprets `SamF` in the appropriate way:
+`density` is then defined using the folding pattern `iterFT`, which interprets `SamF` in the appropriate way:
 
 ```haskell
 density :: MonadSample m => [Double] -> Density m a -> m (a, [Double])

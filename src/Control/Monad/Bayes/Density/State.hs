@@ -14,9 +14,9 @@ import Control.Monad.Bayes.Class (MonadSample (random))
 import Control.Monad.State (MonadState (get, put), MonadTrans, StateT, evalStateT)
 import Control.Monad.Trans.Class (MonadTrans (lift))
 import Control.Monad.Trans.Writer.Strict (WriterT, runWriterT)
-import Control.Monad.Writer (MonadWriter, tell)
+import Control.Monad.Writer (MonadWriter (..))
 
-newtype Density m a = Density (WriterT [Double] (StateT [Double] m) a) deriving newtype (Functor, Applicative, Monad)
+newtype Density m a = Density {runDensity :: WriterT [Double] (StateT [Double] m) a} deriving newtype (Functor, Applicative, Monad)
 
 instance MonadTrans Density where
   lift = Density . lift . lift
@@ -27,6 +27,8 @@ instance Monad m => MonadState [Double] (Density m) where
 
 instance Monad m => MonadWriter [Double] (Density m) where
   tell = Density . tell
+  listen = Density . listen . runDensity
+  pass = Density . pass . runDensity
 
 instance MonadSample m => MonadSample (Density m) where
   random = do

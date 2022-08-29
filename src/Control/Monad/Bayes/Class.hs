@@ -74,20 +74,25 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import Data.Matrix hiding ((!))
+import Data.Matrix
+  ( Matrix,
+    cholDecomp,
+    colVector,
+    getCol,
+    multStd,
+  )
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
-    DiscreteDistr (logProbability, probability),
+    DiscreteDistr (probability),
   )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
 import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
-import Statistics.Distribution.Poisson qualified as S
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.

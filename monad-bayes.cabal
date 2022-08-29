@@ -131,7 +131,7 @@ executable example
 
   if flag(dev)
     ghc-options:
-      -threaded -O2 -Wall -Wcompat -Wincomplete-record-updates
+      -O2 -Wall -Wcompat -Wincomplete-record-updates
       -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
 
   else

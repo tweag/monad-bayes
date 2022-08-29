@@ -28,7 +28,6 @@ import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
-    mhTrans,
     mhTransFree,
     scored,
     singleton,
