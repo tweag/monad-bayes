@@ -72,10 +72,10 @@ scatterplot ((xs, ys), cs) cE f mode =
         ]
 
 class Plottable a where
-  plotVega :: a -> VegaLiteLab
+  plot :: a -> VegaLiteLab
 
 instance Plottable [((Double, Double), T.Text)] where
-  plotVega ls =
+  plot ls =
     vlShow $
       scatterplot
         (first unzip $ unzip ls)
@@ -84,7 +84,7 @@ instance Plottable [((Double, Double), T.Text)] where
         Circle
 
 instance Plottable [((Double, Double), Double)] where
-  plotVega ls =
+  plot ls =
     vlShow $
       scatterplot
         (first unzip $ unzip (ls))
@@ -100,7 +100,7 @@ instance Plottable [((Double, Double), Double)] where
         Circle
 
 instance Plottable ([Double], (Double, Double)) where
-  plotVega ls =
+  plot ls =
     let cs = take (length $ fst ls) $ Prelude.repeat 1
         xs = fst ls
         (slope, intercept) = snd ls
@@ -113,7 +113,9 @@ instance Plottable ([Double], (Double, Double)) where
             Line
 
 instance Plottable [(T.Text, Double)] where
-  plotVega ls = vlShow $ barplot $ unzip ls
+  plot ls = vlShow $ barplot $ unzip ls
 
 instance Plottable [(Double, Double)] where
-  plotVega ls = vlShow $ hist $ unzip ls
+  plot ls = vlShow $ hist $ unzip ls
+
+type Plot = VegaLiteLab

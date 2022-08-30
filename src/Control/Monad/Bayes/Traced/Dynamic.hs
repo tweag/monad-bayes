@@ -24,11 +24,11 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
-    mhTrans,
+    mhTransFree,
     scored,
     singleton,
   )
@@ -38,9 +38,9 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (FreeSampler m) a, Trace a)}
+newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace a)}
 
-pushM :: Monad m => m (Weighted (FreeSampler m) a) -> Weighted (FreeSampler m) a
+pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
 instance Monad m => Functor (Traced m) where
@@ -94,7 +94,7 @@ freeze (Traced c) = Traced $ do
 mhStep :: MonadSample m => Traced m a -> Traced m a
 mhStep (Traced c) = Traced $ do
   (m, t) <- c
-  t' <- mhTrans m t
+  t' <- mhTransFree m t
   return (m, t')
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
@@ -106,6 +106,6 @@ mh n (Traced c) = do
         | k <= 0 = return (t :| [])
         | otherwise = do
           (x :| xs) <- f (k - 1)
-          y <- mhTrans m x
+          y <- mhTransFree m x
           return (y :| x : xs)
   fmap (map output . NE.toList) (f n)

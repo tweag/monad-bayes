@@ -391,6 +391,7 @@ Summary of key info on `Sequential`:
 - `instance MonadSample m => instance MonadSample (Sequential m)`
 - `instance MonadCond m => instance MonadCond (Sequential m)`
 
+
 ```haskell
 newtype Sequential m a = 
     Sequential {runSequential :: Coroutine (Await ()) m a}
@@ -474,34 +475,36 @@ hoistFirst :: (forall x. m x -> m x) -> Sequential m a -> Sequential m a
 hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 ```
 
-<!-- As an example, consider:
-
-TODO: Enumerator example with `trace` -->
-
 When `m` is `Population n` for some other `n`, then `resampleGeneric` gives us one example of the natural transformation we want. In other words, operating in `Sequential (Population n)` works, and not only works but does something statistically interesting: particle filtering (aka SMC).
 
 
 
 
-### FreeSampler
+### Density
 
-Summary of key info on `FreeSampler`:
+Summary of key info on `Density`:
 
-- `FreeSampler :: (Type -> Type) -> (Type -> Type)`
-- `instance MonadSample (FreeSampler m)`
+- `Density :: (Type -> Type) -> (Type -> Type)`
+- `instance MonadSample (Density m)`
 -  **No** instance for `MonadCond`
 
-`FreeSampler m` is not often going to be used on its own, but instead as part of the `Traced` type, defined below. A `FreeSampler m a` represents a reified execution of the program.
+A *trace* of a program of type `MonadSample m => m a` is an execution of the program, so a choice for each of the random values. Recall that `random` underlies all of the random values in a program, so a trace for a program is fully specified by a list of `Double`s, giving the value of each call to `random`.
 
-`FreeSampler m` is best understood if you're familiar with the standard use of a free monad to construct a domain specific language. For probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming). Here's the definition:
+With this in mind, a `Density m a` is an interpretation of a probabilistic program as a function from a trace to the *density* of that execution of the program.
+
+Monad-bayes offers two implementations, in `Control.Monad.Bayes.Density.State` and `Control.Monad.Bayes.Density.Free`. The first is slow but easy to understand, the second is more sophisticated, but faster.
+
+The former is relatively straightforward: the `MonadSample` instance implements `random` as `get`ting the trace (using `get` from `MonadState`), using (and removing) the first element (`put` from `MonadState`), and writing that element to the output (using `tell` from `MonadWriter`). If the trace is empty, the `random` from the underlying monad is used, but the result is still written with `tell`.
+
+The latter is best understood if you're familiar with the standard use of a free monad to construct a domain specific language. For probability in particular, see this [blog post](https://jtobin.io/simple-probabilistic-programming). Here's the definition:
 
 ```haskell
 newtype SamF a = Random (Double -> a)
-newtype FreeSampler m a = 
-    FreeSampler {runFreeSampler :: FT SamF m a}
+newtype Density m a = 
+    Density {density :: FT SamF m a}
     
-instance Monad m => MonadSample (FreeSampler m) where
-  random = FreeSampler $ liftF (Random id)
+instance Monad m => MonadSample (Density m) where
+  random = Density $ liftF (Random id)
 ```
 
 The monad-bayes implementation uses a more efficient implementation of `FreeT`, namely `FT` from the `free` package, known as the *Church transformed Free monad*. This is a technique explained in https://begriffs.com/posts/2016-02-04-difference-lists-and-codennsity.html. But that only changes the operational semantics - performance aside, it works just the same as the standard `FreeT` datatype. 
@@ -509,21 +512,16 @@ The monad-bayes implementation uses a more efficient implementation of `FreeT`, 
 If you unpack the definition, you get:
 
 ```haskell
-FreeSampler m a ~ m (Either a (Double -> (FreeSampler m a)))
+Density m a ~ m (Either a (Double -> (Density m a)))
 ```
-
-As you can see, this is rather like `Coroutine`, except to "resume", you must provide a new `Double`, corresponding to the value of some particular random choice.
 
 Since `FreeT` is a transformer, we can use `lift` to get a `MonadSample` instance.
 
-
-A *trace* of a program of type `MonadSample m => m a` is an execution of the program, so a choice for each of the random values. Recall that `random` underlies all of the random values in a program, so a trace for a program is fully specified by a list of `Double`s, giving the value of each call to `random`.
-
-Given a probabilistic program interpreted in `FreeSampler m`, we can "run" it to produce a program in the underlying monad `m`. For simplicity, consider the case of a program `bernoulli 0.5 :: FreeSampler SamplerIO Bool`. We can then use the following function:
+`density` is then defined using the folding pattern `iterFT`, which interprets `SamF` in the appropriate way:
 
 ```haskell
-withPartialRandomness :: MonadSample m => [Double] -> FreeSampler m a -> m (a, [Double])
-withPartialRandomness randomness (FreeSampler m) =
+density :: MonadSample m => [Double] -> Density m a -> m (a, [Double])
+density randomness (Density m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness
   where
     f (Random k) = do
@@ -538,7 +536,7 @@ withPartialRandomness randomness (FreeSampler m) =
       k x
 ```
 
-This takes a list of `Double`s (a representation of a trace), and a probabilistic program like `example`, and gives back a `SamplerIO (Bool, [Double])`. At each call to `random` in `example`, the next double in the list is used. If the list of doubles runs out, calls are made to `random` using the underlying monad, which in our example is `SamplerIO`. Hence "with*Partial*Randomness". 
+This takes a list of `Double`s (a representation of a trace), and a probabilistic program like `example`, and gives back a `SamplerIO (Bool, [Double])`. At each call to `random` in `example`, the next double in the list is used. If the list of doubles runs out, calls are made to `random` using the underlying monad.
 
 <!-- The intuition here is that given a list of doubles in $[0,1]$, you can evaluate any probabilistic program. If your list of numbers is shorter than the number of calls to `random` in the program, the remaining calls are made in the underlying `MonadSample` instance `m`.  -->
 
@@ -554,7 +552,7 @@ Summary of key info on `Traced`:
 - `instance MonadSample m => MonadSample (Traced m)`
 - `instance MonadCond m => MonadCond (Traced m)`
 
-`Traced m` is actually several related interpretations, each built on top of `FreeSampler`. These range in complexity.
+`Traced m` is actually several related interpretations, each built on top of `Density`. These range in complexity.
 
 
 
@@ -576,12 +574,12 @@ data Trace a = Trace
   }
 ```
 
-We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what `FreeSampler` is for. 
+We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what `Density` is for. 
 
 The simplest version of `Traced` is in `Control.Monad.Bayes.Traced.Basic`
 
 ```haskell
-Traced m a ~ (FreeSampler Identity a, Log Double), m (Trace a))
+Traced m a ~ (Density Identity a, Log Double), m (Trace a))
 ```
 
 A `Traced` interpretation of a model is a particular run of the model with its corresponding probability, alongside a distribution over `Trace` info, which records: the value of each call to `random`, the value of the final output, and the density of this program trace.
@@ -707,7 +705,7 @@ A single step in this chain (in Metropolis Hasting MCMC) looks like this:
 
 ```haskell
 mhTrans :: MonadSample m => 
-    Weighted (FreeSampler m) a -> Trace a -> m (Trace a)
+    Weighted (Density m) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, density = p} = do
   let n = length us
   us' <- do
@@ -717,15 +715,14 @@ mhTrans m t@Trace {variables = us, density = p} = do
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- 
-      runWriterT $ weighted 
-      $ Weighted.hoist (WriterT . withPartialRandomness us') m
+      runWriterT $ weighted $ Weighted.hoist (WriterT . density us') m
   let ratio = (exp . ln) $ min 1 
       (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 ```
 
-Our probabilistic program is interpreted in the type `Weighted (FreeSampler m) a`, which is an instance of `MonadInfer`. We use this to define our kernel on traces. We begin by perturbing the list of doubles contained in the trace by selecting a random position in the list and resampling there. We could do this *proposal* in a variety of ways, but here, we do so by choosing a double from the list at random and resampling it (hence, *single site* trace MCMC). We then run the program on this new list of doubles; `((b,q), vs)` is the outcome, probability, and result of all calls to `random`, respectively (recalling that the list of doubles may be shorter than the number of calls to `random`). The value of these is probabilistic in the underlying monad `m`. We then use the MH criterion to decide whether to accept the new list of doubles as our trace.
+Our probabilistic program is interpreted in the type `Weighted (Density m) a`, which is an instance of `MonadInfer`. We use this to define our kernel on traces. We begin by perturbing the list of doubles contained in the trace by selecting a random position in the list and resampling there. We could do this *proposal* in a variety of ways, but here, we do so by choosing a double from the list at random and resampling it (hence, *single site* trace MCMC). We then run the program on this new list of doubles; `((b,q), vs)` is the outcome, probability, and result of all calls to `random`, respectively (recalling that the list of doubles may be shorter than the number of calls to `random`). The value of these is probabilistic in the underlying monad `m`. We then use the MH criterion to decide whether to accept the new list of doubles as our trace.
 
 MH is then easily defined as taking steps with this kernel, in the usual fashion. Note that it works for any probabilistic program whatsoever.
 
@@ -736,7 +733,7 @@ MH is then easily defined as taking steps with this kernel, in the usual fashion
 This is provided by 
 
 ```haskell
-sis ::
+sequentially ::
   Monad m =>
   -- | transformation
   (forall x. m x -> m x) ->
@@ -744,10 +741,10 @@ sis ::
   Int ->
   Sequential m a ->
   m a
-sis f k = finish . composeCopies k (advance . hoistFirst f)
+sequentially f k = finish . composeCopies k (advance . hoistFirst f)
 ```
 
-in Control.Monad.Bayes.Sequential. You provide a natural transformation in the underlying monad `m`, and `sis` applies that natural transformation at each point of conditioning in your program. The main use case is in defining `smc`, below, but here is a nice alternative use case:
+in `Control.Monad.Bayes.Sequential.Coroutine`. You provide a natural transformation in the underlying monad `m`, and `sequentially` applies that natural transformation at each point of conditioning in your program. The main use case is in defining `smc`, below, but here is a nice didactic use case:
 
 Consider the program:
 

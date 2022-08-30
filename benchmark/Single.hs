@@ -1,21 +1,36 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class (MonadInfer)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
-import Control.Monad.Bayes.Inference.RMSMC
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcBasic)
 import Control.Monad.Bayes.Inference.SMC
+  ( SMCConfig (SMCConfig, numParticles, numSteps, resampler),
+    smc,
+  )
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Population (population)
-import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Control.Monad.ST (runST)
-import Data.Time
+import Data.Time (diffUTCTime, getCurrentTime)
 import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
+  ( Applicative (liftA2),
+    ParserInfo,
+    auto,
+    execParser,
+    fullDesc,
+    help,
+    info,
+    long,
+    maybeReader,
+    option,
+    short,
+  )
 import System.Random.MWC (GenIO, createSystemRandom)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
@@ -42,7 +57,7 @@ getModel model = (size model, program model)
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show)
 
-runAlg :: Model -> Alg -> Sampler GenIO IO String
+runAlg :: Model -> Alg -> SamplerIO String
 runAlg model alg =
   case alg of
     SMC ->
@@ -61,8 +76,7 @@ runAlg model alg =
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do
-  g <- createSystemRandom
-  x <- sampleWith (runAlg model alg) g
+  x <- sampleIOfixed (runAlg model alg)
   print x
 
 opts :: ParserInfo (Model, Alg)

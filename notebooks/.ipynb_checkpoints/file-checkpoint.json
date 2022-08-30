@@ -1,0 +1,11 @@
+{
+  "name": "John",
+  "isAlive": true,
+  "age": 27,
+  "height": 1.5,
+  "address": {
+    "streetAddress": "21 2nd Street",
+    "id" : 5.4
+  }
+
+}

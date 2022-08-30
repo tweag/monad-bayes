@@ -74,7 +74,13 @@ import Control.Monad.Trans.List (ListT)
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Trans.State (StateT)
 import Control.Monad.Trans.Writer (WriterT)
-import Data.Matrix hiding ((!))
+import Data.Matrix
+  ( Matrix,
+    cholDecomp,
+    colVector,
+    getCol,
+    multStd,
+  )
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))

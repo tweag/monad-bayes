@@ -7,7 +7,7 @@ import Control.Monad.Bayes.Class
     MonadSample (normal, uniformD),
     factor,
   )
-import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import Control.Monad.Bayes.Weighted (weighted)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))

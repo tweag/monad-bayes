@@ -261,7 +261,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-### Near exact inference for continuous distributions
+## Near exact inference for continuous distributions
 
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
@@ -289,7 +289,7 @@ model = do
 
 we must first `normalize` the model, as in `probability (0, 0.1) (normalize model)`.
 
-### Independent forward sampling
+## Independent forward sampling
 
 For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampler p` or `sampleIOfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
 
@@ -334,6 +334,26 @@ run = (sampler . weighted) example
 
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
 
+
+## Lazy sampling
+
+If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,
+
+```haskell
+import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
+
+example :: MonadSample m => m [Double]
+example = do 
+  x <- random
+  fmap (x:) example
+
+infiniteList <- Lazy.sampler example
+take 4 infiniteList
+```
+
+To perform weighted sampling, use `lwis` from `Control.Monad.Bayes.Inference.Lazy.WIS` as in `lwis 10 example`. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution. 
+
+LazyPPL's `mh` implementation is also available.
 
 ## Markov Chain Monte Carlo
 
