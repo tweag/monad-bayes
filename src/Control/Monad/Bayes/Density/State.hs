@@ -1,34 +1,41 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
+-- |
+-- slower than Control.Monad.Bayes.Density.Free,
+-- but much more elementary to understand. Just uses standard
+-- monad transformer techniques.
+-- @
 module Control.Monad.Bayes.Density.State where
 
 import Control.Monad.Bayes.Class (MonadSample (random))
-import Control.Monad.RWS
-  ( MonadState (get, put),
-    MonadTrans (..),
-    MonadWriter (tell),
-    RWST (RWST),
-    evalRWST,
-  )
+import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
+import Control.Monad.Writer
 
-newtype Density m a = Density (RWST () [Double] [Double] m a) deriving newtype (Functor, Applicative, Monad, MonadTrans)
+newtype Density m a = Density {runDensity :: WriterT [Double] (StateT [Double] m) a} deriving newtype (Functor, Applicative, Monad)
+
+instance MonadTrans Density where
+  lift = Density . lift . lift
+
+instance Monad m => MonadState [Double] (Density m) where
+  get = Density $ lift $ get
+  put = Density . lift . put
+
+instance Monad m => MonadWriter [Double] (Density m) where
+  tell = Density . tell
+  listen = Density . listen . runDensity
+  pass = Density . pass . runDensity
 
 instance MonadSample m => MonadSample (Density m) where
-  random = Density do
+  random = do
     trace <- get
-    case trace of
-      [] -> do
-        r <- lift random
-        tell [r]
-        return r
-      x : xs -> put xs >> tell [x] >> pure x
+    x <- case trace of
+      [] -> random
+      r : xs -> put xs >> pure r
+    tell [x]
+    pure x
 
 density :: Monad m => Density m b -> [Double] -> m (b, [Double])
-density (Density m) = evalRWST m ()
-
-example :: MonadSample m => m Double
-example = do
-  x <- random
-  y <- random
-  return (x + y)
+density (Density m) = evalStateT (runWriterT m)

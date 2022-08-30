@@ -49,7 +49,7 @@ mhRunsRegression = sampler
   (regression xsys)
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `unweighted` throws away that weight (we don't care about the probability of the chain itself), and `sampler` samples a particular chain. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. Sampling a chain and plotting its final state gives:
 
 ![](_static/regress.png)
 
@@ -295,7 +295,7 @@ model = do
 
 we must first `normalize` the model, as in `probability (0, 0.1) (normalize model)`.
 
-### Independent forward sampling
+## Independent forward sampling
 
 For any probabilistic program `p` without any `condition` or `factor` statements, we may do `sampler p` or `sampleIOfixed p` (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:
 
@@ -341,6 +341,26 @@ run = (sampler . weighted) example
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
 
 
+## Lazy sampling
+
+If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,
+
+```haskell
+import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
+
+example :: MonadSample m => m [Double]
+example = do 
+  x <- random
+  fmap (x:) example
+
+infiniteList <- Lazy.sampler example
+take 4 infiniteList
+```
+
+To perform weighted sampling, use `lwis` from `Control.Monad.Bayes.Inference.Lazy.WIS` as in `lwis 10 example`. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution. 
+
+LazyPPL's `mh` implementation is also available.
+
 ## Markov Chain Monte Carlo
 
 There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in `Control.Monad.Bayes.Inference.MCMC`. You can use it as follows:
@@ -383,9 +403,13 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
+### Piped MCMC
+
+You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
+
 ## Sequential Monte Carlo (Particle Filtering)
 
-Run SMC with two particles, and resampling at every factor statement, as follows, given a model `m`:
+Run SMC with two resampling steps and two particles as follows, given a model `m`:
 
 ```haskell
 output = 
@@ -400,6 +424,15 @@ output =
 
 <!-- Or if you prefer, think of the inference method as:
 
+
+```haskell
+(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+``` -->
+
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+
+As a concrete example, here is a probabilistic program:
 
 ```haskell
 (sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
@@ -463,7 +496,7 @@ run = (
   population . 
   rmsmcBasic 
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
-    SMCConfig {numParticles = 4, numSteps = All}) 
+    SMCConfig {numParticles = 4, numSteps = 4}) 
   example
 ```
 

@@ -25,10 +25,9 @@ where
 
 import Control.Monad.Bayes.Class (MonadSample (random))
 import Control.Monad.RWS
-import Control.Monad.State (evalStateT, get, put)
-import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.State (evalStateT)
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
-import Control.Monad.Writer (WriterT (..), tell)
+import Control.Monad.Writer (WriterT (..))
 import Data.Functor.Identity (Identity, runIdentity)
 
 -- | Random sampling functor.

@@ -1,6 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
@@ -41,7 +40,7 @@ import Control.Monad.Bayes.Class
         uniform
       ),
   )
-import Control.Monad.Reader ( ReaderT(..), MonadIO )
+import Control.Monad.Reader (MonadIO, ReaderT (..))
 import Control.Monad.ST (ST)
 import Numeric.Log (Log (ln))
 import System.Random.MWC.Distributions qualified as MWC

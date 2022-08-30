@@ -1,22 +1,20 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Control.Monad.Bayes.Inference.Lazy.MH where
 
-import Control.Monad.Bayes.Class ( Log(ln) )
+import Control.Monad.Bayes.Class (Log (ln))
 import Control.Monad.Bayes.Sampler.Lazy
-    ( Sampler(runSampler), Tree(..), randomTree )
+  ( Sampler (runSampler),
+    Tree (..),
+    randomTree,
+  )
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
 import Control.Monad.State.Lazy (MonadState (get, put), runState)
-import System.Random ( RandomGen(split), getStdGen, newStdGen )
+import System.Random (RandomGen (split), getStdGen, newStdGen)
 import System.Random qualified as R
 
 mh :: forall a. Double -> Weighted Sampler a -> IO [(a, Log Double)]
@@ -57,9 +55,9 @@ mh p m = do
       let ratio = w' / w
       let (r, g2') = R.random g2
       put g2'
-      if r < min 1 (exp $ ln ratio) -- (trace ("-- Ratio: " ++ show ratio) ratio))
-        then return (t', x', w') -- trace ("---- Weight: " ++ show w') w')
-        else return (t, x, w) -- trace ("---- Weight: " ++ show w) w)
+      if r < min 1 (exp $ ln ratio)
+        then return (t', x', w')
+        else return (t, x, w)
 
 -- Replace the labels of a tree randomly, with probability p
 mutateTree :: forall g. RandomGen g => Double -> g -> Tree -> Tree

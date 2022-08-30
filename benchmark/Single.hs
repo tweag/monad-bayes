@@ -1,22 +1,35 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-import Control.Monad.Bayes.Class
+import Control.Monad.Bayes.Class (MonadInfer)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
-import Control.Monad.Bayes.Inference.RMSMC
+import Control.Monad.Bayes.Inference.RMSMC (rmsmcBasic)
 import Control.Monad.Bayes.Inference.SMC
+  ( SMCConfig (SMCConfig, numParticles, numSteps, resampler),
+    smc,
+  )
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Traced
 import Control.Monad.Bayes.Weighted
 import Control.Monad.ST (runST)
-import Data.Time
+import Data.Time (diffUTCTime, getCurrentTime)
 import HMM qualified
 import LDA qualified
 import LogReg qualified
 import Options.Applicative
-import System.Random.MWC (GenIO, createSystemRandom)
+  ( Applicative (liftA2),
+    ParserInfo,
+    auto,
+    execParser,
+    fullDesc,
+    help,
+    info,
+    long,
+    maybeReader,
+    option,
+    short,
+  )
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)

@@ -6,7 +6,7 @@ That's enough to understand the core ideas, but for the more advanced content, y
 
 ## References
 
-monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://www.denotational.co.uk/publications/scibior-kammar-ghahramani-funcitonal-programming-for-modular-bayesian-inference.pdf).
+monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://arxiv.org/pdf/1711.03219.pdf).
 
 ## The core typeclasses
 
@@ -391,7 +391,6 @@ Summary of key info on `Sequential`:
 - `instance MonadSample m => instance MonadSample (Sequential m)`
 - `instance MonadCond m => instance MonadCond (Sequential m)`
 
-The former uses the `monad-coroutine` package:
 
 ```haskell
 newtype Sequential m a = 
@@ -494,7 +493,7 @@ A *trace* of a program of type `MonadSample m => m a` is an execution of the pro
 
 With this in mind, a `Density m a` is an interpretation of a probabilistic program as a function from a trace to the *density* of that execution of the program.
 
-Monad-bayes offers two implementations, in `Control.Monad.Bayes.Density.State` and `Control.Monad.Bayes.Density.Free`. 
+Monad-bayes offers two implementations, in `Control.Monad.Bayes.Density.State` and `Control.Monad.Bayes.Density.Free`. The first is slow but easy to understand, the second is more sophisticated, but faster.
 
 The former is relatively straightforward: the `MonadSample` instance implements `random` as `get`ting the trace (using `get` from `MonadState`), using (and removing) the first element (`put` from `MonadState`), and writing that element to the output (using `tell` from `MonadWriter`). If the trace is empty, the `random` from the underlying monad is used, but the result is still written with `tell`.
 
@@ -519,7 +518,7 @@ Density m a ~ m (Either a (Double -> (Density m a)))
 
 Since `FreeT` is a transformer, we can use `lift` to get a `MonadSample` instance.
 
-`density` is then defined using the canonical property of the free monad (transformer), embodied by `iterFT`, which interprets `SamF` in the appropriate way:
+`density` is then defined using the folding pattern `iterFT`, which interprets `SamF` in the appropriate way:
 
 ```haskell
 density :: MonadSample m => [Double] -> Density m a -> m (a, [Double])
@@ -706,21 +705,17 @@ The version of MCMC in monad-bayes performs its random walk on program traces of
 A single step in this chain (in Metropolis Hasting MCMC) looks like this:
 
 ```haskell
-mhTrans :: MonadSample m => 
-    Weighted (Density m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+mhTrans :: MonadSample m => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
+mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
+    i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- 
-      runWriterT $ weighted 
-      $ Weighted.hoist (WriterT . density us') m
-  let ratio = (exp . ln) $ min 1 
-      (q * fromIntegral n / (p * fromIntegral (length vs)))
+  ((b, q), vs) <- State.density (weighted m) us'
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 ```
@@ -761,8 +756,6 @@ example = replicateM 100 $ do
 Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
 Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
-
-If you don't want to specify the number of steps, you can use `sequentiallyNoSteps`. 
 
 ### Sequential Monte Carlo
 

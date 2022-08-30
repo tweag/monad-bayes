@@ -32,8 +32,7 @@ import Control.Monad.Bayes.Class
     MonadSample,
     factor,
   )
-import Control.Monad.Trans (MonadIO, MonadTrans (..))
-import Control.Monad.Trans.State (StateT (..), mapStateT, modify)
+import Control.Monad.State (MonadIO, MonadTrans, StateT (..), lift, mapStateT, modify)
 import Data.Fixed (mod')
 import Numeric.Log (Log)
 

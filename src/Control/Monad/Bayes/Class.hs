@@ -75,17 +75,22 @@ where
 
 import Control.Arrow (Arrow (second))
 import Control.Monad (replicateM, when)
-import Control.Monad.Except (ExceptT)
-import Control.Monad.Trans.Class (MonadTrans (lift))
-import Control.Monad.Trans.Cont (ContT)
-import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Trans.List (ListT)
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Trans.State (StateT)
-import Control.Monad.Trans.Writer (WriterT)
+import Control.Monad.Cont (ContT)
+import Control.Monad.Except (ExceptT, lift)
+import Control.Monad.Identity (IdentityT)
+import Control.Monad.List (ListT)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.State (StateT)
+import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H
-import Data.Matrix hiding ((!))
+import Data.Matrix
+  ( Matrix,
+    cholDecomp,
+    colVector,
+    getCol,
+    multStd,
+  )
 import Data.Vector qualified as V
 import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
@@ -288,8 +293,6 @@ mvNormal mu bigSigma = do
   let bigL = cholDecomp bigSigma
   let ts = (colVector mu) + bigL `multStd` (colVector $ V.fromList ss)
   return $ getCol 1 ts
-
---------------------
 
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian

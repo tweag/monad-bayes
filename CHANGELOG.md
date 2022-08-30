@@ -1,4 +1,13 @@
-# 0.2.0 (2021-07-26)
+# 1.0.0 (2022)
+
+- host website from repo
+- host docs from main branch
+- use histogram-fill to produce histograms
+- add Control.Monad.Bayes.Density.State as reference implementation
+- add lazy sampler
+- implement MCMC chains with `pipes`
+
+# 0.2.0 (2022-07-26)
 
 - rename various functions to match the names of the corresponding types (e.g. `Enumerator` goes with `enumerator`)
 - add configs as arguments to inference methods `smc` and `mcmc`
@@ -7,11 +16,11 @@
 - update history of changelog in line with semantic versioning conventions
 - bumped to GHC 9.2.3
 
-# 0.1.5 (2021-07-26)
+# 0.1.5 (2022-07-26)
 
 - Refactor of sampler to be parametric in the choice of a pair of IO monad and RNG
 
-# 0.1.4 (2021-06-15)
+# 0.1.4 (2022-06-15)
 
 Addition of new helper functions, plotting tools, tests, and Integrator monad.
 
@@ -22,7 +31,7 @@ Addition of new helper functions, plotting tools, tests, and Integrator monad.
 - `models` directory is cleaned up. New sequential models using `pipes` package to represent monadic streams
 
 
-# 0.1.3 (2021-06-08)
+# 0.1.3 (2022-06-08)
 
 Clean up of unused functions and broken code
 
@@ -31,7 +40,7 @@ Clean up of unused functions and broken code
 - explicit imports
 - added some global language extensions
 
-# 0.1.2 (2021-06-08)
+# 0.1.2 (2022-06-08)
 
 Add documentation
 
