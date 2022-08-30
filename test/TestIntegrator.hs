@@ -12,8 +12,8 @@ import Control.Monad.Bayes.Class
     normalPdf,
   )
 import Control.Monad.Bayes.Integrator
-import Control.Monad.Bayes.Sampler
-import Control.Monad.Bayes.Weighted (runWeighted, weighted)
+import Control.Monad.Bayes.Sampler.Strict
+import Control.Monad.Bayes.Weighted (weighted)
 import Control.Monad.ST (ST, runST)
 import Data.AEq (AEq ((~==)))
 import Data.List (sortOn)

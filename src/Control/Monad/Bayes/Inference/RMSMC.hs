@@ -22,7 +22,7 @@ where
 
 import Control.Monad.Bayes.Class (MonadSample)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..))
-import Control.Monad.Bayes.Inference.SMC (SMCConfig (..))
+import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
   ( Population,
     spawn,

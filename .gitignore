@@ -1,4 +1,5 @@
 src/data
+venv
 _cache
 docs/build
 *.csv

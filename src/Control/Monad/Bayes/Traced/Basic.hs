@@ -23,7 +23,7 @@ import Control.Monad.Bayes.Class
     MonadInfer,
     MonadSample (random),
   )
-import Control.Monad.Bayes.Free (FreeSampler)
+import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -38,7 +38,7 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 -- | Tracing monad that records random choices made in the program.
 data Traced m a = Traced
   { -- | Run the program with a modified trace.
-    model :: Weighted (FreeSampler Identity) a,
+    model :: Weighted (Density Identity) a,
     -- | Record trace and output.
     traceDist :: m (Trace a)
   }

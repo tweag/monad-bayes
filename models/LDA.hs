@@ -15,7 +15,7 @@ import Control.Monad.Bayes.Class
     MonadSample (categorical, dirichlet, uniformD),
     factor,
   )
-import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Data.Map qualified as Map

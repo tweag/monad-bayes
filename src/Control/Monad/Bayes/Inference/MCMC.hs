@@ -12,7 +12,7 @@
 module Control.Monad.Bayes.Inference.MCMC where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler
+import Control.Monad.Bayes.Sampler.Strict
 import qualified Control.Monad.Bayes.Traced.Basic as Basic
 import Control.Monad.Bayes.Traced.Common
 import qualified Control.Monad.Bayes.Traced.Dynamic as Dynamic
@@ -43,7 +43,7 @@ mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Dynamic.mh num
 independentSamples :: Monad m => Static.Traced m a -> P.Producer (MHResult a) m (Trace a)
 independentSamples (Static.Traced w d) =
   P.repeatM d
-    >-> P.takeWhile' ((== 0) . density)
+    >-> P.takeWhile' ((== 0) . probDensity)
     >-> P.map (MHResult False)
 
 -- | convert a probabilistic program into a producer of samples

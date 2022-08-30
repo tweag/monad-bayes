@@ -11,7 +11,7 @@ import Control.Monad.Bayes.Population as Population
     resampleMultinomial,
     spawn,
   )
-import Control.Monad.Bayes.Sampler (sampleIOfixed)
+import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 import System.Random.Stateful (mkStdGen, newIOGenM)

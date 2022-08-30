@@ -32,8 +32,11 @@ flag dev
 library
   exposed-modules:
     Control.Monad.Bayes.Class
+    Control.Monad.Bayes.Density.Free
+    Control.Monad.Bayes.Density.State
     Control.Monad.Bayes.Enumerator
-    Control.Monad.Bayes.Free
+    Control.Monad.Bayes.Inference.Lazy.MH
+    Control.Monad.Bayes.Inference.Lazy.WIS
     Control.Monad.Bayes.Inference.MCMC
     Control.Monad.Bayes.Inference.PMMH
     Control.Monad.Bayes.Inference.RMSMC
@@ -41,7 +44,8 @@ library
     Control.Monad.Bayes.Inference.SMC2
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
-    Control.Monad.Bayes.Sampler
+    Control.Monad.Bayes.Sampler.Lazy
+    Control.Monad.Bayes.Sampler.Strict
     Control.Monad.Bayes.Sequential
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
@@ -67,6 +71,7 @@ library
     , math-functions   >=0.2.1  && <0.4
     , matrix
     , monad-coroutine  ^>=0.9.0
+    , monad-extras
     , mtl              ^>=2.2.2
     , mwc-random       >=0.13.6 && <0.16
     , pipes
@@ -125,7 +130,7 @@ executable example
 
   if flag(dev)
     ghc-options:
-      -Wall -Wcompat -Wincomplete-record-updates
+      -O2 -Wall -Wcompat -Wincomplete-record-updates
       -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
 
   else
@@ -177,7 +182,6 @@ test-suite monad-bayes-test
     , mwc-random
     , pipes
     , pretty-simple
-    , profunctors
     , QuickCheck
     , random
     , statistics
