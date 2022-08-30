@@ -87,7 +87,9 @@ library
 
   default-extensions:
     BlockArguments
+    DeriveFunctor
     FlexibleContexts
+    FlexibleInstances
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings
@@ -137,7 +139,9 @@ executable example
 
   default-extensions:
     BlockArguments
+    DeriveFunctor
     FlexibleContexts
+    FlexibleInstances
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings
@@ -199,7 +203,9 @@ test-suite monad-bayes-test
 
   default-extensions:
     BlockArguments
+    DeriveFunctor
     FlexibleContexts
+    FlexibleInstances
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings
@@ -253,7 +259,9 @@ benchmark speed-bench
 
   default-extensions:
     BlockArguments
+    DeriveFunctor
     FlexibleContexts
+    FlexibleInstances
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings

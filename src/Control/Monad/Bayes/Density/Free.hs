@@ -20,18 +20,23 @@ module Control.Monad.Bayes.Density.Free
     withRandomness,
     density,
     traced,
+    maxDraws,
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample (random))
+import Control.Monad.Bayes.Class (MonadSample (bernoulli, random))
 import Control.Monad.RWS
 import Control.Monad.State (evalStateT)
-import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterT, iterTM, liftF)
+import Control.Monad.Trans.Free.Church (FT, MonadFree (..), cutoff, hoistFT, iterT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..))
 import Data.Functor.Identity (Identity, runIdentity)
+import Data.Text (Text)
 
 -- | Random sampling functor.
 newtype SamF a = Random (Double -> a) deriving (Functor)
+
+-- | includes bernoulli. Separated out because of speed concerns
+data SamFB a = Random' (Double -> a) | Bernoulli Double (Bool -> a) deriving (Functor)
 
 -- | Free monad transformer over random sampling.
 --
@@ -45,6 +50,10 @@ instance MonadFree SamF (Density m) where
 instance Monad m => MonadSample (Density m) where
   random = Density $ liftF (Random id)
 
+instance Monad m => MonadSample (FT SamFB m) where
+  random = liftF (Random' id)
+  bernoulli p = liftF (Bernoulli p id)
+
 -- | Hoist 'Density' through a monad transform.
 hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density n a
 hoist f (Density m) = Density (hoistFT f m)
@@ -54,6 +63,17 @@ interpret :: MonadSample m => Density m a -> m a
 interpret (Density m) = iterT f m
   where
     f (Random k) = random >>= k
+
+maxDraws :: MonadSample m => Integer -> FT SamFB m b -> m (Either Text b)
+maxDraws n m = iterT alg $ maybeToRight "Max Draws Exceeded" <$> cutoff n m
+  where
+    maybeToRight e = \case
+      Nothing -> Left e
+      Just x -> Right x
+
+    alg = \case
+      Random' k -> random >>= k
+      Bernoulli p k -> bernoulli p >>= k
 
 -- | Execute computation with supplied values for random choices.
 withRandomness :: Monad m => [Double] -> Density m a -> m a

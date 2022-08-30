@@ -204,6 +204,30 @@ Note that in this example, commenting out the line `z <- normal 0 3` would not c
 
 <!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 
+## Restrict to finite programs
+
+Probabilistic programs can have potentially unbounded numbers of random variables. Monad-bayes provides a nice tool to restrict to a finite number of random variables. Here's an example:
+
+```haskell
+enumerate (maxDraws 7 (geometric 0.5))
+```
+
+```js
+[
+  (Right 0,0.5),
+  (Right 1,0.25),
+  (Right 2,0.125),
+  (Right 3,6.25e-2),
+  (Right 4,3.125e-2),
+  (Right 5,1.5625e-2),
+  (Left "Max Draws Exceeded",1.5625e-2)]
+```
+
+
+A `geometric` distribution has support over the natural numbers, so `enumerate  (geometric 0.5)` couldn't terminate. However, `maxDraws 7 (geometric 0.5)` denotes the distribution which agrees with the geometric PMF for `n` less than 7, and for `n` greater or equal, assigns the remaining probability to an error message "Max draws exceeded".
+
+This is very useful if you want to ensure that your distribution doesn't draw too many random variables. Moreover, it's a direct way of calculating the probability that you will exceed a certain number of draws.
+
 ## Inference methods
 
 To quote [this page](https://webppl.readthedocs.io/en/master/inference/), "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.
