@@ -14,7 +14,7 @@ module Control.Monad.Bayes.Inference.MCMC where
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler.Strict
 import qualified Control.Monad.Bayes.Traced.Basic as Basic
-import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.Traced.Common (MHResult (..), Trace (..), burnIn, mhTransWithBool)
 import qualified Control.Monad.Bayes.Traced.Dynamic as Dynamic
 import qualified Control.Monad.Bayes.Traced.Static as Static
 import Control.Monad.Bayes.Weighted
