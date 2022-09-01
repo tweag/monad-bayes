@@ -397,6 +397,10 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
+### Piped MCMC
+
+You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
+
 ## Sequential Monte Carlo (Particle Filtering)
 
 Run SMC with two resampling steps and two particles as follows, given a model `m`:

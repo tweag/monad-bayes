@@ -7,15 +7,17 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Common
-  ( Trace,
+  ( Trace (..),
     singleton,
     output,
     scored,
     bind,
     mhTrans,
+    mhTransWithBool,
     mhTransFree,
     mhTrans',
     burnIn,
+    MHResult (..),
   )
 where
 
@@ -24,7 +26,7 @@ import Control.Monad.Bayes.Class
     discrete,
   )
 import qualified Control.Monad.Bayes.Density.Free as Free
-import Control.Monad.Bayes.Density.State
+import qualified Control.Monad.Bayes.Density.State as State
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
     hoist,
@@ -34,6 +36,11 @@ import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
+
+data MHResult a = MHResult
+  { success :: Bool,
+    trace :: Trace a
+  }
 
 -- | Collection of random variables sampler during the program's execution.
 data Trace a = Trace
@@ -75,7 +82,7 @@ bind dx f = do
   return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadSample m => (Weighted (Density m)) a -> Trace a -> m (Trace a)
+mhTrans :: MonadSample m => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -84,14 +91,17 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- density (weighted m) us' -- runWriterT $ runWeighted $ Weighted.hoist (WriterT . density us') m
+  ((b, q), vs) <- State.density (weighted m) us'
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
+mhTransFree :: MonadSample m => Weighted (Free.Density m) a -> Trace a -> m (Trace a)
+mhTransFree m t = trace <$> mhTransWithBool m t
+
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTransFree :: MonadSample m => (Weighted (Free.Density m)) a -> Trace a -> m (Trace a)
-mhTransFree m t@Trace {variables = us, probDensity = p} = do
+mhTransWithBool :: MonadSample m => Weighted (Free.Density m) a -> Trace a -> m (MHResult a)
+mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n - 1)
@@ -102,7 +112,7 @@ mhTransFree m t@Trace {variables = us, probDensity = p} = do
   ((b, q), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . Free.density us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
-  return $ if accept then Trace vs b q else t
+  return if accept then MHResult True (Trace vs b q) else MHResult False t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
 mhTrans' :: MonadSample m => Weighted (Free.Density Identity) a -> Trace a -> m (Trace a)
