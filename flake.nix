@@ -19,6 +19,7 @@
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
+    jf.url = "git+https://github.com/aleeusgr/monad-bayes?ref=notebooks";
   };
   outputs = {
     self,
