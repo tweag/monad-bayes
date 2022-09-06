@@ -62,7 +62,7 @@
             };
         in
           ce.cabal-docspec.components.exes.cabal-docspec;
-          #inherit jf1;
+          inherit jf1;
         monad-bayes-dev = pkgs.mkShell {
           inputsFrom = [monad-bayes.env jf1];
           packages = with pre-commit-hooks.packages.${system}; [
