@@ -19,7 +19,7 @@
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jf.url = "git+https://github.com/aleeusgr/monad-bayes?ref=notebooks";
+    jf1.url = "git+https://github.com/aleeusgr/monad-bayes?ref=notebooks";
   };
   outputs = {
     self,
@@ -28,6 +28,7 @@
     flake-utils,
     pre-commit-hooks,
     haskell-nix-utils,
+    jf1,
   }:
     flake-utils.lib.eachSystem
     [
@@ -61,8 +62,9 @@
             };
         in
           ce.cabal-docspec.components.exes.cabal-docspec;
+          #inherit jf1;
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env];
+          inputsFrom = [monad-bayes.env jf1];
           packages = with pre-commit-hooks.packages.${system}; [
             alejandra
             cabal-fmt
