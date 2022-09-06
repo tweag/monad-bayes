@@ -29,7 +29,7 @@
     pre-commit-hooks,
     haskell-nix-utils,
     jf1,
-  }:
+  } @ inputs:
     flake-utils.lib.eachSystem
     [
       # Tier 1 - Tested in CI
@@ -62,9 +62,10 @@
             };
         in
           ce.cabal-docspec.components.exes.cabal-docspec;
-          inherit jf1;
+        # inherit jf1;
+        jf = inputs.jf1.devShell;
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env jf1];
+          inputsFrom = [monad-bayes.env jf];
           packages = with pre-commit-hooks.packages.${system}; [
             alejandra
             cabal-fmt
