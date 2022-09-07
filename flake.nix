@@ -19,7 +19,7 @@
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jf1.url = "git+https://github.com/aleeusgr/monad-bayes?ref=notebooks";
+    jupyter-flake.url = "git+https://github.com/aleeusgr/monad-bayes?ref=notebooks";
   };
   outputs = {
     self,
@@ -28,7 +28,7 @@
     flake-utils,
     pre-commit-hooks,
     haskell-nix-utils,
-    jf1,
+    jupyter-flake,
   } @ inputs:
     flake-utils.lib.eachSystem
     [
@@ -41,7 +41,7 @@
     ]
     (
       system: let
-        inherit (nixpkgs) lib;
+        inherit (nixpkgs) lib runCommand;
         pkgs = nixpkgs.legacyPackages.${system};
         warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
         src = lib.sourceByRegex self [
@@ -63,9 +63,9 @@
         in
           ce.cabal-docspec.components.exes.cabal-docspec;
         # inherit jf1;
-        jf = inputs.jf1.devShell;
+        jupyterShell = inputs.jupyter-flake.devShell.${system};
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env jf];
+          inputsFrom = [monad-bayes.env jupyterShell];
           packages = with pre-commit-hooks.packages.${system}; [
             alejandra
             cabal-fmt
@@ -92,6 +92,7 @@
         packages = {inherit monad-bayes pre-commit;};
         packages.default = packages.monad-bayes;
         checks = {inherit monad-bayes pre-commit;};
+        #devShells.default = jupyterShell;
         devShells.default = monad-bayes-dev;
         # Needed for backwards compatibility with Nix versions <2.8
         defaultPackage = warnToUpdateNix packages.default;

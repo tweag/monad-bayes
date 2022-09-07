@@ -586,18 +586,18 @@
         "type": "github"
       }
     },
-    "jf1": {
+    "jupyter-flake": {
       "inputs": {
         "flake-utils": "flake-utils_3",
         "jupyterWith": "jupyterWith",
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1662272732,
-        "narHash": "sha256-25OXxHuxki+9Mf3QpGk9Gup94S9Auuli7eewjDE0Byk=",
+        "lastModified": 1662470577,
+        "narHash": "sha256-sMuBno5YWcfBhv2wZJ/ln35IpoiNM+hsY7OYhAlQir0=",
         "ref": "notebooks",
-        "rev": "d42e9c9546b194780e76b87cbc5d4d31ee53e5ca",
-        "revCount": 760,
+        "rev": "08c5d4b575db8cd1b1aa4fd2291c2eb4e0fb01ee",
+        "revCount": 761,
         "type": "git",
         "url": "https://github.com/aleeusgr/monad-bayes"
       },
@@ -889,14 +889,14 @@
     "pre-commit-hooks": {
       "inputs": {
         "flake-utils": [
-          "jf1",
+          "jupyter-flake",
           "jupyterWith",
           "ihaskell",
           "hls",
           "flake-utils"
         ],
         "nixpkgs": [
-          "jf1",
+          "jupyter-flake",
           "jupyterWith",
           "ihaskell",
           "hls",
@@ -945,7 +945,7 @@
         "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
         "haskell-nix-utils": "haskell-nix-utils",
-        "jf1": "jf1",
+        "jupyter-flake": "jupyter-flake",
         "nixpkgs": "nixpkgs_6",
         "pre-commit-hooks": "pre-commit-hooks_2"
       }
