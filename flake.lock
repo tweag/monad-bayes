@@ -593,18 +593,18 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1662470577,
-        "narHash": "sha256-sMuBno5YWcfBhv2wZJ/ln35IpoiNM+hsY7OYhAlQir0=",
+        "lastModified": 1661872734,
+        "narHash": "sha256-avHpdds7ZfqGPVYeKwIaTtY+++bN1xUyW2oDQCw0i04=",
         "ref": "notebooks",
-        "rev": "08c5d4b575db8cd1b1aa4fd2291c2eb4e0fb01ee",
-        "revCount": 761,
+        "rev": "a123b9352203dcd245bbd06a3139edb3c6f653ae",
+        "revCount": 960,
         "type": "git",
-        "url": "https://github.com/aleeusgr/monad-bayes"
+        "url": "https://github.com/tweag/monad-bayes"
       },
       "original": {
         "ref": "notebooks",
         "type": "git",
-        "url": "https://github.com/aleeusgr/monad-bayes"
+        "url": "https://github.com/tweag/monad-bayes"
       }
     },
     "jupyterWith": {
