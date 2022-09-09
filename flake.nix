@@ -4,6 +4,11 @@
   inputs = {
     jupyterWith.url = "github:tweag/jupyterWith";
     flake-utils.url = "github:numtide/flake-utils";
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
+    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
+    haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
+    jupyter-flake.url = "git+https://github.com/tweag/monad-bayes?ref=notebooks";
   };
 
   inputs.nixpkgs.url = "nixpkgs/22.05";
@@ -13,8 +18,20 @@
     nixpkgs,
     jupyterWith,
     flake-utils,
-  }:
-    flake-utils.lib.eachDefaultSystem (
+    pre-commit-hooks,
+    haskell-nix-utils,
+    jupyter-flake,
+  } @ inputs:
+    flake-utils.lib.eachSystem
+    [
+      # Tier 1 - Tested in CI
+      flake-utils.lib.system.x86_64-linux
+      flake-utils.lib.system.x86_64-darwin
+      # Tier 2 - Not tested in CI (at least for now)
+      flake-utils.lib.system.aarch64-linux
+      flake-utils.lib.system.aarch64-darwin
+    ]
+    (
       system: let
         myHaskellPackageOverlay = self: super: {
           myHaskellPackages = super.haskellPackages.override {
@@ -62,49 +79,31 @@
           "^test.*$"
           "^.*\.md"
         ];
-
-        monad-bayes = pkgs.myHaskellPackages.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
-
-        iHaskell = pkgs.kernels.iHaskellWith {
-          # Identifier that will appear on the Jupyter interface.
-          name = "nixpkgs";
-          # Libraries to be available to the kernel.
-          packages = p:
-            with p; [
-              pkgs.myHaskellPackages.imatrix-sundials
-              pkgs.myHaskellPackages.hvega
-              pkgs.myHaskellPackages.lens
-              pkgs.myHaskellPackages.log-domain
-              pkgs.myHaskellPackages.katip
-              pkgs.myHaskellPackages.ihaskell-hvega
-              pkgs.myHaskellPackages.ihaskell-diagrams
-              pkgs.myHaskellPackages.text
-              pkgs.myHaskellPackages.diagrams
-              pkgs.myHaskellPackages.diagrams-cairo
-              pkgs.myHaskellPackages.aeson
-              pkgs.myHaskellPackages.lens
-              pkgs.myHaskellPackages.lens-aeson
-              pkgs.myHaskellPackages.pretty-simple
-              pkgs.myHaskellPackages.monad-loops
-              pkgs.myHaskellPackages.hamilton
-              pkgs.myHaskellPackages.hmatrix
-              pkgs.myHaskellPackages.vector-sized
-              pkgs.myHaskellPackages.linear
-              pkgs.myHaskellPackages.recursion-schemes
-              pkgs.myHaskellPackages.data-fix
-              pkgs.myHaskellPackages.free
-              pkgs.myHaskellPackages.comonad
-              pkgs.myHaskellPackages.gloss
-              pkgs.myHaskellPackages.adjunctions
-              pkgs.myHaskellPackages.distributive
-              pkgs.myHaskellPackages.vector
-              pkgs.myHaskellPackages.megaparsec
-              pkgs.myHaskellPackages.histogram-fill
-              monad-bayes
-            ];
-          # Optional definition of `haskellPackages` to be used.
-          # Useful for overlaying packages.
-          haskellPackages = pkgs.haskell.packages.ghc902;
+        monad-bayes = pkgs.haskell.packages.ghc902.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
+        cabal-docspec = let
+          ce =
+            haskell-nix-utils.packages.${system}.pkgs.callPackage
+            (import "${haskell-nix-utils}/project/cabal-extras.nix") {
+              self = haskell-nix-utils;
+              inherit (haskell-nix-utils.packages.${system}) compiler-nix-name index-state;
+            };
+        in
+          ce.cabal-docspec.components.exes.cabal-docspec;
+        jupyterShell = inputs.jupyter-flake.devShell.${system};
+        monad-bayes-dev = pkgs.mkShell {
+          inputsFrom = [monad-bayes.env jupyterShell];
+          packages = with pre-commit-hooks.packages.${system}; [
+            alejandra
+            cabal-fmt
+            hlint
+            ormolu
+            cabal-docspec
+          ];
+          shellHook =
+            pre-commit.shellHook
+            + ''
+              echo "=== monad-bayes development shell ==="
+            '';
         };
         jupyterEnvironment = pkgs.jupyterlabWith {
           kernels = [iHaskell];

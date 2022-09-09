@@ -15,6 +15,7 @@
 -- Nicolas Chopin, Pierre E. Jacob, and Omiros Papaspiliopoulos. 2013. SMC²: an efficient algorithm for sequential analysis of state space models. /Journal of the Royal Statistical Society Series B: Statistical Methodology/ 75 (2013), 397-426. Issue 3. <https://doi.org/10.1111/j.1467-9868.2012.01046.x>
 module Control.Monad.Bayes.Inference.SMC2
   ( smc2,
+    SMC2,
   )
 where
 
