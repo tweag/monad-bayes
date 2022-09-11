@@ -1,11 +1,8 @@
-# 1.0.0 (2022)
+# 1.0.0 (2022-09-10)
 
 - host website from repo
-- host docs from main branch
-- use histogram-fill to produce histograms
-- add Control.Monad.Bayes.Density.State as reference implementation
-- add lazy sampler
-- implement MCMC chains with `pipes`
+- host notebooks from repo
+- use histogram-fill
 
 # 0.2.0 (2022-07-26)
 
@@ -30,7 +27,6 @@ Addition of new helper functions, plotting tools, tests, and Integrator monad.
 - new tests, including with conjugate distributions to compare analytic solution against inferred posterior
 - `models` directory is cleaned up. New sequential models using `pipes` package to represent monadic streams
 
-
 # 0.1.3 (2022-06-08)
 
 Clean up of unused functions and broken code
@@ -46,7 +42,6 @@ Add documentation
 
 - docs written in markdown
 - docs built by sphinx
-
 
 # 0.1.1 (2020-04-08)
 
