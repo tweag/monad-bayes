@@ -12,8 +12,8 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This module defines 'MonadInfer', which can be used to represent a simple model
--- like the following:
+-- This module defines 'MonadInfer', which can be used to represent any probabilistic program,
+-- such as the following:
 --
 -- @
 -- import Control.Monad (when)
