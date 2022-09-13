@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RankNTypes #-}
 
 import Control.Monad.Bayes.Class (MonadInfer)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
@@ -96,9 +97,4 @@ opts = flip info fullDesc $ liftA2 (,) model alg
         )
 
 main :: IO ()
-main = do
-  (model, alg) <- execParser opts
-  startTime <- getCurrentTime
-  infer model alg
-  endTime <- getCurrentTime
-  print (diffUTCTime endTime startTime)
+main = main2

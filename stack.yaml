@@ -1,7 +1,12 @@
-resolver: nightly-2022-08-16
+resolver: nightly-2022-07-03
 packages:
   - "."
 flags:
   monad-bayes:
     dev: True
 
+extra-deps:
+- rhine-0.8.0.1@sha256:84f8c0bed45b57d3796aa4c7d66f764d7594fac0dc2465c6e6f1993f97295231,3850
+- rhine-gloss-0.8.0.1@sha256:c3ec549f7fbd53942374c5802658a69afe92486a803ee375fd64ad20f1fd9667,1847
+
+allow-newer: true 

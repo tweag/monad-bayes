@@ -84,6 +84,9 @@ library
     , statistics       >=0.14.0 && <0.17
     , text
     , vector           ^>=0.12.0
+    , dunai
+    , rhine
+    , rhine-gloss
 
   default-extensions:
     BlockArguments
@@ -188,6 +191,7 @@ test-suite monad-bayes-test
     , text
     , transformers
     , vector
+    
 
   if flag(dev)
     ghc-options:

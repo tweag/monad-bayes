@@ -1,6 +1,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE Arrows #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
 -- |
@@ -73,7 +74,7 @@ module Control.Monad.Bayes.Class
   )
 where
 
-import Control.Arrow (Arrow (second))
+import Control.Arrow
 import Control.Monad (replicateM, when)
 import Control.Monad.Cont (ContT)
 import Control.Monad.Except (ExceptT, lift)
@@ -81,6 +82,8 @@ import Control.Monad.Identity (IdentityT)
 import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
+
+import Control.Monad.IO.Class
 import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H
@@ -105,6 +108,11 @@ import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
+import Data.MonadicStreamFunction.Core
+
+
+
+-- import Rhine
 -- | Monads that can draw random variables.
 class Monad m => MonadSample m where
   -- | Draw from a uniform distribution.
@@ -402,3 +410,5 @@ instance MonadCond m => MonadCond (ContT r m) where
   score = lift . score
 
 instance MonadInfer m => MonadInfer (ContT r m)
+
+
