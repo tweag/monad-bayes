@@ -15,6 +15,7 @@
 -- Nicolas Chopin, Pierre E. Jacob, and Omiros Papaspiliopoulos. 2013. SMC²: an efficient algorithm for sequential analysis of state space models. /Journal of the Royal Statistical Society Series B: Statistical Methodology/ 75 (2013), 397-426. Issue 3. <https://doi.org/10.1111/j.1467-9868.2012.01046.x>
 module Control.Monad.Bayes.Inference.SMC2
   ( smc2,
+    SMC2,
   )
 where
 
@@ -66,8 +67,8 @@ smc2 ::
   -- | model
   (b -> Sequential (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]
-smc2 k n p t param model =
+smc2 k n p t param m =
   rmsmc
     MCMCConfig {numMCMCSteps = t, proposal = SingleSiteMH, numBurnIn = 0}
     SMCConfig {numParticles = p, numSteps = k, resampler = resampleMultinomial}
-    (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . model)
+    (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . m)

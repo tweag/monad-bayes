@@ -4,10 +4,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 -- |
--- slower than Control.Monad.Bayes.Density.Free,
--- but much more elementary to understand. Just uses standard
+-- Slower than Control.Monad.Bayes.Density.Free, so not used by default,
+-- but more elementary to understand. Just uses standard
 -- monad transformer techniques.
--- @
 module Control.Monad.Bayes.Density.State where
 
 import Control.Monad.Bayes.Class (MonadSample (random))

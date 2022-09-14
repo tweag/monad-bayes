@@ -1,4 +1,4 @@
-resolver: nightly-2022-04-26 
+resolver: nightly-2022-08-16
 packages:
   - "."
 flags:
