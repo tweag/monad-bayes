@@ -67,8 +67,8 @@ smc2 ::
   -- | model
   (b -> Sequential (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]
-smc2 k n p t param model =
+smc2 k n p t param m =
   rmsmc
     MCMCConfig {numMCMCSteps = t, proposal = SingleSiteMH, numBurnIn = 0}
     SMCConfig {numParticles = p, numSteps = k, resampler = resampleMultinomial}
-    (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . model)
+    (param >>= setup . population . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . m)

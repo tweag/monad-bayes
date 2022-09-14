@@ -407,6 +407,12 @@ The final element of the chain is the head of the list, so you can drop samples 
 
 You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
 
+You can run this with a terminal user interface (TUI) by doing e.g.
+
+```haskell
+tui 0 random noVisual
+```
+
 ## Sequential Monte Carlo (Particle Filtering)
 
 Run SMC with two resampling steps and two particles as follows, given a model `m`:

@@ -17,7 +17,7 @@ import Control.Foldl qualified as Fold
 import Control.Monad (void)
 import Control.Monad.Bayes.Enumerator (toEmpirical)
 import Control.Monad.Bayes.Inference.MCMC
-import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO, toBins)
+import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced (Traced)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted
@@ -108,22 +108,6 @@ showEmpirical =
 
 showVal :: Show a => [a] -> Widget n
 showVal = txt . T.pack . (\case [] -> ""; a -> show $ head a)
-
-showHistogram :: [Double] -> Widget n
-showHistogram samples =
-  let dict = Fold.fold (Fold.foldByKeyMap Fold.sum) (fmap (,1) $ toBins 0.1 $ take 10000 (samples))
-      valSum = fromIntegral $ sum $ M.elems dict
-      bins = M.keys dict
-      ndict = M.map ((/ valSum) . fromIntegral) dict
-      makeBar bin dict =
-        cropTop 10 $
-          pad 0 10 0 0 $
-            charFill (fg yellow) '.' 1 (1 * maybe 0 (round . (* 100)) (M.lookup bin dict))
-   in withBorderStyle
-        unicode
-        ( raw $
-            horizCat [makeBar bin ndict | bin <- sort bins]
-        )
 
 -- | handler for events received by the TUI
 appEvent :: s -> B.BrickEvent n1 s -> B.EventM n2 (B.Next s)
