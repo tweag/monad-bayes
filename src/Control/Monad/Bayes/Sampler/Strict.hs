@@ -204,7 +204,7 @@ data Result = Result
 
 filteredAndTrue :: Diff td ~ Float => BehaviourF MySmallMonad td StdDev Result
 filteredAndTrue = proc stdDev -> do
-  (measuredPosition, actualPosition) <- model2 -< stdDev
+  (measuredPosition, actualPosition) <- model -< stdDev
   samples <- runPopulationCl 200 resampleMultinomial filtered -< (stdDev, measuredPosition)
   -- arrM $ liftIO . print -< samples
   returnA -< Result
@@ -256,16 +256,17 @@ mainClSF :: (Diff td ~ Float, td ~ Float) => BehaviourF MySmallMonad td () ()
 -- mainClSF :: BehaviourF MyMonad td () ()
 mainClSF = proc () -> do
 
-  output <- model4 -< ()
-  visualisation2 -< output
+  -- output <- model4 -< ()
+  -- visualisation2 -< output
 
 
-  -- let stdDev = 20
-  -- output <- filteredAndTrue -< stdDev
-  -- visualisation -< output
-  -- arrM $ liftIO . print -< output
-  -- n <- count -< ()
-  -- arrM $ liftIO . print -< n
+  let stdDev = 20
+  output <- filteredAndTrue -< stdDev
+  visualisation -< output
+  arrM $ liftIO . print -< output
+  n <- count -< ()
+  arrM $ liftIO . print -< n
+
   -- liftHS $ throwOn () -< n > 100
   -- liftClSF $ liftClSF $ throwOn () -< n > 100
 
