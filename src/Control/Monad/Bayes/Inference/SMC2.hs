@@ -3,14 +3,14 @@
 
 -- |
 -- Module      : Control.Monad.Bayes.Inference.SMC2
--- Description : Sequential Monte Carlo squared (SMC²)
+-- Description : SequentialT Monte Carlo squared (SMC²)
 -- Copyright   : (c) Adam Scibior, 2015-2020
 -- License     : MIT
 -- Maintainer  : leonhard.markert@tweag.io
 -- Stability   : experimental
 -- Portability : GHC
 --
--- Sequential Monte Carlo squared (SMC²) sampling.
+-- SequentialT Monte Carlo squared (SMC²) sampling.
 --
 -- Nicolas Chopin, Pierre E. Jacob, and Omiros Papaspiliopoulos. 2013. SMC²: an efficient algorithm for sequential analysis of state space models. /Journal of the Royal Statistical Society Series B: Statistical Methodology/ 75 (2013), 397-426. Issue 3. <https://doi.org/10.1111/j.1467-9868.2012.01046.x>
 module Control.Monad.Bayes.Inference.SMC2
@@ -28,16 +28,16 @@ import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
 import Control.Monad.Bayes.Population as Pop (Population, population, resampleMultinomial)
-import Control.Monad.Bayes.Sequential (Sequential)
+import Control.Monad.Bayes.SequentialT (SequentialT)
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
 import Numeric.Log (Log)
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
-newtype SMC2 m a = SMC2 (Sequential (Traced (Population m)) a)
+newtype SMC2 m a = SMC2 (SequentialT (Traced (Population m)) a)
   deriving newtype (Functor, Applicative, Monad)
 
-setup :: SMC2 m a -> Sequential (Traced (Population m)) a
+setup :: SMC2 m a -> SequentialT (Traced (Population m)) a
 setup (SMC2 m) = m
 
 instance MonadTrans SMC2 where
@@ -51,7 +51,7 @@ instance Monad m => MonadCond (SMC2 m) where
 
 instance MonadSample m => MonadInfer (SMC2 m)
 
--- | Sequential Monte Carlo squared.
+-- | SequentialT Monte Carlo squared.
 smc2 ::
   MonadSample m =>
   -- | number of time steps
@@ -63,9 +63,9 @@ smc2 ::
   -- | number of MH transitions
   Int ->
   -- | model parameters
-  Sequential (Traced (Population m)) b ->
+  SequentialT (Traced (Population m)) b ->
   -- | model
-  (b -> Sequential (Population (SMC2 m)) a) ->
+  (b -> SequentialT (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]
 smc2 k n p t param model =
   rmsmc

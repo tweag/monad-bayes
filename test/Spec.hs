@@ -13,7 +13,7 @@ import TestPipes (hmms)
 import TestPipes qualified
 import TestPopulation qualified
 import TestSampler qualified
-import TestSequential qualified
+import TestSequentialT qualified
 import TestStormerVerlet qualified
 import TestWeighted qualified
 
@@ -100,17 +100,17 @@ main = hspec do
       it "resample preserves the distribution" do
         TestPopulation.resampleCheck 1 `shouldBe` True
         TestPopulation.resampleCheck 2 `shouldBe` True
-  describe "Sequential" do
+  describe "SequentialT" do
     it "stops at every factor" do
-      TestSequential.checkTwoSync 0 `shouldBe` True
-      TestSequential.checkTwoSync 1 `shouldBe` True
-      TestSequential.checkTwoSync 2 `shouldBe` True
+      TestSequentialT.checkTwoSync 0 `shouldBe` True
+      TestSequentialT.checkTwoSync 1 `shouldBe` True
+      TestSequentialT.checkTwoSync 2 `shouldBe` True
     it "preserves the distribution" $
-      TestSequential.checkPreserve `shouldBe` True
+      TestSequentialT.checkPreserve `shouldBe` True
     it "produces correct intermediate weights" do
-      TestSequential.checkSync 0 `shouldBe` True
-      TestSequential.checkSync 1 `shouldBe` True
-      TestSequential.checkSync 2 `shouldBe` True
+      TestSequentialT.checkSync 0 `shouldBe` True
+      TestSequentialT.checkSync 1 `shouldBe` True
+      TestSequentialT.checkSync 2 `shouldBe` True
   describe "SMC" do
     it "terminates" $
       seq TestInference.checkTerminateSMC () `shouldBe` ()
