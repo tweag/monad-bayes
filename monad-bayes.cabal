@@ -44,7 +44,7 @@ library
     Control.Monad.Bayes.Inference.SMC2
     Control.Monad.Bayes.Inference.TUI
     Control.Monad.Bayes.Integrator
-    Control.Monad.Bayes.Population
+    Control.Monad.Bayes.PopulationT
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
     Control.Monad.Bayes.SequentialT
@@ -160,7 +160,7 @@ test-suite monad-bayes-test
     TestInference
     TestIntegrator
     TestPipes
-    TestPopulation
+    TestPopulationT
     TestSampler
     TestSequentialT
     TestStormerVerlet

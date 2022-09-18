@@ -19,8 +19,8 @@ import Control.Monad.Bayes.Enumerator (enumerator)
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (collapse, runPopulation)
+import Control.Monad.Bayes.PopulationT
+import Control.Monad.Bayes.PopulationT (collapse, runPopulationT)
 import Control.Monad.Bayes.Sampler.Strict (Sampler, sampleIOfixed)
 import Control.Monad.Bayes.Sampler.Strict qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)

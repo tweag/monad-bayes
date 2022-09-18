@@ -8,8 +8,8 @@ import Control.Monad.Bayes.Inference.SMC
   ( SMCConfig (SMCConfig, numParticles, numSteps, resampler),
     smc,
   )
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (population)
+import Control.Monad.Bayes.PopulationT
+import Control.Monad.Bayes.PopulationT (population)
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.TracedT
 import Control.Monad.Bayes.Weighted

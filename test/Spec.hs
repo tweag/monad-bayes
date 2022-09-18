@@ -11,7 +11,7 @@ import TestInference qualified
 import TestIntegrator qualified
 import TestPipes (hmms)
 import TestPipes qualified
-import TestPopulation qualified
+import TestPopulationT qualified
 import TestSampler qualified
 import TestSequentialT qualified
 import TestStormerVerlet qualified
@@ -83,23 +83,23 @@ main = hspec do
         ]
         `shouldBe` True
 
-  describe "Population" do
+  describe "PopulationT" do
     context "controlling population" do
       it "preserves the population when not explicitly altered" do
-        popSize <- TestPopulation.popSize
+        popSize <- TestPopulationT.popSize
         popSize `shouldBe` 5
       it "multiplies the number of samples when spawn invoked twice" do
-        manySize <- TestPopulation.manySize
+        manySize <- TestPopulationT.manySize
         manySize `shouldBe` 15
       it "correctly computes population average" $
-        TestPopulation.popAvgCheck `shouldBe` True
+        TestPopulationT.popAvgCheck `shouldBe` True
     context "distribution-preserving transformations" do
       it "collapse preserves the distribution" do
-        TestPopulation.transCheck1 `shouldBe` True
-        TestPopulation.transCheck2 `shouldBe` True
+        TestPopulationT.transCheck1 `shouldBe` True
+        TestPopulationT.transCheck2 `shouldBe` True
       it "resample preserves the distribution" do
-        TestPopulation.resampleCheck 1 `shouldBe` True
-        TestPopulation.resampleCheck 2 `shouldBe` True
+        TestPopulationT.resampleCheck 1 `shouldBe` True
+        TestPopulationT.resampleCheck 2 `shouldBe` True
   describe "SequentialT" do
     it "stops at every factor" do
       TestSequentialT.checkTwoSync 0 `shouldBe` True

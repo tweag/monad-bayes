@@ -22,8 +22,8 @@ where
 import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, MonadSample, latent)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (), smc)
-import Control.Monad.Bayes.Population as Pop
-  ( Population,
+import Control.Monad.Bayes.PopulationT as Pop
+  ( PopulationT,
     hoist,
     population,
     pushEvidence,
@@ -40,7 +40,7 @@ pmmh ::
   MCMCConfig ->
   SMCConfig (Weighted m) ->
   TracedT (Weighted m) a1 ->
-  (a1 -> SequentialT (Population (Weighted m)) a2) ->
+  (a1 -> SequentialT (PopulationT (Weighted m)) a2) ->
   m [[(a2, Log Double)]]
 pmmh mcmcConf smcConf param model =
   mcmc

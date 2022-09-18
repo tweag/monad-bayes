@@ -5,8 +5,8 @@ import Control.Monad.Bayes.Inference.PMMH as PMMH (pmmh)
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.SMC2 as SMC2 (smc2)
-import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (population, resampleMultinomial)
+import Control.Monad.Bayes.PopulationT
+import Control.Monad.Bayes.PopulationT (population, resampleMultinomial)
 import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed, sampleWith)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Control.Monad.IO.Class (MonadIO (liftIO))

@@ -1,9 +1,9 @@
-module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
+module TestPopulationT (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
 import Control.Monad.Bayes.Enumerator (enumerator, expectation)
-import Control.Monad.Bayes.Population as Population
-  ( Population,
+import Control.Monad.Bayes.PopulationT as PopulationT
+  ( PopulationT,
     collapse,
     popAvg,
     population,
@@ -16,7 +16,7 @@ import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 import System.Random.Stateful (mkStdGen, newIOGenM)
 
-weightedSampleSize :: MonadSample m => Population m a -> m Int
+weightedSampleSize :: MonadSample m => PopulationT m a -> m Int
 weightedSampleSize = fmap length . population
 
 popSize :: IO Int

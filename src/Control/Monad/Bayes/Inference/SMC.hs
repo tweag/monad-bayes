@@ -21,8 +21,8 @@ module Control.Monad.Bayes.Inference.SMC
 where
 
 import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
-import Control.Monad.Bayes.Population
-  ( Population,
+import Control.Monad.Bayes.PopulationT
+  ( PopulationT,
     pushEvidence,
     withParticles,
   )
@@ -33,7 +33,7 @@ import Control.Monad.Bayes.SequentialT as Seq
   )
 
 data SMCConfig m = SMCConfig
-  { resampler :: forall x. Population m x -> Population m x,
+  { resampler :: forall x. PopulationT m x -> PopulationT m x,
     numSteps :: Int,
     numParticles :: Int
   }
@@ -43,13 +43,13 @@ data SMCConfig m = SMCConfig
 smc ::
   MonadSample m =>
   SMCConfig m ->
-  SequentialT (Population m) a ->
-  Population m a
+  SequentialT (PopulationT m) a ->
+  PopulationT m a
 smc SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (withParticles numParticles)
 
 -- | SequentialT Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcPush ::
-  MonadInfer m => SMCConfig m -> SequentialT (Population m) a -> Population m a
+  MonadInfer m => SMCConfig m -> SequentialT (PopulationT m) a -> PopulationT m a
 smcPush config = smc config {resampler = (pushEvidence . resampler config)}
