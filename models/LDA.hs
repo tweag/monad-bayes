@@ -16,7 +16,7 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed)
-import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.TracedT (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Data.Map qualified as Map
 import Data.Text (Text, words)

@@ -29,15 +29,15 @@ import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
 import Control.Monad.Bayes.Population as Pop (Population, population, resampleMultinomial)
 import Control.Monad.Bayes.SequentialT (SequentialT)
-import Control.Monad.Bayes.Traced
+import Control.Monad.Bayes.TracedT
 import Control.Monad.Trans (MonadTrans (..))
 import Numeric.Log (Log)
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
-newtype SMC2 m a = SMC2 (SequentialT (Traced (Population m)) a)
+newtype SMC2 m a = SMC2 (SequentialT (TracedT (Population m)) a)
   deriving newtype (Functor, Applicative, Monad)
 
-setup :: SMC2 m a -> SequentialT (Traced (Population m)) a
+setup :: SMC2 m a -> SequentialT (TracedT (Population m)) a
 setup (SMC2 m) = m
 
 instance MonadTrans SMC2 where
@@ -63,7 +63,7 @@ smc2 ::
   -- | number of MH transitions
   Int ->
   -- | model parameters
-  SequentialT (Traced (Population m)) b ->
+  SequentialT (TracedT (Population m)) b ->
   -- | model
   (b -> SequentialT (Population (SMC2 m)) a) ->
   Population m [(a, Log Double)]

@@ -1,12 +1,12 @@
 -- |
--- Module      : Control.Monad.Bayes.Traced.Common
+-- Module      : Control.Monad.Bayes.TracedT.Common
 -- Description : Numeric code for Trace MCMC
 -- Copyright   : (c) Adam Scibior, 2015-2020
 -- License     : MIT
 -- Maintainer  : leonhard.markert@tweag.io
 -- Stability   : experimental
 -- Portability : GHC
-module Control.Monad.Bayes.Traced.Common
+module Control.Monad.Bayes.TracedT.Common
   ( Trace (..),
     singleton,
     output,

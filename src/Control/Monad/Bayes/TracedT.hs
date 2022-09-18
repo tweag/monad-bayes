@@ -1,14 +1,14 @@
 -- |
--- Module      : Control.Monad.Bayes.Traced
+-- Module      : Control.Monad.Bayes.TracedT
 -- Description : Distributions on execution traces
 -- Copyright   : (c) Adam Scibior, 2015-2020
 -- License     : MIT
 -- Maintainer  : leonhard.markert@tweag.io
 -- Stability   : experimental
 -- Portability : GHC
-module Control.Monad.Bayes.Traced
-  ( module Control.Monad.Bayes.Traced.Static,
+module Control.Monad.Bayes.TracedT
+  ( module Control.Monad.Bayes.TracedT.Static,
   )
 where
 
-import Control.Monad.Bayes.Traced.Static
+import Control.Monad.Bayes.TracedT.Static

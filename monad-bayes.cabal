@@ -48,15 +48,15 @@ library
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
     Control.Monad.Bayes.SequentialT
-    Control.Monad.Bayes.Traced
-    Control.Monad.Bayes.Traced.Basic
-    Control.Monad.Bayes.Traced.Dynamic
-    Control.Monad.Bayes.Traced.Static
+    Control.Monad.Bayes.TracedT
+    Control.Monad.Bayes.TracedT.Basic
+    Control.Monad.Bayes.TracedT.Dynamic
+    Control.Monad.Bayes.TracedT.Static
     Control.Monad.Bayes.Weighted
     Math.Integrators.StormerVerlet
 
   hs-source-dirs:     src
-  other-modules:      Control.Monad.Bayes.Traced.Common
+  other-modules:      Control.Monad.Bayes.TracedT.Common
   default-language:   Haskell2010
   build-depends:
       base             >=4.11   && <4.17

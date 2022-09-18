@@ -18,8 +18,8 @@ import Control.Monad (void)
 import Control.Monad.Bayes.Enumerator (toEmpirical)
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO, toBins)
-import Control.Monad.Bayes.Traced (Traced)
-import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.TracedT (TracedT)
+import Control.Monad.Bayes.TracedT.Common
 import Control.Monad.Bayes.Weighted
 import Data.List (sort)
 import Data.Map qualified as M
@@ -149,7 +149,7 @@ theMap =
       (attrName "highlight", fg yellow)
     ]
 
-tui :: Show a => Int -> Traced (Weighted SamplerIO) a -> ([a] -> Widget ()) -> IO ()
+tui :: Show a => Int -> TracedT (Weighted SamplerIO) a -> ([a] -> Widget ()) -> IO ()
 tui burnIn distribution visualizer = void do
   eventChan <- B.newBChan 10
   initialVty <- buildVty

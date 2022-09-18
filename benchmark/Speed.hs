@@ -10,7 +10,7 @@ import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population (population, resampleSystematic)
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed)
-import Control.Monad.Bayes.Traced (mh)
+import Control.Monad.Bayes.TracedT (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
   ( Benchmark,

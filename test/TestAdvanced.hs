@@ -19,7 +19,7 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.SMC2
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Traced
+import Control.Monad.Bayes.TracedT
 import Control.Monad.Bayes.Weighted
 import Numeric.Log (Log)
 

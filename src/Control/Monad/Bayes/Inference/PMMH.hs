@@ -29,7 +29,7 @@ import Control.Monad.Bayes.Population as Pop
     pushEvidence,
   )
 import Control.Monad.Bayes.SequentialT (SequentialT)
-import Control.Monad.Bayes.Traced.Static (Traced)
+import Control.Monad.Bayes.TracedT.Static (TracedT)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (lift)
 import Numeric.Log (Log)
@@ -39,7 +39,7 @@ pmmh ::
   MonadSample m =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
-  Traced (Weighted m) a1 ->
+  TracedT (Weighted m) a1 ->
   (a1 -> SequentialT (Population (Weighted m)) a2) ->
   m [[(a2, Log Double)]]
 pmmh mcmcConf smcConf param model =

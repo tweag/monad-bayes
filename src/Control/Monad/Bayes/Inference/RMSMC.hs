@@ -30,14 +30,14 @@ import Control.Monad.Bayes.Population
   )
 import Control.Monad.Bayes.SequentialT as Seq (SequentialT, sequentially)
 import Control.Monad.Bayes.SequentialT qualified as S
-import Control.Monad.Bayes.Traced.Basic qualified as TrBas
-import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
-import Control.Monad.Bayes.Traced.Static as Tr
-  ( Traced,
+import Control.Monad.Bayes.TracedT.Basic qualified as TrBas
+import Control.Monad.Bayes.TracedT.Dynamic qualified as TrDyn
+import Control.Monad.Bayes.TracedT.Static as Tr
+  ( TracedT,
     marginal,
     mhStep,
   )
-import Control.Monad.Bayes.Traced.Static qualified as TrStat
+import Control.Monad.Bayes.TracedT.Static qualified as TrStat
 import Data.Monoid (Endo (..))
 
 -- | Resample-move SequentialT Monte Carlo.
@@ -46,7 +46,7 @@ rmsmc ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  SequentialT (Traced (Population m)) a ->
+  SequentialT (TracedT (Population m)) a ->
   Population m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   marginal
@@ -60,7 +60,7 @@ rmsmcBasic ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  SequentialT (TrBas.Traced (Population m)) a ->
+  SequentialT (TrBas.TracedT (Population m)) a ->
   Population m a
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
   TrBas.marginal
@@ -75,7 +75,7 @@ rmsmcDynamic ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  SequentialT (TrDyn.Traced (Population m)) a ->
+  SequentialT (TrDyn.TracedT (Population m)) a ->
   Population m a
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
   TrDyn.marginal
