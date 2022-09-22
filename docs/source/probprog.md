@@ -27,7 +27,7 @@ paramPriorRegression = do
 
 regression :: Kernel [(Double, Double)] (Double, Double, Double)
 regression xsys = do
-    params@(slope, intercept, noise) <- paramPriorRegression
+    (slope, intercept, noise) <- paramPriorRegression
     forM_ xsys \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
     return (slope, intercept, noise)
 ```
