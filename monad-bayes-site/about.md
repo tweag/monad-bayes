@@ -8,7 +8,7 @@ Monad-Bayes is a library for **probabilistic programming** written in **Haskell*
 
 **Perform inference** [with a variety of standard methods](/tutorials.html) 
 
-**Integrate with arbitrary Haskell code** [like this](/examples.html) because Monad-Bayes is just a library, not a separate language
+**Integrate with Haskell code** [like this](/examples.html) because Monad-Bayes is just a library, not a separate language
 
 <!-- ```haskell
 example :: Distribution Histogram
