@@ -17,7 +17,7 @@ Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation, web
 
 ## Project status
 
-Now that `monad-bayes` has been released on Hackage, and the documentation and API has been updated, we will focus on adding new features. See the issues to get a sense, and please feel free to make requests.
+Now that `monad-bayes` has been released on Hackage, and the documentation and the API has been updated, we will focus on adding new features. See the Github issues to get a sense of what is being prepared, and please feel free to make requests.
 
 ## Background
 
