@@ -38,7 +38,7 @@ This is the *model*. To perform *inference* , suppose we have a data set `xsys` 
 
 ![](_static/priorpred.png)
 
-We could then run the model as follows:
+To run the model
 
 ```haskell   
 mhRunsRegression = sampler 
