@@ -13,7 +13,7 @@ A library for probabilistic programming in Haskell.
 
 <!-- See the [documentation](https://monad-bayes.netlify.app/) for a quick-start user guide and a reference overview of how it all works. -->
 
-Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation, website and newer features by [Reuben][reuben-web], maintained by [Tweag I/O][tweagio].
+Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation, website and newer features by [Reuben][reuben-web], maintained by [Tweag][tweagio].
 
 ## Project status
 
