@@ -14630,7 +14630,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadSample</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span><span class="w"></span>
 <span class="nf">model</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.7</span><span class="w"></span>
 </pre></div>
 
@@ -14765,7 +14765,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">multipleDraws</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadSample</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Bool</span><span class="p">]</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">multipleDraws</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Bool</span><span class="p">]</span><span class="w"></span>
 <span class="nf">multipleDraws</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="n">model</span><span class="w"></span>
 
 <span class="nf">draws</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span><span class="n">multipleDraws</span><span class="w"></span>
@@ -14922,7 +14922,7 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">distributionOverPlots</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadSample</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">VegaLiteLab</span><span class="w"> </span><span class="c1">-- the type of plots</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">distributionOverPlots</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">VegaLiteLab</span><span class="w"> </span><span class="c1">-- the type of plots</span><span class="w"></span>
 <span class="nf">distributionOverPlots</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">plot</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="n">first</span><span class="w"> </span><span class="p">(</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">show</span><span class="p">))</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">toEmpirical</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="n">model</span><span class="w"></span>
 
 <span class="nf">sampler</span><span class="w"> </span><span class="n">distributionOverPlots</span><span class="w"></span>
@@ -14981,7 +14981,7 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadSample</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span><span class="w"></span>
 <span class="nf">model2</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
 </pre></div>
 
@@ -15063,7 +15063,7 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">multipleDraws2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadSample</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">]</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">multipleDraws2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">]</span><span class="w"></span>
 <span class="nf">multipleDraws2</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="n">model2</span><span class="w"></span>
 
 <span class="nf">draws2</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span><span class="n">multipleDraws2</span><span class="w"></span>
@@ -15429,7 +15429,7 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[27]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model5</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadInfer</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">model5</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span><span class="w"></span>
 <span class="nf">model5</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
 <span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">5</span><span class="w"></span>
 <span class="w">    </span><span class="p">(</span><span class="n">factor</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="kt">Exp</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">cos</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"></span>

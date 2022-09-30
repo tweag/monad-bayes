@@ -27,8 +27,8 @@ where
 
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, random),
+    MonadDistribution (bernoulli, categorical, random),
+    MonadMeasure,
   )
 import Control.Monad.Coroutine
   ( Coroutine (..),
@@ -54,7 +54,7 @@ newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
 extract :: Await () a -> a
 extract (Await f) = f ()
 
-instance MonadSample m => MonadSample (Sequential m) where
+instance MonadDistribution m => MonadDistribution (Sequential m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
@@ -63,7 +63,7 @@ instance MonadSample m => MonadSample (Sequential m) where
 instance MonadCond m => MonadCond (Sequential m) where
   score w = lift (score w) >> suspend
 
-instance MonadInfer m => MonadInfer (Sequential m)
+instance MonadMeasure m => MonadMeasure (Sequential m)
 
 -- | A point where the computation is paused.
 suspend :: Monad m => Sequential m ()

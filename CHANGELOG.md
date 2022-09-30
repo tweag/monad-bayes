@@ -22,7 +22,7 @@
 Addition of new helper functions, plotting tools, tests, and Integrator monad.
 
 - helpers include: `toEmpirical` (list of samples to empirical distribution) and `toBins` (simple histogramming)
-- `Integrator` is an instance of `MonadSample` for numerical integration
+- `Integrator` is an instance of `MonadDistribution` for numerical integration
 - `notebooks` now contains working notebook-based tutorials and examples
 - new tests, including with conjugate distributions to compare analytic solution against inferred posterior
 - `models` directory is cleaned up. New sequential models using `pipes` package to represent monadic streams

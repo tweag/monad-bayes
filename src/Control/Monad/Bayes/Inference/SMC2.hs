@@ -21,8 +21,8 @@ where
 
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
+    MonadDistribution (random),
+    MonadMeasure,
   )
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
@@ -43,17 +43,17 @@ setup (SMC2 m) = m
 instance MonadTrans SMC2 where
   lift = SMC2 . lift . lift . lift
 
-instance MonadSample m => MonadSample (SMC2 m) where
+instance MonadDistribution m => MonadDistribution (SMC2 m) where
   random = lift random
 
 instance Monad m => MonadCond (SMC2 m) where
   score = SMC2 . score
 
-instance MonadSample m => MonadInfer (SMC2 m)
+instance MonadDistribution m => MonadMeasure (SMC2 m)
 
 -- | Sequential Monte Carlo squared.
 smc2 ::
-  MonadSample m =>
+  MonadDistribution m =>
   -- | number of time steps
   Int ->
   -- | number of inner particles

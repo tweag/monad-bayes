@@ -9,7 +9,7 @@
 -- monad transformer techniques.
 module Control.Monad.Bayes.Density.State where
 
-import Control.Monad.Bayes.Class (MonadSample (random))
+import Control.Monad.Bayes.Class (MonadDistribution (random))
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
 import Control.Monad.Writer
 
@@ -27,7 +27,7 @@ instance Monad m => MonadWriter [Double] (Density m) where
   listen = Density . listen . runDensity
   pass = Density . pass . runDensity
 
-instance MonadSample m => MonadSample (Density m) where
+instance MonadDistribution m => MonadDistribution (Density m) where
   random = do
     trace <- get
     x <- case trace of
