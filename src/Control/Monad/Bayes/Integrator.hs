@@ -161,8 +161,8 @@ histogram nBins binSize model = do
       probability (transform x, transform (x + 1)) $ normalize model
     )
 
-plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
+plotCdf :: Int -> Double -> Integrator Double -> [(Double, Double)]
 plotCdf nBins binSize model = do
   x <- take nBins [1 ..]
   let transform k = (k - (fromIntegral nBins / 2)) * binSize
-  return ((T.pack . show) $ transform x, cdf model (transform x))
+  return (transform x, cdf model (transform x))
