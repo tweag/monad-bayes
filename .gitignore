@@ -23,6 +23,7 @@ docs/build
 .hpc
 .hsenv
 .vscode
+.envrc
 .stack-work/
 cabal-dev
 cabal.project.local
@@ -34,4 +35,6 @@ dist-*
 /.pre-commit-config.yaml
 /.direnv
 venv/
+.venv/
+.ipynb_checkpoints/
 .netlify/
