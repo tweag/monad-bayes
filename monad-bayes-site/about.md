@@ -22,7 +22,9 @@ example = fmap histogram (replicateM 1000 (normal 0 1))
      width="720" 
      height="300" />
 
-`model` is a mixture of Gaussians, defined as a program. Its type `Distribution Double` shows that it is a distribution over reals. `image` is a program too: as its type shows, it is a distribution over plots. In particular, plots that arise from forming a 200 bin histogram out of 100000 iid draws from `model`. To sample from `image`, we simply write `sampler image`, with the result shown below:
+The program `model` is a mixture of Gaussians. Its type `Distribution Double` represents a distribution over reals. 
+`image` is a program too: as its type shows, it is a distribution over plots. In particular, plots that arise from forming a 200 bin histogram out of 100000 independent identically distributed (iid) draws from `model`. 
+To sample from `image`, we simply write `sampler image`, with the result shown below:
 
 
 <img src="../images/plot.png" 
