@@ -18,11 +18,6 @@ example = fmap histogram (replicateM 1000 (normal 0 1))
 # Example
 
 
-<img src="../images/code_example.png" 
-     width="720" 
-     height="300" />
-
-
 ```haskell
 model :: Distribution Double
 model = do

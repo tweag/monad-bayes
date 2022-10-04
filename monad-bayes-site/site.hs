@@ -3,6 +3,20 @@
 
 import Data.Monoid (mappend)
 import Hakyll
+import Text.Pandoc.Highlighting (Style, styleToCss, tango)
+import Text.Pandoc.Options (ReaderOptions (..), WriterOptions (..))
+
+-- see https://rebeccaskinner.net/posts/2021-01-31-hakyll-syntax-highlighting.html
+pandocCodeStyle :: Style
+pandocCodeStyle = tango
+
+pandocCompiler' :: Compiler (Item String)
+pandocCompiler' =
+  pandocCompilerWith
+    defaultHakyllReaderOptions
+    defaultHakyllWriterOptions
+      { writerHighlightStyle = Just pandocCodeStyle
+      }
 
 --------------------------------------------------------------------------------
 main :: IO ()
@@ -18,7 +32,7 @@ main = hakyll $ do
   match (fromList ["about.md"]) $ do
     route $ setExtension "html"
     compile $
-      pandocCompiler
+      pandocCompiler'
         >>= loadAndApplyTemplate "templates/default.html" defaultContext
         >>= relativizeUrls
 
@@ -28,6 +42,11 @@ main = hakyll $ do
       pandocCompiler
         >>= loadAndApplyTemplate "templates/default.html" defaultContext
         >>= relativizeUrls
+
+  create ["css/syntax.css"] $ do
+    route idRoute
+    compile $ do
+      makeItem $ styleToCss pandocCodeStyle
 
   -- match "posts/*" $ do
   --   route $ setExtension "html"
