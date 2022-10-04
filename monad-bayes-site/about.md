@@ -18,9 +18,17 @@ example = fmap histogram (replicateM 1000 (normal 0 1))
 # Example
 
 
-<img src="../images/code_example.png" 
-     width="720" 
-     height="300" />
+```haskell
+model :: Distribution Double
+model = do
+     x <- bernoulli 0.5
+     normal (if x then (-3) else 3) 1
+
+image :: Distribution Plot
+image = fmap (plot . histogram 200) (replicateM 100000 model)
+
+sampler image
+```
 
 The program `model` is a mixture of Gaussians. Its type `Distribution Double` represents a distribution over reals. 
 `image` is a program too: as its type shows, it is a distribution over plots. In particular, plots that arise from forming a 200 bin histogram out of 100000 independent identically distributed (iid) draws from `model`. 
