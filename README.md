@@ -49,11 +49,12 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
 
 Now you can use `stack build`, `stack test` and `stack ghci`.
 
-**To view the notebooks, go to the website**. To use the notebooks interactively, you will first need `nix`. Then:
+**To view the notebooks, go to the website**. To use the notebooks interactively:
 
-1. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes`
-
-2. This should open a shell, from which you can run `jupyter-lab` to load the notebooks
+1. Compile the source: `stack build`
+2. If you do not have `nix` [install it](https://nixos.org/download.html).
+3. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes` - this should open a nix shell. For Linux use `x86_64-linux` for `--system` option instead. 
+4. Run `jupyter-lab` from the nix shell to load the notebooks.
 
 Your mileage may vary. 
 
