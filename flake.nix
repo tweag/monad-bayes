@@ -11,7 +11,8 @@
     ];
   };
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    # nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs.url = "nixpkgs/22.05";
     flake-compat.url = "github:edolstra/flake-compat";
     flake-compat.flake = false;
     flake-utils.url = "github:numtide/flake-utils";
@@ -47,7 +48,7 @@
           overlays =
             # [myHaskellPackageOverlay] ++
             nixpkgs.lib.attrValues jupyterWith.overlays;
-          # config.allowBroken = true;
+          config.allowBroken = true;
         };
         # pkgs = nixpkgs.legacyPackages.${system};
         warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
@@ -68,33 +69,33 @@
           packages = p:
             with p; [
               # pkgs.myHaskellPackages.imatrix-sundials
-              # pkgs.myHaskellPackages.hvega
-              # pkgs.myHaskellPackages.lens
-              # pkgs.myHaskellPackages.log-domain
-              # pkgs.myHaskellPackages.katip
-              # pkgs.myHaskellPackages.ihaskell-hvega
-              # pkgs.myHaskellPackages.ihaskell-diagrams
-              # pkgs.myHaskellPackages.text
-              # pkgs.myHaskellPackages.diagrams
-              # pkgs.myHaskellPackages.diagrams-cairo
-              # pkgs.myHaskellPackages.aeson
-              # pkgs.myHaskellPackages.lens
-              # pkgs.myHaskellPackages.lens-aeson
-              # pkgs.myHaskellPackages.pretty-simple
-              # pkgs.myHaskellPackages.monad-loops
-              # pkgs.myHaskellPackages.hamilton
-              # pkgs.myHaskellPackages.hmatrix
-              # pkgs.myHaskellPackages.vector-sized
-              # pkgs.myHaskellPackages.linear
-              # pkgs.myHaskellPackages.recursion-schemes
-              # pkgs.myHaskellPackages.data-fix
-              # pkgs.myHaskellPackages.free
-              # pkgs.myHaskellPackages.comonad
-              # pkgs.myHaskellPackages.adjunctions
-              # pkgs.myHaskellPackages.distributive
-              # pkgs.myHaskellPackages.vector
-              # pkgs.myHaskellPackages.megaparsec
-              # pkgs.myHaskellPackages.histogram-fill
+              pkgs.haskellPackages.hvega
+              pkgs.haskellPackages.lens
+              pkgs.haskellPackages.log-domain
+              pkgs.haskellPackages.katip
+              pkgs.haskellPackages.ihaskell-hvega
+              pkgs.haskellPackages.ihaskell-diagrams
+              pkgs.haskellPackages.text
+              pkgs.haskellPackages.diagrams
+              pkgs.haskellPackages.diagrams-cairo
+              pkgs.haskellPackages.aeson
+              pkgs.haskellPackages.lens
+              pkgs.haskellPackages.lens-aeson
+              pkgs.haskellPackages.pretty-simple
+              pkgs.haskellPackages.monad-loops
+              pkgs.haskellPackages.hamilton
+              pkgs.haskellPackages.hmatrix
+              pkgs.haskellPackages.vector-sized
+              pkgs.haskellPackages.linear
+              pkgs.haskellPackages.recursion-schemes
+              pkgs.haskellPackages.data-fix
+              pkgs.haskellPackages.free
+              pkgs.haskellPackages.comonad
+              pkgs.haskellPackages.adjunctions
+              pkgs.haskellPackages.distributive
+              pkgs.haskellPackages.vector
+              pkgs.haskellPackages.megaparsec
+              pkgs.haskellPackages.histogram-fill
               monad-bayes
             ];
           # Optional definition of `haskellPackages` to be used.
