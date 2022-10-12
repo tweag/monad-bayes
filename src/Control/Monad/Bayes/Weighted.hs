@@ -25,7 +25,6 @@ module Control.Monad.Bayes.Weighted
   )
 where
 
-import Control.Arrow (Arrow (first))
 import Control.Monad.Bayes.Class
   ( MonadCond (..),
     MonadInfer,
@@ -33,7 +32,6 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.State (MonadIO, MonadTrans, StateT (..), lift, mapStateT, modify)
-import Data.Fixed (mod')
 import Numeric.Log (Log)
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
