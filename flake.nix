@@ -130,19 +130,16 @@
           ce.cabal-docspec.components.exes.cabal-docspec;
 
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env jupyterShell];
+          inputsFrom = [monad-bayes.env];
           packages = with pre-commit-hooks.packages.${system}; [
             alejandra
             cabal-fmt
             hlint
             ormolu
             cabal-docspec
+            jupyterEnvironment
           ];
-          shellHook =
-            pre-commit.shellHook
-            + ''
-              echo "=== monad-bayes development shell ${jupyterEnvironment} ==="
-            '';
+          shellHook = pre-commit.shellHook;
         };
         pre-commit = pre-commit-hooks.lib.${system}.run {
           inherit src;
