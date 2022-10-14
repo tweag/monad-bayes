@@ -20,7 +20,8 @@
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jupyterWith.url = "github:tweag/jupyterWith";
+    jupyterWith.url = "github:tweag/jupyterWith/main";
+    jupyterWith.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = {
     self,
@@ -43,11 +44,17 @@
     (
       system: let
         inherit (nixpkgs) lib;
+        inherit (jupyterWith.lib.${system}) mkJupyterlabEnvironmentFromPath;
         pkgs = import nixpkgs {
           system = system;
           overlays =
-            # [myHaskellPackageOverlay] ++
-            nixpkgs.lib.attrValues jupyterWith.overlays;
+            [
+              (final: prev: {
+                pkgs = prev.pkgs // {
+                  inherit monad-bayes;
+                };
+              })
+            ];
           config.allowBroken = true;
         };
         # pkgs = nixpkgs.legacyPackages.${system};
@@ -62,62 +69,7 @@
         ];
         monad-bayes = pkgs.haskell.packages.ghc902.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
 
-        iHaskell = pkgs.kernels.iHaskellWith {
-          # Identifier that will appear on the Jupyter interface.
-          name = "nixpkgs";
-          # Libraries to be available to the kernel.
-          packages = p:
-            with p; [
-              # pkgs.myHaskellPackages.imatrix-sundials
-              pkgs.haskellPackages.hvega
-              pkgs.haskellPackages.lens
-              pkgs.haskellPackages.log-domain
-              pkgs.haskellPackages.katip
-              pkgs.haskellPackages.ihaskell-hvega
-              pkgs.haskellPackages.ihaskell-diagrams
-              pkgs.haskellPackages.text
-              pkgs.haskellPackages.diagrams
-              pkgs.haskellPackages.diagrams-cairo
-              pkgs.haskellPackages.aeson
-              pkgs.haskellPackages.lens
-              pkgs.haskellPackages.lens-aeson
-              pkgs.haskellPackages.pretty-simple
-              pkgs.haskellPackages.monad-loops
-              pkgs.haskellPackages.hamilton
-              pkgs.haskellPackages.hmatrix
-              pkgs.haskellPackages.vector-sized
-              pkgs.haskellPackages.linear
-              pkgs.haskellPackages.recursion-schemes
-              pkgs.haskellPackages.data-fix
-              pkgs.haskellPackages.free
-              pkgs.haskellPackages.comonad
-              pkgs.haskellPackages.adjunctions
-              pkgs.haskellPackages.distributive
-              pkgs.haskellPackages.vector
-              pkgs.haskellPackages.megaparsec
-              pkgs.haskellPackages.histogram-fill
-              monad-bayes
-            ];
-          # Optional definition of `haskellPackages` to be used.
-          # Useful for overlaying packages.
-          haskellPackages = pkgs.haskell.packages.ghc902;
-        };
-
-        jupyterEnvironment = pkgs.jupyterlabWith {
-          kernels = [iHaskell];
-        };
-
-        jupyterShell = rec {
-          apps.jupterlab = {
-            type = "app";
-            program = "${jupyterEnvironment}/bin/jupyter-lab";
-          };
-          defaultApp = apps.jupyterlab;
-          devShell = jupyterEnvironment.env;
-        };
-
-        # But what do we do with this?
-        # jupyterShell = inputs.jupyter-flake.devShell.${system};
+        jupyterEnvironment = mkJupyterlabEnvironmentFromPath ./kernels;
 
         cabal-docspec = let
           ce =
@@ -130,19 +82,16 @@
           ce.cabal-docspec.components.exes.cabal-docspec;
 
         monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env jupyterShell];
+          inputsFrom = [monad-bayes.env];
           packages = with pre-commit-hooks.packages.${system}; [
             alejandra
             cabal-fmt
             hlint
             ormolu
             cabal-docspec
+            jupyterEnvironment
           ];
-          shellHook =
-            pre-commit.shellHook
-            + ''
-              echo "=== monad-bayes development shell ${jupyterEnvironment} ==="
-            '';
+          shellHook = pre-commit.shellHook;
         };
         pre-commit = pre-commit-hooks.lib.${system}.run {
           inherit src;
