@@ -21,6 +21,7 @@
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
     jupyterWith.url = "github:tweag/jupyterWith";
+    # jupyterWith.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = {
     self,
@@ -106,18 +107,6 @@
         jupyterEnvironment = pkgs.jupyterlabWith {
           kernels = [iHaskell];
         };
-
-        jupyterShell = rec {
-          apps.jupterlab = {
-            type = "app";
-            program = "${jupyterEnvironment}/bin/jupyter-lab";
-          };
-          defaultApp = apps.jupyterlab;
-          devShell = jupyterEnvironment.env;
-        };
-
-        # But what do we do with this?
-        # jupyterShell = inputs.jupyter-flake.devShell.${system};
 
         cabal-docspec = let
           ce =
