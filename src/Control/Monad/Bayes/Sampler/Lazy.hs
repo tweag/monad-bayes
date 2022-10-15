@@ -7,12 +7,8 @@
 module Control.Monad.Bayes.Sampler.Lazy where
 
 import Control.Monad (ap, liftM)
-import Control.Monad.Bayes.Class (MonadSample (normal, random))
+import Control.Monad.Bayes.Class (MonadSample (random))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
-import Data.IORef
-import Data.List (find)
-import qualified Data.Map as M
-import GHC.IO (unsafePerformIO)
 import Numeric.Log (Log (..))
 import System.Random
   ( RandomGen (split),
@@ -74,41 +70,3 @@ independent = sequence . repeat
 -- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs
 weightedsamples :: Weighted Sampler a -> IO [(a, Log Double)]
 weightedsamples = sampler . independent . weighted
-
-wiener :: Sampler (Double -> Double)
-wiener = Sampler $ \(Tree _ gs) ->
-  unsafePerformIO $ do
-    ref <- newIORef M.empty
-    modifyIORef' ref (M.insert 0 0)
-    return \x -> unsafePerformIO do
-      table <- readIORef ref
-      case M.lookup x table of
-        Just y -> return y
-        Nothing -> do
-          let lower = do
-                l <- findMaxLower x (M.keys table)
-                v <- M.lookup l table
-                return (l, v)
-          let upper = do
-                u <- find (> x) (M.keys table)
-                v <- M.lookup u table
-                return (u, v)
-          let m = bridge lower x upper
-          let y = runSampler m (gs !! (1 + M.size table))
-          modifyIORef' ref (M.insert x y)
-          return y
-  where
-    bridge :: Maybe (Double, Double) -> Double -> Maybe (Double, Double) -> Sampler Double
-    -- not needed since the table is always initialized with (0, 0)
-    -- bridge Nothing y Nothing = if y==0 then return 0 else normal 0 (sqrt y)
-    bridge (Just (x, x')) y Nothing = normal x' (sqrt (y - x))
-    bridge Nothing y (Just (z, z')) = normal z' (sqrt (z - y))
-    bridge (Just (x, x')) y (Just (z, z')) = normal (x' + ((y - x) * (z' - x') / (z - x))) (sqrt ((z - y) * (y - x) / (z - x)))
-    bridge _ _ _ = error "undefined behavior for bridge"
-
-    findMaxLower :: Double -> [Double] -> Maybe Double
-    findMaxLower _ [] = Nothing
-    findMaxLower d (x : xs) =
-      case findMaxLower d xs of
-        Nothing -> if x < d then Just x else Nothing
-        Just m -> if x > m && x < d then Just x else Just m
