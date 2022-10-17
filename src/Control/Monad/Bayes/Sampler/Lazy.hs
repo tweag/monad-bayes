@@ -22,21 +22,21 @@ import qualified System.Random as R
 -- | Often people just use a list or stream instead of a tree.
 -- | But a tree allows us to be lazy about how far we are going all the time.
 data Tree = Tree
-  { currentUniform :: Double
-  , lazyUniforms :: Trees
+  { currentUniform :: Double,
+    lazyUniforms :: Trees
   }
 
 -- | An infinite stream of 'Tree's.
 data Trees = Trees
-  { headTree :: Tree
-  , tailTrees :: Trees
+  { headTree :: Tree,
+    tailTrees :: Trees
   }
 
 -- | A probability distribution over a is
 -- | a function 'Tree -> a'
 -- | The idea is that it uses up bits of the tree as it runs
 newtype Sampler a = Sampler {runSampler :: Tree -> a}
-  deriving Functor
+  deriving (Functor)
 
 -- | Two key things to do with trees:
 -- | Split tree splits a tree in two (bijectively)
