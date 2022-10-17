@@ -50,7 +50,7 @@ Now you can use `stack build`, `stack test` and `stack ghci`.
 
 To use the notebooks in the `notebooks` directory, you will first need `nix`. Then:
 
-1. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes`
+1. Run `nix develop --extra-experimental-features nix-command --extra-experimental-features flakes`
 
 2. This should open a shell, from which you can run `jupyter-lab` to load the notebooks
 
