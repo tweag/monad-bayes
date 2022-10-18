@@ -33,9 +33,9 @@ where
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (bernoulli, categorical, logCategorical, random),
+  ( MonadFactor (..),
+    MonadMeasure,
+    MonadDistribution (bernoulli, categorical, logCategorical, random),
   )
 import Control.Monad.Writer
 import Data.AEq (AEq, (===), (~==))
@@ -52,15 +52,15 @@ import Numeric.Log as Log (Log (..), sum)
 newtype Enumerator a = Enumerator (WriterT (Product (Log Double)) [] a)
   deriving newtype (Functor, Applicative, Monad, Alternative, MonadPlus)
 
-instance MonadSample Enumerator where
+instance MonadDistribution Enumerator where
   random = error "Infinitely supported random variables not supported in Enumerator"
   bernoulli p = fromList [(True, (Exp . log) p), (False, (Exp . log) (1 - p))]
   categorical v = fromList $ zip [0 ..] $ map (Exp . log) (V.toList v)
 
-instance MonadCond Enumerator where
+instance MonadFactor Enumerator where
   score w = fromList [((), w)]
 
-instance MonadInfer Enumerator
+instance MonadMeasure Enumerator
 
 -- | Construct Enumerator from a list of values and associated weights.
 fromList :: [(a, Log Double)] -> Enumerator a
@@ -129,7 +129,7 @@ toEmpirical ls = normalizeWeights $ compact (zip ls (repeat 1))
 toEmpiricalWeighted :: (Fractional b, Ord a, Ord b) => [(a, b)] -> [(a, b)]
 toEmpiricalWeighted = normalizeWeights . compact
 
-enumerateToDistribution :: (MonadSample n) => Enumerator a -> n a
+enumerateToDistribution :: (MonadDistribution n) => Enumerator a -> n a
 enumerateToDistribution model = do
   let samples = logExplicit model
   let (support, logprobs) = unzip samples

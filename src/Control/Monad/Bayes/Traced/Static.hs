@@ -20,9 +20,9 @@ where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample (random),
+  ( MonadFactor (..),
+    MonadMeasure,
+    MonadDistribution (random),
   )
 import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common
@@ -61,13 +61,13 @@ instance Monad m => Monad (Traced m) where
 instance MonadTrans Traced where
   lift m = Traced (lift $ lift m) (fmap pure m)
 
-instance MonadSample m => MonadSample (Traced m) where
+instance MonadDistribution m => MonadDistribution (Traced m) where
   random = Traced random (fmap singleton random)
 
-instance MonadCond m => MonadCond (Traced m) where
+instance MonadFactor m => MonadFactor (Traced m) where
   score w = Traced (score w) (score w >> pure (scored w))
 
-instance MonadInfer m => MonadInfer (Traced m)
+instance MonadMeasure m => MonadMeasure (Traced m)
 
 hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoist f (Traced m d) = Traced m (f d)
@@ -77,14 +77,14 @@ marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadSample m => Traced m a -> Traced m a
+mhStep :: MonadDistribution m => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTransFree m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
-mh :: MonadSample m => Int -> Traced m a -> m [a]
+mh :: MonadDistribution m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
     f k

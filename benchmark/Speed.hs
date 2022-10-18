@@ -4,7 +4,7 @@
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
@@ -39,7 +39,7 @@ instance Show Model where
   show (HMM xs) = "HMM" ++ show (length xs)
   show (LDA xs) = "LDA" ++ show (length $ head xs)
 
-buildModel :: MonadInfer m => Model -> m String
+buildModel :: MonadMeasure m => Model -> m String
 buildModel (LR dataset) = show <$> LogReg.logisticRegression dataset
 buildModel (HMM dataset) = show <$> HMM.hmm dataset
 buildModel (LDA dataset) = show <$> LDA.lda dataset

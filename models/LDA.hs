@@ -11,8 +11,8 @@ module LDA where
 
 import Control.Monad qualified as List (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadInfer,
-    MonadSample (categorical, dirichlet, uniformD),
+  ( MonadMeasure,
+    MonadDistribution (categorical, dirichlet, uniformD),
     factor,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed)
@@ -43,17 +43,17 @@ documents =
     words "bear wolf bear python bear wolf bear wolf bear wolf"
   ]
 
-wordDistPrior :: MonadSample m => m (V.Vector Double)
+wordDistPrior :: MonadDistribution m => m (V.Vector Double)
 wordDistPrior = dirichlet $ V.replicate (length vocabulary) 1
 
-topicDistPrior :: MonadSample m => m (V.Vector Double)
+topicDistPrior :: MonadDistribution m => m (V.Vector Double)
 topicDistPrior = dirichlet $ V.replicate (length topics) 1
 
 wordIndex :: Map.Map Text Int
 wordIndex = Map.fromList $ zip vocabulary [0 ..]
 
 lda ::
-  MonadInfer m =>
+  MonadMeasure m =>
   Documents ->
   m (Map.Map Text (V.Vector (Text, Double)), [(Text, V.Vector (Text, Double))])
 lda docs = do
@@ -73,7 +73,7 @@ lda docs = do
       zip (fmap (foldr1 (\x y -> x <> " " <> y)) docs) (fmap (V.zip $ V.fromList ["topic1", "topic2"]) td)
     )
 
-syntheticData :: MonadSample m => Int -> Int -> m [[Text]]
+syntheticData :: MonadDistribution m => Int -> Int -> m [[Text]]
 syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
   where
     syntheticWord = uniformD vocabulary

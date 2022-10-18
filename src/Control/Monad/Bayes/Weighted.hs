@@ -11,8 +11,8 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 'Weighted' is an instance of 'MonadCond'. Apply a 'MonadSample' transformer to
--- obtain a 'MonadInfer' that can execute probabilistic models.
+-- 'Weighted' is an instance of 'MonadFactor'. Apply a 'MonadDistribution' transformer to
+-- obtain a 'MonadMeasure' that can execute probabilistic models.
 module Control.Monad.Bayes.Weighted
   ( Weighted,
     withWeight,
@@ -26,9 +26,9 @@ module Control.Monad.Bayes.Weighted
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadCond (..),
-    MonadInfer,
-    MonadSample,
+  ( MonadFactor (..),
+    MonadMeasure,
+    MonadDistribution,
     factor,
   )
 import Control.Monad.State (MonadIO, MonadTrans, StateT (..), lift, mapStateT, modify)
@@ -37,12 +37,12 @@ import Numeric.Log (Log)
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadSample)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
 
-instance Monad m => MonadCond (Weighted m) where
+instance Monad m => MonadFactor (Weighted m) where
   score w = Weighted (modify (* w))
 
-instance MonadSample m => MonadInfer (Weighted m)
+instance MonadDistribution m => MonadMeasure (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
 weighted, runWeighted :: Weighted m a -> m (a, Log Double)
@@ -69,7 +69,7 @@ withWeight m = Weighted $ do
   return x
 
 -- | Use the weight as a factor in the transformed monad.
-applyWeight :: MonadCond m => Weighted m a -> m a
+applyWeight :: MonadFactor m => Weighted m a -> m a
 applyWeight m = do
   (x, w) <- weighted m
   factor w

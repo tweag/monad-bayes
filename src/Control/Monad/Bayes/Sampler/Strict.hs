@@ -12,8 +12,8 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 'SamplerIO' and 'SamplerST' are instances of 'MonadSample'. Apply a 'MonadCond'
--- transformer to obtain a 'MonadInfer' that can execute probabilistic models.
+-- 'SamplerIO' and 'SamplerST' are instances of 'MonadDistribution'. Apply a 'MonadFactor'
+-- transformer to obtain a 'MonadMeasure' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler.Strict
   ( Sampler,
     SamplerIO,
@@ -29,7 +29,7 @@ where
 
 import Control.Foldl qualified as F hiding (random)
 import Control.Monad.Bayes.Class
-  ( MonadSample
+  ( MonadDistribution
       ( bernoulli,
         beta,
         categorical,
@@ -58,7 +58,7 @@ type SamplerIO = Sampler (IOGenM StdGen) IO
 -- to particular pairs of monad and RNG
 type SamplerST s = Sampler (STGenM StdGen s) (ST s)
 
-instance StatefulGen g m => MonadSample (Sampler g m) where
+instance StatefulGen g m => MonadDistribution (Sampler g m) where
   random = Sampler (ReaderT uniformDouble01M)
 
   uniform a b = Sampler (ReaderT $ uniformRM (a, b))

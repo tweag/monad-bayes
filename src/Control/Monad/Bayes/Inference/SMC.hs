@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Inference.SMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadInfer, MonadSample)
+import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution)
 import Control.Monad.Bayes.Population
   ( Population,
     pushEvidence,
@@ -37,7 +37,7 @@ data SMCConfig m = SMCConfig
 -- | Sequential importance resampling.
 -- Basically an SMC template that takes a custom resampler.
 smc ::
-  MonadSample m =>
+  MonadDistribution m =>
   SMCConfig m ->
   Coroutine.Sequential (Population m) a ->
   Population m a
@@ -49,5 +49,5 @@ smc SMCConfig {..} =
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcPush ::
-  MonadInfer m => SMCConfig m -> Coroutine.Sequential (Population m) a -> Population m a
+  MonadMeasure m => SMCConfig m -> Coroutine.Sequential (Population m) a -> Population m a
 smcPush config = smc config {resampler = (pushEvidence . resampler config)}

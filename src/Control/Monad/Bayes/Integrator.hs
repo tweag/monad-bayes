@@ -8,7 +8,7 @@
 
 -- |
 -- This is adapted from https://jtobin.io/giry-monad-implementation
--- but brought into the monad-bayes framework (i.e. Integrator is an instance of MonadInfer)
+-- but brought into the monad-bayes framework (i.e. Integrator is an instance of MonadMeasure)
 -- It's largely for debugging other inference methods and didactic use,
 -- because brute force integration of measures is
 -- only practical for small programs
@@ -34,7 +34,7 @@ where
 import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
-import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
+import Control.Monad.Bayes.Class (MonadDistribution (bernoulli, random, uniformD))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Cont
   ( Cont,
@@ -56,7 +56,7 @@ integrator, runIntegrator :: (a -> Double) -> Integrator a -> Double
 integrator f (Integrator a) = runCont a f
 runIntegrator = integrator
 
-instance MonadSample Integrator where
+instance MonadDistribution Integrator where
   random = fromDensityFunction $ Statistics.density $ Statistics.uniformDistr 0 1
   bernoulli p = Integrator $ cont (\f -> p * f True + (1 - p) * f False)
   uniformD ls = fromMassFunction (const (1 / fromIntegral (length ls))) ls

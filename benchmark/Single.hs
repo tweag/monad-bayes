@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
-import Control.Monad.Bayes.Class (MonadInfer)
+import Control.Monad.Bayes.Class (MonadMeasure)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcBasic)
 import Control.Monad.Bayes.Inference.SMC
@@ -42,7 +42,7 @@ parseModel s =
     'L' : 'D' : 'A' : n -> Just $ LDA (5, read n)
     _ -> Nothing
 
-getModel :: MonadInfer m => Model -> (Int, m String)
+getModel :: MonadMeasure m => Model -> (Int, m String)
 getModel model = (size model, program model)
   where
     size (LR n) = n

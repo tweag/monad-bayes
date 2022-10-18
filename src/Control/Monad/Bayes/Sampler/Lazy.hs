@@ -7,7 +7,7 @@
 module Control.Monad.Bayes.Sampler.Lazy where
 
 import Control.Monad (ap, liftM)
-import Control.Monad.Bayes.Class (MonadSample (random))
+import Control.Monad.Bayes.Class (MonadDistribution (random))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Numeric.Log (Log (..))
 import System.Random
@@ -65,7 +65,7 @@ instance Monad Sampler where
         (Sampler m') = f (m g1)
      in m' g2
 
-instance MonadSample Sampler where
+instance MonadDistribution Sampler where
   random = Sampler \(Tree r _) -> r
 
 sampler :: Sampler a -> IO a

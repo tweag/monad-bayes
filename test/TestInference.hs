@@ -14,7 +14,7 @@ import ConjugatePriors
     normalNormalAnalytic,
   )
 import Control.Monad (replicateM)
-import Control.Monad.Bayes.Class (MonadInfer, posterior)
+import Control.Monad.Bayes.Class (MonadMeasure, posterior)
 import Control.Monad.Bayes.Enumerator (enumerator)
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
@@ -30,7 +30,7 @@ import Numeric.Log (Log)
 import Sprinkler (soft)
 import System.Random.Stateful (IOGenM, StdGen, mkStdGen, newIOGenM)
 
-sprinkler :: MonadInfer m => m Bool
+sprinkler :: MonadMeasure m => m Bool
 sprinkler = Sprinkler.soft
 
 -- | Count the number of particles produced by SMC
