@@ -9,6 +9,7 @@ import Control.Monad.Bayes.Class (Log (ln))
 import Control.Monad.Bayes.Sampler.Lazy
   ( Sampler (runSampler),
     Tree (..),
+    Trees (..),
     randomTree,
   )
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
@@ -64,8 +65,15 @@ mutateTree :: forall g. RandomGen g => Double -> g -> Tree -> Tree
 mutateTree p g (Tree a ts) =
   let (a', g') = (R.random g :: (Double, g))
       (a'', g'') = R.random g'
-   in Tree (if a' < p then a'' else a) (mutateTrees p g'' ts)
+   in Tree
+        { currentUniform = if a' < p then a'' else a,
+          lazyUniforms = mutateTrees p g'' ts
+        }
 
-mutateTrees :: RandomGen g => Double -> g -> [Tree] -> [Tree]
-mutateTrees p g (t : ts) = let (g1, g2) = split g in mutateTree p g1 t : mutateTrees p g2 ts
-mutateTrees _ _ [] = error "empty tree"
+mutateTrees :: RandomGen g => Double -> g -> Trees -> Trees
+mutateTrees p g (Trees t ts) =
+  let (g1, g2) = split g
+   in Trees
+        { headTree = mutateTree p g1 t,
+          tailTrees = mutateTrees p g2 ts
+        }
