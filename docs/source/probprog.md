@@ -1,4 +1,4 @@
-# What is probabilistic programming
+# Quickstart
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
@@ -18,39 +18,38 @@ y_{n}=\alpha+\beta x_{n}+\epsilon_{n}
 but in code as:
 
 ```haskell
-paramPriorRegression :: MonadSample m => m (Double, Double, Double)
+paramPriorRegression :: Distribution (Double, Double, Double)
 paramPriorRegression = do
     slope <- normal 0 2
     intercept <- normal 0 2
     noise <- gamma 4 4
     return (slope, intercept, noise)
 
-regression :: (MonadInfer m) => [Double] -> [Double] -> m (Double, Double, Double)
-regression xs ys = do
-    params@(slope, intercept, noise) <- paramPriorRegression
-    forM_ (zip xs ys) \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
+regression :: Kernel [(Double, Double)] (Double, Double, Double)
+regression xsys = do
+    (slope, intercept, noise) <- paramPriorRegression
+    forM_ xsys \(x, y) -> factor $ normalPdf (slope * x + intercept) (sqrt noise) y
     return (slope, intercept, noise)
 ```
 
-`regression` takes observations of `xs` and `ys`, and using the prior expressed by `paramPriorRegression`, returns the posterior conditioned on the observations.
+`regression` takes observations (a list of pairs of x and y values), and using the prior expressed by `paramPriorRegression`, returns the posterior conditioned on the observations.
 
-This is the *model*. To perform *inference* , suppose we have a data set of `xs` and `ys` like:
+This is the *model*. To perform *inference* , suppose we have a data set `xsys` like:
 
 ![](_static/priorpred.png)
 
-We could then run the model as follows:
+To run the model
 
 ```haskell   
 mhRunsRegression = sampler 
-  $ unweighted 
   $ mcmc MCMCConfig 
       {numMCMCSteps = 1500, 
       proposal = SingleSiteMH, 
       numBurnIn = 500} 
-  random
+  (regression xsys)
 ```
 
-This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. `prior` throws away that weight (we don't care about the probability of the chain itself), and `sampler` samples a particular chain. Plotting one gives:
+This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. Sampling a chain and plotting its final state gives:
 
 ![](_static/regress.png)
 
@@ -74,15 +73,22 @@ A distribution in monad-bayes over a set {math}`X`, is of type:
 MonadInfer m => m X
 ```
 
-monad-bayes provides standard distributions, such as:
+For beginner friendliness, a synonym `type Measure a = forall m . MonadSample m => m a` is provided (as well as `Distribution` shown above, for normalized distributions, and `Kernel` for functions into distributions).
 
-- `random :: MonadInfer m => m Double` : sample uniformly from {math}`[0,1]`
+Monad-bayes provides standard distributions, such as
+
+```haskell
+random :: Distribution Double
+```
+
+which is distributed uniformly over {math}`[0,1]`.
 
 The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html
 
 Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over `(+) :: Int -> Int -> Int` and `(-) :: Int -> Int -> Int`:
 
 ```haskell
+distributionOverFunctions :: Distribution (Int -> Int -> Int)
 distributionOverFunctions = uniformD [(+), (-)]
 ```
 
@@ -261,7 +267,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-## Near exact inference for continuous distributions
+### Near exact inference for continuous distributions
 
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
@@ -401,6 +407,12 @@ The final element of the chain is the head of the list, so you can drop samples 
 
 You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
 
+You can run this with a terminal user interface (TUI) by doing e.g.
+
+```haskell
+tui 0 random noVisual
+```
+
 ## Sequential Monte Carlo (Particle Filtering)
 
 Run SMC with two resampling steps and two particles as follows, given a model `m`:
@@ -418,6 +430,15 @@ output =
 
 <!-- Or if you prefer, think of the inference method as:
 
+
+```haskell
+(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
+  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+``` -->
+
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+
+As a concrete example, here is a probabilistic program:
 
 ```haskell
 (sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
@@ -454,7 +475,7 @@ The result:
 
 Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
 
-`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. Specify it as either `All` or `Only n` for `n` an integer. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
 
 `resampler` is the mechanism used to resampling the population of particles after each `factor` statement.
 
@@ -672,7 +693,7 @@ For API docs in the normal Haskell style, see [hackage](https://hackage.haskell.
 
 # Monad-Bayes vs other libraries
 
-Monad-bayes is a universal probabilistic programming language, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
+Monad-bayes is a universal probabilistic programming system, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.
 
 There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.
 
@@ -682,6 +703,7 @@ A lot of engineering work has been put into the above libraries and languages to
 
 **What Monad-Bayes has that is unique**: 
 
+Monad-Bayes is just a library, unlike almost all other PPLs, which are separate languages written inside another language. As such, probabilistic programs in monad-bayes are first class programs in Haskell with no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like `pipes`, `lens` and `Parsec`. Everything is pure. Everything is strongly typed. You can make use of laziness.
+
 Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
 
-Probabilistic programs in monad-bayes are first class programs in Haskell. There's no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like Pipes, lens and Parsec. Everything is pure. Everything is strongly typed. You can make use of laziness.

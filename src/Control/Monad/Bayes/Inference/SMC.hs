@@ -26,11 +26,7 @@ import Control.Monad.Bayes.Population
     pushEvidence,
     withParticles,
   )
-import Control.Monad.Bayes.Sequential as Seq
-  ( Sequential,
-    hoistFirst,
-    sequentially,
-  )
+import Control.Monad.Bayes.Sequential.Coroutine as Coroutine
 
 data SMCConfig m = SMCConfig
   { resampler :: forall x. Population m x -> Population m x,
@@ -43,13 +39,15 @@ data SMCConfig m = SMCConfig
 smc ::
   MonadSample m =>
   SMCConfig m ->
-  Sequential (Population m) a ->
+  Coroutine.Sequential (Population m) a ->
   Population m a
-smc SMCConfig {..} = sequentially resampler numSteps . Seq.hoistFirst (withParticles numParticles)
+smc SMCConfig {..} =
+  Coroutine.sequentially resampler numSteps
+    . Coroutine.hoistFirst (withParticles numParticles)
 
 -- | Sequential Monte Carlo with multinomial resampling at each timestep.
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcPush ::
-  MonadInfer m => SMCConfig m -> Sequential (Population m) a -> Population m a
+  MonadInfer m => SMCConfig m -> Coroutine.Sequential (Population m) a -> Population m a
 smcPush config = smc config {resampler = (pushEvidence . resampler config)}

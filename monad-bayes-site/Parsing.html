@@ -14572,12 +14572,23 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
     </script>
     <!-- End of mathjax configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
-<div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
+
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<h1 id="Probabilistic-Parser-Combinators">Probabilistic Parser Combinators<a class="anchor-link" href="#Probabilistic-Parser-Combinators">&#182;</a></h1>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[93]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-Haskell"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Text.Megaparsec</span><span class="w"></span>
@@ -14585,14 +14596,17 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <span class="kr">import</span><span class="w"> </span><span class="nn">Data.Char</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Text</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">T</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Population</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Inference.SMC</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Trans</span><span class="w"> </span><span class="p">(</span><span class="nf">lift</span><span class="p">)</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span><span class="w"> </span><span class="p">(</span><span class="nf">join</span><span class="p">,</span><span class="w"> </span><span class="nf">replicateM</span><span class="p">)</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Data.Void</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
 <span class="kr">import</span><span class="w"> </span><span class="nn">Text.Pretty.Simple</span><span class="w"></span>
+
 <span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">OverloadedStrings</span><span class="w"></span>
 <span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span><span class="w"></span>
 <span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">GADTs</span><span class="w"></span>
@@ -14604,39 +14618,52 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 </div>
 
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
+<p>Probability interfaces nicely with parser combinators from libraries like <code>megaparsec</code>. A parser in this setting is roughly a function <code>[Char] -&gt; m (a, [Char])</code>, in other words a function which (monadically) strips off a prefix of the input string and returns a result.</p>
+<p>To make this probabilistic, we simply set <code>m</code> to a probability monad. The result of parsing is then a distribution over possible parses (and possible parse failures).</p>
+
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[96]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[28]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">noise</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="nf">\</span><span class="kr">case</span><span class="w"></span>
-<span class="w">    </span><span class="sc">&#39;g&#39;</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="sc">&#39;g&#39;</span><span class="p">,</span><span class="sc">&#39;h&#39;</span><span class="p">]</span><span class="w"></span>
-<span class="w">    </span><span class="sc">&#39;h&#39;</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="sc">&#39;a&#39;</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">alphabet</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="w"> </span><span class="kt">[]</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="sc">&#39;h&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">]</span><span class="w"></span>
 
-<span class="nf">parser</span><span class="w"> </span><span class="ow">=</span><span class="w">  </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">(</span><span class="kr">do</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- x &lt;- lookAhead &quot;h&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;g&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;h&quot;</span><span class="p">]</span><span class="w"></span>
+<span class="nf">noise</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
+<span class="w">    </span><span class="n">perturb</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.1</span><span class="w"></span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">perturb</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="n">alphabet</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+
+<span class="nf">letter</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
+<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w">  </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="s">&quot;x&quot;</span><span class="p">]</span><span class="w"></span>
 <span class="w">    </span><span class="n">predicted</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="n">true</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- predicted &lt;- join $ lift $ uniformD [&quot;a&quot;, &quot;b&quot;]</span><span class="w"></span>
-<span class="w">    </span><span class="n">observed</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lookAhead</span><span class="w"> </span><span class="p">(</span><span class="n">char</span><span class="w"> </span><span class="sc">&#39;g&#39;</span><span class="w"> </span><span class="o">&lt;|&gt;</span><span class="w"> </span><span class="n">char</span><span class="w"> </span><span class="sc">&#39;h&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">observed</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lookAhead</span><span class="w"> </span><span class="p">(</span><span class="n">foldr1</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;|&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="p">])</span><span class="w"></span>
 <span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">condition</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
-<span class="w">    </span><span class="n">char</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- y &lt;- &quot;h&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- &quot;h&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- y &lt;- lookAhead &quot;h&quot;</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- return (,x)</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- return (observed, y)</span><span class="w"></span>
-<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">true</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
+<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="n">true</span><span class="w"> </span>
+<span class="w">    </span>
+<span class="nf">word</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kr">do</span><span class="w"> </span>
+<span class="w">    </span><span class="n">wd</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">some</span><span class="w"> </span><span class="n">letter</span><span class="w"></span>
+<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">wd</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;hi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;goodbye&quot;</span><span class="p">]</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">wd</span><span class="w"></span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">&lt;*</span><span class="w"> </span><span class="n">eof</span><span class="w"></span>
 
 <span class="nf">errorBundlePretty&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">TraversableStream</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="kt">VisualStream</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">ParseErrorBundle</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="kt">Void</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span>
 <span class="nf">errorBundlePretty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">errorBundlePretty</span><span class="w"></span>
 
-<span class="c1">-- foo :: MonadInfer m =&gt; m T.Text</span><span class="w"></span>
 
-<span class="nf">foo</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">either</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">errorBundlePretty&#39;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">show</span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">runParserT</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="s">&quot;hh&quot;</span><span class="w"></span>
+<span class="nf">run</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">either</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">errorBundlePretty&#39;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">show</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">runParserT</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="n">input</span><span class="w"></span>
 </pre></div>
 
      </div>
@@ -14644,123 +14671,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 </div>
 
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-
-
-<div class="jp-OutputArea jp-Cell-outputArea">
-
-<div class="jp-OutputArea-child">
-
-    
-    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-
-
-
-<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output " data-mime-type="text/html">
-<style>/* Styles used for the Hoogle display in the pager */
-.hoogle-doc {
-display: block;
-padding-bottom: 1.3em;
-padding-left: 0.4em;
-}
-.hoogle-code {
-display: block;
-font-family: monospace;
-white-space: pre;
-}
-.hoogle-text {
-display: block;
-}
-.hoogle-name {
-color: green;
-font-weight: bold;
-}
-.hoogle-head {
-font-weight: bold;
-}
-.hoogle-sub {
-display: block;
-margin-left: 0.4em;
-}
-.hoogle-package {
-font-weight: bold;
-font-style: italic;
-}
-.hoogle-module {
-font-weight: bold;
-}
-.hoogle-class {
-font-weight: bold;
-}
-.get-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-display: block;
-white-space: pre-wrap;
-}
-.show-type {
-color: green;
-font-weight: bold;
-font-family: monospace;
-margin-left: 1em;
-}
-.mono {
-font-family: monospace;
-display: block;
-}
-.err-msg {
-color: red;
-font-style: italic;
-font-family: monospace;
-white-space: pre;
-display: block;
-}
-#unshowable {
-color: red;
-font-weight: bold;
-}
-.err-msg.in.collapse {
-padding-top: 0.7em;
-}
-.highlight-code {
-white-space: pre;
-font-family: monospace;
-}
-.suggestion-warning { 
-font-weight: bold;
-color: rgb(200, 130, 0);
-}
-.suggestion-error { 
-font-weight: bold;
-color: red;
-}
-.suggestion-name {
-font-weight: bold;
-}
-</style><div class="suggestion-name" style="clear:both;">Redundant bracket</div><div class="suggestion-row" style="float: left;"><div class="suggestion-warning">Found:</div><div class="highlight-code" id="haskell">(true)</div></div><div class="suggestion-row" style="float: left;"><div class="suggestion-warning">Why Not:</div><div class="highlight-code" id="haskell">true</div></div><div class="suggestion-name" style="clear:both;">Redundant bracket</div><div class="suggestion-row" style="float: left;"><div class="suggestion-warning">Found:</div><div class="highlight-code" id="haskell">(either (T.pack . errorBundlePretty') (T.pack . show))
-  <$> runParserT parser "" "hh"</div></div><div class="suggestion-row" style="float: left;"><div class="suggestion-warning">Why Not:</div><div class="highlight-code" id="haskell">either (T.pack . errorBundlePretty') (T.pack . show)
-  <$> runParserT parser "" "hh"</div></div>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
 <div class="jp-Cell-inputWrapper">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[100]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[29]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIO</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">runPopulation</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">smcMultinomial</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">foo</span><span class="w"></span>
-<span class="nf">pPrint</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">population</span><span class="w"> </span>
+<span class="w">    </span><span class="o">$</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span>
+<span class="w">    </span><span class="o">$</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="s">&quot;hx&quot;</span><span class="w"></span>
+<span class="nf">pPrint</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toEmpiricalWeighted</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
 </pre></div>
 
      </div>
@@ -14785,44 +14707,24 @@ font-weight: bold;
 
 <div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
 <pre>[
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
+    ( &#34;&#34;hi&#34;&#34;
+    , 0.801
     )
 ,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
+    ( &#34;&#34;hx&#34;&#34;
+    , 0.18899999999999992
     )
 ,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
+    ( &#34;&#34;ix&#34;&#34;
+    , 7.000000000000003 e- 3
     )
 ,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
+    ( &#34;&#34;xx&#34;&#34;
+    , 2.500000000000003 e- 3
     )
 ,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
-    )
-,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
-    )
-,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
-    )
-,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
-    )
-,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
-    )
-,
-    ( &#34;&#34;gg&#34;&#34;
-    , 1.1999999999999999 e- 2
+    ( &#34;&#34;ii&#34;&#34;
+    , 5.000000000000001 e- 4
     )
 ]</pre>
 </div>
@@ -14831,38 +14733,6 @@ font-weight: bold;
 
 </div>
 
-</div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span>
-</pre></div>
-
-     </div>
-</div>
-</div>
-</div>
-
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs  ">
-<div class="jp-Cell-inputWrapper">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[&nbsp;]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-     <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span>
-</pre></div>
-
-     </div>
-</div>
-</div>
 </div>
 
 </div>

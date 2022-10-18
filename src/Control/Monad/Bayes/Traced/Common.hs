@@ -9,7 +9,6 @@
 module Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     singleton,
-    output,
     scored,
     bind,
     mhTrans,
@@ -32,7 +31,7 @@ import Control.Monad.Bayes.Weighted as Weighted
     hoist,
     weighted,
   )
-import Control.Monad.Trans.Writer (WriterT (WriterT, runWriterT))
+import Control.Monad.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
 import Numeric.Log (Log, ln)
 import Statistics.Distribution.DiscreteUniform (discreteUniformAB)

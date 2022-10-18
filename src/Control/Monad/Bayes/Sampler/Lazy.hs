@@ -74,5 +74,6 @@ sampler m = newStdGen *> (runSampler m . randomTree <$> getStdGen)
 independent :: Monad m => m a -> m [a]
 independent = sequence . repeat
 
+-- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs
 weightedsamples :: Weighted Sampler a -> IO [(a, Log Double)]
 weightedsamples = sampler . independent . weighted

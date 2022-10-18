@@ -53,8 +53,7 @@ import Control.Monad.Bayes.Weighted
     weighted,
     withWeight,
   )
-import Control.Monad.Trans (MonadIO, MonadTrans (..))
-import Control.Monad.Trans.List (ListT (..))
+import Control.Monad.List (ListT (..), MonadIO, MonadTrans (..))
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)

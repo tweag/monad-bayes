@@ -9,9 +9,8 @@ import Control.Monad.Bayes.Inference.SMC
     smc,
   )
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (population)
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Traced
+import Control.Monad.Bayes.Traced hiding (model)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.ST (runST)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -31,7 +30,6 @@ import Options.Applicative
     option,
     short,
   )
-import System.Random.MWC (GenIO, createSystemRandom)
 
 data Model = LR Int | HMM Int | LDA (Int, Int)
   deriving stock (Show, Read)

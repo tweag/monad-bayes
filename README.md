@@ -1,5 +1,7 @@
 # [Monad-Bayes](https://monad-bayes-site.netlify.app/_site/about.html)
 
+A library for probabilistic programming in Haskell. 
+
 <!-- [![Hackage](https://img.shields.io/hackage/v/monad-bayes.svg)](https://hackage.haskell.org/package/monad-bayes)
 [![Stackage](http://stackage.org/package/monad-bayes/badge/lts)](http://stackage.org/lts/package/monad-bayes)
 [![Hackage Deps](https://img.shields.io/hackage-deps/v/monad-bayes.svg)](http://packdeps.haskellers.com/reverse/monad-bayes)
@@ -11,12 +13,11 @@
 
 <!-- See the [documentation](https://monad-bayes.netlify.app/) for a quick-start user guide and a reference overview of how it all works. -->
 
-Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation, website and various extras by [Reuben][reuben-web], maintained by [Tweag I/O][tweagio].
+Created by [Adam Scibior][adam-web] ([@adscib][adam-github]), documentation, website and newer features by [Reuben][reuben-web], maintained by [Tweag][tweagio].
 
 ## Project status
 
-Now that `monad-bayes` has been released on Hackage, we will focus on improving
-documentation, adding a variety of applications, improving the API, and making inference more easily customizable.
+Now that `monad-bayes` has been released on Hackage, and the documentation and the API has been updated, we will focus on adding new features. See the Github issues to get a sense of what is being prepared, and please feel free to make requests.
 
 ## Background
 
@@ -48,11 +49,14 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
 
 Now you can use `stack build`, `stack test` and `stack ghci`.
 
-To use the notebooks in the `notebooks` directory, you will first need `nix`. Then:
+**To view the notebooks, go to the website**. To use the notebooks interactively:
 
-1. Run `nix develop --extra-experimental-features nix-command --extra-experimental-features flakes`
+1. Compile the source: `stack build`
+2. If you do not have `nix` [install it](https://nixos.org/download.html).
+3. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes` - this should open a nix shell. For Linux use `x86_64-linux` for `--system` option instead. 
+4. Run `jupyter-lab` from the nix shell to load the notebooks.
 
-2. This should open a shell, from which you can run `jupyter-lab` to load the notebooks
+Your mileage may vary. 
 
 [adam-github]: https://github.com/adscib
 [adam-web]: https://www.cs.ubc.ca/~ascibior/

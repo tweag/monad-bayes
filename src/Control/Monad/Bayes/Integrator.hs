@@ -36,7 +36,7 @@ import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
 import Control.Monad.Bayes.Class (MonadSample (bernoulli, random, uniformD))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
-import Control.Monad.Trans.Cont
+import Control.Monad.Cont
   ( Cont,
     ContT (ContT),
     cont,
@@ -44,7 +44,6 @@ import Control.Monad.Trans.Cont
   )
 import Data.Foldable (Foldable (foldl'))
 import Data.Set (Set, elems)
-import Data.Text qualified as T
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
 import Statistics.Distribution qualified as Statistics
@@ -161,8 +160,8 @@ histogram nBins binSize model = do
       probability (transform x, transform (x + 1)) $ normalize model
     )
 
-plotCdf :: Int -> Double -> Integrator Double -> [(T.Text, Double)]
-plotCdf nBins binSize model = do
+plotCdf :: Int -> Double -> Double -> Integrator Double -> [(Double, Double)]
+plotCdf nBins binSize middlePoint model = do
   x <- take nBins [1 ..]
-  let transform k = (k - (fromIntegral nBins / 2)) * binSize
-  return ((T.pack . show) $ transform x, cdf model (transform x))
+  let transform k = (k - (fromIntegral nBins / 2)) * binSize + middlePoint
+  return (transform x, cdf model (transform x))

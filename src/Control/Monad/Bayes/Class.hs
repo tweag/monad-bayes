@@ -1,4 +1,5 @@
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
@@ -11,8 +12,8 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This module defines 'MonadInfer', which can be used to represent a simple model
--- like the following:
+-- This module defines 'MonadInfer', which can be used to represent any probabilistic program,
+-- such as the following:
 --
 -- @
 -- import Control.Monad (when)
@@ -62,18 +63,27 @@ module Control.Monad.Bayes.Class
     posteriorPredictive,
     independent,
     mvNormal,
+    Histogram,
+    histogram,
+    histogramToList,
+    Distribution,
+    Measure,
+    Kernel,
+    Log (ln, Exp),
   )
 where
 
+import Control.Arrow (Arrow (second))
 import Control.Monad (replicateM, when)
-import Control.Monad.Except (ExceptT)
-import Control.Monad.Trans.Class (MonadTrans (lift))
-import Control.Monad.Trans.Cont (ContT)
-import Control.Monad.Trans.Identity (IdentityT)
-import Control.Monad.Trans.List (ListT)
-import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Trans.State (StateT)
-import Control.Monad.Trans.Writer (WriterT)
+import Control.Monad.Cont (ContT)
+import Control.Monad.Except (ExceptT, lift)
+import Control.Monad.Identity (IdentityT)
+import Control.Monad.List (ListT)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.State (StateT)
+import Control.Monad.Writer (WriterT)
+import Data.Histogram qualified as H
+import Data.Histogram.Fill qualified as H
 import Data.Matrix
   ( Matrix,
     cholDecomp,
@@ -245,6 +255,14 @@ factor ::
   m ()
 factor = score
 
+-- | synonym for pretty type signatures, but note that (A -> Distribution B) won't work as intended: for that, use Kernel
+-- Also note that the use of RankNTypes means performance may take a hit: really the main point of these signatures is didactic
+type Distribution a = forall m. MonadSample m => m a
+
+type Measure a = forall m. MonadInfer m => m a
+
+type Kernel a b = forall m. MonadInfer m => a -> m b
+
 -- | Hard conditioning.
 condition :: MonadCond m => Bool -> m ()
 condition b = score $ if b then 1 else 0
@@ -267,8 +285,6 @@ normalPdf ::
   Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
---------------------
-
 -- | multivariate normal
 mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
 mvNormal mu bigSigma = do
@@ -280,19 +296,19 @@ mvNormal mu bigSigma = do
 
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian
-  { latent :: m z, -- prior over latent variable Z
+  { prior :: m z, -- prior over latent variable Z
     generative :: z -> m o, -- distribution over observations given Z=z
     likelihood :: z -> o -> Log Double -- p(o|z)
   }
 
 posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
 posterior Bayesian {..} os = do
-  z <- latent
+  z <- prior
   factor $ product $ fmap (likelihood z) os
   return z
 
 priorPredictive :: Monad m => Bayesian m a b -> m b
-priorPredictive bm = latent bm >>= generative bm
+priorPredictive bm = prior bm >>= generative bm
 
 posteriorPredictive ::
   (MonadInfer m, Foldable f, Functor f) =>
@@ -300,6 +316,23 @@ posteriorPredictive ::
   f b ->
   m b
 posteriorPredictive bm os = posterior bm os >>= generative bm
+
+-- helper funcs
+--------------------
+
+type Histogram = H.Histogram H.BinD Double
+
+histogram :: Int -> [(Double, Log Double)] -> Histogram
+histogram n v = H.fillBuilder buildr $ fmap (second (ln . exp)) v
+  where
+    v1 = fmap fst v
+    mi = Prelude.minimum v1
+    ma = Prelude.maximum v1
+    bins = H.binD mi n ma
+    buildr = H.mkWeighted bins
+
+histogramToList :: Histogram -> [(Double, Double)]
+histogramToList = H.asList
 
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.

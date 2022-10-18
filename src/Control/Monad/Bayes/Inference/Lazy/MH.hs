@@ -1,15 +1,11 @@
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Control.Monad.Bayes.Inference.Lazy.MH where
 
+import Control.Monad.Bayes.Class (Log (ln))
 import Control.Monad.Bayes.Sampler.Lazy
   ( Sampler (runSampler),
     Tree (..),
@@ -19,7 +15,6 @@ import Control.Monad.Bayes.Sampler.Lazy
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Control.Monad.Extra (iterateM)
 import Control.Monad.State.Lazy (MonadState (get, put), runState)
-import Numeric.Log (Log (ln))
 import System.Random (RandomGen (split), getStdGen, newStdGen)
 import System.Random qualified as R
 

@@ -1,13 +1,13 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            0.2.0
+version:            1.0.0
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC ==9.2.3
+tested-with:        GHC ==9.2.2
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.
@@ -47,7 +47,7 @@ library
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
-    Control.Monad.Bayes.Sequential
+    Control.Monad.Bayes.Sequential.Coroutine
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
     Control.Monad.Bayes.Traced.Dynamic
@@ -64,6 +64,7 @@ library
     , containers       >=0.5.10 && <0.7
     , foldl
     , free             >=5.0.2  && <5.2
+    , histogram-fill
     , ieee754          ^>=0.8.0
     , integration
     , lens
@@ -83,7 +84,6 @@ library
     , scientific
     , statistics       >=0.14.0 && <0.17
     , text
-    , transformers     ^>=0.5.2
     , vector           ^>=0.12.0
     , vty
 
@@ -97,7 +97,7 @@ library
 
   if flag(dev)
     ghc-options:
-      -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
+      -O2 -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
       -Wno-missing-import-lists -Wno-implicit-prelude
       -Wno-monomorphism-restriction
 
@@ -183,6 +183,7 @@ test-suite monad-bayes-test
     , mwc-random
     , pipes
     , pretty-simple
+    , profunctors
     , QuickCheck
     , random
     , statistics

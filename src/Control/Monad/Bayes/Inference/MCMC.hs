@@ -12,13 +12,11 @@
 module Control.Monad.Bayes.Inference.MCMC where
 
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Sampler.Strict
 import qualified Control.Monad.Bayes.Traced.Basic as Basic
-import Control.Monad.Bayes.Traced.Common (MHResult (..), Trace (..), burnIn, mhTransWithBool)
+import Control.Monad.Bayes.Traced.Common
 import qualified Control.Monad.Bayes.Traced.Dynamic as Dynamic
 import qualified Control.Monad.Bayes.Traced.Static as Static
 import Control.Monad.Bayes.Weighted
-import Control.Monad.Trans (lift)
 import Pipes ((>->))
 import qualified Pipes as P
 import qualified Pipes.Prelude as P

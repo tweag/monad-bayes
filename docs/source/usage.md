@@ -6,7 +6,7 @@ That's enough to understand the core ideas, but for the more advanced content, y
 
 ## References
 
-monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://www.denotational.co.uk/publications/scibior-kammar-ghahramani-funcitonal-programming-for-modular-bayesian-inference.pdf).
+monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://arxiv.org/pdf/1711.03219.pdf).
 
 ## The core typeclasses
 
@@ -383,7 +383,7 @@ pushEvidence ::
 
 In other words, `pushEvidence` takes a `Population m a` where `m` is a `MonadCond` instance. It takes the sum of the weights, divides the weights by it, and then factors by the sum in `m`.
 
-### Sequential 
+### Sequential
 
 Summary of key info on `Sequential`:
 
@@ -477,6 +477,7 @@ hoistFirst f = Sequential . Coroutine . f . resume . runSequential
 
 When `m` is `Population n` for some other `n`, then `resampleGeneric` gives us one example of the natural transformation we want. In other words, operating in `Sequential (Population n)` works, and not only works but does something statistically interesting: particle filtering (aka SMC).
 
+**Note**: the running of `Sequential`, i.e. getting from `Sequential m a` to `m a` is surprisingly subtle, and there are many incorrect ways to do it, such as plain folds of the recursive structure. These can result in a semantics in which the transformation gets applied an exponentially large number of times.
 
 
 
@@ -704,20 +705,17 @@ The version of MCMC in monad-bayes performs its random walk on program traces of
 A single step in this chain (in Metropolis Hasting MCMC) looks like this:
 
 ```haskell
-mhTrans :: MonadSample m => 
-    Weighted (Density m) a -> Trace a -> m (Trace a)
-mhTrans m t@Trace {variables = us, density = p} = do
+mhTrans :: MonadSample m => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
+mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n -1)
+    i <- discrete $ discreteUniformAB 0 (n - 1)
     u' <- random
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- 
-      runWriterT $ weighted $ Weighted.hoist (WriterT . density us') m
-  let ratio = (exp . ln) $ min 1 
-      (q * fromIntegral n / (p * fromIntegral (length vs)))
+  ((b, q), vs) <- State.density (weighted m) us'
+  let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 ```
