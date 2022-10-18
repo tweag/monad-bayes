@@ -21,8 +21,6 @@ import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced (Traced)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted
-import Data.List (sort)
-import Data.Map qualified as M
 import Data.Scientific (FPFormat (Exponent), formatScientific, fromFloatDigits)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
@@ -31,7 +29,7 @@ import GHC.Float (double2Float)
 import Graphics.Vty
 import Graphics.Vty qualified as V
 import Numeric.Log (Log (ln))
-import Pipes (MonadIO (liftIO), runEffect, (>->))
+import Pipes (runEffect, (>->))
 import Pipes qualified as P
 import Pipes.Prelude qualified as P
 import Text.Pretty.Simple (pShow, pShowNoColor)
