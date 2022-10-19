@@ -20,9 +20,9 @@ module Control.Monad.Bayes.Inference.SMC2
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadFactor (..),
+  ( MonadDistribution (random),
+    MonadFactor (..),
     MonadMeasure,
-    MonadDistribution (random),
   )
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)

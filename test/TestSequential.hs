@@ -1,8 +1,8 @@
 module TestSequential (twoSync, finishedTwoSync, checkTwoSync, checkPreserve, pFinished, isFinished, checkSync) where
 
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (uniformD),
+  ( MonadDistribution (uniformD),
+    MonadMeasure,
     factor,
   )
 import Control.Monad.Bayes.Enumerator as Dist (enumerator, mass)

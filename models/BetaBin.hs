@@ -8,8 +8,8 @@ module BetaBin where
 -- The two formulations should be exactly equivalent, but only urn works with Dist.
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (bernoulli, uniform),
+  ( MonadDistribution (bernoulli, uniform),
+    MonadMeasure,
     condition,
   )
 import Control.Monad.State.Lazy (evalStateT, get, put)

@@ -4,9 +4,9 @@ module HMM where
 
 import Control.Monad (replicateM, when)
 import Control.Monad.Bayes.Class
-  ( MonadFactor,
+  ( MonadDistribution (categorical, normal, uniformD),
+    MonadFactor,
     MonadMeasure,
-    MonadDistribution (categorical, normal, uniformD),
     factor,
     normalPdf,
   )

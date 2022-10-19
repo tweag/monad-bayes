@@ -2,7 +2,7 @@
 
 module NestedInference where
 
-import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution (uniformD), factor)
+import Control.Monad.Bayes.Class (MonadDistribution (uniformD), MonadMeasure, factor)
 import Control.Monad.Bayes.Enumerator (mass)
 import Numeric.Log (Log (Exp))
 

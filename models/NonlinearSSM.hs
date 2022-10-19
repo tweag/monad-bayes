@@ -1,8 +1,8 @@
 module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (gamma, normal),
+  ( MonadDistribution (gamma, normal),
+    MonadMeasure,
     factor,
     normalPdf,
   )

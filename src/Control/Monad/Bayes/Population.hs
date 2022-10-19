@@ -41,9 +41,9 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadFactor,
+  ( MonadDistribution (categorical, logCategorical, random, uniform),
+    MonadFactor,
     MonadMeasure,
-    MonadDistribution (categorical, logCategorical, random, uniform),
     factor,
   )
 import Control.Monad.Bayes.Weighted

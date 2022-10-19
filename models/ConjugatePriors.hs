@@ -7,7 +7,7 @@ module ConjugatePriors where
 import Control.Applicative (Applicative (liftA2))
 import Control.Foldl (fold)
 import Control.Foldl qualified as F
-import Control.Monad.Bayes.Class (Bayesian (..), MonadMeasure, MonadDistribution (bernoulli, beta, gamma, normal), normalPdf)
+import Control.Monad.Bayes.Class (Bayesian (..), MonadDistribution (bernoulli, beta, gamma, normal), MonadMeasure, normalPdf)
 import Numeric.Log (Log (Exp))
 import Prelude
 

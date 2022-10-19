@@ -20,9 +20,9 @@ where
 
 import Control.Monad (join)
 import Control.Monad.Bayes.Class
-  ( MonadFactor (..),
+  ( MonadDistribution (random),
+    MonadFactor (..),
     MonadMeasure,
-    MonadDistribution (random),
   )
 import Control.Monad.Bayes.Density.Free (Density)
 import Control.Monad.Bayes.Traced.Common

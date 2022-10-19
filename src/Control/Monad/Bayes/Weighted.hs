@@ -26,9 +26,9 @@ module Control.Monad.Bayes.Weighted
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadFactor (..),
+  ( MonadDistribution,
+    MonadFactor (..),
     MonadMeasure,
-    MonadDistribution,
     factor,
   )
 import Control.Monad.State (MonadIO, MonadTrans, StateT (..), lift, mapStateT, modify)

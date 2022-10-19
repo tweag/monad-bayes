@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Inference.SMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution)
+import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
 import Control.Monad.Bayes.Population
   ( Population,
     pushEvidence,

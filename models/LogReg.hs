@@ -7,8 +7,8 @@ module LogReg (logisticRegression, syntheticData, xs, labels) where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (bernoulli, gamma, normal, uniform),
+  ( MonadDistribution (bernoulli, gamma, normal, uniform),
+    MonadMeasure,
     factor,
   )
 import Numeric.Log (Log (Exp))

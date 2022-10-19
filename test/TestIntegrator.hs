@@ -4,9 +4,9 @@ module TestIntegrator where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadFactor (score),
+  ( MonadDistribution (bernoulli, gamma, normal, random, uniformD),
+    MonadFactor (score),
     MonadMeasure,
-    MonadDistribution (bernoulli, gamma, normal, random, uniformD),
     condition,
     factor,
     normalPdf,

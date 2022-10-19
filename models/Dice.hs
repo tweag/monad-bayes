@@ -5,9 +5,9 @@ module Dice (diceHard, diceSoft) where
 
 import Control.Applicative (liftA2)
 import Control.Monad.Bayes.Class
-  ( MonadFactor (score),
+  ( MonadDistribution (uniformD),
+    MonadFactor (score),
     MonadMeasure,
-    MonadDistribution (uniformD),
     condition,
   )
 

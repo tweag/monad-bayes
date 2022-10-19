@@ -33,9 +33,9 @@ where
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
 import Control.Monad.Bayes.Class
-  ( MonadFactor (..),
+  ( MonadDistribution (bernoulli, categorical, logCategorical, random),
+    MonadFactor (..),
     MonadMeasure,
-    MonadDistribution (bernoulli, categorical, logCategorical, random),
   )
 import Control.Monad.Writer
 import Data.AEq (AEq, (===), (~==))

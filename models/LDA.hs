@@ -11,8 +11,8 @@ module LDA where
 
 import Control.Monad qualified as List (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (categorical, dirichlet, uniformD),
+  ( MonadDistribution (categorical, dirichlet, uniformD),
+    MonadMeasure,
     factor,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed)

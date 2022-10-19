@@ -1,6 +1,6 @@
 module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinklerExact, transCheck1, transCheck2, resampleCheck, popAvgCheck) where
 
-import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution)
+import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
 import Control.Monad.Bayes.Enumerator (enumerator, expectation)
 import Control.Monad.Bayes.Population as Population
   ( Population,

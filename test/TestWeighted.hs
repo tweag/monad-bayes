@@ -3,8 +3,8 @@
 module TestWeighted (check, passed, result, model) where
 
 import Control.Monad.Bayes.Class
-  ( MonadMeasure,
-    MonadDistribution (normal, uniformD),
+  ( MonadDistribution (normal, uniformD),
+    MonadMeasure,
     factor,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)

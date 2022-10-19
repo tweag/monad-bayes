@@ -4,7 +4,7 @@
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class (MonadMeasure, MonadDistribution)
+import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)

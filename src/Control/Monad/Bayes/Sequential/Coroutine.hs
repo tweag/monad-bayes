@@ -26,9 +26,9 @@ module Control.Monad.Bayes.Sequential.Coroutine
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadFactor (..),
+  ( MonadDistribution (bernoulli, categorical, random),
+    MonadFactor (..),
     MonadMeasure,
-    MonadDistribution (bernoulli, categorical, random),
   )
 import Control.Monad.Coroutine
   ( Coroutine (..),
