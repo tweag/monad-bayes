@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Inference.PMMH
   )
 where
 
-import Control.Monad.Bayes.Class (Bayesian (generative), MonadInfer, MonadSample, prior)
+import Control.Monad.Bayes.Class (Bayesian (generative), MonadDistribution, MonadMeasure, prior)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (), smc)
 import Control.Monad.Bayes.Population as Pop
@@ -35,7 +35,7 @@ import Numeric.Log (Log)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
-  MonadSample m =>
+  MonadDistribution m =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
   Traced (Weighted m) a1 ->
@@ -54,9 +54,9 @@ pmmh mcmcConf smcConf param model =
 
 -- | Particle Marginal Metropolis-Hastings sampling from a Bayesian model
 pmmhBayesianModel ::
-  MonadInfer m =>
+  MonadMeasure m =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
-  (forall m'. MonadInfer m' => Bayesian m' a1 a2) ->
+  (forall m'. MonadMeasure m' => Bayesian m' a1 a2) ->
   m [[(a2, Log Double)]]
 pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (prior bm) (generative bm)

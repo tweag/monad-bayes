@@ -7,13 +7,13 @@ module LogReg (logisticRegression, syntheticData, xs, labels) where
 
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadInfer,
-    MonadSample (bernoulli, gamma, normal, uniform),
+  ( MonadDistribution (bernoulli, gamma, normal, uniform),
+    MonadMeasure,
     factor,
   )
 import Numeric.Log (Log (Exp))
 
-logisticRegression :: MonadInfer m => [(Double, Bool)] -> m Double
+logisticRegression :: MonadMeasure m => [(Double, Bool)] -> m Double
 logisticRegression dat = do
   m <- normal 0 1
   b <- normal 0 1
@@ -27,7 +27,7 @@ logisticRegression dat = do
   sigmoid 8
 
 -- make a synthetic dataset by randomly choosing input-label pairs
-syntheticData :: MonadSample m => Int -> m [(Double, Bool)]
+syntheticData :: MonadDistribution m => Int -> m [(Double, Bool)]
 syntheticData n = replicateM n do
   x <- uniform (-1) 1
   label <- bernoulli 0.5

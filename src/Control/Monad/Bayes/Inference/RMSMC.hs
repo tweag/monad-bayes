@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Inference.RMSMC
   )
 where
 
-import Control.Monad.Bayes.Class (MonadSample)
+import Control.Monad.Bayes.Class (MonadDistribution)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..))
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
@@ -42,7 +42,7 @@ import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
-  MonadSample m =>
+  MonadDistribution m =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model
@@ -56,7 +56,7 @@ rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
 rmsmcBasic ::
-  MonadSample m =>
+  MonadDistribution m =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model
@@ -71,7 +71,7 @@ rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
 -- where only random variables since last resampling are considered
 -- for rejuvenation.
 rmsmcDynamic ::
-  MonadSample m =>
+  MonadDistribution m =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model

@@ -12,14 +12,14 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- This module defines 'MonadInfer', which can be used to represent any probabilistic program,
+-- This module defines 'MonadMeasure', which can be used to represent any probabilistic program,
 -- such as the following:
 --
 -- @
 -- import Control.Monad (when)
 -- import Control.Monad.Bayes.Class
 --
--- model :: MonadInfer m => m Bool
+-- model :: MonadMeasure m => m Bool
 -- model = do
 --   rain <- bernoulli 0.3
 --   sprinkler <-
@@ -37,7 +37,7 @@
 --   return rain
 -- @
 module Control.Monad.Bayes.Class
-  ( MonadSample,
+  ( MonadDistribution,
     random,
     uniform,
     normal,
@@ -50,11 +50,11 @@ module Control.Monad.Bayes.Class
     geometric,
     poisson,
     dirichlet,
-    MonadCond,
+    MonadFactor,
     score,
     factor,
     condition,
-    MonadInfer,
+    MonadMeasure,
     discrete,
     normalPdf,
     Bayesian (..),
@@ -106,7 +106,7 @@ import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
-class Monad m => MonadSample m where
+class Monad m => MonadDistribution m where
   -- | Draw from a uniform distribution.
   random ::
     -- | \(\sim \mathcal{U}(0, 1)\)
@@ -220,12 +220,12 @@ class Monad m => MonadSample m where
 
 -- | Draw from a continuous distribution using the inverse cumulative density
 -- function.
-draw :: (ContDistr d, MonadSample m) => d -> m Double
+draw :: (ContDistr d, MonadDistribution m) => d -> m Double
 draw d = fmap (quantile d) random
 
 -- | Draw from a discrete distribution using a sequence of draws from
 -- Bernoulli.
-fromPMF :: MonadSample m => (Int -> Double) -> m Int
+fromPMF :: MonadDistribution m => (Int -> Double) -> m Int
 fromPMF p = f 0 1
   where
     f i r = do
@@ -236,11 +236,11 @@ fromPMF p = f 0 1
       if b then pure i else f (i + 1) (r - q)
 
 -- | Draw from a discrete distributions using the probability mass function.
-discrete :: (DiscreteDistr d, MonadSample m) => d -> m Int
+discrete :: (DiscreteDistr d, MonadDistribution m) => d -> m Int
 discrete = fromPMF . probability
 
 -- | Monads that can score different execution paths.
-class Monad m => MonadCond m where
+class Monad m => MonadFactor m where
   -- | Record a likelihood.
   score ::
     -- | likelihood of the execution path
@@ -249,7 +249,7 @@ class Monad m => MonadCond m where
 
 -- | Synonym for 'score'.
 factor ::
-  MonadCond m =>
+  MonadFactor m =>
   -- | likelihood of the execution path
   Log Double ->
   m ()
@@ -257,21 +257,21 @@ factor = score
 
 -- | synonym for pretty type signatures, but note that (A -> Distribution B) won't work as intended: for that, use Kernel
 -- Also note that the use of RankNTypes means performance may take a hit: really the main point of these signatures is didactic
-type Distribution a = forall m. MonadSample m => m a
+type Distribution a = forall m. MonadDistribution m => m a
 
-type Measure a = forall m. MonadInfer m => m a
+type Measure a = forall m. MonadMeasure m => m a
 
-type Kernel a b = forall m. MonadInfer m => a -> m b
+type Kernel a b = forall m. MonadMeasure m => a -> m b
 
 -- | Hard conditioning.
-condition :: MonadCond m => Bool -> m ()
+condition :: MonadFactor m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
 independent :: Applicative m => Int -> m a -> m [a]
 independent = replicateM
 
 -- | Monads that support both sampling and scoring.
-class (MonadSample m, MonadCond m) => MonadInfer m
+class (MonadDistribution m, MonadFactor m) => MonadMeasure m
 
 -- | Probability density function of the normal distribution.
 normalPdf ::
@@ -286,7 +286,7 @@ normalPdf ::
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 -- | multivariate normal
-mvNormal :: MonadSample m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal :: MonadDistribution m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
 mvNormal mu bigSigma = do
   let n = length mu
   ss <- replicateM n (normal 0 1)
@@ -301,7 +301,7 @@ data Bayesian m z o = Bayesian
     likelihood :: z -> o -> Log Double -- p(o|z)
   }
 
-posterior :: (MonadInfer m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
+posterior :: (MonadMeasure m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
 posterior Bayesian {..} os = do
   z <- prior
   factor $ product $ fmap (likelihood z) os
@@ -311,7 +311,7 @@ priorPredictive :: Monad m => Bayesian m a b -> m b
 priorPredictive bm = prior bm >>= generative bm
 
 posteriorPredictive ::
-  (MonadInfer m, Foldable f, Functor f) =>
+  (MonadMeasure m, Foldable f, Functor f) =>
   Bayesian m a b ->
   f b ->
   m b
@@ -337,68 +337,68 @@ histogramToList = H.asList
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
-instance MonadSample m => MonadSample (IdentityT m) where
+instance MonadDistribution m => MonadDistribution (IdentityT m) where
   random = lift random
   bernoulli = lift . bernoulli
 
-instance MonadCond m => MonadCond (IdentityT m) where
+instance MonadFactor m => MonadFactor (IdentityT m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (IdentityT m)
+instance MonadMeasure m => MonadMeasure (IdentityT m)
 
-instance MonadSample m => MonadSample (ExceptT e m) where
+instance MonadDistribution m => MonadDistribution (ExceptT e m) where
   random = lift random
   uniformD = lift . uniformD
 
-instance MonadCond m => MonadCond (ExceptT e m) where
+instance MonadFactor m => MonadFactor (ExceptT e m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (ExceptT e m)
+instance MonadMeasure m => MonadMeasure (ExceptT e m)
 
-instance MonadSample m => MonadSample (ReaderT r m) where
+instance MonadDistribution m => MonadDistribution (ReaderT r m) where
   random = lift random
   bernoulli = lift . bernoulli
 
-instance MonadCond m => MonadCond (ReaderT r m) where
+instance MonadFactor m => MonadFactor (ReaderT r m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (ReaderT r m)
+instance MonadMeasure m => MonadMeasure (ReaderT r m)
 
-instance (Monoid w, MonadSample m) => MonadSample (WriterT w m) where
+instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
-instance (Monoid w, MonadCond m) => MonadCond (WriterT w m) where
+instance (Monoid w, MonadFactor m) => MonadFactor (WriterT w m) where
   score = lift . score
 
-instance (Monoid w, MonadInfer m) => MonadInfer (WriterT w m)
+instance (Monoid w, MonadMeasure m) => MonadMeasure (WriterT w m)
 
-instance MonadSample m => MonadSample (StateT s m) where
+instance MonadDistribution m => MonadDistribution (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
   uniformD = lift . uniformD
 
-instance MonadCond m => MonadCond (StateT s m) where
+instance MonadFactor m => MonadFactor (StateT s m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (StateT s m)
+instance MonadMeasure m => MonadMeasure (StateT s m)
 
-instance MonadSample m => MonadSample (ListT m) where
+instance MonadDistribution m => MonadDistribution (ListT m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
-instance MonadCond m => MonadCond (ListT m) where
+instance MonadFactor m => MonadFactor (ListT m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (ListT m)
+instance MonadMeasure m => MonadMeasure (ListT m)
 
-instance MonadSample m => MonadSample (ContT r m) where
+instance MonadDistribution m => MonadDistribution (ContT r m) where
   random = lift random
 
-instance MonadCond m => MonadCond (ContT r m) where
+instance MonadFactor m => MonadFactor (ContT r m) where
   score = lift . score
 
-instance MonadInfer m => MonadInfer (ContT r m)
+instance MonadMeasure m => MonadMeasure (ContT r m)
