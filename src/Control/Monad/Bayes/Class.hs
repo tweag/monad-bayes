@@ -296,11 +296,12 @@ mvNormal mu bigSigma = do
 
 -- | a useful datatype for expressing bayesian models
 data Bayesian m z o = Bayesian
-  { prior :: m z, -- prior over latent variable Z
-    generative :: z -> m o, -- distribution over observations given Z=z
+  { prior :: m z, -- prior over latent variable Z; p(z)
+    generative :: z -> m o, -- distribution over observations given Z=z; p(o|Z=z)
     likelihood :: z -> o -> Log Double -- p(o|z)
   }
 
+-- | p(z|o)
 posterior :: (MonadMeasure m, Foldable f, Functor f) => Bayesian m z o -> f o -> m z
 posterior Bayesian {..} os = do
   z <- prior
