@@ -26,7 +26,7 @@ import Numeric.Log (Log)
 mcmcConfig :: MCMCConfig
 mcmcConfig = MCMCConfig {numMCMCSteps = 0, numBurnIn = 0, proposal = SingleSiteMH}
 
-smcConfig :: MonadSample m => SMCConfig m
+smcConfig :: MonadDistribution m => SMCConfig m
 smcConfig = SMCConfig {numSteps = 0, numParticles = 1000, resampler = resampleMultinomial}
 
 passed1, passed2, passed3, passed4, passed5, passed6, passed7 :: IO Bool

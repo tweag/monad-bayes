@@ -70,10 +70,10 @@ Other probabilistic programming languages with fairly similar APIs include WebPP
 A distribution in monad-bayes over a set {math}`X`, is of type:
 
 ```haskell
-MonadInfer m => m X
+MonadMeasure m => m X
 ```
 
-For beginner friendliness, a synonym `type Measure a = forall m . MonadSample m => m a` is provided (as well as `Distribution` shown above, for normalized distributions, and `Kernel` for functions into distributions).
+For beginner friendliness, a synonym `type Measure a = forall m . MonadDistribution m => m a` is provided (as well as `Distribution` shown above, for normalized distributions, and `Kernel` for functions into distributions).
 
 Monad-bayes provides standard distributions, such as
 
@@ -94,20 +94,20 @@ distributionOverFunctions = uniformD [(+), (-)]
 
 ## Constructing distributions as programs
 
-monad-bayes also lets us construct new distributions out of these. `MonadInfer m` implies `Monad m` and in turn `Functor m`, so we can do the following:
+monad-bayes also lets us construct new distributions out of these. `MonadMeasure m` implies `Monad m` and in turn `Functor m`, so we can do the following:
 
 ```haskell
-fmap (> 0.5) random :: MonadInfer m => m Bool
+fmap (> 0.5) random :: MonadMeasure m => m Bool
 ```
 
 This is the uniform distribution over {math}`(0.5, 1]`.
 
-As an important special case, if `x :: MonadInfer m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadInfer m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
+As an important special case, if `x :: MonadMeasure m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadMeasure m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
 
 The above example use only the functor instance for `m`, but we also have the monad instance, as used in:
 
 ```haskell
-example :: MonadInfer m => m Double
+example :: MonadMeasure m => m Double
 example = bernoulli 0.5 >>= (\x -> if x then random else normal 0 1)
 ```
 
@@ -124,7 +124,7 @@ It's easiest to understand this distribution as a probabilistic program: it's th
 Equivalently, we could write this in do-notation as:
 
 ```haskell
-example :: MonadInfer m => m Double
+example :: MonadMeasure m => m Double
 example = do
   bool <- bernoulli 0.5
   if bool then random else normal 0 1
@@ -136,10 +136,10 @@ That said, it is often useful to think of probabilistic programs as specifying d
 
 ## Hard and soft conditioning
 
-monad-bayes provides a function `score :: MonadInfer m => Log Double -> m ()`. (**Note**: `Log Double` is a wrapper for `Double` which stores doubles as their logarithm, and does multiplication by addition of logarithms.)
+monad-bayes provides a function `score :: MonadMeasure m => Log Double -> m ()`. (**Note**: `Log Double` is a wrapper for `Double` which stores doubles as their logarithm, and does multiplication by addition of logarithms.)
 
 ```haskell
-example :: MonadInfer m => m Double
+example :: MonadMeasure m => m Double
 example = do
   bool <- bernoulli 0.5
   number <- if bool then random else normal 0 1
@@ -152,13 +152,13 @@ It's easiest to understand this in terms of the "program execution trace" perspe
 `condition` in then defined as follows:
 
 ```haskell
-condition :: MonadInfer m => Bool -> m ()
+condition :: MonadMeasure m => Bool -> m ()
 condition b = score $ if b then 1 else 0
 ```
 So `condition b` throws away every trace in which `b` is False, and keeps all traces in which `b` is True. For example:
 
 ```haskell
-example :: MonadInfer m => m Int
+example :: MonadMeasure m => m Int
 example = do
   n <- poisson 0.5
   condition (n%2 == 0)
@@ -172,7 +172,7 @@ This describes a Poisson distribution in which all even values of the random var
 <!-- The most intuitive way to understand `score` is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a `score x` statement, where the value of `x` depends on the previous choices. This statement multiplies the weight of this "trace" by the score. -->
 
 <!-- ```haskell
-bayesianExample :: (Eq a, MonadInfer m) => m a -> (a -> m b) -> (b -> m a)
+bayesianExample :: (Eq a, MonadMeasure m) => m a -> (a -> m b) -> (b -> m a)
 bayesianExample prior likelihood b = do
     a <- prior
     b' <- likelihood a
@@ -183,7 +183,7 @@ bayesianExample prior likelihood b = do
 Note that operationally speaking, this approach is only going to work well for discrete distributions, since `b==b'` is going to be zero-measure in the continuous case. But in the discrete case, we could for example do: -->
 
 <!-- ```haskell
-example :: MonadInfer 
+example :: MonadMeasure 
 example =  bayesianExample (bernoulli 0.5) (\x -> if x then bernoulli 0.8 else bernoulli 0.9) True 
 ``` 
 -->
@@ -192,7 +192,7 @@ example =  bayesianExample (bernoulli 0.5) (\x -> if x then bernoulli 0.8 else b
 
 
 <!-- ```haskell
-example :: MonadInfer m => m Bool
+example :: MonadMeasure m => m Bool
 example = do 
   x <- normal 0 1
   y <- normal 0 2
@@ -218,7 +218,7 @@ The hard part is designing a language where you can specify how you want to do i
 
 Two of the large classes of inference methods are **sampling based methods** and **gradient based methods**. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.
 
-<!-- For the purposes of this section, let `dist :: MonadInfer m => m a` be the distribution you want to perform inference on.  -->
+<!-- For the purposes of this section, let `dist :: MonadMeasure m => m a` be the distribution you want to perform inference on.  -->
 
 ## Exact inference
 
@@ -232,12 +232,12 @@ So `enumerator (bernoulli 0.7)` gives you
 [(False,0.3),(True,0.7)]
 ```
 
-This works for distributions with `factor` statements (i.e. an instance of `MonadInfer`), as in:
+This works for distributions with `factor` statements (i.e. an instance of `MonadMeasure`), as in:
 
 
 ```haskell
 
-model :: MonadInfer m => m Bool
+model :: MonadMeasure m => m Bool
 model = do
   x <- bernoulli 0.5
   y <- bernoulli 0.3
@@ -272,7 +272,7 @@ which gives
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
 ```haskell
-model :: MonadSample m => m Double
+model :: MonadDistribution m => m Double
 model = do
   var <- gamma 1 1
   normal 0 (sqrt var)
@@ -285,7 +285,7 @@ You can also try `expectation model`, `variance model`, `momentGeneratingFunctio
 If the model has factor statements, as in
 
 ```haskell
-model :: MonadInfer m => m Double
+model :: MonadMeasure m => m Double
 model = do
   var <- gamma 1 1
   n <- normal 0 (sqrt var)
@@ -321,10 +321,10 @@ To perform weighted sampling, use:
 (sampler . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
 ```
 
-`Weighted SamplerIO` is an instance of `MonadInfer`, so we can apply this to any distribution. For example, suppose we have the distribution:
+`Weighted SamplerIO` is an instance of `MonadMeasure`, so we can apply this to any distribution. For example, suppose we have the distribution:
 
 ```haskell
-example :: MonadInfer m => m Bool
+example :: MonadMeasure m => m Bool
 example = do
   x <- bernoulli 0.5
   condition x
@@ -348,7 +348,7 @@ If you want to forward sample from an infinite program, just as a distribution o
 ```haskell
 import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
 
-example :: MonadSample m => m [Double]
+example :: MonadDistribution m => m [Double]
 example = do 
   x <- random
   fmap (x:) example
@@ -374,11 +374,11 @@ There are several versions of metropolis hastings MCMC defined in monad-bayes. T
 
 As you can see, `mcmc` takes a `MCMCConfig` object, which is where you specify the number of steps in the MCMC chain, and the number of burn in steps. `SingleSiteMH` refers to the proposal used in the chain.
 
-`Traced (Weighted SamplerIO)` is an instance of `MonadInfer`, so we can apply this to any distribution. For instance:
+`Traced (Weighted SamplerIO)` is an instance of `MonadMeasure`, so we can apply this to any distribution. For instance:
 
 
 ```haskell
-example :: MonadInfer m => m Bool
+example :: MonadMeasure m => m Bool
 example = do
   x <- bernoulli 0.5
   condition x
@@ -436,7 +436,7 @@ output =
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
-<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
 
 As a concrete example, here is a probabilistic program:
 
@@ -445,12 +445,12 @@ As a concrete example, here is a probabilistic program:
   :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
-<!-- `Sequential (Population SamplerIO)` is an instance of `MonadInfer`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+<!-- `Sequential (Population SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
 
 As a concrete example, here is a probabilistic program:
 
 ```haskell
-example :: MonadInfer m => m Bool
+example :: MonadMeasure m => m Bool
 example = do
   x <- bernoulli 0.5
   condition x
@@ -485,7 +485,7 @@ This is a fancier variant of SMC, which has the particles take an MCMC walk thro
 
 ```haskell
 rmsmcBasic ::
-  MonadSample m =>
+  MonadDistribution m =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model
@@ -561,12 +561,12 @@ example = do
     return ind
 ```
 
-This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadSample m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
+This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadDistribution m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
 
 The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the `models` folder (TODO LINK) for examples.
 
 ```haskell
-betaBernoulli :: MonadSample m => Int -> m [Bool]
+betaBernoulli :: MonadDistribution m => Int -> m [Bool]
 betaBernoulli n = do
   weight <- uniform 0 1
   let toss = bernoulli weight
@@ -597,7 +597,7 @@ example = whileM (bernoulli 0.99) (normal 0 1)
 
 You may write distributions over artibrary types. For example, rather than drawing a sample from a distribution and then using the sample to construct a histogram or a plot, you can directly define a distribution over histograms or plots, and sample from that.
 
-You can have distributions over arbitrary data structures, such as trees, JSONs, databases, and so on. You can use `MonadInfer m => m` as the monad in libraries which are parametric in a monad, such as `megaparsec` or `pipes`.
+You can have distributions over arbitrary data structures, such as trees, JSONs, databases, and so on. You can use `MonadMeasure m => m` as the monad in libraries which are parametric in a monad, such as `megaparsec` or `pipes`.
 
 <!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
 

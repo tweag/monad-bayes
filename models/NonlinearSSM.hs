@@ -1,13 +1,13 @@
 module NonlinearSSM where
 
 import Control.Monad.Bayes.Class
-  ( MonadInfer,
-    MonadSample (gamma, normal),
+  ( MonadDistribution (gamma, normal),
+    MonadMeasure,
     factor,
     normalPdf,
   )
 
-param :: MonadSample m => m (Double, Double)
+param :: MonadDistribution m => m (Double, Double)
 param = do
   let a = 0.01
   let b = 0.01
@@ -23,7 +23,7 @@ mean x n = 0.5 * x + 25 * x / (1 + x * x) + 8 * cos (1.2 * fromIntegral n)
 -- | A nonlinear series model from Doucet et al. (2000)
 -- "On sequential Monte Carlo sampling methods" section VI.B
 model ::
-  (MonadInfer m) =>
+  (MonadMeasure m) =>
   -- | observed data
   [Double] ->
   -- | prior on the parameters
@@ -43,7 +43,7 @@ model obs (sigmaX, sigmaY) = do
   return $ reverse xs
 
 generateData ::
-  MonadSample m =>
+  MonadDistribution m =>
   -- | T
   Int ->
   -- | list of latent and observable states from t=1

@@ -41,9 +41,9 @@ where
 import Control.Arrow (second)
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadCond,
-    MonadInfer,
-    MonadSample (categorical, logCategorical, random, uniform),
+  ( MonadDistribution (categorical, logCategorical, random, uniform),
+    MonadFactor,
+    MonadMeasure,
     factor,
   )
 import Control.Monad.Bayes.Weighted
@@ -65,7 +65,7 @@ import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
 newtype Population m a = Population (Weighted (ListT m) a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadSample, MonadCond, MonadInfer)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadDistribution, MonadFactor, MonadMeasure)
 
 instance MonadTrans Population where
   lift = Population . lift . lift
@@ -97,7 +97,7 @@ withParticles :: Monad m => Int -> Population m a -> Population m a
 withParticles n = (spawn n >>)
 
 resampleGeneric ::
-  MonadSample m =>
+  MonadDistribution m =>
   -- | resampler
   (V.Vector Double -> m [Int]) ->
   Population m a ->
@@ -149,7 +149,7 @@ systematic u ps = f 0 (u / fromIntegral n) 0 0 []
 -- | Resample the population using the underlying monad and a systematic resampling scheme.
 -- The total weight is preserved.
 resampleSystematic ::
-  (MonadSample m) =>
+  (MonadDistribution m) =>
   Population m a ->
   Population m a
 resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
@@ -171,7 +171,7 @@ resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 -- and \(w^{(k)}\) are the weights.
 --
 -- The conditional variance of stratified sampling is always smaller than that of multinomial sampling and it is also unbiased - see  [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
-stratified :: MonadSample m => V.Vector Double -> m [Int]
+stratified :: MonadDistribution m => V.Vector Double -> m [Int]
 stratified weights = do
   let bigN = V.length weights
   dithers <- V.replicateM bigN (uniform 0.0 1.0)
@@ -191,7 +191,7 @@ stratified weights = do
 -- | Resample the population using the underlying monad and a stratified resampling scheme.
 -- The total weight is preserved.
 resampleStratified ::
-  (MonadSample m) =>
+  (MonadDistribution m) =>
   Population m a ->
   Population m a
 resampleStratified = resampleGeneric stratified
@@ -199,13 +199,13 @@ resampleStratified = resampleGeneric stratified
 -- | Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 -- times drawn at random according to the weights where \(n\) is the
 -- length of vector of weights.
-multinomial :: MonadSample m => V.Vector Double -> m [Int]
+multinomial :: MonadDistribution m => V.Vector Double -> m [Int]
 multinomial ps = replicateM (V.length ps) (categorical ps)
 
 -- | Resample the population using the underlying monad and a multinomial resampling scheme.
 -- The total weight is preserved.
 resampleMultinomial ::
-  (MonadSample m) =>
+  (MonadDistribution m) =>
   Population m a ->
   Population m a
 resampleMultinomial = resampleGeneric multinomial
@@ -227,7 +227,7 @@ extractEvidence m = fromWeightedList $ do
 -- | Push the evidence estimator as a score to the transformed monad.
 -- Weights are normalized after this operation.
 pushEvidence ::
-  MonadCond m =>
+  MonadFactor m =>
   Population m a ->
   Population m a
 pushEvidence = hoist applyWeight . extractEvidence
@@ -235,7 +235,7 @@ pushEvidence = hoist applyWeight . extractEvidence
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
 proper ::
-  (MonadSample m) =>
+  (MonadDistribution m) =>
   Population m a ->
   Weighted m a
 proper m = do
@@ -254,7 +254,7 @@ evidence = extractWeight . population . extractEvidence
 -- This way a single sample can be selected from a population without
 -- introducing bias.
 collapse ::
-  (MonadInfer m) =>
+  (MonadMeasure m) =>
   Population m a ->
   m a
 collapse = applyWeight . proper

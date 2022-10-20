@@ -28,13 +28,13 @@ data MCMCConfig = MCMCConfig {proposal :: Proposal, numMCMCSteps :: Int, numBurn
 defaultMCMCConfig :: MCMCConfig
 defaultMCMCConfig = MCMCConfig {proposal = SingleSiteMH, numMCMCSteps = 1, numBurnIn = 0}
 
-mcmc :: MonadSample m => MCMCConfig -> Static.Traced (Weighted m) a -> m [a]
+mcmc :: MonadDistribution m => MCMCConfig -> Static.Traced (Weighted m) a -> m [a]
 mcmc (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Static.mh numMCMCSteps m
 
-mcmcBasic :: MonadSample m => MCMCConfig -> Basic.Traced (Weighted m) a -> m [a]
+mcmcBasic :: MonadDistribution m => MCMCConfig -> Basic.Traced (Weighted m) a -> m [a]
 mcmcBasic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Basic.mh numMCMCSteps m
 
-mcmcDynamic :: MonadSample m => MCMCConfig -> Dynamic.Traced (Weighted m) a -> m [a]
+mcmcDynamic :: MonadDistribution m => MCMCConfig -> Dynamic.Traced (Weighted m) a -> m [a]
 mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Dynamic.mh numMCMCSteps m
 
 -- -- | draw iid samples until you get one that has non-zero likelihood
@@ -45,7 +45,7 @@ independentSamples (Static.Traced w d) =
     >-> P.map (MHResult False)
 
 -- | convert a probabilistic program into a producer of samples
-mcmcP :: MonadSample m => MCMCConfig -> Static.Traced m a -> P.Producer (MHResult a) m ()
+mcmcP :: MonadDistribution m => MCMCConfig -> Static.Traced m a -> P.Producer (MHResult a) m ()
 mcmcP MCMCConfig {..} m@(Static.Traced w _) = do
   initialValue <- independentSamples m >-> P.drain
   ( P.unfoldr (fmap (Right . (\k -> (k, trace k))) . mhTransWithBool w) initialValue
