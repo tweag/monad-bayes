@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Weighted

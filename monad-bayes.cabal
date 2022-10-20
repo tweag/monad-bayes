@@ -109,6 +109,40 @@ library
   else
     ghc-options: -Wall
 
+executable naiveSampling
+  main-is:            NaiveSampling.lhs
+  hs-source-dirs:     .
+  other-modules:
+
+  default-language:   Haskell2010
+  build-depends:
+      ad
+    , base
+    , bytestring
+    , cassava
+    , Chart
+    , Chart-diagrams
+    , colour
+    , containers
+    , diagrams-lib
+    , diagrams-rasterific
+    , diagrams-svg
+    , filepath
+    , histogram-fill
+    , lens
+    , log-domain
+    , math-functions
+    , monad-bayes
+    , monad-extras
+    , mwc-random
+    , optparse-applicative
+    , pipes
+    , pretty-simple
+    , random
+    , text
+    , time
+    , vector
+
 executable example
   main-is:            Single.hs
   hs-source-dirs:     benchmark models

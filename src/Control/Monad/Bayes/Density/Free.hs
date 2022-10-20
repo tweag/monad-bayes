@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Density.Free

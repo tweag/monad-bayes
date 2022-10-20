@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Traced.Dynamic
