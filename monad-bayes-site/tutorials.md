@@ -6,6 +6,8 @@ title: Tutorials
 
 ## [Sampling from a distribution](../Sampling.html)
 
+## [Bayesian models](../Bayesian.html)
+
 ## [Markov Chain Monte Carlo](../MCMC.html)
 
 ## [Sequential Monte Carlo](../SMC.html)
