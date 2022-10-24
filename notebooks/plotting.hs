@@ -118,4 +118,9 @@ instance Plottable [(T.Text, Double)] where
 instance Plottable [(Double, Double)] where
   plot ls = vlShow $ hist $ unzip ls
 
+instance Plottable ([Double], [Double]) where
+  plot (xs, ys) =
+    vlShow $
+      scatterplot ((xs, ys), replicate (length xs) 1) (color []) Numbers Line
+
 type Plot = VegaLiteLab
