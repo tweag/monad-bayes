@@ -1,6 +1,6 @@
 cabal-version:      2.0
 name:               monad-bayes
-version:            1.0.0
+version:            1.1.0
 license:            MIT
 license-file:       LICENSE.md
 copyright:          2015-2020 Adam Scibior
@@ -15,10 +15,15 @@ description:
   A library for probabilistic programming using probability monads. The
   emphasis is on composition of inference algorithms implemented in
   terms of monad transformers.
+  Please refer to the [documentation](https://monad-bayes.netlify.app/)
+  for a quick-start user guide and a reference overview of how it all
+  works" and the included [README](#readme).
 
 category:           Statistics
 build-type:         Simple
-extra-source-files: CHANGELOG.md
+extra-source-files:
+  CHANGELOG.md
+  README.md
 
 source-repository head
   type:     git
@@ -97,7 +102,7 @@ library
 
   if flag(dev)
     ghc-options:
-      -O2 -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
+      -Wall -Wno-missing-local-signatures -Wno-trustworthy-safe
       -Wno-missing-import-lists -Wno-implicit-prelude
       -Wno-monomorphism-restriction
 
@@ -131,7 +136,7 @@ executable example
 
   if flag(dev)
     ghc-options:
-      -O2 -Wall -Wcompat -Wincomplete-record-updates
+      -Wall -Wcompat -Wincomplete-record-updates
       -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
 
   else
