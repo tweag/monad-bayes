@@ -14636,7 +14636,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[28]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-Haskell"><pre><span></span><span class="nf">alphabet</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="w"> </span><span class="kt">[]</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="sc">&#39;h&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">]</span><span class="w"></span>
@@ -14649,7 +14649,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w">  </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="s">&quot;x&quot;</span><span class="p">]</span><span class="w"></span>
 <span class="w">    </span><span class="n">predicted</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="n">true</span><span class="w"></span>
 <span class="w">    </span><span class="n">observed</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lookAhead</span><span class="w"> </span><span class="p">(</span><span class="n">foldr1</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;|&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="p">])</span><span class="w"></span>
-<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">condition</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
+<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">condition</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
 <span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
 <span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="n">true</span><span class="w"> </span>
 <span class="w">    </span>
@@ -14676,13 +14676,19 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[29]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">population</span><span class="w"> </span>
-<span class="w">    </span><span class="o">$</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span>
-<span class="w">    </span><span class="o">$</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="s">&quot;hx&quot;</span><span class="w"></span>
-<span class="nf">pPrint</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toEmpiricalWeighted</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">pPrintCustom</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">pPrintOpt</span><span class="w"> </span><span class="kt">CheckColorTty</span><span class="w"> </span><span class="n">defaultOutputOptionsNoColor</span><span class="w"> </span><span class="p">{</span><span class="n">outputOptionsCompact</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span><span class="p">,</span><span class="w"> </span><span class="n">outputOptionsIndentAmount</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span><span class="w"> </span>
+
+<span class="nf">runWordParser</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span>
+<span class="w">        </span><span class="o">.</span><span class="w"> </span><span class="n">population</span><span class="w"> </span>
+<span class="w">        </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">3000</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span>
+<span class="w">        </span><span class="o">$</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="n">w</span><span class="w"></span>
+<span class="w">    </span><span class="n">pPrintCustom</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toEmpiricalWeighted</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">    </span>
+<span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hx&quot;</span><span class="w"></span>
 </pre></div>
 
      </div>
@@ -14707,25 +14713,137 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 <div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
 <pre>[
-    ( &#34;&#34;hi&#34;&#34;
-    , 0.801
-    )
+  ( &#34;&#34;hi&#34;&#34;, 0.7563333333333333 )
 ,
-    ( &#34;&#34;hx&#34;&#34;
-    , 0.18899999999999992
-    )
+  ( &#34;&#34;hx&#34;&#34;, 0.20799999999999993 )
 ,
-    ( &#34;&#34;ix&#34;&#34;
-    , 7.000000000000003 e- 3
-    )
+  ( &#34;&#34;xx&#34;&#34;, 1.5000000000000038 e- 2 )
 ,
-    ( &#34;&#34;xx&#34;&#34;
-    , 2.500000000000003 e- 3
-    )
+  ( &#34;&#34;hh&#34;&#34;, 1.06666666666667 e- 2 )
 ,
-    ( &#34;&#34;ii&#34;&#34;
-    , 5.000000000000001 e- 4
-    )
+  ( &#34;&#34;ix&#34;&#34;, 1.0000000000000014 e- 2 )
+]</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;ii&quot;</span><span class="w"></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>[
+  ( &#34;&#34;hi&#34;&#34;, 0.7813333333333331 )
+,
+  ( &#34;&#34;ii&#34;&#34;, 0.2046666666666667 )
+,
+  ( &#34;&#34;xi&#34;&#34;, 6.66666666666668 e- 3 )
+,
+  ( &#34;&#34;ix&#34;&#34;, 4.333333333333346 e- 3 )
+,
+  ( &#34;&#34;ih&#34;&#34;, 1.6666666666666711 e- 3 )
+,
+  ( &#34;&#34;xh&#34;&#34;, 1.0000000000000028 e- 3 )
+,
+  ( &#34;&#34;xx&#34;&#34;, 3.333333333333342 e- 4 )
+]</pre>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell   ">
+<div class="jp-Cell-inputWrapper">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+     <div class="CodeMirror cm-s-jupyter">
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hii&quot;</span><span class="w"></span>
+</pre></div>
+
+     </div>
+</div>
+</div>
+</div>
+
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+
+
+<div class="jp-OutputArea jp-Cell-outputArea">
+
+<div class="jp-OutputArea-child">
+
+    
+    <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+
+
+
+
+<div class="jp-RenderedText jp-OutputArea-output " data-mime-type="text/plain">
+<pre>[
+  ( &#34;&#34;hii&#34;&#34;, 0.8063333333333336 )
+,
+  ( &#34;&#34;xii&#34;&#34;, 3.9333333333333186 e- 2 )
+,
+  ( &#34;&#34;hhi&#34;&#34;, 3.533333333333321 e- 2 )
+,
+  ( &#34;&#34;hix&#34;&#34;, 2.966666666666659 e- 2 )
+,
+  ( &#34;&#34;hih&#34;&#34;, 2.8999999999999908 e- 2 )
+,
+  ( &#34;&#34;hxi&#34;&#34;, 2.633333333333325 e- 2 )
+,
+  ( &#34;&#34;iii&#34;&#34;, 1.666666666666663 e- 2 )
+,
+  ( &#34;&#34;hxx&#34;&#34;, 4.333333333333327 e- 3 )
+,
+  ( &#34;&#34;xih&#34;&#34;, 3.999999999999995 e- 3 )
+,
+  ( &#34;&#34;ixi&#34;&#34;, 3.6666666666666636 e- 3 )
+,
+  ( &#34;&#34;hhx&#34;&#34;, 2.666666666666665 e- 3 )
+,
+  ( &#34;&#34;xxi&#34;&#34;, 2.3333333333333314 e- 3 )
+,
+  ( &#34;&#34;hhh&#34;&#34;, 3.333333333333324 e- 4 )
 ]</pre>
 </div>
 
