@@ -21,6 +21,7 @@ import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced (Traced)
 import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted
+import Control.Monad.State.Class (put)
 import Data.Scientific (FPFormat (Exponent), formatScientific, fromFloatDigits)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
@@ -108,14 +109,11 @@ showVal :: Show a => [a] -> Widget n
 showVal = txt . T.pack . (\case [] -> ""; a -> show $ head a)
 
 -- | handler for events received by the TUI
-appEvent :: s -> B.BrickEvent n1 s -> B.EventM n2 (B.Next s)
-appEvent p (B.VtyEvent e) =
-  case e of
-    V.EvKey (V.KChar 'q') [] -> do
-      B.halt p
-    _ -> B.continue p
-appEvent _ (B.AppEvent d) = B.continue d
-appEvent _ _ = error "unknown event"
+appEvent :: B.BrickEvent n s -> B.EventM n s ()
+appEvent (B.VtyEvent (V.EvKey (V.KChar 'q') [])) = B.halt
+appEvent (B.VtyEvent _) = pure ()
+appEvent (B.AppEvent d) = put d
+appEvent _ = error "unknown event"
 
 doneAttr, toDoAttr :: B.AttrName
 doneAttr = B.attrName "theBase" <> B.attrName "done"
@@ -145,7 +143,7 @@ tui burnIn distribution visualizer = void do
             { B.appDraw = drawUI visualizer,
               B.appChooseCursor = B.showFirstCursor,
               B.appHandleEvent = appEvent,
-              B.appStartEvent = return,
+              B.appStartEvent = return (),
               B.appAttrMap = const theMap
             }
         )
