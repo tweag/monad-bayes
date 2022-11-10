@@ -11,8 +11,7 @@
     ];
   };
   inputs = {
-    # nixpkgs.url = "nixpkgs/nixos-unstable";
-    nixpkgs.url = "nixpkgs/22.05";
+    nixpkgs.url = "nixpkgs/nixos-unstable";
     flake-compat.url = "github:edolstra/flake-compat";
     flake-compat.flake = false;
     flake-utils.url = "github:numtide/flake-utils";
@@ -21,7 +20,6 @@
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
     jupyterWith.url = "github:tweag/jupyterWith";
-    # jupyterWith.inputs.nixpkgs.follows = "nixpkgs";
   };
   outputs = {
     self,
@@ -44,14 +42,12 @@
     (
       system: let
         inherit (nixpkgs) lib;
+        inherit (jupyterWith.lib.${system}) mkJupyterlabFromPath;
         pkgs = import nixpkgs {
           system = system;
-          overlays =
-            # [myHaskellPackageOverlay] ++
-            nixpkgs.lib.attrValues jupyterWith.overlays;
           config.allowBroken = true;
         };
-        # pkgs = nixpkgs.legacyPackages.${system};
+
         warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
         src = lib.sourceByRegex self [
           "^benchmark.*$"
@@ -61,80 +57,41 @@
           "^test.*$"
           "^.*\.md"
         ];
-        monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
-          name = "monad-bayes";
-          root = src;
 
-          # Remove this override when bumping nixpkgs
-          source-overrides = {
-            vty = pkgs.fetchzip {
-              url = "mirror://hackage/vty-5.37/vty-5.37.tar.gz";
-              sha256 = "sha256-OOrJBi/mSIyaibgObrp6NmUTWxRu9pxmjAL0EuPV9wY=";
-            };
+        # monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
+        #   name = "monad-bayes";
+        #   root = src;
 
-            text-zipper = pkgs.fetchzip {
-              url = "mirror://hackage/text-zipper-0.12/text-zipper-0.12.tar.gz";
-              sha256 = "sha256-P2/UHuG3UuSN7G31DyYvyUWSyIj2YXAOmjGkHtTaP8o=";
-            };
+        #   # Remove this override when bumping nixpkgs
+        #   source-overrides = {
+        #     vty = pkgs.fetchzip {
+        #       url = "mirror://hackage/vty-5.37/vty-5.37.tar.gz";
+        #       sha256 = "sha256-OOrJBi/mSIyaibgObrp6NmUTWxRu9pxmjAL0EuPV9wY=";
+        #     };
 
-            bimap = pkgs.fetchzip {
-              url = "mirror://hackage/bimap-0.5.0/bimap-0.5.0.tar.gz";
-              sha256 = "sha256-pbw+xg9Qz/c7YoXAJg8SR11RJGmgMw5hhnzKv+bGK9w=";
-            };
+        #     text-zipper = pkgs.fetchzip {
+        #       url = "mirror://hackage/text-zipper-0.12/text-zipper-0.12.tar.gz";
+        #       sha256 = "sha256-P2/UHuG3UuSN7G31DyYvyUWSyIj2YXAOmjGkHtTaP8o=";
+        #     };
 
-            brick = pkgs.fetchzip {
-              url = "mirror://hackage/brick-1.4/brick-1.4.tar.gz";
-              sha256 = "sha256-KDa7RVQQPpinkJ0aKsYP0E50pn2auEIP38l6Uk7GmmE=";
-            };
-          };
+        #     bimap = pkgs.fetchzip {
+        #       url = "mirror://hackage/bimap-0.5.0/bimap-0.5.0.tar.gz";
+        #       sha256 = "sha256-pbw+xg9Qz/c7YoXAJg8SR11RJGmgMw5hhnzKv+bGK9w=";
+        #     };
 
-          cabal2nixOptions = "--benchmark";
-        };
+        #     brick = pkgs.fetchzip {
+        #       url = "mirror://hackage/brick-1.4/brick-1.4.tar.gz";
+        #       sha256 = "sha256-KDa7RVQQPpinkJ0aKsYP0E50pn2auEIP38l6Uk7GmmE=";
+        #     };
+        #   };
 
-        iHaskell = pkgs.kernels.iHaskellWith {
-          # Identifier that will appear on the Jupyter interface.
-          name = "nixpkgs";
-          # Libraries to be available to the kernel.
-          packages = p:
-            with p; [
-              # pkgs.myHaskellPackages.imatrix-sundials
-              pkgs.haskellPackages.hvega
-              pkgs.haskellPackages.lens
-              pkgs.haskellPackages.log-domain
-              pkgs.haskellPackages.katip
-              pkgs.haskellPackages.ihaskell-hvega
-              pkgs.haskellPackages.ihaskell-diagrams
-              pkgs.haskellPackages.text
-              pkgs.haskellPackages.diagrams
-              pkgs.haskellPackages.diagrams-cairo
-              pkgs.haskellPackages.aeson
-              pkgs.haskellPackages.lens
-              pkgs.haskellPackages.lens-aeson
-              pkgs.haskellPackages.pretty-simple
-              pkgs.haskellPackages.monad-loops
-              pkgs.haskellPackages.hamilton
-              pkgs.haskellPackages.hmatrix
-              pkgs.haskellPackages.vector-sized
-              pkgs.haskellPackages.linear
-              pkgs.haskellPackages.recursion-schemes
-              pkgs.haskellPackages.data-fix
-              pkgs.haskellPackages.free
-              pkgs.haskellPackages.comonad
-              pkgs.haskellPackages.adjunctions
-              pkgs.haskellPackages.distributive
-              pkgs.haskellPackages.vector
-              pkgs.haskellPackages.megaparsec
-              pkgs.haskellPackages.histogram-fill
-              monad-bayes
-            ];
-          # Optional definition of `haskellPackages` to be used.
-          # Useful for overlaying packages.
-          haskellPackages = pkgs.haskell.packages.ghc902;
-        };
+        #   cabal2nixOptions = "--benchmark";
+        # };
 
-        jupyterEnvironment = pkgs.jupyterlabWith {
-          kernels = [iHaskell];
-        };
+        monad-bayes = pkgs.haskell.packages.ghc902.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
+        ihaskell-diagrams = import ./ihaskell.nix {inherit pkgs;};
+
+        jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes ihaskell-diagrams;};
 
         cabal-docspec = let
           ce =
@@ -168,7 +125,7 @@
           };
         };
       in rec {
-        packages = {inherit monad-bayes pre-commit;};
+        packages = {inherit monad-bayes pre-commit jupyterEnvironment;};
         packages.default = packages.monad-bayes;
         checks = {inherit monad-bayes pre-commit;};
         devShells.default = monad-bayes-dev;
