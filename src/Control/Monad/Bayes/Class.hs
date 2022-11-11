@@ -106,6 +106,8 @@ import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
+import Debug.Trace
+
 -- | Monads that can draw random variables.
 class Monad m => MonadDistribution m where
   -- | Draw from a uniform distribution.
@@ -131,7 +133,8 @@ class Monad m => MonadDistribution m where
     Double ->
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m Double
-  normal m s = draw (normalDistr m s)
+  normal m s = do x <- draw (normalDistr m s)
+                  trace ("normal " ++ show m ++ " " ++ show s ++ " " ++ show x) $ return x
 
   -- | Draw from a gamma distribution.
   gamma ::
@@ -222,7 +225,10 @@ class Monad m => MonadDistribution m where
 -- | Draw from a continuous distribution using the inverse cumulative density
 -- function.
 draw :: (ContDistr d, MonadDistribution m) => d -> m Double
-draw d = fmap (quantile d) random
+draw d =  do x <- random
+             let y = quantile d x
+             trace ("draw " ++ show x ++ " " ++ show y) $ return ()
+             return y
 
 -- | Draw from a discrete distribution using a sequence of draws from
 -- Bernoulli.
@@ -284,7 +290,8 @@ normalPdf ::
   Double ->
   -- | relative likelihood of observing sample x in \(\mathcal{N}(\mu, \sigma^2)\)
   Log Double
-normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
+normalPdf mu sigma x = trace ("normalPdf: " ++ show mu ++ " " ++ show sigma ++ " " ++ show x) $
+                       Exp $ logDensity (normalDistr mu sigma) x
 
 -- | multivariate normal
 mvNormal :: MonadDistribution m => V.Vector Double -> Matrix Double -> m (V.Vector Double)

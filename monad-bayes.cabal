@@ -139,6 +139,7 @@ executable naiveSampling
     , pipes
     , pretty-simple
     , random
+    , statistics
     , text
     , time
     , vector

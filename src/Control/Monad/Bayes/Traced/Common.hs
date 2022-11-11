@@ -93,6 +93,7 @@ bind dx f = do
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTrans :: MonadDistribution m => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, probDensity = p} = do
+  D.trace "mhTrans" $ return ()
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n - 1)
@@ -157,6 +158,18 @@ getXi_0 us = do
     (xs, _ : ys) -> return $ xs ++ (u' : ys)
     _ -> error "impossible"
 
+getXi_0' :: MonadDistribution m =>
+            Weighted (Free.Density m) a -> [Double] -> m [Double]
+getXi_0' m us = do
+  let n = length us
+  i <- discrete $ discreteUniformAB 0 (n - 1)
+  u' <- random
+  us' <- case splitAt i us of
+           (xs, _ : ys) -> return $ xs ++ (u' : ys)
+           _ -> error "impossible"
+  ((_, _), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . Free.density us') m
+  return vs
+
 tau :: MonadDistribution m =>
        Weighted (Free.Density m) a -> [Double] -> m (Log Double)
 tau m us = do
@@ -172,9 +185,19 @@ mhTransGenPersp2 m (xi0, xi_0) =
   algo2 (xi0, xi_0) getXi_0
         (\(x, y) -> (y, x)) (min 1.0) (fmap (exp . ln) . ((tau m) <$> fst))
 
+mhTransGenPersp3 :: MonadDistribution m =>
+                    Weighted (Free.Density m) a ->
+                    ([Double], [Double]) ->
+                    m ([Double], [Double])
+mhTransGenPersp3 m (xi0, xi_0) =
+  algo2 (xi0, xi_0) (getXi_0' m)
+        (\(x, y) -> (y, x)) (min 1.0) (fmap (exp . ln) . ((tau m) <$> fst))
+
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
 mhTransWithBool :: MonadDistribution m => Weighted (Free.Density m) a -> Trace a -> m (MHResult a)
 mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
+  D.trace "mhTransWithBool" $ return ()
+  D.trace (show us) $ return ()
   let n = length us
   us' <- do
     i <- discrete $ discreteUniformAB 0 (n - 1)
@@ -182,9 +205,15 @@ mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
+  D.trace (show us') $ return ()
   ((b, q), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . Free.density us') m
+  D.trace (show vs) $ return ()
+  D.trace ("Current density: " ++ show p ++ " Proposed density: " ++ show q) $ return ()
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
+  if accept
+    then D.trace "Accept" $ return ()
+    else D.trace "Reject" $ return () 
   return if accept then MHResult True (Trace vs b q) else MHResult False t
 
 -- | A variant of 'mhTrans' with an external sampling monad.

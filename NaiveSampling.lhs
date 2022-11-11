@@ -8,15 +8,22 @@
 %format condDistXiMinus0GivenXi0 = "\mu_{\xi_0}"
 %format phi = "\phi"
 %format rho = "\rho"
+%format testRho = "\tilde{\rho}"
 %format xi = "\xi"
+%format xi00 = "\zeta"
+%format xi0 = "\xi_0"
 %format xi' = "\xi^{\prime}"
 %format alpha = "\alpha"
-%format muu = "\mu"
 %format mu0 = "\mu_0"
+%format mu = "\mu"
 %format sigma = "\sigma"
 %format sigma0 = "\sigma_0"
 %format sigmaP = "\sigma_P"
 %format truePosteriorMu = "\hat{\mu}"
+%format truePosteriorSigma = "\hat{\sigma}"
+%format qq = "\mathfrak{Q}"
+%format varphi = "\varphi"
+%format testVarphi = "\tilde{\varphi}"
 
 \usepackage{amsmath}
 \usepackage{mathrsfs}
@@ -63,12 +70,11 @@
 
 module Main (
     main
-  , whatever
   , gradU'
   , algo1
   , truePosteriorMu
-  , testStudentVarNorm
-  , muu
+  , truePosteriorSigma
+  , student5
   ) where
 
 import Control.Monad.Bayes.Class hiding (posteriorPredictive, Histogram)
@@ -81,9 +87,11 @@ import Data.Csv.Incremental (encodeRecord, encode)
 
 import System.FilePath ()
 
-import "monad-extras" Control.Monad.Extra
+import Statistics.Distribution.StudentT -- (studentT, StudentT)
+import Statistics.Distribution.Normal -- (normalDistr, NormalDistribution)
+import Statistics.Distribution -- (quantile)
 
-import Debug.Trace
+import "monad-extras" Control.Monad.Extra
 \end{code}
 %endif
 
@@ -128,26 +136,142 @@ $$
 which ties up with the classical estimate.
 
 \begin{code}
-muu, mu0, sigma0, sigma, sigmaP, z :: Floating a => a
-muu = 3.0
+mu0, sigma0, sigma, sigmaP, z :: Floating a => a
 mu0 = 0.0
 sigma0 = 1.0
-sigma = 0.5
+sigma = 1.0
 sigmaP = 0.2
 z = 4.0
 
 truePosteriorMu :: Double
 truePosteriorMu = z * sigma0^2 / (sigma^2 + sigma0^2) +
                   mu0 * sigma^2 / (sigma^2 + sigma0^2)
+
+truePosteriorSigma :: Double
+truePosteriorSigma = sqrt $ recip (recip sigma0^2 + recip sigma^2)
 \end{code}
 
-This gives \eval{truePosteriorMu}.
+This gives $\hat{\mu} = \eval{truePosteriorMu}$ and $\hat{\sigma} = \eval{truePosteriorSigma}$.
+
+Here's {\bf Algorithm 1} from \cite{9117ec7157f141e28e5fe7bc575df48b}:
+
+\begin{code}
+algo1 :: Show a => Show b => (MonadDistribution m, Fractional t) =>
+         (a, c) -> (a -> m b) -> ((a, b) -> (a, b)) -> (t -> Double) -> ((a, b) -> t) -> m (a, b)
+algo1 (currXi0, _) condDistXiMinus0GivenXi0 phi a rho = do
+  xiMinus0 <- condDistXiMinus0GivenXi0 currXi0
+  let xi = (currXi0, xiMinus0)
+  let alpha = a $ (rho . phi) xi / rho xi
+  u <- random
+  if u < alpha
+    then return $ phi xi
+    else return xi
+\end{code}
+
+\section{Posteriors}
+
+For us, we want the posterior
+
+$$
+\varpi(\mu) = \frac{1}{Z}\exp{\frac{(x - \mu)^2}{2\sigma^2}} \exp{\frac{(\mu - \mu_0)^2}{2\sigma_0^2}}
+$$
+
+where $x, \mu_0, \sigma$ and $\sigma_0$ are all given but $Z$ is unknown.
+
+\subsection{Random Walk Metropolis}
+
+Let's implement a traditional random walk. Here's the proposal distribution:
+
+\begin{code}
+qq :: Double -> Double -> Double
+qq w w' = exp (-(w - w')^2 / (2 * sigmaP^2))
+\end{code}
+
+And here's the specification for $\rho$:
+
+\begin{code}
+testRho :: (a -> Double) -> (a -> b -> Double) -> (a, b) -> Double
+testRho varphi q (w, w') = varphi w * q w w'
+\end{code}
+
+Here's the un-normalised posterior:
+
+\begin{code}
+testVarphi :: Floating a => a -> a
+testVarphi mu = exp (-(z - mu)^2 / (2 * sigma^2)) * exp (-(mu - mu0)^2 / (2 * sigma0^2))
+\end{code}
+
+We can now use one step of the algorithm and then run it for as many times as we wish:
+
+\begin{code}
+testRwmOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
+testRwmOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
+  where
+    phi = \(x, y) -> (y, x)
+    a   = min 1.0
+    rho = testRho testVarphi qq
+    condDistXiMinus0GivenXi0 = \xi00 -> normal xi00 sigmaP
+
+testRwm :: (Eq a, Num a, MonadDistribution m) =>
+               a -> m [(Double, Double)]
+testRwm n = unfoldM f (n, (1.0, 0.0 / 0.0))
+  where
+    f (0, _) = return Nothing
+    f (m, s) = do x <- testRwmOneStep s
+                  return $ Just (s, (m - 1, x))
+\end{code}
+
+And we can see the results in Figure~\ref{fig:Rwm}. A bit skewed but
+we didn't burn in and the starting value is 1.0.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/RwM.png}
+    \caption{Random Walk Metropolis}
+    \label{fig:Rwm}
+\end{figure}
+
+\subsection{What monad-bayes does}
+
+Here's what I think monad-bayes does. The results are in Figure~\ref{fig:Mb}.
+
+\todo{I have yet to verify this! And I don't see the $(x, y) \mapsto (x + y, -y)$ in the monad-bayes code. But if I use $(x, y) \mapsto (y, x)$ then I don't get the intended result and indeed this in Example 6 in~\cite{9117ec7157f141e28e5fe7bc575df48b}}
+
+\todo[color=green!40]{I now know that monad-bayes does not use this but it is interesting nonetheless}
+
+\begin{code}
+testMbOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
+testMbOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
+  where
+    phi = \(x, y) -> (x + y, -y)
+    a   = min 1.0
+    rho = testRho testVarphi (\_ -> \_ -> 1.0)
+    condDistXiMinus0GivenXi0 = const (quantile (normalDistr 0.0 1.0) <$> random)
+
+testMb :: (Eq a, Num a, MonadDistribution m) =>
+               a -> m [(Double, Double)]
+testMb n = unfoldM f (n, (1.0, 0.0 / 0.0))
+  where
+    f (0, _) = return Nothing
+    f (m, s) = do x <- testMbOneStep s
+                  return $ Just (s, (m - 1, x))
+\end{code}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/MB.png}
+    \caption{monad-bayes}
+    \label{fig:Mb}
+\end{figure}
+
+\section{Notes to be tidied}
 
 But suppose we don't know this result then we have from \cite{9117ec7157f141e28e5fe7bc575df48b}
 
 $$
 r\left(z, z^{\prime}\right)=\frac{\varpi\left(z^{\prime}\right) q\left(z^{\prime}, z\right)}{\varpi(z) q\left(z, z^{\prime}\right)}
 $$
+
 
 But where does this come from?
 
@@ -178,29 +302,7 @@ $$
 r\left(z, z^{\prime}\right)=\frac{\varpi\left({z^{\prime}}\right) q\left({z^{\prime}}, z\right)}{\varpi(z) q\left(z, z^{\prime}\right)}
 $$
 
-Here's {\bf Algorithm 1} from \cite{9117ec7157f141e28e5fe7bc575df48b}:
-
-\begin{code}
-algo1 :: Show a => Show b => (MonadDistribution m, Fractional t) =>
-         (a, c) -> (a -> m b) -> ((a, b) -> (a, b)) -> (t -> Double) -> ((a, b) -> t) -> m (a, b)
-algo1 (currXi0, _) condDistXiMinus0GivenXi0 phi a rho = do
-  xiMinus0 <- condDistXiMinus0GivenXi0 currXi0
-  let xi = (currXi0, xiMinus0)
-  let alpha = a $ (rho . phi) xi / rho xi
-  u <- random
-  if u < alpha
-    then return $ phi xi
-    else return xi
-
-bar d (u, p) = do
-  u' <- random
-  (v, q) <- d u'
-  let alpha = min 1.0 (q / p)
-  w <- random
-  if w < alpha
-    then return (v, q)
-    else return (u, p)
-\end{code}
+\section{Student's T}
 
 Let's try running it on Student's T with 5 degrees of freedeom using
 what I hope the textbook presentation of Metropolis---Hastings. The
@@ -211,53 +313,69 @@ $$
 f(t)=\frac{8}{3 \pi \sqrt{5}\left(1+\frac{t^2}{5}\right)^3}
 $$
 
-It's traditional to have $q_z(z^{\prime}) \sim {\mathcal{N}}(z, \sigma_p^2)$ for some given $\sigma_p$.
+It's traditional to have $q_z(\cdot) \sim {\mathcal{N}}(z, \sigma_p^2)$ for some given $\sigma_p$.
+
+Here's the density function for Student's T with 5 degrees of
+freedom. We've defined it in terms of an un-normalised density so that
+we can pretend we don't know the normalisation constant but still
+sample from the distribution via MCMC.
 
 \begin{code}
-testStudentVarNorm :: Floating a => a -> a
-testStudentVarNorm t = studentVarPhiUnNorm t * 8 / (3 * pi * sqrt 5)
+student5U :: Floating a => a -> a
+student5U t =  1 / (1 + t^2/5)^3
 
-studentVarPhiUnNorm :: Floating a => a -> a
-studentVarPhiUnNorm t =  1 / (1 + t^2/5)^3
+student5 :: Floating a => a -> a
+student5 t = student5U t * 8 / (3 * pi * sqrt 5)
+\end{code}
 
-qq :: Double -> Double -> Double
-qq w w' = exp (-(w - w')^2 / (2 * sigmaP^2))
+Again, we can now use one step of the algorithm and then run it for as
+many times as we wish. We instantiate the algorithm to be a Random
+Walk Metropolis.
 
-testRho :: (a -> Double) -> (a -> b -> Double) -> (a, b) -> Double
-testRho varphi q (w, w') = varphi w * q w w'
+\begin{code}
+testStudentRwmOneStep :: MonadDistribution m =>
+                         (Double, Double) -> m (Double, Double)
+testStudentRwmOneStep (xi0, _) = algo1 (xi0, undefined) (\xi00 -> normal xi00 sigmaP)
+                                       (\(x, y) -> (y, x)) (min 1.0) (testRho student5U qq)
 
-testStudentMH :: MonadDistribution m =>
-                  (Double, Double) -> m (Double, Double)
-testStudentMH (xi0, _) = algo1 (xi0, undefined) (\xi00 -> normal xi00 sigmaP) (\(x, y) -> (y, x)) (min 1.0) (testRho studentVarPhiUnNorm qq)
-
-testStudent2 :: (Eq a, Num a, MonadDistribution m) =>
+testStudentRwm :: (Eq a, Num a, MonadDistribution m) =>
                  a -> m [(Double, Double)]
-testStudent2 n = unfoldM f (n, (0.0, 0.0 / 0.0))
+testStudentRwm n = unfoldM f (n, (0.0, 0.0 / 0.0))
   where
     f (0, _) = return Nothing
-    f (m, s) = do x <- testStudentMH s
-                  return $ Just (s, (m - 1, x))
-
-foo :: MonadDistribution m => (Double, b) -> m (Double, Double)
-foo (xi0, _) = algo1 (xi0, undefined) (const (student4ICDF <$> random)) (\(x, y) -> (y, x)) (min 1.0) (student4 . fst)
-
-student4 :: Floating a => a -> a
-student4 t =  1 / (1 + t^2/4) ** (5 / 2)
-
-student4ICDF :: Floating a => a -> a
-student4ICDF p = signum (p - 1 / 2) * 2 * sqrt (q - 1)
-  where
-    q = cos ((1 / 3) * acos (sqrt alpha)) / sqrt alpha
-    alpha = 4 * p * (1 - p)
-
-testStudent3 :: (Eq a, Num a, MonadDistribution m) =>
-                 a -> m [(Double, Double)]
-testStudent3 n = unfoldM f (n, (0.2, 0.0 / 0.0))
-  where
-    f (0, _) = return Nothing
-    f (m, s) = do x <- foo s
+    f (m, s) = do x <- testStudentRwmOneStep s
                   return $ Just (s, (m - 1, x))
 \end{code}
+
+\begin{code}
+testStudentMbOneStep :: MonadDistribution m => (Double, b) -> m (Double, Double)
+testStudentMbOneStep (xi0, _) = algo1 (xi0, undefined) (const ((quantile (studentT 5)) <$> random))
+                                      (\(x, y) -> (x + y, -y)) (min 1.0) (student5U . fst)
+
+testStudentMb :: (Eq a, Num a, MonadDistribution m) =>
+                 a -> m [(Double, Double)]
+testStudentMb n = unfoldM f (n, (0.0, 0.0 / 0.0))
+  where
+    f (0, _) = return Nothing
+    f (m, s) = do x <- testStudentMbOneStep s
+                  return $ Just (s, (m - 1, x))
+\end{code}
+
+The results are shown in Figure~\ref{fig:StudRwm} and Figure~\ref{fig:StudMb}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/StudRwm.png}
+    \caption{Random Walk Metropolis Student's T 5}
+    \label{fig:StudRwm}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/StudMb.png}
+    \caption{Monad Bayes Student's T 5}
+    \label{fig:StudMb}
+\end{figure}
 
 \section{Hamiltonian Monte Carlo}
 
@@ -329,7 +447,7 @@ reallyTestR'' :: (Eq a, MonadDistribution m, Num a) =>
 reallyTestR'' n = unfoldM f (n, (0.0, 0.0))
   where
     f (0, _) = return Nothing
-    f (m, s) = do a <- algo1 s (const $ normal 0.0 1.0) testPhi (min 1.0) (expTestRhoHMC' studentVarPhiUnNorm)
+    f (m, s) = do a <- algo1 s (const $ normal 0.0 1.0) testPhi (min 1.0) (expTestRhoHMC' student5U)
                   return $ Just (s, (m - 1, a))
 
 writeToFile :: (Int -> SamplerIO [(Double, Double)]) -> FilePath -> Int -> IO ()
@@ -341,64 +459,28 @@ writeToFile t p n = do
 
 main :: IO ()
 main = do
-  writeToFile reallyTestR'' "haskSampsHMC" 1000
-  writeToFile testStudent2  "haskSampsMCMC" 1000
-  writeToFile testStudent3  "haskSampsMB" 10000
+  writeToFile reallyTestR''  "StudSampsHMC"    1000
+  writeToFile testStudentRwm "StudSampsRwm"  100002
+  writeToFile testStudentMb  "StudSampsMb"    10003
+  writeToFile testRwm        "Rwm"           100000
+  writeToFile testMb         "Mb"            100000
 \end{code}
 
 \todo{It should make no difference what we return in the momentum
 position; yet it does? Maybe not but at least investigate it.}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.8\textwidth]{diagrams/barChartGenericMCMC1.png}
-    \caption{Sampling via MCMC and HMC}
-    \label{fig:McmcAndHmc}
-\end{figure}
-
-\section{Posteriors}
-
-For us, we want the posterior
-
-$$
-\varpi(\mu) = \frac{1}{Z}\exp{\frac{(x - \mu)^2}{2\sigma^2}} \exp{\frac{(\mu - \mu_0)^2}{2\sigma_0^2}}
-$$
-
-where $x, \mu_0, \sigma$ and $\sigma_0$ are all given.
-
-\begin{code}
-testVarphi :: Floating a => a -> a
-testVarphi mu = exp (-(z - mu)^2 / (2 * sigma^2)) * exp (-(mu - mu0)^2 / (2 * sigma0^2))
-
-
-testMH :: MonadDistribution m => (Double, Double) -> m (Double, Double)
-testMH (xi0, _) = algo1 (xi0, undefined) (\xi00 -> normal xi00 sigmaP) (\(x, y) -> (y, x)) (min 1.0) (testRho testVarphi qq)
-
-reallyTest2 :: (Eq a, Num a, MonadDistribution m) =>
-               a -> m [(Double, Double)]
-reallyTest2 n = unfoldM f (n, (1.0, 0.0 / 0.0))
-  where
-    f (0, _) = return Nothing
-    f (m, s) = do x <- testMH s
-                  return $ Just (s, (m - 1, x))
-\end{code}
-
 
 \section{Whatever}
 
 %if style == newcode
 \begin{code}
 bigU :: Floating a => a -> a
-bigU = negate . log . studentVarPhiUnNorm
+bigU = negate . log . student5U
 
 
 gradU' :: Floating a => a -> a
 gradU' w = case grad (\[x] -> bigU x) $ [w] of
              [y] -> y
              _   -> error "Whatever"
-
-whatever :: IO Double
-whatever = (/ 2000) <$> sum <$> map fst <$> drop 2000 <$> sampler (reallyTest2 4000)
 \end{code}
 %endif
 

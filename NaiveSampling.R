@@ -207,5 +207,39 @@ legend("topright", legend=c("Haskell","R"), col=c(rgb(1,0,0,0.2), rgb(0,0,1,0.2)
 
 
 dfMB <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/haskSampsMB10000.csv", header=FALSE)
+dfMC <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/haskSampsMCMC10002.csv", header=FALSE)
 
-hist(dfMB$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+dfMS <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/SingleObs.csv", header=FALSE)
+
+hist(dfMS$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dnorm(x, 3.2, 0.4472135954999579), col = "red")
+
+hist(dfMC$V2, freq = F, breaks = 100, col=rgb(0,1,0,0.2), add=FALSE)
+lines(x, dt(x, 5), col = "red")
+
+lines(x, dnorm(x, 3.2, 0.4472135954999579), col = "red")
+
+
+dfMP <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/Rwm100000.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/Rwm.png", width=600, height=350)
+hist(dfMP$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dnorm(x, 2.0, 0.7071067811865476), col = "red")
+dev.off()
+
+dfMQ <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/Mb100000.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/Mb.png", width=600, height=350)
+hist(dfMQ$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dnorm(x, 2.0, 0.7071067811865476), col = "red")
+dev.off()
+
+dfMStudentRwm <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/StudSampsRwm100002.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/StudRwm.png", width=600, height=350)
+hist(dfMStudentRwm$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dt(x, 5), col = "red")
+dev.off()
+
+dfMStudentMb <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/StudSampsMB10003.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/StudMb.png", width=600, height=350)
+hist(dfMStudentMb$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dt(x, 5), col = "red")
+dev.off()
