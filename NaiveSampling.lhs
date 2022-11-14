@@ -21,7 +21,7 @@
 %format sigmaP = "\sigma_P"
 %format truePosteriorMu = "\hat{\mu}"
 %format truePosteriorSigma = "\hat{\sigma}"
-%format qq = "\mathfrak{Q}"
+%format qq = "Q"
 %format varphi = "\varphi"
 %format testVarphi = "\tilde{\varphi}"
 
@@ -70,11 +70,13 @@
 
 module Main (
     main
-  , gradU'
+  , gradUAD
   , algo1
   , truePosteriorMu
   , truePosteriorSigma
   , student5
+  , singleObs
+  , genEg
   ) where
 
 import Control.Monad.Bayes.Class hiding (posteriorPredictive, Histogram)
@@ -87,13 +89,41 @@ import Data.Csv.Incremental (encodeRecord, encode)
 
 import System.FilePath ()
 
-import Statistics.Distribution.StudentT -- (studentT, StudentT)
-import Statistics.Distribution.Normal -- (normalDistr, NormalDistribution)
-import Statistics.Distribution -- (quantile)
+import Statistics.Distribution.StudentT
+import Statistics.Distribution.Normal
+import Statistics.Distribution
+import qualified Data.Vector as V
 
 import "monad-extras" Control.Monad.Extra
 \end{code}
 %endif
+
+Remarkably (to me at least) all\footnote{well almost all} MCMC
+algorithms can be captured by one general algorithm. At the moment you
+are expected to know how MCMC works to be able to read what follows. I
+may add a section introducing MCMC later.
+
+Here's {\bf Algorithm 1} from \cite{9117ec7157f141e28e5fe7bc575df48b}:
+
+\begin{code}
+algo1 :: Show a => Show b => (MonadDistribution m, Fractional t) =>
+         (a, c) -> (a -> m b) -> ((a, b) -> (a, b)) -> (t -> Double) -> ((a, b) -> t) -> m (a, b)
+algo1 (currXi0, _) condDistXiMinus0GivenXi0 phi a rho = do
+  xiMinus0 <- condDistXiMinus0GivenXi0 currXi0
+  let xi = (currXi0, xiMinus0)
+  let alpha = a $ (rho . phi) xi / rho xi
+  u <- random
+  if u < alpha
+    then return $ phi xi
+    else return xi
+\end{code}
+
+Something very similar seems to have been discovered
+in~\cite{cusumano2020automating} and
+\cite{neklyudov2020involutive}. Serendipitously, all three papers call
+this algorithm 1!.
+
+\section{An Example with an Analytical Solution}
 
 In Bayesian statistics we have a prior distribution for the unknown
 mean which we also take to be normal
@@ -135,6 +165,8 @@ $$
 
 which ties up with the classical estimate.
 
+Let's illustrate this with a few numbers.
+
 \begin{code}
 mu0, sigma0, sigma, sigmaP, z :: Floating a => a
 mu0 = 0.0
@@ -144,31 +176,15 @@ sigmaP = 0.2
 z = 4.0
 
 truePosteriorMu :: Double
-truePosteriorMu = z * sigma0^2 / (sigma^2 + sigma0^2) +
-                  mu0 * sigma^2 / (sigma^2 + sigma0^2)
+truePosteriorMu = z * sigma0^2 / (sigma^2 + sigma0^2) + mu0 * sigma^2 / (sigma^2 + sigma0^2)
 
 truePosteriorSigma :: Double
 truePosteriorSigma = sqrt $ recip (recip sigma0^2 + recip sigma^2)
 \end{code}
 
-This gives $\hat{\mu} = \eval{truePosteriorMu}$ and $\hat{\sigma} = \eval{truePosteriorSigma}$.
+This gives $\hat{\mu} = \eval{truePosteriorMu}$ and $\hat{\sigma} = \eval{truePosteriorSigma}$ which is what we would expect: we thought the mean was $\mu_0 = \eval{mu0}$ but we have an observation $z = \eval{z}$ and also the variance is now less.
 
-Here's {\bf Algorithm 1} from \cite{9117ec7157f141e28e5fe7bc575df48b}:
-
-\begin{code}
-algo1 :: Show a => Show b => (MonadDistribution m, Fractional t) =>
-         (a, c) -> (a -> m b) -> ((a, b) -> (a, b)) -> (t -> Double) -> ((a, b) -> t) -> m (a, b)
-algo1 (currXi0, _) condDistXiMinus0GivenXi0 phi a rho = do
-  xiMinus0 <- condDistXiMinus0GivenXi0 currXi0
-  let xi = (currXi0, xiMinus0)
-  let alpha = a $ (rho . phi) xi / rho xi
-  u <- random
-  if u < alpha
-    then return $ phi xi
-    else return xi
-\end{code}
-
-\section{Posteriors}
+\section{Using MCMC}
 
 For us, we want the posterior
 
@@ -231,22 +247,59 @@ we didn't burn in and the starting value is 1.0.
     \label{fig:Rwm}
 \end{figure}
 
-\subsection{What monad-bayes does}
+\subsection{Random walk Metropolis ratio}
 
-Here's what I think monad-bayes does. The results are in Figure~\ref{fig:Mb}.
-
-\todo{I have yet to verify this! And I don't see the $(x, y) \mapsto (x + y, -y)$ in the monad-bayes code. But if I use $(x, y) \mapsto (y, x)$ then I don't get the intended result and indeed this in Example 6 in~\cite{9117ec7157f141e28e5fe7bc575df48b}}
-
-\todo[color=green!40]{I now know that monad-bayes does not use this but it is interesting nonetheless}
+Here's a different algorithm expressed using the generalised
+approach. The results are in Figure~\ref{fig:MwMr}.
 
 \begin{code}
-testMbOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
-testMbOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
+testMwMrOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
+testMwMrOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
   where
     phi = \(x, y) -> (x + y, -y)
     a   = min 1.0
     rho = testRho testVarphi (\_ -> \_ -> 1.0)
     condDistXiMinus0GivenXi0 = const (quantile (normalDistr 0.0 1.0) <$> random)
+
+testMwMr :: (Eq a, Num a, MonadDistribution m) =>
+               a -> m [(Double, Double)]
+testMwMr n = unfoldM f (n, (1.0, 0.0 / 0.0))
+  where
+    f (0, _) = return Nothing
+    f (m, s) = do x <- testMwMrOneStep s
+                  return $ Just (s, (m - 1, x))
+\end{code}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/Mb.png}
+    \caption{Random walk Metropolis ratio}
+    \label{fig:MwMr}
+\end{figure}
+
+\subsection{What monad-bayes does}
+
+Here's our toy problem expressed in monad-bayes:
+
+\begin{code}
+singleObs :: (MonadDistribution m, MonadFactor m) => m Double
+singleObs = do
+    mu <- normal mu0 sigma0
+    factor $ normalPdf mu sigma z
+    return mu
+\end{code}
+
+Here's what I think monad-bayes does with this using the General
+Perspective. The results are in Figure~\ref{fig:MbPrime}.
+
+\begin{code}
+testMbOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
+testMbOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
+  where
+    phi = \(x, y) -> (y, x)
+    a   = min 1.0
+    rho = testRho (\mu -> exp (-(z - mu)^2 / (2 * sigma^2))) (\_ -> \_ -> 1.0)
+    condDistXiMinus0GivenXi0 = const (quantile (normalDistr mu0 sigma0) <$> random)
 
 testMb :: (Eq a, Num a, MonadDistribution m) =>
                a -> m [(Double, Double)]
@@ -259,21 +312,20 @@ testMb n = unfoldM f (n, (1.0, 0.0 / 0.0))
 
 \begin{figure}[!htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{diagrams/MB.png}
+    \includegraphics[width=0.8\textwidth]{diagrams/MbPrime.png}
     \caption{monad-bayes}
-    \label{fig:Mb}
+    \label{fig:MbPrime}
 \end{figure}
 
-\section{Notes to be tidied}
+\section{Some Mathematical Notes}
 
-But suppose we don't know this result then we have from \cite{9117ec7157f141e28e5fe7bc575df48b}
+Suppose we don't know the classical MCMC algorithm. We can derive it from~\cite{9117ec7157f141e28e5fe7bc575df48b}:
 
 $$
 r\left(z, z^{\prime}\right)=\frac{\varpi\left(z^{\prime}\right) q\left(z^{\prime}, z\right)}{\varpi(z) q\left(z, z^{\prime}\right)}
 $$
 
-
-But where does this come from?
+But where does this come from? We define $\mu$:
 
 $$
 \mu(\mathrm{d} \xi) \triangleq \pi\left(\mathrm{d} \xi_0\right) \mu_{\xi_0}\left(\mathrm{~d} \xi_{-0}\right)
@@ -347,6 +399,8 @@ testStudentRwm n = unfoldM f (n, (0.0, 0.0 / 0.0))
                   return $ Just (s, (m - 1, x))
 \end{code}
 
+We can also instantiate it with what I think monad-bayes does.
+
 \begin{code}
 testStudentMbOneStep :: MonadDistribution m => (Double, b) -> m (Double, Double)
 testStudentMbOneStep (xi0, _) = algo1 (xi0, undefined) (const ((quantile (studentT 5)) <$> random))
@@ -390,22 +444,29 @@ either.
 
 \todo{I think I have squared some of this but need to write this down}
 
+Here's Student's T again:
+
 $$
 f(t) = \frac{8}{3 \pi \sqrt{5}\left(1+\frac{t^2}{5}\right)^3}
 $$
+
+Unnormalised:
 
 $$
 g(t) = \frac{1}{\left(1+\frac{t^2}{5}\right)^3}
 $$
 
+And as the potential energy part of the Hamiltonian:
+
 $$
-U(t) = -\log{f(t)} = 3 \log{(1 + \frac{r^2}{5})}
+U(t) = -\log{g(t)} = 3 \log{(1 + \frac{r^2}{5})}
 $$
+
+Here's a version of the leapfrog algorithm:
+
+\todo{This needs a bit more explanation}
 
 \begin{code}
-testGradU :: Fractional a => a -> a
-testGradU r =  3 * (2 * r / 5) / (1 + (r^2) / 5)
-
 leapfrog :: Fractional a => a -> Int -> (a -> a) -> (a, a) -> (a, a)
 leapfrog epsilon l gradU (qPrev, p) = (q1, p3)
   where
@@ -424,13 +485,43 @@ leapfrog epsilon l gradU (qPrev, p) = (q1, p3)
   p2 = p1 - epsilon * gradU q1 / 2
   -- Is this necessary?
   p3 = negate p2
-
-expTestRhoHMC' :: Floating a => (b -> a) -> (b, a) -> a
-expTestRhoHMC' u (t, r) = pU * pK
-  where
-    pU = recip $ u t
-    pK = exp $ r^2 / 2
 \end{code}
+
+This is the Hamiltonian:
+\todo{This needs a bit more explanation}
+
+\begin{code}
+rhoHmc :: Floating a => (b -> a) -> (b, a) -> a
+rhoHmc u (q, p) = pU * pK
+  where
+    pU = recip $ u q
+    pK = exp $ p^2 / 2
+\end{code}
+
+We need the derivative of the potential energy for the leapfrog
+method. We could use automatic differentiation of course.
+
+\begin{code}
+gradU :: Fractional a => a -> a
+gradU r =  3 * (2 * r / 5) / (1 + (r^2) / 5)
+
+bigU :: Floating a => a -> a
+bigU = negate . log . student5U
+
+gradUAD :: Floating a => a -> a
+gradUAD w = case grad (\[x] -> bigU x) $ [w] of
+              [y] -> y
+              _   -> error "Whatever"
+\end{code}
+
+And now we can run the sampler. The results are in~\ref{fig:Hmc}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/Hmc.png}
+    \caption{Hamiltonian Monte Carlo Student's T 5}
+    \label{fig:Hmc}
+\end{figure}
 
 \begin{code}
 eta :: Fractional a => a
@@ -439,17 +530,25 @@ eta = 0.3
 bigL :: Int
 bigL = 10
 
-testPhi :: Fractional a => (a, a) -> (a, a)
-testPhi = leapfrog eta bigL testGradU
+testHmcOneStep :: MonadDistribution m => (Double, Double) -> m (Double, Double)
+testHmcOneStep (xi0, _) = algo1 (xi0, undefined) condDistXiMinus0GivenXi0 phi a rho
+  where
+    phi = leapfrog eta bigL gradU
+    a   = min 1.0
+    rho = rhoHmc student5U
+    condDistXiMinus0GivenXi0 = const $ normal 0.0 1.0
 
-reallyTestR'' :: (Eq a, MonadDistribution m, Num a) =>
+testHmc :: (Eq a, MonadDistribution m, Num a) =>
                 a -> m [(Double, Double)]
-reallyTestR'' n = unfoldM f (n, (0.0, 0.0))
+testHmc n = unfoldM f (n, (0.0, 0.0))
   where
     f (0, _) = return Nothing
-    f (m, s) = do a <- algo1 s (const $ normal 0.0 1.0) testPhi (min 1.0) (expTestRhoHMC' student5U)
+    f (m, s) = do a <- testHmcOneStep s
                   return $ Just (s, (m - 1, a))
+\end{code}
 
+%if style == newcode
+\begin{code}
 writeToFile :: (Int -> SamplerIO [(Double, Double)]) -> FilePath -> Int -> IO ()
 writeToFile t p n = do
   rs <- sampler (t n)
@@ -459,30 +558,35 @@ writeToFile t p n = do
 
 main :: IO ()
 main = do
-  writeToFile reallyTestR''  "StudSampsHMC"    1000
+  writeToFile testHmc        "StudSampsHMC"    10000
   writeToFile testStudentRwm "StudSampsRwm"  100002
   writeToFile testStudentMb  "StudSampsMb"    10003
   writeToFile testRwm        "Rwm"           100000
-  writeToFile testMb         "Mb"            100000
+  writeToFile testMwMr       "MwMr"          100000
+  writeToFile testMb         "MbPrime"      1000000
 \end{code}
+%endif
 
 \todo{It should make no difference what we return in the momentum
 position; yet it does? Maybe not but at least investigate it.}
 
-\section{Whatever}
+\section{Gen}
 
-%if style == newcode
+Gen is a probabilistic programming language. I've taken the example from~\cite{cusumano2020automating} and converted it to use monad-bayes.
+
+\todo{It's not clear this is a useful section but who knows?}
+
 \begin{code}
-bigU :: Floating a => a -> a
-bigU = negate . log . student5U
+genEg :: MonadDistribution m => Int -> m [Double]
+genEg n = do
+  k <- (+ 1) <$> poisson 1.0
+  means <- replicate k <$> normal 0.0 10.0
+  gammas <- replicate k <$> gamma 1.0 10.0
+  let invGammas = map recip gammas
+  weights <- dirichlet (V.replicate k 2.0)
+  replicate n <$> (categorical weights >>= \i -> normal (means!!i) (invGammas!!i))
 
-
-gradU' :: Floating a => a -> a
-gradU' w = case grad (\[x] -> bigU x) $ [w] of
-             [y] -> y
-             _   -> error "Whatever"
 \end{code}
-%endif
 
 \section{Bibliography}
 

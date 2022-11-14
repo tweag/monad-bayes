@@ -243,3 +243,16 @@ png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/StudMb.png", width=
 hist(dfMStudentMb$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
 lines(x, dt(x, 5), col = "red")
 dev.off()
+
+dfMQ <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/MbPrime1000000.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/MbPrime.png", width=600, height=350)
+hist(dfMQ$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dnorm(x, 2.0, 0.7071067811865476), col = "red")
+dev.off()
+
+dfMQ <- read.csv("/Users/dom/Dropbox/Tidy/monad-bayes-maria/StudSampsHMC10000.csv", header=FALSE)
+png(file="/Users/dom/Dropbox/Tidy/monad-bayes-maria/diagrams/Hmc.png", width=600, height=350)
+hist(dfMQ$V2, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dt(x, 5), col = "red")
+dev.off()
+
