@@ -58,37 +58,36 @@
           "^.*\.md"
         ];
 
-        # monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
-        #   name = "monad-bayes";
-        #   root = src;
+        monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
+          name = "monad-bayes";
+          root = src;
 
-        #   # Remove this override when bumping nixpkgs
-        #   source-overrides = {
-        #     vty = pkgs.fetchzip {
-        #       url = "mirror://hackage/vty-5.37/vty-5.37.tar.gz";
-        #       sha256 = "sha256-OOrJBi/mSIyaibgObrp6NmUTWxRu9pxmjAL0EuPV9wY=";
-        #     };
+          # Remove this override when bumping nixpkgs
+          source-overrides = {
+            vty = pkgs.fetchzip {
+              url = "mirror://hackage/vty-5.37/vty-5.37.tar.gz";
+              sha256 = "sha256-OOrJBi/mSIyaibgObrp6NmUTWxRu9pxmjAL0EuPV9wY=";
+            };
 
-        #     text-zipper = pkgs.fetchzip {
-        #       url = "mirror://hackage/text-zipper-0.12/text-zipper-0.12.tar.gz";
-        #       sha256 = "sha256-P2/UHuG3UuSN7G31DyYvyUWSyIj2YXAOmjGkHtTaP8o=";
-        #     };
+            text-zipper = pkgs.fetchzip {
+              url = "mirror://hackage/text-zipper-0.12/text-zipper-0.12.tar.gz";
+              sha256 = "sha256-P2/UHuG3UuSN7G31DyYvyUWSyIj2YXAOmjGkHtTaP8o=";
+            };
 
-        #     bimap = pkgs.fetchzip {
-        #       url = "mirror://hackage/bimap-0.5.0/bimap-0.5.0.tar.gz";
-        #       sha256 = "sha256-pbw+xg9Qz/c7YoXAJg8SR11RJGmgMw5hhnzKv+bGK9w=";
-        #     };
+            bimap = pkgs.fetchzip {
+              url = "mirror://hackage/bimap-0.5.0/bimap-0.5.0.tar.gz";
+              sha256 = "sha256-pbw+xg9Qz/c7YoXAJg8SR11RJGmgMw5hhnzKv+bGK9w=";
+            };
 
-        #     brick = pkgs.fetchzip {
-        #       url = "mirror://hackage/brick-1.4/brick-1.4.tar.gz";
-        #       sha256 = "sha256-KDa7RVQQPpinkJ0aKsYP0E50pn2auEIP38l6Uk7GmmE=";
-        #     };
-        #   };
+            brick = pkgs.fetchzip {
+              url = "mirror://hackage/brick-1.4/brick-1.4.tar.gz";
+              sha256 = "sha256-KDa7RVQQPpinkJ0aKsYP0E50pn2auEIP38l6Uk7GmmE=";
+            };
+          };
 
-        #   cabal2nixOptions = "--benchmark";
-        # };
+          cabal2nixOptions = "--benchmark";
+        };
 
-        monad-bayes = pkgs.haskell.packages.ghc902.callCabal2nixWithOptions "monad-bayes" src "--benchmark" {};
         ihaskell-diagrams = import ./ihaskell.nix {inherit pkgs;};
 
         jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes ihaskell-diagrams;};
