@@ -91,9 +91,7 @@
           cabal2nixOptions = "--benchmark";
         };
 
-        ihaskell-diagrams = import ./ihaskell.nix {inherit pkgs;};
-
-        jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes ihaskell-diagrams;};
+        jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};
 
         cabal-docspec = let
           ce =
