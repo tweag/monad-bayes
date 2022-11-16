@@ -15,8 +15,7 @@ in
       p.log-domain
       p.katip
       p.ihaskell-hvega
-      #p.ihaskell-diagrams
-      extraArgs.ihaskell-diagrams
+      p.ihaskell-diagrams
       p.text
       p.diagrams
       p.diagrams-cairo

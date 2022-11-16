@@ -19,7 +19,7 @@
     pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
     pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jupyterWith.url = "github:tweag/jupyterWith";
+    jupyterWith.url = "github:tweag/jupyterWith/b16b480b596b81ccb11eeeabc55d6e66c60ed1ee";
   };
   outputs = {
     self,
@@ -43,8 +43,11 @@
       system: let
         inherit (nixpkgs) lib;
         inherit (jupyterWith.lib.${system}) mkJupyterlabFromPath;
+        overlays = [
+          jupyterWith.overlays.${system}.default
+        ];
         pkgs = import nixpkgs {
-          system = system;
+          inherit system overlays;
           config.allowBroken = true;
         };
 
