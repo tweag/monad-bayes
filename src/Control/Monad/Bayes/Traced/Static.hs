@@ -82,8 +82,27 @@ mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTransFree m
 
+-- $setup
+-- >>> let z = 23 :: Int
+-- >>> import Control.Monad.Bayes.Class
+-- >>> import Control.Monad.Bayes.Sampler.Strict
+-- >>> import Control.Monad.Bayes.Weighted
+
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
+--
+-- >>> :{
+--  let
+--    bus = do x <- bernoulli (2/7)
+--             let rate = if x then 3 else 10
+--             factor $ poissonPdf rate 4
+--             return x
+--    mhRunBusSingleObs = do
+--      let nSamples = 2
+--      sampleIOfixed $ unweighted $ mh nSamples bus
+--  in mhRunBusSingleObs
+-- :}
+-- [True,True,True]
 mh :: MonadDistribution m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
