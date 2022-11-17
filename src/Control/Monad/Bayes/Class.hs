@@ -97,7 +97,7 @@ import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
-    DiscreteDistr (probability, logProbability),
+    DiscreteDistr (logProbability, probability),
   )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
