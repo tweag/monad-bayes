@@ -83,7 +83,6 @@ mhStep (Traced m d) = Traced m d'
     d' = d >>= mhTransFree m
 
 -- $setup
--- >>> let z = 23 :: Int
 -- >>> import Control.Monad.Bayes.Class
 -- >>> import Control.Monad.Bayes.Sampler.Strict
 -- >>> import Control.Monad.Bayes.Weighted
