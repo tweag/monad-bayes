@@ -561,17 +561,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1668645158,
-        "narHash": "sha256-rT8UHSbQ6kIwIM4G4W/SQcE0+JObaAWtApyVfFJ/i8g=",
+        "lastModified": 1668700030,
+        "narHash": "sha256-4iMY2h6CwcZJjX6fxx9453ZDMxn5EkZlBH1Bs+gUl2Q=",
         "owner": "tweag",
         "repo": "jupyterWith",
-        "rev": "915cb724e9d77f263d0807b3c8daf225d44992ec",
+        "rev": "4d427ff0e099bafd127dc5213b839da2b69f57d0",
         "type": "github"
       },
       "original": {
         "owner": "tweag",
         "repo": "jupyterWith",
-        "rev": "915cb724e9d77f263d0807b3c8daf225d44992ec",
+        "rev": "4d427ff0e099bafd127dc5213b839da2b69f57d0",
         "type": "github"
       }
     },
