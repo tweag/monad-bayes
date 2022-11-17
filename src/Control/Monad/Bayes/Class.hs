@@ -59,6 +59,7 @@ module Control.Monad.Bayes.Class
     discrete,
     normalPdf,
     Bayesian (..),
+    poissonPdf,
     posterior,
     priorPredictive,
     posteriorPredictive,
@@ -97,7 +98,7 @@ import Data.Vector.Generic as VG (Vector, map, mapM, null, sum, (!))
 import Numeric.Log (Log (..))
 import Statistics.Distribution
   ( ContDistr (logDensity, quantile),
-    DiscreteDistr (probability),
+    DiscreteDistr (probability, logProbability),
   )
 import Statistics.Distribution.Beta (betaDistr)
 import Statistics.Distribution.Gamma (gammaDistr)
@@ -292,6 +293,9 @@ normalPdf ::
   Log Double
 normalPdf mu sigma x = trace ("normalPdf: " ++ show mu ++ " " ++ show sigma ++ " " ++ show x) $
                        Exp $ logDensity (normalDistr mu sigma) x
+
+poissonPdf :: Double -> Integer -> Log Double
+poissonPdf rate n = Exp $ logProbability (Poisson.poisson rate) (fromIntegral n)
 
 -- | multivariate normal
 mvNormal :: MonadDistribution m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
