@@ -82,8 +82,35 @@ mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTransFree m
 
+-- $setup
+-- >>> import Control.Monad.Bayes.Class
+-- >>> import Control.Monad.Bayes.Sampler.Strict
+-- >>> import Control.Monad.Bayes.Weighted
+
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
+--
+-- For example:
+--
+-- * I have forgotten what day it is.
+-- * There are ten buses per hour in the week and three buses per hour at the weekend.
+-- * I observe four buses in a given hour.
+-- * What is the probability that it is the weekend?
+--
+-- >>> :{
+--  let
+--    bus = do x <- bernoulli (2/7)
+--             let rate = if x then 3 else 10
+--             factor $ poissonPdf rate 4
+--             return x
+--    mhRunBusSingleObs = do
+--      let nSamples = 2
+--      sampleIOfixed $ unweighted $ mh nSamples bus
+--  in mhRunBusSingleObs
+-- :}
+-- [True,True,True]
+--
+-- Of course, it will need to be run more than twice to get a reasonable estimate.
 mh :: MonadDistribution m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
