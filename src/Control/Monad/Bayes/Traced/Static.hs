@@ -91,6 +91,13 @@ mhStep (Traced m d) = Traced m d'
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps. Newest samples are at the head of the list.
 --
+-- For example:
+--
+-- * I have forgotten what day it is.
+-- * There are ten buses per hour in the week and three buses per hour at the weekend.
+-- * I observe four buses in a given hour.
+-- * What is the probability that it is the weekend?
+--
 -- >>> :{
 --  let
 --    bus = do x <- bernoulli (2/7)
@@ -103,6 +110,8 @@ mhStep (Traced m d) = Traced m d'
 --  in mhRunBusSingleObs
 -- :}
 -- [True,True,True]
+--
+-- Of course, it will need to be run more than twice to get a reasonable estimate.
 mh :: MonadDistribution m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
