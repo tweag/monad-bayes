@@ -62,11 +62,14 @@
 \begin{code}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PackageImports      #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE PackageImports             #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Wall              #-}
 {-# OPTIONS_GHC -Wno-type-defaults #-}
+{-# OPTIONS_GHC -Wno-orphans       #-}
 
 module Main (
     main
@@ -86,13 +89,20 @@ import Numeric.AD
 
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv.Incremental (encodeRecord, encode)
+import Data.Csv hiding (encode)
 
 import System.FilePath ()
+import qualified System.Random.Stateful as S
 
 import Statistics.Distribution.StudentT
 import Statistics.Distribution.Normal
 import Statistics.Distribution
 import qualified Data.Vector as V
+-- import Data.Matrix
+
+import Data.Monoid
+import Control.Monad.State
+import Control.Monad.Trans.Writer
 
 import "monad-extras" Control.Monad.Extra
 \end{code}
@@ -354,6 +364,98 @@ $$
 r\left(z, z^{\prime}\right)=\frac{\varpi\left({z^{\prime}}\right) q\left({z^{\prime}}, z\right)}{\varpi(z) q\left(z, z^{\prime}\right)}
 $$
 
+\section{Importance Sampling}
+
+\begin{code}
+newtype Meas a = Meas (WriterT (Product Double,Sum Int) (State [Double]) a)
+  deriving(Functor, Applicative, Monad)
+
+weightedsamples :: forall a . Meas a -> IO [(a,Double)]
+weightedsamples (Meas m) = do
+  let helper :: State [Double] [(a, (Product Double, Sum Int))]
+      helper = unfoldM h undefined
+        where
+          h _ =  Just <$> (\v -> (v, undefined)) <$> runWriterT m
+
+  g <- S.getStdGen
+  let rs = S.randoms g
+  let (xws,_) = runState helper rs
+  return $ map (\(x, (w, _)) -> (x, getProduct w)) xws
+
+bernoulli' :: Double -> Meas Bool
+bernoulli' r = do
+  x <- sample
+  return $ x < r
+
+sample :: Meas Double
+sample = Meas $
+       do ~(r:rs) <- get
+          put rs
+          tell $ (Product 1,Sum 1)
+          return r
+
+score' :: Double -> Meas ()
+score' r = Meas $ tell $ (Product r,Sum 0)
+
+model1 :: Meas Bool
+model1 = do
+  x <- bernoulli' (2/7)
+  let rate = if x then 3 else 10
+  score' $ exp $ ln $ poissonPdf rate 4
+  return x
+\end{code}
+
+\section{Non-Parametric Hamiltonian Monte Carlo}
+
+ \begin{code}
+-- npHmcStep q_0 w eta bigL = do
+--   let l = length q_0
+--   p0 <- sequence (replicate l (normal 0.0 1.0))
+--   let bigU = \n q -> -log(sum
+--   return undefined
+-- def NPHMCstep(q0,w,ep,L):
+-- # initialisation
+-- p0 = [normal for i in range(len(q0))]
+-- U = lambda n: lambda q:
+-- −log(sum([w(q[:i]) for i in range(n)]))
+-- # NP−HMC integration
+-- ((q,p),(q0,p0)) = NPint((q0,p0),U,ep,L)
+-- # MH acceptance
+-- if cdfN(normal) < accept((q,p),(q0,p0),w):
+-- return supported(q,w)
+-- else:
+-- return supported(q0,w)
+-- def NPHMC(q0,w,ep,L,M):
+-- S = [q0]
+-- for i in range(M):
+-- S.append(NPHMCstep(S[i],w,ep,L))
+-- return S
+
+
+-- def extend((q,p),(q0,p0),t,U):
+-- while q not in domain(U(len(q))):
+-- x0 = normal
+-- y0 = normal
+-- x = x0 + t*y0
+-- y = y0
+-- q0.append(x0)
+-- p0.append(y0)
+-- q.append(x)
+-- p.append(y)
+-- return ((q,p),(q0,p0))
+-- def NPint((q0,p0),U,ep,L):
+-- q = q0
+-- p = p0
+-- for i in range(L):
+-- p = p − ep/2*grad(U(len(q0)),q)
+-- q = q + ep*p
+-- ((q,p),(q0,p0)) =
+-- extend((q,p),(q0,p0),i*ep,U)
+-- p = p − ep/2*grad(U(len(q0)),q)
+-- return ((q,p),(q0,p0))
+
+\end{code}
+
 \section{Student's T}
 
 Let's try running it on Student's T with 5 degrees of freedeom using
@@ -556,6 +658,10 @@ writeToFile t p n = do
   BL.writeFile (p <> (show $ n) <> ".csv") $ encode $
     foldMap encodeRecord ss
 
+instance ToField Bool where
+  toField False = "False"
+  toField True  = "True"
+
 main :: IO ()
 main = do
   writeToFile testHmc        "StudSampsHMC"    10000
@@ -564,6 +670,8 @@ main = do
   writeToFile testRwm        "Rwm"           100000
   writeToFile testMwMr       "MwMr"          100000
   writeToFile testMb         "MbPrime"      1000000
+  (encode <$> foldMap encodeRecord <$> take 10000 <$> weightedsamples model1) >>=
+    BL.writeFile "I.csv"
 \end{code}
 %endif
 

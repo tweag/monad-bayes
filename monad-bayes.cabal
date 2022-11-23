@@ -111,7 +111,7 @@ library
 
 executable naiveSampling
   main-is:            NaiveSampling.lhs
-  hs-source-dirs:     .
+  hs-source-dirs:     test
   other-modules:
 
   default-language:   Haskell2010
@@ -132,8 +132,10 @@ executable naiveSampling
     , lens
     , log-domain
     , math-functions
+    , matrix
     , monad-bayes
     , monad-extras
+    , mtl
     , mwc-random
     , optparse-applicative
     , pipes
@@ -142,6 +144,7 @@ executable naiveSampling
     , statistics
     , text
     , time
+    , transformers
     , vector
 
 executable example
