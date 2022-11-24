@@ -93,16 +93,21 @@ import Data.Csv hiding (encode)
 
 import System.FilePath ()
 import qualified System.Random.Stateful as S
+import qualified System.Random as S
+import qualified Data.Random as R
+import qualified System.Random.MWC as MWC
 
 import Statistics.Distribution.StudentT
 import Statistics.Distribution.Normal
 import Statistics.Distribution
+import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 import qualified Data.Vector as V
 -- import Data.Matrix
 
 import Data.Monoid
 import Control.Monad.State
 import Control.Monad.Trans.Writer
+import Control.Monad.Reader
 
 import "monad-extras" Control.Monad.Extra
 \end{code}
@@ -364,24 +369,14 @@ $$
 r\left(z, z^{\prime}\right)=\frac{\varpi\left({z^{\prime}}\right) q\left({z^{\prime}}, z\right)}{\varpi(z) q\left(z, z^{\prime}\right)}
 $$
 
-\section{Importance Sampling}
+\section{A Probabilistic Programming Language}
 
 \begin{code}
 newtype Meas a = Meas (WriterT (Product Double,Sum Int) (State [Double]) a)
   deriving(Functor, Applicative, Monad)
+\end{code}
 
-weightedsamples :: forall a . Meas a -> IO [(a,Double)]
-weightedsamples (Meas m) = do
-  let helper :: State [Double] [(a, (Product Double, Sum Int))]
-      helper = unfoldM h undefined
-        where
-          h _ =  Just <$> (\v -> (v, undefined)) <$> runWriterT m
-
-  g <- S.getStdGen
-  let rs = S.randoms g
-  let (xws,_) = runState helper rs
-  return $ map (\(x, (w, _)) -> (x, getProduct w)) xws
-
+\begin{code}
 bernoulli' :: Double -> Meas Bool
 bernoulli' r = do
   x <- sample
@@ -405,56 +400,132 @@ model1 = do
   return x
 \end{code}
 
+\subsection{Importance Sampling}
+
+\begin{code}
+weightedsamples :: forall a . Meas a -> IO [(a,Double)]
+weightedsamples (Meas m) = do
+
+  let helper :: State [Double] [(a, (Product Double, Sum Int))]
+      helper = unfoldM h undefined
+        where
+          h _ =  Just <$> (\v -> (v, undefined)) <$> runWriterT m
+
+  g <- S.getStdGen
+  let rs = S.randoms g
+  let (xws,_) = runState helper rs
+  return $ map (\(x, (w, _)) -> (x, getProduct w)) xws
+\end{code}
+
+\todo{Just to put my mind at rest, do some experiments with the generator being used twice (as below)}
+
+\subsection{Metropolis Hastings}
+\begin{code}
+mhOneStep :: MonadReader g Meas => (R.StatefulGen g Meas) =>
+             Meas a -> [Double] -> Meas [Double]
+mhOneStep (Meas m) as = do
+  let ((_, (w, l)), _) = runState (runWriterT m) as
+  as' <- do
+    let n = length as
+    i <- R.sample $ R.uniform (0 :: Int) (n - 1)
+    a' <- R.sample $ R.uniform 0.0 1.0
+    case splitAt i as of
+      (xs, _ : ys) -> return $ xs ++ (a' : ys)
+      _ -> error "impossible"
+  let ((_, (w', l')), _) = runState (runWriterT m) as'
+  let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
+  accept <- bernoulli' ratio
+  if accept
+    then return as'
+    else return as
+
+getrandom :: State [Double] Double
+getrandom = do
+  ~(r:rs) <- get
+  put rs
+  return r
+
+categ :: [Double] -> Double -> Integer
+categ rs r = let helper (r':rs') r'' i =
+                          if r'' < r' then i else helper rs' (r''-r') (i+1)
+                 helper _ _ _ = error "categ"
+           in helper rs r 0
+
+mh :: Meas a -> [Double] -> State [Double] [Double]
+mh (Meas m) bs = do
+  let step :: [Double] -> State [Double] [Double]
+      step as = do
+        let ((_, (w,l)),_) = runState (runWriterT m) as
+        r <- getrandom
+        let i = categ (replicate (fromIntegral $ getSum l) (1/(fromIntegral $ getSum l))) r
+        r' <- getrandom
+        let as' = (let (as1,_:as2) = splitAt (fromIntegral i) as in as1 ++ r' : as2)
+        let ((_, (w',l')),_) = runState (runWriterT m) (as')
+        let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
+        r'' <- getrandom
+        if r'' < (min 1 ratio) then return as' else return as
+  step bs
+
+mhTest :: forall a . Meas a -> [(a, Product Double)]
+mhTest m@(Meas n) = foo
+  where
+  (ss, _) = runState (iterateM (mh m) (S.randoms (S.mkStdGen 42))) (S.randoms (S.mkStdGen 1729))
+  foo = map (\(x, (w, _)) -> (x, w)) $
+        map (\as -> fst $ runState (runWriterT n) as) $
+        ss
+\end{code}
+
 \section{Non-Parametric Hamiltonian Monte Carlo}
 
- \begin{code}
--- npHmcStep q_0 w eta bigL = do
---   let l = length q_0
---   p0 <- sequence (replicate l (normal 0.0 1.0))
---   let bigU = \n q -> -log(sum
---   return undefined
--- def NPHMCstep(q0,w,ep,L):
--- # initialisation
--- p0 = [normal for i in range(len(q0))]
--- U = lambda n: lambda q:
--- −log(sum([w(q[:i]) for i in range(n)]))
--- # NP−HMC integration
--- ((q,p),(q0,p0)) = NPint((q0,p0),U,ep,L)
--- # MH acceptance
--- if cdfN(normal) < accept((q,p),(q0,p0),w):
--- return supported(q,w)
--- else:
--- return supported(q0,w)
--- def NPHMC(q0,w,ep,L,M):
--- S = [q0]
--- for i in range(M):
--- S.append(NPHMCstep(S[i],w,ep,L))
--- return S
+%% \begin{code}
+
+%% npHmcStep q_0 w eta bigL = do
+%%   let l = length q_0
+%%   p0 <- sequence (replicate l (normal 0.0 1.0))
+%%   let bigU = \n q -> -log(sum
+%%   return undefined
+%% def NPHMCstep(q0,w,ep,L):
+%% # initialisation
+%% p0 = [normal for i in range(len(q0))]
+%% U = lambda n: lambda q:
+%% −log(sum([w(q[:i]) for i in range(n)]))
+%% # NP−HMC integration
+%% ((q,p),(q0,p0)) = NPint((q0,p0),U,ep,L)
+%% # MH acceptance
+%% if cdfN(normal) < accept((q,p),(q0,p0),w):
+%% return supported(q,w)
+%% else:
+%% return supported(q0,w)
+%% def NPHMC(q0,w,ep,L,M):
+%% S = [q0]
+%% for i in range(M):
+%% S.append(NPHMCstep(S[i],w,ep,L))
+%% return S
 
 
--- def extend((q,p),(q0,p0),t,U):
--- while q not in domain(U(len(q))):
--- x0 = normal
--- y0 = normal
--- x = x0 + t*y0
--- y = y0
--- q0.append(x0)
--- p0.append(y0)
--- q.append(x)
--- p.append(y)
--- return ((q,p),(q0,p0))
--- def NPint((q0,p0),U,ep,L):
--- q = q0
--- p = p0
--- for i in range(L):
--- p = p − ep/2*grad(U(len(q0)),q)
--- q = q + ep*p
--- ((q,p),(q0,p0)) =
--- extend((q,p),(q0,p0),i*ep,U)
--- p = p − ep/2*grad(U(len(q0)),q)
--- return ((q,p),(q0,p0))
+%% def extend((q,p),(q0,p0),t,U):
+%% while q not in domain(U(len(q))):
+%% x0 = normal
+%% y0 = normal
+%% x = x0 + t*y0
+%% y = y0
+%% q0.append(x0)
+%% p0.append(y0)
+%% q.append(x)
+%% p.append(y)
+%% return ((q,p),(q0,p0))
+%% def NPint((q0,p0),U,ep,L):
+%% q = q0
+%% p = p0
+%% for i in range(L):
+%% p = p − ep/2*grad(U(len(q0)),q)
+%% q = q + ep*p
+%% ((q,p),(q0,p0)) =
+%% extend((q,p),(q0,p0),i*ep,U)
+%% p = p − ep/2*grad(U(len(q0)),q)
+%% return ((q,p),(q0,p0))
 
-\end{code}
+%% \end{code}
 
 \section{Student's T}
 

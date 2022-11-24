@@ -141,6 +141,7 @@ executable naiveSampling
     , pipes
     , pretty-simple
     , random
+    , random-fu
     , statistics
     , text
     , time

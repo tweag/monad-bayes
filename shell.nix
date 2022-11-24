@@ -51,7 +51,7 @@ let
     zip
     base brick containers foldl free histogram-fill ieee754 integration
     lens linear log-domain math-functions matrix monad-coroutine
-    monad-extras mtl mwc-random pipes pretty-simple primitive random
+    monad-extras mtl mwc-random pipes pretty-simple primitive random random-fu
     safe scientific statistics text transformers vector vty
 
     Chart
