@@ -372,11 +372,9 @@ $$
 \section{A Probabilistic Programming Language}
 
 \begin{code}
-newtype Meas a = Meas (WriterT (Product Double,Sum Int) (State [Double]) a)
+newtype Meas a = Meas (WriterT (Product Double, Sum Int) (State [Double]) a)
   deriving(Functor, Applicative, Monad)
-\end{code}
 
-\begin{code}
 bernoulli' :: Double -> Meas Bool
 bernoulli' r = do
   x <- sample
@@ -386,12 +384,16 @@ sample :: Meas Double
 sample = Meas $
        do ~(r:rs) <- get
           put rs
-          tell $ (Product 1,Sum 1)
+          tell $ (Product 1, Sum 1)
           return r
 
 score' :: Double -> Meas ()
-score' r = Meas $ tell $ (Product r,Sum 0)
+score' r = Meas $ tell $ (Product r, Sum 0)
+\end{code}
 
+\todo{The bus example}
+
+\begin{code}
 model1 :: Meas Bool
 model1 = do
   x <- bernoulli' (2/7)
@@ -399,6 +401,8 @@ model1 = do
   score' $ exp $ ln $ poissonPdf rate 4
   return x
 \end{code}
+
+\todo{We could also do with an example model with infinite paths}
 
 \subsection{Importance Sampling}
 
@@ -420,13 +424,15 @@ weightedsamples (Meas m) = do
 \todo{Just to put my mind at rest, do some experiments with the generator being used twice (as below)}
 
 \subsection{Metropolis Hastings}
+
+
 \begin{code}
-mhOneStep :: MonadReader g Meas => (R.StatefulGen g Meas) =>
-             Meas a -> [Double] -> Meas [Double]
+mhOneStep :: (MonadReader g m, R.StatefulGen g m) =>
+             Meas a -> [Double] -> m [Double]
 mhOneStep (Meas m) as = do
   let ((_, (w, l)), _) = runState (runWriterT m) as
   as' <- do
-    let n = length as
+    let n = getSum l
     i <- R.sample $ R.uniform (0 :: Int) (n - 1)
     a' <- R.sample $ R.uniform 0.0 1.0
     case splitAt i as of
@@ -434,46 +440,35 @@ mhOneStep (Meas m) as = do
       _ -> error "impossible"
   let ((_, (w', l')), _) = runState (runWriterT m) as'
   let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
-  accept <- bernoulli' ratio
-  if accept
-    then return as'
-    else return as
+  a'' <- R.sample $ R.uniform 0.0 1.0
+  if a'' < min 1 ratio then return as' else return as
 
-getrandom :: State [Double] Double
-getrandom = do
-  ~(r:rs) <- get
-  put rs
-  return r
-
-categ :: [Double] -> Double -> Integer
-categ rs r = let helper (r':rs') r'' i =
-                          if r'' < r' then i else helper rs' (r''-r') (i+1)
-                 helper _ _ _ = error "categ"
-           in helper rs r 0
-
-mh :: Meas a -> [Double] -> State [Double] [Double]
-mh (Meas m) bs = do
-  let step :: [Double] -> State [Double] [Double]
-      step as = do
-        let ((_, (w,l)),_) = runState (runWriterT m) as
-        r <- getrandom
-        let i = categ (replicate (fromIntegral $ getSum l) (1/(fromIntegral $ getSum l))) r
-        r' <- getrandom
-        let as' = (let (as1,_:as2) = splitAt (fromIntegral i) as in as1 ++ r' : as2)
-        let ((_, (w',l')),_) = runState (runWriterT m) (as')
-        let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
-        r'' <- getrandom
-        if r'' < (min 1 ratio) then return as' else return as
-  step bs
-
-mhTest :: forall a . Meas a -> [(a, Product Double)]
-mhTest m@(Meas n) = foo
+iterateNM :: forall m a . Monad m => Int -> (a -> m a) -> a -> m [a]
+iterateNM n f = foldr phi (return . return) (replicate n f)
   where
-  (ss, _) = runState (iterateM (mh m) (S.randoms (S.mkStdGen 42))) (S.randoms (S.mkStdGen 1729))
-  foo = map (\(x, (w, _)) -> (x, w)) $
-        map (\as -> fst $ runState (runWriterT n) as) $
-        ss
+    phi :: (a -> m a) -> (a -> m [a]) -> a -> m [a]
+    phi g h x = do y  <- g x
+                   ys <- h y
+                   return (y : ys)
+
+testMh :: IO ()
+testMh = do
+  S.setStdGen (S.mkStdGen 43)
+  g <- S.newStdGen
+  stdGen <- S.newIOGenM g
+  let rs = S.randoms g
+  print $ take 10 rs
+  is <- runReaderT (mhOneStep model1 rs) stdGen
+  js <- runReaderT (iterateNM 1000000 (mhOneStep model1) rs) stdGen
+  let (Meas n) = model1
+  let foo :: [(Bool, Product Double) ]= map (\(x, (w, _)) -> (x, w)) $
+            map (\as -> fst $ runState (runWriterT n) as) $
+            js
+  let l = length $ filter fst foo
+  print l
 \end{code}
+
+
 
 \section{Non-Parametric Hamiltonian Monte Carlo}
 
@@ -764,6 +759,47 @@ genEg n = do
   let invGammas = map recip gammas
   weights <- dirichlet (V.replicate k 2.0)
   replicate n <$> (categorical weights >>= \i -> normal (means!!i) (invGammas!!i))
+
+\end{code}
+
+\subsection{Sam's Original Code (with minor mods)}
+
+\begin{code}
+mh :: Meas a -> [Double] -> State [Double] [Double]
+mh (Meas m) bs = do
+  let step :: [Double] -> State [Double] [Double]
+      step as = do
+        let ((_, (w,l)),_) = runState (runWriterT m) as
+        r <- getrandom
+        let i = categ (replicate (fromIntegral $ getSum l) (1/(fromIntegral $ getSum l))) r
+        r' <- getrandom
+        let as' = (let (as1,_:as2) = splitAt (fromIntegral i) as in as1 ++ r' : as2)
+        let ((_, (w',l')),_) = runState (runWriterT m) (as')
+        let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
+        r'' <- getrandom
+        if r'' < (min 1 ratio) then return as' else return as
+  step bs
+
+mhTest :: forall a . Meas a -> [(a, Product Double)]
+mhTest m@(Meas n) = foo
+  where
+  (ss :: [[Double]], _) = runState (iterateM (mh m) (S.randoms (S.mkStdGen 42))) (S.randoms (S.mkStdGen 1729))
+  foo = map (\(x, (w, _)) -> (x, w)) $
+        map (\as -> fst $ runState (runWriterT n) as) $
+        ss
+
+
+getrandom :: State [Double] Double
+getrandom = do
+  ~(r:rs) <- get
+  put rs
+  return r
+
+categ :: [Double] -> Double -> Integer
+categ rs r = let helper (r':rs') r'' i =
+                          if r'' < r' then i else helper rs' (r''-r') (i+1)
+                 helper _ _ _ = error "categ"
+           in helper rs r 0
 
 \end{code}
 
