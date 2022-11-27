@@ -400,6 +400,18 @@ model1 = do
   let rate = if x then 3 else 10
   score' $ exp $ ln $ poissonPdf rate 4
   return x
+
+draw :: ContDistr d => d -> Meas Double
+draw d =  do x <- sample
+             return $ quantile d x
+
+normal' :: Double -> Double -> Meas Double
+normal' m s = draw (normalDistr m s)
+
+singleObs' = do
+    mu <- normal' mu0 sigma0
+    score' $ exp $ ln $ normalPdf mu sigma z
+    return mu
 \end{code}
 
 \todo{We could also do with an example model with infinite paths}
@@ -431,15 +443,16 @@ mhOneStep :: (MonadReader g m, R.StatefulGen g m) =>
              Meas a -> [Double] -> m [Double]
 mhOneStep (Meas m) as = do
   let ((_, (w, l)), _) = runState (runWriterT m) as
+  let n = getSum l
   as' <- do
-    let n = getSum l
     i <- R.sample $ R.uniform (0 :: Int) (n - 1)
     a' <- R.sample $ R.uniform 0.0 1.0
     case splitAt i as of
       (xs, _ : ys) -> return $ xs ++ (a' : ys)
       _ -> error "impossible"
   let ((_, (w', l')), _) = runState (runWriterT m) as'
-  let ratio = getProduct w' * (fromIntegral $ getSum l') / (getProduct w * (fromIntegral $ getSum l))
+  let n' = getSum l'
+  let ratio = getProduct w' * (fromIntegral n') / (getProduct w * (fromIntegral n))
   a'' <- R.sample $ R.uniform 0.0 1.0
   if a'' < min 1 ratio then return as' else return as
 
@@ -466,9 +479,21 @@ testMh = do
             js
   let l = length $ filter fst foo
   print l
+
+testMh' :: IO [Double]
+testMh' = do
+  S.setStdGen (S.mkStdGen 43)
+  g <- S.newStdGen
+  stdGen <- S.newIOGenM g
+  let rs = S.randoms g
+  print $ take 10 rs
+  js <- runReaderT (iterateNM 1100000 (mhOneStep singleObs') rs) stdGen
+  let (Meas n) = singleObs'
+  let foo :: [(Double, Product Double) ]= map (\(x, (w, _)) -> (x, w)) $
+            map (\as -> fst $ runState (runWriterT n) as) $
+            js
+  return $ drop 100000 $ map fst foo
 \end{code}
-
-
 
 \section{Non-Parametric Hamiltonian Monte Carlo}
 
@@ -730,14 +755,16 @@ instance ToField Bool where
 
 main :: IO ()
 main = do
-  writeToFile testHmc        "StudSampsHMC"    10000
-  writeToFile testStudentRwm "StudSampsRwm"  100002
-  writeToFile testStudentMb  "StudSampsMb"    10003
-  writeToFile testRwm        "Rwm"           100000
-  writeToFile testMwMr       "MwMr"          100000
-  writeToFile testMb         "MbPrime"      1000000
-  (encode <$> foldMap encodeRecord <$> take 10000 <$> weightedsamples model1) >>=
-    BL.writeFile "I.csv"
+  -- writeToFile testHmc        "StudSampsHMC"    10000
+  -- writeToFile testStudentRwm "StudSampsRwm"  100002
+  -- writeToFile testStudentMb  "StudSampsMb"    10003
+  -- writeToFile testRwm        "Rwm"           100000
+  -- writeToFile testMwMr       "MwMr"          100000
+  -- writeToFile testMb         "MbPrime"      1000000
+  -- (encode <$> foldMap encodeRecord <$> take 10000 <$> weightedsamples model1) >>=
+  --   BL.writeFile "I.csv"
+  (encode <$> foldMap encodeRecord <$> map Only <$> take 1000000 <$> testMh') >>=
+    BL.writeFile "J.csv"
 \end{code}
 %endif
 

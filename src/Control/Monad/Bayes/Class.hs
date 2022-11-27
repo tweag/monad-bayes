@@ -135,7 +135,8 @@ class Monad m => MonadDistribution m where
     -- | \(\sim \mathcal{N}(\mu, \sigma^2)\)
     m Double
   normal m s = do x <- draw (normalDistr m s)
-                  trace ("normal " ++ show m ++ " " ++ show s ++ " " ++ show x) $ return x
+                  -- trace ("normal " ++ show m ++ " " ++ show s ++ " " ++ show x) $
+                  return x
 
   -- | Draw from a gamma distribution.
   gamma ::
@@ -228,7 +229,7 @@ class Monad m => MonadDistribution m where
 draw :: (ContDistr d, MonadDistribution m) => d -> m Double
 draw d =  do x <- random
              let y = quantile d x
-             trace ("draw " ++ show x ++ " " ++ show y) $ return ()
+             -- trace ("draw " ++ show x ++ " " ++ show y) $ return ()
              return y
 
 -- | Draw from a discrete distribution using a sequence of draws from
@@ -291,7 +292,7 @@ normalPdf ::
   Double ->
   -- | relative likelihood of observing sample x in \(\mathcal{N}(\mu, \sigma^2)\)
   Log Double
-normalPdf mu sigma x = trace ("normalPdf: " ++ show mu ++ " " ++ show sigma ++ " " ++ show x) $
+normalPdf mu sigma x = -- trace ("normalPdf: " ++ show mu ++ " " ++ show sigma ++ " " ++ show x) $
                        Exp $ logDensity (normalDistr mu sigma) x
 
 poissonPdf :: Double -> Integer -> Log Double
