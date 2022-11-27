@@ -414,6 +414,15 @@ singleObs' = do
     return mu
 \end{code}
 
+The result is shown in Figure~\ref{fig:normalViaPpl}.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{diagrams/PplNormal.png.png}
+    \caption{Normal via our PPL}
+    \label{fig:normalViaPpl}
+\end{figure}
+
 \todo{We could also do with an example model with infinite paths}
 
 \subsection{Importance Sampling}
