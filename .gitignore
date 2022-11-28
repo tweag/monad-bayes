@@ -39,3 +39,4 @@ venv/
 .venv/
 .ipynb_checkpoints/
 .netlify/
+.jupyter/
