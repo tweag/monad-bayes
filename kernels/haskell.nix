@@ -35,6 +35,7 @@ availableKernels.haskell {
     p.vector
     p.megaparsec
     p.histogram-fill
+    p.gloss
     extraArgs.monad-bayes
   ];
 }
