@@ -55,6 +55,17 @@ singleObs = do
     D.trace ("singleObs: " ++ show mu) $ return ()
     return mu
 
+geometric'' :: MonadDistribution m => m Int
+geometric'' = do
+  x <- random
+  if x < 0.2
+    then return 1
+    else do y <- geometric''
+            return $ 1 + y
+
+mhRunGeometric :: IO [Int]
+mhRunGeometric = sampleIOfixed $ unweighted $ mh 10000 geometric''
+
 mhRunSingleObs :: IO [Double]
 mhRunSingleObs = do
   let nSamples = 2

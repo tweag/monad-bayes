@@ -262,3 +262,10 @@ hist(dfMR$V1, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
 lines(x, dnorm(x, 2.0, 0.7071067811865476), col = "red")
 dev.off()
 
+
+dfJulia <- read.csv("/Users/dom/nonparametric-mh/foo-julia.csv", header=TRUE)
+hist(dfJulia$A, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)
+lines(x, dnorm(x, 2.0, 0.7071067811865476), col = "red")
+
+dfJuliaHmc <- read.csv("/Users/dom/nonparametric-mh/foo-julia-hmc.csv", header=TRUE)
+hist(dfJuliaHmc$A, freq = F, breaks = 100, col=rgb(1,0,0,0.2), add=FALSE)

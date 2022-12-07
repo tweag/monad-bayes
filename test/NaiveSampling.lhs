@@ -80,6 +80,8 @@ module Main (
   , student5
   , singleObs
   , genEg
+  -- Sam's code
+  , mhTest
   ) where
 
 import Control.Monad.Bayes.Class hiding (posteriorPredictive, Histogram)
@@ -93,16 +95,12 @@ import Data.Csv hiding (encode)
 
 import System.FilePath ()
 import qualified System.Random.Stateful as S
-import qualified System.Random as S
 import qualified Data.Random as R
-import qualified System.Random.MWC as MWC
 
 import Statistics.Distribution.StudentT
 import Statistics.Distribution.Normal
 import Statistics.Distribution
-import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 import qualified Data.Vector as V
--- import Data.Matrix
 
 import Data.Monoid
 import Control.Monad.State
@@ -110,6 +108,8 @@ import Control.Monad.Trans.Writer
 import Control.Monad.Reader
 
 import "monad-extras" Control.Monad.Extra
+
+import Debug.Trace
 \end{code}
 %endif
 
@@ -408,6 +408,7 @@ draw d =  do x <- sample
 normal' :: Double -> Double -> Meas Double
 normal' m s = draw (normalDistr m s)
 
+singleObs' :: Meas Double
 singleObs' = do
     mu <- normal' mu0 sigma0
     score' $ exp $ ln $ normalPdf mu sigma z
@@ -418,7 +419,7 @@ The result is shown in Figure~\ref{fig:normalViaPpl}.
 
 \begin{figure}[!htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{diagrams/PplNormal.png.png}
+    \includegraphics[width=0.8\textwidth]{diagrams/PplNormal.png}
     \caption{Normal via our PPL}
     \label{fig:normalViaPpl}
 \end{figure}
@@ -452,6 +453,9 @@ mhOneStep :: (MonadReader g m, R.StatefulGen g m) =>
              Meas a -> [Double] -> m [Double]
 mhOneStep (Meas m) as = do
   let ((_, (w, l)), _) = runState (runWriterT m) as
+  trace (show l) $ return ()
+  trace (show w) $ return ()
+  trace (show $ take (getSum l) as) $ return ()
   let n = getSum l
   as' <- do
     i <- R.sample $ R.uniform (0 :: Int) (n - 1)
@@ -460,10 +464,16 @@ mhOneStep (Meas m) as = do
       (xs, _ : ys) -> return $ xs ++ (a' : ys)
       _ -> error "impossible"
   let ((_, (w', l')), _) = runState (runWriterT m) as'
+  trace (show l') $ return ()
+  trace (show w') $ return ()
   let n' = getSum l'
   let ratio = getProduct w' * (fromIntegral n') / (getProduct w * (fromIntegral n))
   a'' <- R.sample $ R.uniform 0.0 1.0
-  if a'' < min 1 ratio then return as' else return as
+  if a'' < min 1 ratio
+    then trace ("Accept: " ++ show a'' ++ " " ++ show ratio) $
+         return as'
+    else trace ("Reject: " ++ show a'' ++ " " ++ show ratio) $
+         return as
 
 iterateNM :: forall m a . Monad m => Int -> (a -> m a) -> a -> m [a]
 iterateNM n f = foldr phi (return . return) (replicate n f)
@@ -472,22 +482,6 @@ iterateNM n f = foldr phi (return . return) (replicate n f)
     phi g h x = do y  <- g x
                    ys <- h y
                    return (y : ys)
-
-testMh :: IO ()
-testMh = do
-  S.setStdGen (S.mkStdGen 43)
-  g <- S.newStdGen
-  stdGen <- S.newIOGenM g
-  let rs = S.randoms g
-  print $ take 10 rs
-  is <- runReaderT (mhOneStep model1 rs) stdGen
-  js <- runReaderT (iterateNM 1000000 (mhOneStep model1) rs) stdGen
-  let (Meas n) = model1
-  let foo :: [(Bool, Product Double) ]= map (\(x, (w, _)) -> (x, w)) $
-            map (\as -> fst $ runState (runWriterT n) as) $
-            js
-  let l = length $ filter fst foo
-  print l
 
 testMh' :: IO [Double]
 testMh' = do
@@ -505,6 +499,14 @@ testMh' = do
 \end{code}
 
 \section{Non-Parametric Hamiltonian Monte Carlo}
+
+\begin{code}
+-- npHmcStep q_0 w eta bigL = do
+--   let ((_, (w, l)), _) = runState (runWriterT m) as
+--   p0 <- sequence (replicate l (normal 0.0 1.0))
+--   let bigU = \n q -> -log(sum
+--   return undefined
+\end{code}
 
 %% \begin{code}
 
@@ -670,9 +672,9 @@ Here's a version of the leapfrog algorithm:
 
 \begin{code}
 leapfrog :: Fractional a => a -> Int -> (a -> a) -> (a, a) -> (a, a)
-leapfrog epsilon l gradU (qPrev, p) = (q1, p3)
+leapfrog epsilon l gradV (qPrev, p) = (q1, p3)
   where
-  p' =  p - epsilon * gradU qPrev / 2
+  p' =  p - epsilon * gradV qPrev / 2
   f 0 (qOld, pOld) = r
     where
       qNew = qOld + epsilon * pOld
@@ -681,10 +683,10 @@ leapfrog epsilon l gradU (qPrev, p) = (q1, p3)
   f _ (qOld, pOld) = r
     where
       qNew = qOld + epsilon * pOld
-      pNew = pOld - epsilon * gradU qNew
+      pNew = pOld - epsilon * gradV qNew
       r = (qNew, pNew)
   (q1, p1) = foldr f (qPrev, p') ([0 .. l - 1])
-  p2 = p1 - epsilon * gradU q1 / 2
+  p2 = p1 - epsilon * gradV q1 / 2
   -- Is this necessary?
   p3 = negate p2
 \end{code}
@@ -764,14 +766,14 @@ instance ToField Bool where
 
 main :: IO ()
 main = do
-  -- writeToFile testHmc        "StudSampsHMC"    10000
-  -- writeToFile testStudentRwm "StudSampsRwm"  100002
-  -- writeToFile testStudentMb  "StudSampsMb"    10003
-  -- writeToFile testRwm        "Rwm"           100000
-  -- writeToFile testMwMr       "MwMr"          100000
-  -- writeToFile testMb         "MbPrime"      1000000
-  -- (encode <$> foldMap encodeRecord <$> take 10000 <$> weightedsamples model1) >>=
-  --   BL.writeFile "I.csv"
+  writeToFile testHmc        "StudSampsHMC"    10000
+  writeToFile testStudentRwm "StudSampsRwm"  100002
+  writeToFile testStudentMb  "StudSampsMb"    10003
+  writeToFile testRwm        "Rwm"           100000
+  writeToFile testMwMr       "MwMr"          100000
+  writeToFile testMb         "MbPrime"      1000000
+  (encode <$> foldMap encodeRecord <$> take 10000 <$> weightedsamples model1) >>=
+    BL.writeFile "I.csv"
   (encode <$> foldMap encodeRecord <$> map Only <$> take 1000000 <$> testMh') >>=
     BL.writeFile "J.csv"
 \end{code}
@@ -779,6 +781,89 @@ main = do
 
 \todo{It should make no difference what we return in the momentum
 position; yet it does? Maybe not but at least investigate it.}
+
+\section{Mak, Zaiser}
+
+singleObs' = do
+    mu <- normal' mu0 sigma0
+    score' $ exp $ ln $ normalPdf mu sigma z
+    return mu
+
+@model function infiniteGMM(data)
+    k ~ Poisson(3.0)
+    # number of components
+    K = Int(k)+1
+
+    # means μs, variances vs and weights ws of each component
+    μs = tzeros(Float64, K)
+    vs = fill(0.3, K)
+    ws = tzeros(Float64, K)
+    for i in 1:K
+        μs[i] ~ Normal(0.0,1.0)
+        ws[i] ~ Normal(0.0,1.0)
+    end
+    # ws ~ Dirichlet(ones(K)/K)
+    ws = abs.(ws .+ 0.5)
+    ws = ws/sum(ws)
+
+    # the mixture model
+    m = MixtureModel(map((μ, v) -> Normal(μ, sqrt(v)), μs, vs), ws)
+
+    # observe data from m
+    n = length(data)
+    for i in 1:n
+        data[i] ~ m
+    end
+    return K
+end
+
+\begin{code}
+geometric' :: Meas Int
+geometric' = sum <$> unfoldM f 0
+  where
+    f s = do
+      x <- sample
+      if x < 0.5
+        then return Nothing
+        else return $ Just (1, s + 1)
+
+geometric'' :: Meas Int
+geometric'' = do
+  x <- sample
+  if x < 0.5
+    then return 1
+    else do y <- geometric''
+            return $ 1 + y
+
+testMh'' :: IO [Int]
+testMh'' = do
+  S.setStdGen (S.mkStdGen 43)
+  g <- S.newStdGen
+  stdGen <- S.newIOGenM g
+  let rs = S.randoms g
+  -- print $ take 10 rs
+  js <- runReaderT (iterateNM 37 (mhOneStep geometric'') rs) stdGen
+  print $ length js
+  let (Meas n) = geometric'
+  let foo :: [(Int, Product Double) ]= map (\(x, (w, _)) -> (x, w)) $
+            map (\as -> fst $ runState (runWriterT n) as) $
+            js
+  return $ drop 13 $ map fst foo
+
+-- infiniteGMM d = do
+--   k <- poisson 3.0
+--   let bigK :: Int
+--       bigK = k + 1
+--   return ()
+
+-- bigK <- floor <$> abs <$> normal 0.0 1.0
+-- for i in range(K):
+-- xs[i] = sample(normal(0, 1))
+-- for d in data:
+-- observe d from mixture([normal(x, 1)
+-- for x in xs])
+-- return K
+\end{code}
 
 \section{Gen}
 
@@ -823,7 +908,6 @@ mhTest m@(Meas n) = foo
   foo = map (\(x, (w, _)) -> (x, w)) $
         map (\as -> fst $ runState (runWriterT n) as) $
         ss
-
 
 getrandom :: State [Double] Double
 getrandom = do
