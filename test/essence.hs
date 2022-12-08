@@ -7,10 +7,13 @@
 
 {-# OPTIONS_GHC -Wall              #-}
 
-module Essence (mhRunGeometric) where
+module Essence (
+  mhRunGeometric,
+  MonadDistribution(..),
+  ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad.RWS (MonadIO, MonadTrans, lift, when)
+import Control.Monad.RWS (MonadIO, MonadTrans, lift)
 import Control.Monad.State (evalStateT)
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
@@ -18,16 +21,47 @@ import Control.Monad.State (StateT, runStateT, mapStateT, put, get)
 import Control.Monad.Identity (IdentityT)
 import Data.Functor.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT (..))
+import Control.Monad.Reader.Class (MonadReader)
 
-import Statistics.Distribution (ContDistr, DiscreteDistr, quantile, probability)
+import Statistics.Distribution (ContDistr, quantile)
 import Statistics.Distribution.Uniform (uniformDistr)
-import Statistics.Distribution.DiscreteUniform (discreteUniformAB)
 import Numeric.Log (Log(..))
-import System.Random.Stateful (IOGenM (..), StatefulGen, StdGen, mkStdGen, newIOGenM, uniformDouble01M, uniformRM)
+import System.Random.Stateful (StatefulGen, mkStdGen, newIOGenM, uniformDouble01M, uniformRM, split)
 import qualified System.Random.MWC.Distributions as MWC
 
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
+
+import qualified Data.Random as R
+import System.Random.Stateful (setStdGen, newStdGen)
+
+-- | Draw from a continuous distribution using the inverse cumulative density
+-- function.
+draw :: (ContDistr d, MonadDistribution m) => d -> m Double
+draw d = fmap (quantile d) random
+
+class Monad m => MonadDistribution m where
+  random :: m Double
+  uniform :: Double -> Double -> m Double
+  uniform a b = draw (uniformDistr a b)
+  bernoulli :: Double -> m Bool
+  bernoulli p = fmap (< p) random
+
+instance MonadDistribution m => MonadDistribution (StateT s m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+
+instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+
+geometric :: MonadDistribution m => m Int
+geometric = do
+  x <- random
+  if x < 0.2
+    then return 1
+    else do y <- geometric
+            return $ 1 + y
 
 -- | Random sampling functor.
 newtype SamF a = Random (Double -> a) deriving (Functor)
@@ -45,8 +79,8 @@ instance Monad m => MonadDistribution (Density m) where
   random = Density $ liftF (Random id)
 
 -- | Hoist 'Density' through a monad transform.
-hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density n a
-hoist f (Density m) = Density (hoistFT f m)
+hoistD :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density n a
+hoistD f (Density m) = Density (hoistFT f m)
 
 -- | Execute computation with supplied values for random choices.
 -- | Execute computation with supplied values for a subset of random choices.
@@ -86,44 +120,17 @@ instance Monad Trace where
     let t' = f (output t)
      in t' {variables = variables t ++ variables t', probDensity = probDensity t * probDensity t'}
 
+singleton :: Double -> Trace Double
+singleton u = Trace {variables = [u], output = u, probDensity = 1}
+
+bind :: Monad m => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
+bind dx f = do
+  t1 <- dx
+  t2 <- f (output t1)
+  return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
+
 newtype Weighted m a = Weighted (StateT (Log Double) m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
-
--- | Draw from a continuous distribution using the inverse cumulative density
--- function.
-draw :: (ContDistr d, MonadDistribution m) => d -> m Double
-draw d = fmap (quantile d) random
-
--- | Draw from a discrete distributions using the probability mass function.
-discrete :: (DiscreteDistr d, MonadDistribution m) => d -> m Int
-discrete = fromPMF . probability
-
--- | Draw from a discrete distribution using a sequence of draws from
--- Bernoulli.
-fromPMF :: MonadDistribution m => (Int -> Double) -> m Int
-fromPMF p = f 0 1
-  where
-    f i r = do
-      when (r < 0) $ error "fromPMF: total PMF above 1"
-      let q = p i
-      when (q < 0 || q > 1) $ error "fromPMF: invalid probability value"
-      b <- bernoulli (q / r)
-      if b then pure i else f (i + 1) (r - q)
-
-class Monad m => MonadDistribution m where
-  random :: m Double
-  uniform :: Double -> Double -> m Double
-  uniform a b = draw (uniformDistr a b)
-  bernoulli :: Double -> m Bool
-  bernoulli p = fmap (< p) random
-
-instance MonadDistribution m => MonadDistribution (StateT s m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-
-instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
-  random = lift random
-  bernoulli = lift . bernoulli
 
 -- | Obtain an explicit value of the likelihood for a given value.
 weighted :: Weighted m a -> m (a, Log Double)
@@ -161,7 +168,8 @@ instance MonadDistribution m => MonadDistribution (Traced m) where
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: MonadDistribution m => Int -> Traced m a -> m [a]
+mh :: (StatefulGen g m, MonadReader g m) =>
+       MonadDistribution m => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
     f k
@@ -176,67 +184,40 @@ instance MonadDistribution m => MonadDistribution (IdentityT m) where
   bernoulli = lift . bernoulli
 
 -- | A variant of 'mhTrans' with an external sampling monad.
-mhTrans' :: MonadDistribution m => Weighted (Density Identity) a -> Trace a -> m (Trace a)
-mhTrans' m = mhTransFree (hoistW (hoist (return . runIdentity)) m)
+mhTrans' :: (StatefulGen g m, MonadReader g m) =>
+             MonadDistribution m => Weighted (Density Identity) a -> Trace a -> m (Trace a)
+mhTrans' m = mhTrans (hoistW (hoistD (return . runIdentity)) m)
 
 -- | Apply a transformation to the transformed monad.
 hoistW :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
 hoistW t (Weighted m) = Weighted $ mapStateT t m
 
-singleton :: Double -> Trace Double
-singleton u = Trace {variables = [u], output = u, probDensity = 1}
-
-bind :: Monad m => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
-bind dx f = do
-  t1 <- dx
-  t2 <- f (output t1)
-  return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
-
-mhTransFree :: MonadDistribution m => Weighted (Density m) a -> Trace a -> m (Trace a)
-mhTransFree m t = trace <$> mhTransWithBool m t
-
--- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTransWithBool :: MonadDistribution m => Weighted (Density m) a -> Trace a -> m (MHResult a)
-mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
+mhTrans :: (MonadReader g m, StatefulGen g m) =>
+            MonadDistribution m => Weighted (Density m) a -> Trace a -> m (Trace a)
+mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
-    i <- discrete $ discreteUniformAB 0 (n - 1)
-    u' <- random
+    i <- R.sample $ R.uniform (0 :: Int) (n - 1)
+    u' <- R.sample $ R.uniform 0.0 1.0
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
   ((b, q), vs) <- runWriterT $ weighted $ hoistW (WriterT . density us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
-  return if accept then MHResult True (Trace vs b q) else MHResult False t
-
-data MHResult a = MHResult
-  { success :: Bool,
-    trace :: Trace a
-  }
-
-newtype Sampler g m a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad, MonadIO)
-
-type SamplerIO = Sampler (IOGenM StdGen) IO
-
-instance StatefulGen g m => MonadDistribution (Sampler g m) where
-  random = Sampler (ReaderT uniformDouble01M)
-  uniform a b = Sampler (ReaderT $ uniformRM (a, b))
-  bernoulli p = Sampler (ReaderT $ MWC.bernoulli p)
-
-sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
-sampleWith (Sampler m) = runReaderT m
-
-sampleIOfixed :: SamplerIO a -> IO a
-sampleIOfixed x = newIOGenM (mkStdGen 1729) >>= sampleWith x
-
-geometric :: MonadDistribution m => m Int
-geometric = do
-  x <- random
-  if x < 0.9
-    then return 1
-    else do y <- geometric
-            return $ 1 + y
+  return if accept then (Trace vs b q) else t
 
 mhRunGeometric :: IO [Int]
-mhRunGeometric = sampleIOfixed $ unweighted $ mh 100000 geometric
+mhRunGeometric = do
+  setStdGen (mkStdGen 43)
+  g <- newStdGen
+  let (g1, g2) = split g
+  stdGen1 <- newIOGenM g1
+  stdGen2 <- newIOGenM g2
+  runReaderT (unweighted $ (runReaderT (mh 1000 geometric) stdGen1)) stdGen2
+
+instance StatefulGen g m => MonadDistribution (ReaderT g m) where
+  random = ReaderT uniformDouble01M
+  uniform a b = ReaderT $ uniformRM (a, b)
+  bernoulli p = ReaderT $ MWC.bernoulli p
+
