@@ -1,11 +1,11 @@
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE BlockArguments             #-}
 
-{-# OPTIONS_GHC -Wall              #-}
+{-# OPTIONS_GHC -Wall                   #-}
 
 module Essence (
   mhRunGeometric,
@@ -14,7 +14,7 @@ module Essence (
 
 import Control.Applicative (liftA2)
 import Control.Monad.RWS (MonadIO, MonadTrans, lift)
-import Control.Monad.State (evalStateT)
+import Control.Monad.State (evalStateT, modify)
 import Control.Monad.Trans.Free.Church (FT, MonadFree (..), hoistFT, iterTM, liftF)
 import Control.Monad.Writer (WriterT (..), tell)
 import Control.Monad.State (StateT, runStateT, mapStateT, put, get)
@@ -23,8 +23,9 @@ import Data.Functor.Identity (Identity, runIdentity)
 import Control.Monad.Reader (ReaderT (..))
 import Control.Monad.Reader.Class (MonadReader)
 
-import Statistics.Distribution (ContDistr, quantile)
+import Statistics.Distribution (ContDistr, quantile, logDensity)
 import Statistics.Distribution.Uniform (uniformDistr)
+import Statistics.Distribution.Normal (normalDistr)
 import Numeric.Log (Log(..))
 import System.Random.Stateful (StatefulGen, mkStdGen, newIOGenM, uniformDouble01M, uniformRM, split)
 import qualified System.Random.MWC.Distributions as MWC
@@ -221,3 +222,52 @@ instance StatefulGen g m => MonadDistribution (ReaderT g m) where
   uniform a b = ReaderT $ uniformRM (a, b)
   bernoulli p = ReaderT $ MWC.bernoulli p
 
+singleObs :: (MonadDistribution m, MonadFactor m) => m Double
+singleObs = do
+    mu <- normal 0.0 1.0
+    factor $ normalPdf mu 1.0 4.0
+    return mu
+
+-- | Monads that can score different execution paths.
+class Monad m => MonadFactor m where
+  -- | Record a likelihood.
+  factor ::
+    -- | likelihood of the execution path
+    Log Double ->
+    m ()
+
+instance MonadFactor m => MonadFactor (ReaderT r m) where
+  factor = lift . factor
+
+scored :: Log Double -> Trace ()
+scored w = Trace {variables = [], output = (), probDensity = w}
+
+instance MonadFactor m => MonadFactor (Traced m) where
+  factor w = Traced (factor w) (factor w >> pure (scored w))
+
+instance Monad m => MonadFactor (Weighted m) where
+  factor w = Weighted (modify (* w))
+
+-- | Probability density function of the normal distribution.
+normalPdf ::
+  -- | mean μ
+  Double ->
+  -- | standard deviation σ
+  Double ->
+  -- | sample x
+  Double ->
+  -- | relative likelihood of observing sample x in \(\mathcal{N}(\mu, \sigma^2)\)
+  Log Double
+normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
+
+normal :: MonadDistribution m => Double -> Double -> m Double
+normal m s = draw (normalDistr m s)
+
+mhRunNormal :: IO [Double]
+mhRunNormal= do
+  setStdGen (mkStdGen 43)
+  g <- newStdGen
+  let (g1, g2) = split g
+  stdGen1 <- newIOGenM g1
+  stdGen2 <- newIOGenM g2
+  runReaderT (unweighted $ (runReaderT (mh 1000 singleObs) stdGen1)) stdGen2
