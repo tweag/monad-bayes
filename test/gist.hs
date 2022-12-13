@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BlockArguments             #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 
 {-# OPTIONS_GHC -Wall                   #-}
 
@@ -43,22 +44,21 @@ instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) wher
   random = lift random
 
 class Monad m => MonadFactor m where
-  factor :: (forall a . RealFloat a => Log a) -> m ()
+  factor :: Log Double -> m ()
 
-normalPdf :: RealFloat a => a -> a -> a -> Log a
-normalPdf mu sigma x = Exp $ fromRational $ toRational $ logDensity (normalDistr (fromRational $ toRational mu) (fromRational $ toRational sigma)) (fromRational $ toRational x)
+normalPdf :: Double -> Double -> Double -> Log Double
+normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
 
 draw :: (ContDistr d, MonadDistribution m) => d -> m Double
 draw d = fmap (quantile d) random
 
-normal :: (MonadDistribution m, RealFloat a) => a -> a -> m a
-normal m s = do x <- draw (normalDistr (fromRational $ toRational m) (fromRational $ toRational s))
-                return $ fromRational $ toRational x
+normal :: MonadDistribution m => Double -> Double -> m Double
+normal m s = draw (normalDistr m  s)
 
-singleObs :: (MonadDistribution m, MonadFactor m, RealFloat a) => m a
+singleObs :: (MonadDistribution m, MonadFactor m) => m Double
 singleObs = do
     mu <- normal 0.0 1.0
-    factor $ normalPdf undefined 1.0 4.0
+    factor $ normalPdf mu 1.0 4.0
     return mu
 
 newtype SamF a = Random (Double -> a) deriving (Functor)
@@ -87,7 +87,7 @@ density randomness (Density m) =
       tell [x]
       k x
 
-data Trace a = Trace { variables :: [Double], output :: a, probDensity :: forall b . RealFloat b => Log b }
+data Trace a = Trace { variables :: [Double], output :: a, probDensity :: Log Double }
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
@@ -176,15 +176,15 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   u'' <- R.sample $ R.uniform 0.0 1.0
   let accept = u'' < ratio
-  return if accept then (Trace vs b (fromRational $ toRational q)) else t
+  return if accept then (Trace vs b q) else t
 
 instance StatefulGen g m => MonadDistribution (ReaderT g m) where
-  random = ReaderT $ fmap fromRational . fmap toRational . uniformDouble01M
+  random = ReaderT uniformDouble01M
 
 instance MonadFactor m => MonadFactor (ReaderT r m) where
   factor x = lift $ factor x
 
-scored :: (forall a . RealFloat a => Log a) -> Trace ()
+scored :: Log Double -> Trace ()
 scored w = Trace {variables = [], output = (), probDensity = w}
 
 instance MonadFactor m => MonadFactor (Traced m) where
@@ -201,3 +201,37 @@ mhRunNormal= do
   stdGen1 <- newIOGenM g1
   stdGen2 <- newIOGenM g2
   runReaderT (unweighted $ (runReaderT (mh 1000 singleObs) stdGen1)) stdGen2
+
+data Dual = Dual Double Double
+  deriving (Eq, Show)
+
+constD :: Double -> Dual
+constD x = Dual x 0
+
+instance Num Dual where
+  fromInteger n             = constD $ fromInteger n
+  (Dual x x') + (Dual y y') = Dual (x + y) (x' + y')
+  (Dual x x') * (Dual y y') = Dual (x * y) (x * y' + y * x')
+  negate (Dual x x')        = Dual (negate x) (negate x')
+  signum _                  = undefined
+  abs _                     = undefined
+
+instance Fractional Dual where
+  fromRational p = constD $ fromRational p
+  recip (Dual x x') = Dual (1.0 / x) (-x' / (x * x))
+
+instance Floating Dual where
+  pi = constD pi
+  exp   (Dual x x') = Dual (exp x)   (x' * exp x)
+  log   (Dual x x') = Dual (log x)   (x' / x)
+  sqrt  (Dual x x') = Dual (sqrt x)  (x' / (2 * sqrt x))
+  sin   (Dual x x') = Dual (sin x)   (x' * cos x)
+  cos   (Dual x x') = Dual (cos x)   (x' * (- sin x))
+  sinh  (Dual x x') = Dual (sinh x)  (x' * cosh x)
+  cosh  (Dual x x') = Dual (cosh x)  (x' * sinh x)
+  asin  (Dual x x') = Dual (asin x)  (x' / sqrt (1 - x*x))
+  acos  (Dual x x') = Dual (acos x)  (x' / (-sqrt (1 - x*x)))
+  atan  (Dual x x') = Dual (atan x)  (x' / (1 + x*x))
+  asinh (Dual x x') = Dual (asinh x) (x' / sqrt (1 + x*x))
+  acosh (Dual x x') = Dual (acosh x) (x' / (sqrt (x*x - 1)))
+  atanh (Dual x x') = Dual (atanh x) (x' / (1 - x*x))
