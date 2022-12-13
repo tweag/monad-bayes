@@ -66,11 +66,11 @@ pkgs.stdenv.mkDerivation {
   name = "rOnly";
 
   buildInputs = [
-    pkgs.libintlOrEmpty
-    R-with-my-packages
-    pkgs.postgresql_13
-    pkgs.lhs2tex
+    # pkgs.libintlOrEmpty
+    # R-with-my-packages
+    # pkgs.postgresql_13
+    # pkgs.lhs2tex
     (pkgs.myHaskellPackages.ghcWithPackages haskellDeps)
-    pkgs.darwin.apple_sdk.frameworks.Cocoa
+    # pkgs.darwin.apple_sdk.frameworks.Cocoa
   ];
 }
