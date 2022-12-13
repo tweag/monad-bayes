@@ -45,19 +45,20 @@ instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) wher
 class Monad m => MonadFactor m where
   factor :: (forall a . RealFloat a => Log a) -> m ()
 
-normalPdf :: Double -> Double -> Double -> Log Double
-normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
+normalPdf :: RealFloat a => a -> a -> a -> Log a
+normalPdf mu sigma x = Exp $ fromRational $ toRational $ logDensity (normalDistr (fromRational $ toRational mu) (fromRational $ toRational sigma)) (fromRational $ toRational x)
 
 draw :: (ContDistr d, MonadDistribution m) => d -> m Double
 draw d = fmap (quantile d) random
 
-normal :: MonadDistribution m => Double -> Double -> m Double
-normal m s = draw (normalDistr m s)
+normal :: (MonadDistribution m, RealFloat a) => a -> a -> m a
+normal m s = do x <- draw (normalDistr (fromRational $ toRational m) (fromRational $ toRational s))
+                return $ fromRational $ toRational x
 
-singleObs :: (MonadDistribution m, MonadFactor m) => m Double
+singleObs :: (MonadDistribution m, MonadFactor m, RealFloat a) => m a
 singleObs = do
     mu <- normal 0.0 1.0
-    factor $ fromRational $ toRational $ normalPdf mu 1.0 4.0
+    factor $ normalPdf undefined 1.0 4.0
     return mu
 
 newtype SamF a = Random (Double -> a) deriving (Functor)
@@ -178,7 +179,7 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   return if accept then (Trace vs b (fromRational $ toRational q)) else t
 
 instance StatefulGen g m => MonadDistribution (ReaderT g m) where
-  random = ReaderT uniformDouble01M
+  random = ReaderT $ fmap fromRational . fmap toRational . uniformDouble01M
 
 instance MonadFactor m => MonadFactor (ReaderT r m) where
   factor x = lift $ factor x
