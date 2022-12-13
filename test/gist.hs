@@ -43,9 +43,7 @@ instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) wher
   random = lift random
 
 class Monad m => MonadFactor m where
-  factor ::
-    Log Double ->
-    m ()
+  factor :: (forall a . RealFloat a => Log a) -> m ()
 
 normalPdf :: Double -> Double -> Double -> Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
@@ -59,7 +57,7 @@ normal m s = draw (normalDistr m s)
 singleObs :: (MonadDistribution m, MonadFactor m) => m Double
 singleObs = do
     mu <- normal 0.0 1.0
-    factor $ normalPdf mu 1.0 4.0
+    factor $ fromRational $ toRational $ normalPdf mu 1.0 4.0
     return mu
 
 newtype SamF a = Random (Double -> a) deriving (Functor)
@@ -88,7 +86,7 @@ density randomness (Density m) =
       tell [x]
       k x
 
-data Trace a = Trace { variables :: [Double], output :: a, probDensity :: Log Double }
+data Trace a = Trace { variables :: [Double], output :: a, probDensity :: forall b . RealFloat b => Log b }
 
 instance Functor Trace where
   fmap f t = t {output = f (output t)}
@@ -177,15 +175,15 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   u'' <- R.sample $ R.uniform 0.0 1.0
   let accept = u'' < ratio
-  return if accept then (Trace vs b q) else t
+  return if accept then (Trace vs b (fromRational $ toRational q)) else t
 
 instance StatefulGen g m => MonadDistribution (ReaderT g m) where
   random = ReaderT uniformDouble01M
 
 instance MonadFactor m => MonadFactor (ReaderT r m) where
-  factor = lift . factor
+  factor x = lift $ factor x
 
-scored :: Log Double -> Trace ()
+scored :: (forall a . RealFloat a => Log a) -> Trace ()
 scored w = Trace {variables = [], output = (), probDensity = w}
 
 instance MonadFactor m => MonadFactor (Traced m) where
