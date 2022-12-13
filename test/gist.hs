@@ -35,7 +35,7 @@ import System.Random.Stateful (setStdGen, newStdGen)
 
 
 class Monad m => MonadDistribution m where
-  random :: m Double
+  random :: RealFloat a => m a
 
 instance MonadDistribution m => MonadDistribution (StateT s m) where
   random = lift random
@@ -44,7 +44,7 @@ instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) wher
   random = lift random
 
 class Monad m => MonadFactor m where
-  factor :: Log Double -> m ()
+  factor :: RealFloat b => Log b -> m ()
 
 normalPdf :: Double -> Double -> Double -> Log Double
 normalPdf mu sigma x = Exp $ logDensity (normalDistr mu sigma) x
@@ -61,21 +61,21 @@ singleObs = do
     factor $ normalPdf mu 1.0 4.0
     return mu
 
-newtype SamF a = Random (Double -> a) deriving (Functor)
+newtype SamF b a = Random (b -> a) deriving (Functor)
 
-newtype Density m a = Density {runDensity :: FT SamF m a}
+newtype Density b m a = Density {runDensity :: FT (SamF b) m a}
   deriving newtype (Functor, Applicative, Monad, MonadTrans)
 
-instance MonadFree SamF (Density m) where
+instance RealFloat b => MonadFree (SamF b) (Density b m) where
   wrap = Density . wrap . fmap runDensity
 
-instance Monad m => MonadDistribution (Density m) where
+instance (Monad m, RealFloat b) => MonadDistribution (Density b m) where
   random = Density $ liftF (Random id)
 
-hoistD :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density n a
+hoistD :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density b m a -> Density b n a
 hoistD f (Density m) = Density (hoistFT f m)
 
-density :: MonadDistribution m => [Double] -> Density m a -> m (a, [Double])
+density :: MonadDistribution m => [Double] -> Density b m a -> m (a, [Double])
 density randomness (Density m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness
   where
@@ -87,12 +87,12 @@ density randomness (Density m) =
       tell [x]
       k x
 
-data Trace a = Trace { variables :: [Double], output :: a, probDensity :: Log Double }
+data Trace  b a = Trace { variables :: [b], output :: a, probDensity :: Log b }
 
-instance Functor Trace where
+instance Functor (Trace b) where
   fmap f t = t {output = f (output t)}
 
-instance Applicative Trace where
+instance RealFloat b => Applicative (Trace b) where
   pure x = Trace {variables = [], output = x, probDensity = 1}
   tf <*> tx =
     Trace
@@ -101,48 +101,50 @@ instance Applicative Trace where
         probDensity = probDensity tf * probDensity tx
       }
 
-instance Monad Trace where
+instance RealFloat b => Monad (Trace b) where
   t >>= f =
     let t' = f (output t)
      in t' {variables = variables t ++ variables t', probDensity = probDensity t * probDensity t'}
 
-singleton :: Double -> Trace Double
+singleton :: RealFloat a => a -> Trace a a
 singleton u = Trace {variables = [u], output = u, probDensity = 1}
 
-bind :: Monad m => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
+bind :: (Monad m, RealFloat c) => m (Trace c a) -> (a -> m (Trace c b)) -> m (Trace c b)
 bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
 
-newtype Weighted m a = Weighted (StateT (Log Double) m a)
+newtype Weighted b m a = Weighted (StateT (Log b) m a)
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
 
-weighted :: Weighted m a -> m (a, Log Double)
+weighted :: Weighted b m a -> m (a, Log b)
 weighted (Weighted m) = runStateT m 1
 
-unweighted :: Functor m => Weighted m a -> m a
+unweighted :: Functor m => Weighted b m a -> m a
 unweighted = fmap fst . weighted
 
-data Traced m a = Traced { model :: Weighted (Density Identity) a, traceDist :: m (Trace a) }
+data Traced b m a = Traced { model :: Weighted b (Density b Identity) a, traceDist :: m (Trace b a) }
 
-instance Monad m => Functor (Traced m) where
+instance (Monad m, RealFloat b) => Functor (Traced b m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
 
-instance Monad m => Applicative (Traced m) where
+instance (Monad m, RealFloat b) => Applicative (Traced b m) where
   pure x = Traced (pure x) (pure (pure x))
   (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<*>) df dx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad m, RealFloat b) => Monad (Traced b m) where
   (Traced mx dx) >>= f = Traced my dy
     where
       my = mx >>= model . f
       dy = dx `bind` (traceDist . f)
 
-instance MonadDistribution m => MonadDistribution (Traced m) where
+instance (MonadDistribution m, RealFloat b) => MonadDistribution (Traced b m) where
   random = Traced random (fmap singleton random)
 
-mh :: (StatefulGen g m, MonadReader g m) => MonadDistribution m => Int -> Traced m a -> m [a]
+mh :: (StatefulGen g m, MonadReader g m) =>
+      RealFloat b =>
+      MonadDistribution m => Int -> Traced b m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
     f k
@@ -156,14 +158,16 @@ instance MonadDistribution m => MonadDistribution (IdentityT m) where
   random = lift random
 
 mhTrans' :: (StatefulGen g m, MonadReader g m) =>
-             MonadDistribution m => Weighted (Density Identity) a -> Trace a -> m (Trace a)
+            RealFloat b =>
+            MonadDistribution m => Weighted b (Density b Identity) a -> Trace b a -> m (Trace b a)
 mhTrans' m = mhTrans (hoistW (hoistD (return . runIdentity)) m)
 
-hoistW :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
+hoistW :: (forall x. m x -> n x) -> Weighted b m a -> Weighted b n a
 hoistW t (Weighted m) = Weighted $ mapStateT t m
 
 mhTrans :: (MonadReader g m, StatefulGen g m) =>
-            MonadDistribution m => Weighted (Density m) a -> Trace a -> m (Trace a)
+           RealFloat b =>
+           MonadDistribution m => Weighted b (Density b m) a -> Trace b a -> m (Trace b a)
 mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -179,18 +183,18 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   return if accept then (Trace vs b q) else t
 
 instance StatefulGen g m => MonadDistribution (ReaderT g m) where
-  random = ReaderT uniformDouble01M
+  random = ReaderT undefined -- uniformDouble01M
 
 instance MonadFactor m => MonadFactor (ReaderT r m) where
   factor x = lift $ factor x
 
-scored :: Log Double -> Trace ()
+scored :: RealFloat b => Log b -> Trace b ()
 scored w = Trace {variables = [], output = (), probDensity = w}
 
-instance MonadFactor m => MonadFactor (Traced m) where
+instance (MonadFactor m, RealFloat b) => MonadFactor (Traced b m) where
   factor w = Traced (factor w) (factor w >> pure (scored w))
 
-instance Monad m => MonadFactor (Weighted m) where
+instance (Monad m, RealFloat b) => MonadFactor (Weighted b m) where
   factor w = Weighted (modify (* w))
 
 mhRunNormal :: IO [Double]
