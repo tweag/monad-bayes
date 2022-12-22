@@ -1,4 +1,4 @@
-# The implementation of Monad-Bayes
+# Implementation guide
 
 This document assumes the reader is familiar with the basics of Bayesian probability theory, basic Haskell (the syntax, the type system, do-notation, monad transformers), and how to specify distributions in monad-bayes (see the [docs](probprog.md))
 
@@ -6,7 +6,7 @@ That's enough to understand the core ideas, but for the more advanced content, y
 
 ## References
 
-monad-bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://arxiv.org/pdf/1711.03219.pdf).
+Monad-Bayes is the codebase accompanying the theory of probabilistic programming described in [this paper](https://arxiv.org/pdf/1711.03219.pdf).
 
 ## The core typeclasses
 
@@ -27,7 +27,7 @@ class Monad m => MonadDistribution m where
   random :: m Double
 ```
 
-This one method, `random`, represents a uniform distribution over {math}`[0,1]`. (`MonadDistribution` actually has a few other distributions, but that's not essential.)
+This one method, `random`, represents a uniform distribution over $[0,1]$. (`MonadDistribution` actually has a few other distributions, but that's not essential.)
 
 What comes next is clever: you can define any other distribution you like in terms of `random`. As an example:
 
@@ -44,7 +44,7 @@ normal m s = fmap (quantile (normalDistr m s)) random
 
 `normalDistr` comes from a separate library `Statistics.Distribution.Normal` and `quantile (normalDistr m s) :: Double -> Double` is the inverse CDF of the normal, a deterministic function.
 
-Again, to emphasize: **all of our randomness can be reduced to draws from a uniform distribution over the interval {math}`[0,1]`**. 
+Again, to emphasize: **all of our randomness can be reduced to draws from a uniform distribution over the interval $[0,1]$**. 
 
 So we now have a way of constructing distributions in a monadic fashion. As a simple example:
 
@@ -56,7 +56,7 @@ example = do
     return (x + y > 1.5)
 ```
 
-Think of this as the procedure of first sampling uniformly from {math}`[0,1]`, then from {math}`[0,x]`, and then returning the Boolean {math}`x + y > 1.5`. More precisely, this is the **marginal** probability of {math}`x + y > 1.5`. 
+Think of this as the procedure of first sampling uniformly from $[0,1]$, then from $[0,x]$, and then returning the Boolean $x + y > 1.5$. More precisely, this is the **marginal** probability of $x + y > 1.5$. 
 
 **Technical note**: `MonadDistribution` actually contains a number of other distributions beyond `random`, which by default are defined in terms of `random`, but allow for different definitions when desired. For example, `Sampler` (an instance of `MonadDistribution` in Control.Monad.Sampler) defines `normal` and other distributions independently of `random`.
 
@@ -603,11 +603,11 @@ newtype Integrator a = Integrator {getCont :: Cont Double a}
 This `MonadDistribution` instance interprets a probabilistic program as a numerical integrator. For a nice explanation, see [this blog post](https://jtobin.io/giry-monad-implementation).
 
 `Integrator a` is isomorphic to `(a -> Double) -> Double`. 
-A program `model` of type `Integrator a` will take a function `f` and calculate {math}`E_{p}[f] = \int f(x)*p(x)` where {math}`p` is the density of `model`. 
+A program `model` of type `Integrator a` will take a function `f` and calculate $E_{p}[f] = \int f(x)*p(x)$ where $p$ is the density of `model`. 
 
-The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, `random :: Integrator Double` is the program which takes a function `f` and integrates `f` over the {math}`(0,1)` range.
+The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, `random :: Integrator Double` is the program which takes a function `f` and integrates `f` over the $(0,1)$ range.
 
-We can calculate the probability for an interval {math}`(a,b)` of any model of type `Integrator Double` by setting `f` to be the function that returns {math}`1` for that range, else {math}`0`. Similarly for the CDF, MGF and so on.
+We can calculate the probability for an interval $(a,b)4 of any model of type `Integrator Double` by setting `f` to be the function that returns $1$ for that range, else $0$. Similarly for the CDF, MGF and so on.
 
 ## Inference methods under the hood
 
@@ -624,7 +624,7 @@ example = replicateM 100 $ do
   return x
 ```
 
-Doing `enumerator example` will create a list of {math}`2^{100}` entries, all but one of which have {math}`0` mass. (See below for a way to perform this inference efficiently). 
+Doing `enumerator example` will create a list of $2^{100}$ entries, all but one of which have $0$ mass. (See below for a way to perform this inference efficiently). 
 
 The main purpose of `Enumerator` is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like `Weighted`, to get a sense of how they work. For example, consider:
 
@@ -653,23 +653,6 @@ model = do
 ```
 
 is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `(Double -> (Double, Log Double) -> Double)`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`. 
-
-### Quadrature
-
-As described on the section on `Integrator`, we can interpret our probabilistic program of type `MonadDistribution m => m a` as having concrete type `Integrator a`. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).
-
-This can also handle programs of type `MonadMeasure m => m a`, that is, programs with `factor` statements. For these cases, a function `normalize :: Weighted Integrator a -> Integrator a` is employed. For example, 
-
-```haskell
-model :: MonadMeasure m => m Double
-model = do
-  var <- gamma 1 1
-  n <- normal 0 (sqrt var)
-  condition (n > 0)
-  return var
-```
-
-is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `((Double -> (Double, Log Double)) -> (Double, Log Double))`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`. 
 
 ### Independent forward sampling
 
@@ -753,9 +736,9 @@ example = replicateM 100 $ do
   return x
 ```
 
-Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a {math}`2^{100}` size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
+Naive enumeration, as in `enumerator example` is enormously and needlessly inefficient, because it will create a $2^{100}$ size list of possible values. What we'd like to do is to throw away values of `x` that are `False` at each condition statement, rather than carrying them along forever.
 
-Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with {math}`0` mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
+Suppose we have a function `removeZeros :: Enumerator a -> Enumerator a`, which removes values of the distribution with $0$ mass from `Enumerator`. We can then write `enumerator $ sequentially removeZeros 100 $ model` to run `removeZeros` at each of the 100 `condition` statements, making the algorithm run quickly. 
 
 ### Sequential Monte Carlo
 
@@ -860,7 +843,7 @@ This means that an `S (T (P m)) a` is a program "interpreted as a population of 
 
 So the algorithm works by creating `n` particles, and at each of the first `k` calls to `factor`, first resampling the population and then for each particle in the population, doing an MH-MCMC walk for `t` steps to update it. 
 
-### Sequential Monte Carlo squared ({math}`SMC^2`)
+### Sequential Monte Carlo Squared
 
 This combines RMSMC and PMMH. That is, it is RMSMC, but for the MCMC rejuvenation procedure, PMMH is used instead of MH.
 

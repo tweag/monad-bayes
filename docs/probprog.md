@@ -1,19 +1,27 @@
-# Quickstart
+# User Guide
 
 Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:
 
-```{math}
 
+$$
 \beta \sim \operatorname{normal}(0, 2)
+$$
 
+$$
 \alpha \sim \operatorname{normal}(0, 2)
+$$
 
+$$
 \sigma^2 \sim \operatorname{gamma}(4, 4)
+$$
 
+$$
 \epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+$$
 
+$$
 y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
-```
+$$
 
 but in code as:
 
@@ -65,9 +73,9 @@ Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from
 
 Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to [WebPPL](https://probmods.org/) is an excellent resource for learning about probabilistic programming. The [tutorials for Gen](https://www.gen.dev/tutorials/) are also very good, particularly for learning about traces.
 
-# Specifying distributions
+## Specifying distributions
 
-A distribution in monad-bayes over a set {math}`X`, is of type:
+A distribution in monad-bayes over a set $X$, is of type:
 
 ```haskell
 MonadMeasure m => m X
@@ -81,7 +89,7 @@ Monad-bayes provides standard distributions, such as
 random :: Distribution Double
 ```
 
-which is distributed uniformly over {math}`[0,1]`.
+which is distributed uniformly over $[0,1]$.
 
 The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html
 
@@ -100,9 +108,9 @@ monad-bayes also lets us construct new distributions out of these. `MonadMeasure
 fmap (> 0.5) random :: MonadMeasure m => m Bool
 ```
 
-This is the uniform distribution over {math}`(0.5, 1]`.
+This is the uniform distribution over $(0.5, 1]$.
 
-As an important special case, if `x :: MonadMeasure m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadMeasure m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution {math}`p(a)`, where {math}`p(a) = \int_b p(a,b)`.
+As an important special case, if `x :: MonadMeasure m => m (a,b)` is a joint distribution over two variables, then `fmap fst a :: MonadMeasure m => m a` **marginalizes** out the second variable. That is to say, `fmap fst a` is the distribution $p(a)$, where $p(a) = \int_b p(a,b)$.
 
 The above example use only the functor instance for `m`, but we also have the monad instance, as used in:
 
@@ -113,13 +121,12 @@ example = bernoulli 0.5 >>= (\x -> if x then random else normal 0 1)
 
 It's easiest to understand this distribution as a probabilistic program: it's the distribution you get by first sampling from `bernoulli 0.5`, then checking the result. If the result is `True`, then sample from `random`, else from `normal 0 1`. As a distribution, this has a PDF:
 
-```{math}
- f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  
- ```
+$$
+f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  
+$$
 
 
 
-<!-- $$ \int\_{[0,1]} 1[x>0.5]* + (1[x\leq 0.5]*N(0,1)(x)) dx $$ -->
 
 Equivalently, we could write this in do-notation as:
 
@@ -137,6 +144,7 @@ That said, it is often useful to think of probabilistic programs as specifying d
 ## Hard and soft conditioning
 
 monad-bayes provides a function `score :: MonadMeasure m => Log Double -> m ()`. (**Note**: `Log Double` is a wrapper for `Double` which stores doubles as their logarithm, and does multiplication by addition of logarithms.)
+
 
 ```haskell
 example :: MonadMeasure m => m Double
@@ -167,42 +175,7 @@ example = do
 
 This describes a Poisson distribution in which all even values of the random variable are marginalized out.
 
-<!-- Another use case is Bayesian inference as in:
 
-<!-- The most intuitive way to understand `score` is to think of a probabilistic program as making a series of random choices which trace out a possible execution of the program. At any point in this series, we can interject a `score x` statement, where the value of `x` depends on the previous choices. This statement multiplies the weight of this "trace" by the score. -->
-
-<!-- ```haskell
-bayesianExample :: (Eq a, MonadMeasure m) => m a -> (a -> m b) -> (b -> m a)
-bayesianExample prior likelihood b = do
-    a <- prior
-    b' <- likelihood a
-    condition (b==b')
-    return a
-```
-
-Note that operationally speaking, this approach is only going to work well for discrete distributions, since `b==b'` is going to be zero-measure in the continuous case. But in the discrete case, we could for example do: -->
-
-<!-- ```haskell
-example :: MonadMeasure 
-example =  bayesianExample (bernoulli 0.5) (\x -> if x then bernoulli 0.8 else bernoulli 0.9) True 
-``` 
--->
-
-
-
-
-<!-- ```haskell
-example :: MonadMeasure m => m Bool
-example = do 
-  x <- normal 0 1
-  y <- normal 0 2
-  z <- normal 0 3
-  return (x > y)
-```
-
-Note that in this example, commenting out the line `z <- normal 0 3` would not change the distribution at all. **But**, there is no guarantee in theory that the inference method you use knows this. More generally,  -->
-
-<!-- **Not all ways of expressing denotationally equivalent distributions are equally useful in practice** -->
 
 ## Inference methods
 
@@ -267,7 +240,7 @@ which gives
 [([1,2,3,4],0.5),([2,3,4,5],0.5)]
 ```
 
-### Near exact inference for continuous distributions
+## Near exact inference for continuous distributions
 
 Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it *does* support numerical integration. For example, for the distribution defined by
 
@@ -278,7 +251,7 @@ model = do
   normal 0 (sqrt var)
 ```
 
-you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly {math}`0.5`, since the PDF of `model` is symmetric around {math}`0`.
+you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly $0.5$, since the PDF of `model` is symmetric around $0$.
 
 You can also try `expectation model`, `variance model`, `momentGeneratingFunction model n` or `cdf model n`. 
 
@@ -305,7 +278,7 @@ example = do
   if x then normal 0 1 else normal 1 2
 ```
 
-`sampler example` will produce a sample from a Bernoulli distribution with {math}`p=0.5`, and if it is {math}`True`, return a sample from a standard normal, else from a normal with mean 1 and std 2.
+`sampler example` will produce a sample from a Bernoulli distribution with $p=0.5$, and if it is $True$, return a sample from a standard normal, else from a normal with mean 1 and std 2.
 
 `(replicateM n . sampler) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampler . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
 
@@ -395,7 +368,7 @@ run = (sampler . mcmc (MCMCConfig {
   proposal = SingleSiteMH})) example
 ```
 
-produces {math}`5` unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
+produces $5$ unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:
 
 ```
 [True,True,True,True,True]
@@ -403,7 +376,7 @@ produces {math}`5` unbiased samples from the posterior, by using single-site tra
 
 The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.
 
-### Piped MCMC
+## Streaming MCMC
 
 You can also run `MCMC` using `mcmcP`. This creates an infinite chain, expressed as a stream or using the corresponding type from the `pipes` library, a `Producer`. This is a very natural representation of a random walk in Haskell.
 
@@ -623,7 +596,7 @@ mixture1 point = do
     return cluster
 ```
 
-is a piece of code to infer whether an observed point was generated from a Gaussian of mean {math}`1` or {math}`5`. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
+is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
 
 However, the same conditional distribution is represented by 
 
