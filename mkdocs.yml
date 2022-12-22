@@ -36,7 +36,7 @@ theme:
 
 extra:
   social:
-    - type: github
+    - icon: fontawesome/brands/github
       link: https://github.com/tweag/monad-bayes
 
 markdown_extensions:
