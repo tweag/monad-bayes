@@ -2,19 +2,19 @@
 title: Tutorials
 ---
 
-## [Introduction to Monad-Bayes](../Introduction.html)
+## [Introduction to Monad-Bayes](Introduction.html)
 
-## [Sampling from a distribution](../Sampling.html)
+## [Sampling from a distribution](Sampling.html)
 
-## [Bayesian models](../Bayesian.html)
+## [Bayesian models](Bayesian.html)
 
-## [Markov Chain Monte Carlo](../MCMC.html)
+## [Markov Chain Monte Carlo](MCMC.html)
 
-## [Sequential Monte Carlo](../SMC.html)
+## [Sequential Monte Carlo](SMC.html)
 
-## [Lazy Sampling](../Lazy.html)
+## [Lazy Sampling](Lazy.html)
 
-## [Advanced Inference Methods](../AdvancedSampling.html)
+## [Advanced Inference Methods](AdvancedSampling.html)
 
 <!-- ## [Advanced Inference Methods](../AdvancedSampling.html)
 

@@ -2,11 +2,11 @@
 
 Monad-Bayes is a library for **probabilistic programming** written in **Haskell**.
 
-**Define distributions** [as programs](../Introduction.html)
+**Define distributions** [as programs](Introduction.html)
 
-**Perform inference** [with a variety of standard methods](/tutorials.html) [defined compositionally](http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf)
+**Perform inference** [with a variety of standard methods](tutorials.md) [defined compositionally](http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf)
 
-**Integrate with Haskell code** [like this](/examples.html) because Monad-Bayes is just a library, not a separate language
+**Integrate with Haskell code** [like this](examples.md) because Monad-Bayes is just a library, not a separate language
 
 ## Example
 

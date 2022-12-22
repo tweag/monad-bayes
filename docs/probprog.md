@@ -44,7 +44,7 @@ regression xsys = do
 
 This is the *model*. To perform *inference* , suppose we have a data set `xsys` like:
 
-![](_static/priorpred.png)
+![](images/priorpred.png)
 
 To run the model
 
@@ -59,7 +59,7 @@ mhRunsRegression = sampler
 
 This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a distribution over chains of length `n`, along with the probability of that chain. Sampling a chain and plotting its final state gives:
 
-![](_static/regress.png)
+![](images/regress.png)
 
 Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
 

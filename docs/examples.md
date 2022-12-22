@@ -2,17 +2,17 @@
 title: Example Gallery
 ---
 
-## [Histograms](../Histogram.html)
+## [Histograms](Histogram.html)
 
-## [JSON (with `lens`)](../Lenses.html)
+## [JSON (with `lens`)](Lenses.html)
 
-## [Diagrams](../Diagrams.html)
+## [Diagrams](Diagrams.html)
 
-## [Probabilistic Parsing](../Parsing.html)
+## [Probabilistic Parsing](Parsing.html)
 
-## [Streams (with `pipes`)](../Streaming.html)
+## [Streams (with `pipes`)](Streaming.html)
 
-## [Ising models](../Ising.html)
+## [Ising models](Ising.html)
 
-## [Physics](../ClassicalPhysics.html)
+## [Physics](ClassicalPhysics.html)
 
