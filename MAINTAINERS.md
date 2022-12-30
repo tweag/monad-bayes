@@ -51,8 +51,4 @@ A **new major GHC version** has been released. Here's what you need to do:
 
 ## Documentation
 
-The docs are built with Sphinx. Once installed, cd to the `docs` directory, then run `make html` to build locally. CI does this automatically, so to update the docs, just update the markdown (e.g. docs/source/usage.md), and push.
-
-## Website
-
-The website is also hosted in the repo (`/monad-bayes-site`), and is built with `hakyll`. Do `stack exec site build` to build. CI **does not** automatically build the site, so to update, you will need to run this command, and only then push to github.
+The docs are built with MkDocs.
