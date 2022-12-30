@@ -2,7 +2,7 @@
 
 Monad-Bayes is a library for **probabilistic programming** written in **Haskell**.
 
-**Define distributions** [as programs](Introduction.html)
+**Define distributions** [as programs](/notebooks/Introduction.html)
 
 **Perform inference** [with a variety of standard methods](tutorials.md) [defined compositionally](http://approximateinference.org/accepted/ScibiorGhahramani2016.pdf)
 
@@ -27,6 +27,6 @@ The program `model` is a mixture of Gaussians. Its type `Distribution Double` re
 To sample from `image`, we simply write `sampler image`, with the result shown below:
 
 
-<img src="../images/plot.png" 
+<img src="images/plot.png" 
      width="450" 
      height="300" />
