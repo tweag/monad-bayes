@@ -1,0 +1,1138 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.0">
+    
+    
+      
+        <title>Implementation guide - Probabilistic Programming in Haskell</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.f79797b0.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#implementation-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Probabilistic Programming in Haskell" class="md-header__button md-logo" aria-label="Probabilistic Programming in Haskell" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Probabilistic Programming in Haskell
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Implementation guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Probabilistic Programming in Haskell" class="md-nav__button md-logo" aria-label="Probabilistic Programming in Haskell" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Probabilistic Programming in Haskell
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../probprog.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    References
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-core-typeclasses" class="md-nav__link">
+    The core typeclasses
+  </a>
+  
+    <nav class="md-nav" aria-label="The core typeclasses">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monaddistribution" class="md-nav__link">
+    MonadDistribution
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monadfactor" class="md-nav__link">
+    MonadFactor
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inference-transformers" class="md-nav__link">
+    Inference transformers
+  </a>
+  
+    <nav class="md-nav" aria-label="Inference transformers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enumerator" class="md-nav__link">
+    Enumerator
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#samplerio" class="md-nav__link">
+    SamplerIO
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#weighted-m" class="md-nav__link">
+    Weighted m
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#population" class="md-nav__link">
+    Population
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential" class="md-nav__link">
+    Sequential
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#density" class="md-nav__link">
+    Density
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traced" class="md-nav__link">
+    Traced
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integrator" class="md-nav__link">
+    Integrator
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inference-methods-under-the-hood" class="md-nav__link">
+    Inference methods under the hood
+  </a>
+  
+    <nav class="md-nav" aria-label="Inference methods under the hood">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact-inference" class="md-nav__link">
+    Exact inference
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quadrature" class="md-nav__link">
+    Quadrature
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#independent-forward-sampling" class="md-nav__link">
+    Independent forward sampling
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#independent-weighted-sampling" class="md-nav__link">
+    Independent weighted sampling
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metropolis-hastings-mcmc" class="md-nav__link">
+    Metropolis Hastings MCMC
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential-importance-sampling" class="md-nav__link">
+    Sequential Importance Sampling
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential-monte-carlo" class="md-nav__link">
+    Sequential Monte Carlo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#particle-marginal-metropolis-hastings" class="md-nav__link">
+    Particle Marginal Metropolis Hastings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resample-move-sequential-monte-carlo" class="md-nav__link">
+    Resample-Move Sequential Monte Carlo
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sequential-monte-carlo-squared" class="md-nav__link">
+    Sequential Monte Carlo Squared
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="implementation-guide">Implementation guide<a class="headerlink" href="#implementation-guide" title="Permanent link">&para;</a></h1>
+<p>This document assumes the reader is familiar with the basics of Bayesian probability theory, basic Haskell (the syntax, the type system, do-notation, monad transformers), and how to specify distributions in monad-bayes (see the <a href="../probprog/">docs</a>)</p>
+<p>That's enough to understand the core ideas, but for the more advanced content, you'll also want to feel comfortable enough with Haskell's type system that free monads, free monad transformers, and coroutines aren't a barrier to entry. And of course, to understand how inference methods like MCMC and SMC are implemented, it doesn't hurt to understand how they work in a statistical sense.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<p>Monad-Bayes is the codebase accompanying the theory of probabilistic programming described in <a href="https://arxiv.org/pdf/1711.03219.pdf">this paper</a>.</p>
+<h2 id="the-core-typeclasses">The core typeclasses<a class="headerlink" href="#the-core-typeclasses" title="Permanent link">&para;</a></h2>
+<p>The library relies on two core typeclasses <code>MonadDistribution</code> and <code>MonadFactor</code>. <code>MonadMeasure</code> is simply the union of the two, that is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">(</span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span>
+</code></pre></div>
+<p>You can find these in <code>Control.Monad.Bayes.Class</code>. </p>
+<h3 id="monaddistribution">MonadDistribution<a class="headerlink" href="#monaddistribution" title="Permanent link">&para;</a></h3>
+<p>Here is <code>MonadDistribution</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kr">class</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="n">random</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+</code></pre></div>
+<p>This one method, <code>random</code>, represents a uniform distribution over <span class="arithmatex">\([0,1]\)</span>. (<code>MonadDistribution</code> actually has a few other distributions, but that's not essential.)</p>
+<p>What comes next is clever: you can define any other distribution you like in terms of <code>random</code>. As an example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nf">bernoulli</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nf">bernoulli</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="n">random</span>
+</code></pre></div>
+<p>That one is pretty simple. As a more complex example, here's how a normal distribution is defined:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nf">normal</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="n">quantile</span><span class="w"> </span><span class="p">(</span><span class="n">normalDistr</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">s</span><span class="p">))</span><span class="w"> </span><span class="n">random</span>
+</code></pre></div>
+<p><code>normalDistr</code> comes from a separate library <code>Statistics.Distribution.Normal</code> and <code>quantile (normalDistr m s) :: Double -&gt; Double</code> is the inverse CDF of the normal, a deterministic function.</p>
+<p>Again, to emphasize: <strong>all of our randomness can be reduced to draws from a uniform distribution over the interval <span class="arithmatex">\([0,1]\)</span></strong>. </p>
+<p>So we now have a way of constructing distributions in a monadic fashion. As a simple example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">random</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">uniform</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1.5</span><span class="p">)</span>
+</code></pre></div>
+<p>Think of this as the procedure of first sampling uniformly from <span class="arithmatex">\([0,1]\)</span>, then from <span class="arithmatex">\([0,x]\)</span>, and then returning the Boolean <span class="arithmatex">\(x + y &gt; 1.5\)</span>. More precisely, this is the <strong>marginal</strong> probability of <span class="arithmatex">\(x + y &gt; 1.5\)</span>. </p>
+<p><strong>Technical note</strong>: <code>MonadDistribution</code> actually contains a number of other distributions beyond <code>random</code>, which by default are defined in terms of <code>random</code>, but allow for different definitions when desired. For example, <code>Sampler</code> (an instance of <code>MonadDistribution</code> in Control.Monad.Sampler) defines <code>normal</code> and other distributions independently of <code>random</code>.</p>
+<!-- Inference is TODO
+ `example1`, of type `MonadDistribution m => m Double`, and turn it into something we can actually see. Like samples. Or a parameter of a Bernoulli distribution. Those are problems for the next section, which is concerned with *interpreting* `MonadDistribution` as something more concrete, namely an inference algorithm. -->
+
+<!-- The core philosophy of monad-bayes is that we specify distributions (probabilistic programs, that is) in this abstract monadic typeclass, and then cash it out in a variety of concrete ways which allow for convenient inference algorithms. -->
+
+<h3 id="monadfactor">MonadFactor<a class="headerlink" href="#monadfactor" title="Permanent link">&para;</a></h3>
+<p>Here's <code>MonadFactor</code>. </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kr">class</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="n">score</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
+</code></pre></div>
+<p><code>Log Double</code> is defined in <code>Numeric.Log</code>, and is a wrapper for <code>Double</code>s which does multiplication in log-space. It comes with <code>Exp :: a -&gt; Log a</code> and <code>ln :: Log a -&gt; a</code>. This is because we don't want numerical problems when multiplying tiny probabilities, and we want a hassle free typesafe separation of doubles and log-doubles.</p>
+<!-- `score` is less intuitive than `random`. It will become clearer when we discuss more concrete interpretations of `MonadFactor`, but what's important to know here is that it is used to allow us to do the Bayesian part of probability, as exemplified by the following probabilistic program:  -->
+
+<h2 id="inference-transformers">Inference transformers<a class="headerlink" href="#inference-transformers" title="Permanent link">&para;</a></h2>
+<p>Now core idea of monad-bayes is that various monads will be made to be instances of <code>MonadDistribution</code>, <code>MonadFactor</code> or both (i.e. an instance of <code>MonadMeasure</code>), and different inference algorithms will be written using these instances. This separates the specification of the model (which happens abstractly in <code>MonadMeasure</code>) from the inference algorithm, which takes place in on of the concrete instances. The clever part of monad-bayes is that it allows this instances to be constructed in a modular way, using monad transformers. In the paper, these are termed <em>inference transformers</em> to emphasize that it doesn't really matter whether they satisfy the monad laws.</p>
+<p>For example, to run weighted rejection sampling on a probabilistic program <code>p</code>, we can write <code>(sampler . weighted) p</code>. Here, <code>(sampler . weighted) :: Weighted SamplerIO a -&gt; IO a</code>. So <code>p</code> gets understood as being of type <code>Weighted SamplerIO</code>, a type we'll encounter soon.</p>
+<p>Some of these transformers are easy to understand (like <code>StateT Double</code>, while others (like the Church transformed Free monad transformer) lie on the more advanced side of things. The following tour of these types goes from easy to hard.</p>
+<h3 id="enumerator">Enumerator<a class="headerlink" href="#enumerator" title="Permanent link">&para;</a></h3>
+<p>Summary of key info:</p>
+<ul>
+<li><code>Enumerator :: Type -&gt; Type</code></li>
+<li><code>instance MonadDistribution Enumerator</code></li>
+<li><code>instance MonadFactor Enumerator</code></li>
+</ul>
+<p><code>Enumerator</code> is in <code>Control.Monad.Bayes.Enumerator</code>, defined as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Enumerator</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="kt">Enumerator</span><span class="w"> </span><span class="p">(</span><span class="kt">WriterT</span><span class="w"> </span><span class="p">(</span><span class="kt">Product</span><span class="w"> </span><span class="p">(</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">))</span><span class="w"> </span><span class="kt">[]</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>This merits a little unpacking. First, <code>Product</code> is a wrapper from <a href="https://hackage.haskell.org/package/base-4.16.0.0/docs/Data-Monoid.html">Data.Monoid</a> which makes the semigroup operator for numbers be multiplication, so that:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kt">Product</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="kt">Product</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kt">Product</span><span class="w"> </span><span class="mi">6</span><span class="p">`</span>
+</code></pre></div>
+<p>Unpacking the definition of <code>Enumerator a</code>, it is isomorphic to:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Product</span><span class="w"> </span><span class="p">(</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)))]</span>
+</code></pre></div>
+<p>So, a value of type <code>Enumerator Bool</code>, for instance, is a list of pairs of booleans along with a double, like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">[(</span><span class="kt">False</span><span class="p">,</span><span class="mf">0.8914</span><span class="p">),(</span><span class="kt">True</span><span class="p">,</span><span class="mf">0.1086</span><span class="p">)]</span>
+</code></pre></div>
+<p>Also in <code>Control.Monad.Bayes.Enumerator</code> is a function <code>enumerator</code>, which has type:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nf">enumerator</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Ord</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Enumerator</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+</code></pre></div>
+<p>We can write <code>enumerator sprinkler</code>. Why is this well typed? The idea is that <code>sprinkler</code> has type <code>forall m. MonadMeasure m =&gt; m Bool</code>, and we <em>instantiate</em> that <code>m</code> as <code>Enumerator</code>.</p>
+<p>But for this to be well-typed, we need <code>Enumerator</code> to be an instance of <code>MonadMeasure</code>. For that, we need <code>Enumerator</code> to be a <code>MonadDistribution</code>, and a <code>MonadFactor</code>. For that, we need it to be a <code>Monad</code>, and in turn, a <code>Functor</code>. In understanding these instance definition, we'll understand what what <code>Enumerator</code> is doing for us.</p>
+<p><code>Enumerator</code> is a monad automatically, because <code>WriterT a m</code> is a monad for <code>a</code> a monoid and <code>m</code> a monad. As needed, <code>[]</code> is a monad and <code>Log Double</code> is a monoid. But what does that monad actually <strong>do</strong>?</p>
+<p>For instance, if I have a weighted list <code>l</code> like <code>[(False,0.8914),(True,0.1086)]</code> and a function <code>f :: Bool -&gt; Enumerator a</code>, what is <code>l &gt;&gt;= f</code>? It takes each element in <code>l</code>, and passes it through <code>f</code>, to obtain a weighted list of weighted lists. Then it flattens it, by including each element in the inner lists in the resulting list, with the weight of the list multiplied by the weight of the element. As for <code>return x</code>, it gives the singleton list containing the pair of <code>x</code> and the unit of the product monoid, i.e. <code>[(x, 1.0)]</code>. </p>
+<p>This is the essence of propagating probability forward.</p>
+<!-- This is of course a representation of a discrete distribution, and as we might expect, `Enumerator` is only going to be useful when we are dealing with discrete distributions. -->
+
+<p>What remains is to define the <code>MonadDistribution</code> and <code>MonadFactor</code> instances:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="kt">Enumerator</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="n">random</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="ne">error</span><span class="w"> </span><span class="s">&quot;Infinitely supported random variables not supported in Enumerator&quot;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="n">bernoulli</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fromList</span><span class="w"> </span><span class="p">[(</span><span class="kt">True</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Exp</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">log</span><span class="p">)</span><span class="w"> </span><span class="n">p</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="kt">False</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">Exp</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">log</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="p">))]</span>
+</code></pre></div>
+<p>The first thing to notice is that <code>random</code> is actually not defined for <code>Enumerator</code>, and consequently, you can't handle any continuous distributions. This makes sense, because you can't represent continuous distributions (whose support is uncountably infinite) as a list of samples.</p>
+<p>So really <code>Enumerator</code> isn't very general purpose. It's best understood as a didactic tool, rather than a real world inference algorithm. </p>
+<p>But it can handle discrete distributions. It does this via <code>bernoulli</code> (as well as <code>categorical</code>, which I've omitted). <code>bernoulli p</code> constructs the weighted list corresponding to a <code>bernoulli</code> distribution with parameter <code>p</code>.</p>
+<p>And the <code>MonadFactor</code> instance: </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="kt">Enumerator</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="n">score</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fromList</span><span class="w"> </span><span class="p">[(</span><span class="nb">()</span><span class="p">,</span><span class="w"> </span><span class="n">w</span><span class="p">)]</span>
+</code></pre></div>
+<p>Finally, <code>enumerator</code> simply unwraps <code>Enumerator</code> to get a list of pairs of values and their weights, and then normalizes them into probabilities. It orders the list, which is why <code>enumerator</code> requires an <code>Ord</code> instance.</p>
+<p>To see how this all works together, consider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>From the way the <code>MonadDistribution</code> instance for <code>Enumerator</code> is defined, <code>bernoulli 0.5</code> is a list of two pairs: <code>[(True, 0.5), (False, 0.5)]</code>. Using the <code>Monad</code> instance, the next line multiplies each of the masses by a number (<code>0</code> for <code>True</code>, <code>1</code> for <code>False</code>). The final line multiplies both by <code>1.0</code>. And then <code>enumerator</code> normalizes the result. So the ensuing distribution from <code>enumerator example</code> is <code>{True : 1.0}</code>.</p>
+<!-- ```haskell
+example2 = do
+    x <- bernoulli 0.5
+    y <- bernoulli $ if x then 0.6 else 0.5
+    return (y && x)
+``` -->
+
+<h3 id="samplerio">SamplerIO<a class="headerlink" href="#samplerio" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>SamplerIO</code>:</p>
+<ul>
+<li><code>SamplerIO :: Type -&gt; Type</code></li>
+<li><code>instance MonadDistribution SamplerIO</code></li>
+<li><strong>No</strong> instance for <code>MonadFactor</code></li>
+</ul>
+<p>Monad-Bayes actually provides a more general constructor:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p><code>SamplerIO</code> just specializes <code>g</code>, which is the random number generator, and <code>m</code>, the IO-handling monad:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kr">type</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">IOGenM</span><span class="w"> </span><span class="kt">StdGen</span><span class="p">)</span><span class="w"> </span><span class="kt">IO</span>
+</code></pre></div>
+<p>But you can specialize many other ways (see the <code>random</code> package), depending on your use case.</p>
+<p>As the names suggest, <code>SamplerIO</code> instantiates an abstract distribution as a sampling procedure. We have</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Sampler</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="n">random</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="n">uniformDouble01M</span><span class="p">)</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="n">uniform</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformRM</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">))</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="n">normal</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="p">(</span><span class="kt">MWC</span><span class="o">.</span><span class="n">normal</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">s</span><span class="p">))</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="n">gamma</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">MWC</span><span class="o">.</span><span class="n">gamma</span><span class="w"> </span><span class="n">shape</span><span class="w"> </span><span class="n">scale</span><span class="p">)</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span><span class="n">beta</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sampler</span><span class="w"> </span><span class="p">(</span><span class="kt">ReaderT</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">MWC</span><span class="o">.</span><span class="n">beta</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">  </span><span class="o">...</span>
+</code></pre></div>
+<p>Were the lines from <code>uniform</code> to <code>beta</code> commented out, they would be instantiated with the defaults defined in terms of <code>random</code> in the <code>MonadDistribution</code> class. The reason they are not is that there are more statistically efficient ways to sample.</p>
+<p>We can unpack values from <code>SamplerIO a</code> using <code>sampler :: SamperIO a -&gt; IO a</code>. So for example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nf">print</span><span class="w"> </span><span class="o">=&lt;&lt;</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span><span class="n">random</span>
+</code></pre></div>
+<p>will print a sample from <code>random</code>. Similarly for other distributions. </p>
+<p>But note that <code>SamplerIO</code> only has a <code>MonadDistribution</code> instance. This means that <code>sampler sprinkler</code> does not type check and gives the type error: </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kt">No</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="p">(</span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)</span>
+</code></pre></div>
+<p>This is to be expected. <code>SamplerIO</code> has no instance for <code>MonadFactor</code>. </p>
+<h3 id="weighted-m">Weighted m<a class="headerlink" href="#weighted-m" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>Weighted</code>:</p>
+<ul>
+<li><code>Weighted :: (Type -&gt; Type) -&gt; (Type -&gt; Type)</code></li>
+<li><code>instance MonadDistribution m =&gt; MonadMeasure (Weighted m)</code></li>
+<li><code>instance MonadFactor (Weighted m)</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="p">(</span><span class="kt">StateT</span><span class="w"> </span><span class="p">(</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>A <strong>key</strong> difference to <code>Enumerator</code> and <code>SamplerIO</code> is the <strong>kind</strong> of <code>Weighted</code>: it takes a type <code>m :: Type -&gt; Type</code> as an argument.</p>
+<!-- It takes not just a type `a :: Type` as argument, but also a type `m :: Type -> Type`. -->
+
+<p><code>Weighted m</code> is isomorphic to:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+</code></pre></div>
+<p>Some intuition for what this means comes from the <code>MonadFactor</code> instance:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span><span class="n">score</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="p">(</span><span class="n">modify</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="w"> </span><span class="n">w</span><span class="p">))</span>
+</code></pre></div>
+<p>So if we write:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">    </span><span class="n">score</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>then the result is that first, we draw a sample from a Bernoulli distribution from the <strong>underlying</strong> distribution <code>m</code>, and then multiply the state (which is a <code>Log Double</code>) by a number which depends on that sample. For convenience, we write <code>condition b = score (if b then 1 else 0)</code>. </p>
+<p>To unpack from <code>Weighted m a</code>, we use:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nf">weighted</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nf">weighted</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">runStateT</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+<p><code>Weighted m</code> is not an instance of <code>MonadDistribution</code>, but only as instance of <code>MonadFactor</code> (and that, only when <code>m</code> is an instance of <code>Monad</code>). However, since <code>StateT</code> is a monad transformer, there is a function <code>lift :: m Double -&gt; Weighted m Double</code>.</p>
+<p>So if we take a <code>MonadDistribution</code> instance like <code>SamplerIO</code>, then <code>Weighted SamplerIO</code> is an instance of both <code>MonadDistribution</code> and <code>MonadFactor</code>. Which means it is an instance of <code>MonadMeasure</code>. </p>
+<p>So we can successfully write <code>(sampler . weighted) sprinkler</code> and get a program of type <code>IO (Bool, Log Double)</code>. When run, this will draw a sample from <code>sprinkler</code> along with an <strong>unnormalized</strong> density for that sample.</p>
+<p>It's worth stopping here to remark on what's going on. What has happened is that the <code>m</code> in <code>forall m. MonadMeasure m =&gt; m Bool</code> has been <em>instantiated</em> as <code>Weighted SamplerIO</code>. This is an example of how the interpreters for inference can be composed in modular ways.</p>
+<p>Finally, there's a function </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nf">hoist</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">x</span><span class="o">.</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">a</span>
+</code></pre></div>
+<p>This takes a natural transformation <code>m ~&gt; n</code> and lifts it into a natural transformation <code>Weighted m ~&gt; Weighted n</code>. Most of the inference transformers have an analogous <code>hoist</code> function.</p>
+<!-- `Weighted` and `SamplerIO` are on the simpler side, but illustrate the key principles of monad-bayes, namely:
+
+**composable stack of inference transformers, implemented as instances of `MonadDistribution` and `MonadFactor` typeclasses.**
+
+In a similar vein, `Population` and `Sequential` go together to handle Sequential Monte Carlo (SMC), and `Traced` is associated with Markov Chain Monte Carlo (MCMC). -->
+
+<h3 id="population">Population<a class="headerlink" href="#population" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>Population</code>:</p>
+<ul>
+<li><code>Population :: (Type -&gt; Type) -&gt; (Type -&gt; Type)</code></li>
+<li><code>instance MonadDistribution m =&gt; instance MonadDistribution (Population m)</code></li>
+<li><code>instance MonadFactor m =&gt; instance MonadFactor (Population m)</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Population</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="p">(</span><span class="kt">ListT</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>So:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+</code></pre></div>
+<p>Note that while <code>ListT</code> isn't in general a valid monad transformer, we're not requiring it to be one here.</p>
+<p><code>Population</code> is used to represent a collection of particles (in the statistical sense), along with their weights. </p>
+<p>There are several useful functions associated with it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nf">spawn</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="nf">spawn</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fromWeightedList</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">pure</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">replicate</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="p">(</span><span class="nb">()</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">fromIntegral</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+</code></pre></div>
+<p><code>spawn</code> spawns new particles. As an example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nf">enumerator</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="p">(</span><span class="n">spawn</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>gives</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="p">[([(</span><span class="nb">()</span><span class="p">,</span><span class="mf">0.5</span><span class="p">),(</span><span class="nb">()</span><span class="p">,</span><span class="mf">0.5</span><span class="p">)],</span><span class="mf">1.0</span><span class="p">)]</span>
+</code></pre></div>
+<p>Observe how here we have interpreted <code>(spawn 2)</code> as of type <code>Population Enumerator ()</code>. </p>
+<p><code>resampleGeneric</code> takes a function to probabilistically select a set of indices from a vector, and makes a new population by selecting those indices. </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nf">resampleGeneric</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">    </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Int</span><span class="p">])</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">    </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">    </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+</code></pre></div>
+<p><code>pushEvidence</code>, to quote the API docs, "normalizes the weights in the population, while at the same time incorporating the sum of the weights as a score in m."</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nf">pushEvidence</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">  </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">  </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+</code></pre></div>
+<p>In other words, <code>pushEvidence</code> takes a <code>Population m a</code> where <code>m</code> is a <code>MonadFactor</code> instance. It takes the sum of the weights, divides the weights by it, and then factors by the sum in <code>m</code>.</p>
+<h3 id="sequential">Sequential<a class="headerlink" href="#sequential" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>Sequential</code>:</p>
+<ul>
+<li><code>Sequential :: (Type -&gt; Type) -&gt; (Type -&gt; Type)</code></li>
+<li><code>instance MonadDistribution m =&gt; instance MonadDistribution (Sequential m)</code></li>
+<li><code>instance MonadFactor m =&gt; instance MonadFactor (Sequential m)</code></li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">    </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">{</span><span class="n">runSequential</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="p">(</span><span class="kt">Await</span><span class="w"> </span><span class="nb">()</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+</code></pre></div>
+<p>This is a wrapper for the <code>Coroutine</code> type applied to the <code>Await</code> constructor from <code>Control.Monad.Coroutine</code>, which is defined thus:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">   </span><span class="n">resume</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Either</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="kt">Coroutine</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">r</span><span class="p">))</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">   </span><span class="p">}</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Await</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Await</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</code></pre></div>
+<p>Unpacking that:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Either</span><span class="w"> </span><span class="p">(</span><span class="nb">()</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>As usual, <code>m</code> is going to be some other probability monad, so understand <code>Sequential m a</code> as representing a program which, after making a random choice or doing conditioning, we either obtain an <code>a</code> value, or a paused computation, which when resumed gets us back to a new <code>Sequential m a</code>.</p>
+<p>(For more on coroutines, see the final article in: https://themonadreader.files.wordpress.com/2011/10/issue19.pdf.)</p>
+<p>The monad instance for coroutines is as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">Functor</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="p">(</span><span class="kt">Coroutine</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">   </span><span class="n">return</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">pure</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">   </span><span class="n">t</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="p">(</span><span class="n">resume</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">      </span><span class="kr">where</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="n">fc</span><span class="w"> </span><span class="p">(</span><span class="kt">Right</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resume</span><span class="w"> </span><span class="p">(</span><span class="n">fc</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">            </span><span class="n">apply</span><span class="w"> </span><span class="n">fc</span><span class="w"> </span><span class="p">(</span><span class="kt">Left</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="kt">Left</span><span class="w"> </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">fc</span><span class="p">)</span><span class="w"> </span><span class="n">s</span><span class="p">))</span>
+</code></pre></div>
+<p>The <code>MonadDistribution</code> instance follows from <code>lift : m a -&gt; Coroutine (Await ()) m a</code>, defined as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">Functor</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadTrans</span><span class="w"> </span><span class="p">(</span><span class="kt">Coroutine</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">   </span><span class="n">lift</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">liftM</span><span class="w"> </span><span class="kt">Right</span>
+</code></pre></div>
+<p>The <code>MonadFactor</code> instance has less trivial content:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1">-- | Execution is &#39;suspend&#39;ed after each &#39;score&#39;.</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadFactor</span><span class="w"> </span><span class="p">(</span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">  </span><span class="n">score</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="p">(</span><span class="n">score</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">suspend</span>
+</code></pre></div>
+<p>First you take a <code>score</code> in the underlying <code>MonadFactor</code> instance, and then you <code>suspend</code>, which means:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1">-- | A point where the computation is paused.</span>
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a><span class="nf">suspend</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="nf">suspend</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Coroutine</span><span class="w"> </span><span class="p">(</span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="kt">Left</span><span class="w"> </span><span class="p">(</span><span class="kt">Await</span><span class="w"> </span><span class="n">return</span><span class="p">))))</span>
+</code></pre></div>
+<!-- TODO: double check -->
+
+<p>We can move to the next suspension point with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nf">advance</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="nf">advance</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">bounce</span><span class="w"> </span><span class="n">extract</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">runSequential</span>
+</code></pre></div>
+<p>and move through all with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1">-- | Remove the remaining suspension points.</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="nf">finish</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="nf">finish</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">pogoStick</span><span class="w"> </span><span class="n">extract</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">runSequential</span>
+</code></pre></div>
+<p>But most importantly, we can apply a natural transformation over the underlying monad <code>m</code> to only the current suspension.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nf">hoistFirst</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">x</span><span class="o">.</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="nf">hoistFirst</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="kt">Coroutine</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">resume</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">runSequential</span>
+</code></pre></div>
+<p>When <code>m</code> is <code>Population n</code> for some other <code>n</code>, then <code>resampleGeneric</code> gives us one example of the natural transformation we want. In other words, operating in <code>Sequential (Population n)</code> works, and not only works but does something statistically interesting: particle filtering (aka SMC).</p>
+<p><strong>Note</strong>: the running of <code>Sequential</code>, i.e. getting from <code>Sequential m a</code> to <code>m a</code> is surprisingly subtle, and there are many incorrect ways to do it, such as plain folds of the recursive structure. These can result in a semantics in which the transformation gets applied an exponentially large number of times.</p>
+<h3 id="density">Density<a class="headerlink" href="#density" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>Density</code>:</p>
+<ul>
+<li><code>Density :: (Type -&gt; Type) -&gt; (Type -&gt; Type)</code></li>
+<li><code>instance MonadDistribution (Density m)</code></li>
+<li><strong>No</strong> instance for <code>MonadFactor</code></li>
+</ul>
+<p>A <em>trace</em> of a program of type <code>MonadDistribution m =&gt; m a</code> is an execution of the program, so a choice for each of the random values. Recall that <code>random</code> underlies all of the random values in a program, so a trace for a program is fully specified by a list of <code>Double</code>s, giving the value of each call to <code>random</code>.</p>
+<p>With this in mind, a <code>Density m a</code> is an interpretation of a probabilistic program as a function from a trace to the <em>density</em> of that execution of the program.</p>
+<p>Monad-bayes offers two implementations, in <code>Control.Monad.Bayes.Density.State</code> and <code>Control.Monad.Bayes.Density.Free</code>. The first is slow but easy to understand, the second is more sophisticated, but faster.</p>
+<p>The former is relatively straightforward: the <code>MonadDistribution</code> instance implements <code>random</code> as <code>get</code>ting the trace (using <code>get</code> from <code>MonadState</code>), using (and removing) the first element (<code>put</code> from <code>MonadState</code>), and writing that element to the output (using <code>tell</code> from <code>MonadWriter</code>). If the trace is empty, the <code>random</code> from the underlying monad is used, but the result is still written with <code>tell</code>.</p>
+<p>The latter is best understood if you're familiar with the standard use of a free monad to construct a domain specific language. For probability in particular, see this <a href="https://jtobin.io/simple-probabilistic-programming">blog post</a>. Here's the definition:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">SamF</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Random</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">    </span><span class="kt">Density</span><span class="w"> </span><span class="p">{</span><span class="n">density</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FT</span><span class="w"> </span><span class="kt">SamF</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="kr">instance</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="w">  </span><span class="n">random</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Density</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">liftF</span><span class="w"> </span><span class="p">(</span><span class="kt">Random</span><span class="w"> </span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
+<p>The monad-bayes implementation uses a more efficient implementation of <code>FreeT</code>, namely <code>FT</code> from the <code>free</code> package, known as the <em>Church transformed Free monad</em>. This is a technique explained in https://begriffs.com/posts/2016-02-04-difference-lists-and-codennsity.html. But that only changes the operational semantics - performance aside, it works just the same as the standard <code>FreeT</code> datatype. </p>
+<p>If you unpack the definition, you get:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Either</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)))</span>
+</code></pre></div>
+<p>Since <code>FreeT</code> is a transformer, we can use <code>lift</code> to get a <code>MonadDistribution</code> instance.</p>
+<p><code>density</code> is then defined using the folding pattern <code>iterFT</code>, which interprets <code>SamF</code> in the appropriate way:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nf">density</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">])</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="nf">density</span><span class="w"> </span><span class="n">randomness</span><span class="w"> </span><span class="p">(</span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">  </span><span class="n">runWriterT</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">evalStateT</span><span class="w"> </span><span class="p">(</span><span class="n">iterTM</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">hoistFT</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">randomness</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">  </span><span class="kr">where</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="w">    </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Random</span><span class="w"> </span><span class="n">k</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="w">      </span><span class="c1">-- This block runs in StateT [Double] (WriterT [Double]) m.</span>
+<a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="w">      </span><span class="c1">-- StateT propagates consumed randomness while WriterT records</span>
+<a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a><span class="w">      </span><span class="c1">-- randomness used, whether old or new.</span>
+<a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a><span class="w">      </span><span class="n">xs</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">get</span>
+<a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a><span class="w">      </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="kr">of</span>
+<a id="__codelineno-44-11" name="__codelineno-44-11" href="#__codelineno-44-11"></a><span class="w">        </span><span class="kt">[]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">random</span>
+<a id="__codelineno-44-12" name="__codelineno-44-12" href="#__codelineno-44-12"></a><span class="w">        </span><span class="n">y</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">ys</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">put</span><span class="w"> </span><span class="n">ys</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="n">y</span>
+<a id="__codelineno-44-13" name="__codelineno-44-13" href="#__codelineno-44-13"></a><span class="w">      </span><span class="n">tell</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+<a id="__codelineno-44-14" name="__codelineno-44-14" href="#__codelineno-44-14"></a><span class="w">      </span><span class="n">k</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>This takes a list of <code>Double</code>s (a representation of a trace), and a probabilistic program like <code>example</code>, and gives back a <code>SamplerIO (Bool, [Double])</code>. At each call to <code>random</code> in <code>example</code>, the next double in the list is used. If the list of doubles runs out, calls are made to <code>random</code> using the underlying monad.</p>
+<!-- The intuition here is that given a list of doubles in $[0,1]$, you can evaluate any probabilistic program. If your list of numbers is shorter than the number of calls to `random` in the program, the remaining calls are made in the underlying `MonadDistribution` instance `m`.  -->
+
+<!-- This uses `iterTM`, one of the rather expressive folding patterns in `Control.Monad.Trans.Free` (from the *free* package) and a clever use of the state monad transformer. The upshot is that you supply a  -->
+
+<h3 id="traced">Traced<a class="headerlink" href="#traced" title="Permanent link">&para;</a></h3>
+<p>Summary of key info on <code>Traced</code>:</p>
+<ul>
+<li><code>Traced :: (Type -&gt; Type) -&gt; (Type -&gt; Type)</code></li>
+<li><code>instance MonadDistribution m =&gt; MonadDistribution (Traced m)</code></li>
+<li><code>instance MonadFactor m =&gt; MonadFactor (Traced m)</code></li>
+</ul>
+<p><code>Traced m</code> is actually several related interpretations, each built on top of <code>Density</code>. These range in complexity.</p>
+<!-- Control flow is stochastic in a probabilistic program, which is to say that whether we draw from some variable may depend on a draw from some variable earlier. This means that we don't have a fixed structure like a Bayes net corresponding to a probabilistic program. -->
+
+<p>The reason traces are relevant here is that monad-bayes implements a version of Markov Chain Monte Carlo (MCMC) that operates on arbitrary probabilistic programs often referred to as <em>trace MCMC</em>. The idea is that the MCMC chain takes place on traces of the program. A step constitutes a change to this trace, i.e. to the list of <code>Double</code>s. For instance, the algorithm for an MH step goes as follows:</p>
+<ul>
+<li>propose a new trace by randomly redrawing a single <code>Double</code> in the trace</li>
+<li>accept or reject with the MH criterion</li>
+</ul>
+<p>It's convenient to specify a trace not just as a <code>[Double]</code> but also with the resulting output, and the density of that output. This is what monad-bayes does:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="kr">data</span><span class="w"> </span><span class="kt">Trace</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Trace</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="w">  </span><span class="p">{</span><span class="w"> </span>
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="w">    </span><span class="n">variables</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">],</span>
+<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="w">    </span><span class="n">output</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="p">,</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="w">    </span><span class="n">density</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a><span class="w">  </span><span class="p">}</span>
+</code></pre></div>
+<p>We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what <code>Density</code> is for. </p>
+<p>The simplest version of <code>Traced</code> is in <code>Control.Monad.Bayes.Traced.Basic</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="kt">Traced</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="p">(</span><span class="kt">Density</span><span class="w"> </span><span class="kt">Identity</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">),</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Trace</span><span class="w"> </span><span class="n">a</span><span class="p">))</span>
+</code></pre></div>
+<p>A <code>Traced</code> interpretation of a model is a particular run of the model with its corresponding probability, alongside a distribution over <code>Trace</code> info, which records: the value of each call to <code>random</code>, the value of the final output, and the density of this program trace.</p>
+<p>This machinery allows us to implement MCMC (see inference methods below for details). </p>
+<h3 id="integrator">Integrator<a class="headerlink" href="#integrator" title="Permanent link">&para;</a></h3>
+<p>Summary of key info:</p>
+<ul>
+<li><code>Integrator :: Type -&gt; Type</code></li>
+<li><code>instance MonadDistribution Integrator</code></li>
+</ul>
+<p><code>Integrator</code> is in <code>Control.Monad.Bayes.Integrator</code>, defined as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="kr">newtype</span><span class="w"> </span><span class="kt">Integrator</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Integrator</span><span class="w"> </span><span class="p">{</span><span class="n">getCont</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Cont</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+</code></pre></div>
+<p>This <code>MonadDistribution</code> instance interprets a probabilistic program as a numerical integrator. For a nice explanation, see <a href="https://jtobin.io/giry-monad-implementation">this blog post</a>.</p>
+<p><code>Integrator a</code> is isomorphic to <code>(a -&gt; Double) -&gt; Double</code>. 
+A program <code>model</code> of type <code>Integrator a</code> will take a function <code>f</code> and calculate <span class="arithmatex">\(E_{p}[f] = \int f(x)*p(x)\)</span> where <span class="arithmatex">\(p\)</span> is the density of <code>model</code>. </p>
+<p>The integral for the expectation is performed by quadrature, using the tanh-sinh approach. For example, <code>random :: Integrator Double</code> is the program which takes a function <code>f</code> and integrates <code>f</code> over the <span class="arithmatex">\((0,1)\)</span> range.</p>
+<p>We can calculate the probability for an interval $(a,b)4 of any model of type <code>Integrator Double</code> by setting <code>f</code> to be the function that returns <span class="arithmatex">\(1\)</span> for that range, else <span class="arithmatex">\(0\)</span>. Similarly for the CDF, MGF and so on.</p>
+<h2 id="inference-methods-under-the-hood">Inference methods under the hood<a class="headerlink" href="#inference-methods-under-the-hood" title="Permanent link">&para;</a></h2>
+<h3 id="exact-inference">Exact inference<a class="headerlink" href="#exact-inference" title="Permanent link">&para;</a></h3>
+<p>Exact inference is nothing more than the use of the <code>Enumerator</code> instance of <code>MonadMeasure</code>. It should be noted that this is not a particularly efficient or clever version of exact inference.</p>
+<p>For example, consider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>Doing <code>enumerator example</code> will create a list of <span class="arithmatex">\(2^{100}\)</span> entries, all but one of which have <span class="arithmatex">\(0\)</span> mass. (See below for a way to perform this inference efficiently). </p>
+<p>The main purpose of <code>Enumerator</code> is didactic, as a way to understand simple discrete distributions in full. In addition, you can use it in concert with transformers like <code>Weighted</code>, to get a sense of how they work. For example, consider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p><code>(enumerator . weighted) example</code> gives <code>[((False,0.0),0.5),((True,1.0),0.5)]</code>. This is quite edifying for understanding <code>(sampler . weighted) example</code>. What it says is that there are precisely two ways the program will run, each with equal probability: either you get <code>False</code> with weight <code>0.0</code> or <code>True</code> with weight <code>1.0</code>. </p>
+<h3 id="quadrature">Quadrature<a class="headerlink" href="#quadrature" title="Permanent link">&para;</a></h3>
+<p>As described on the section on <code>Integrator</code>, we can interpret our probabilistic program of type <code>MonadDistribution m =&gt; m a</code> as having concrete type <code>Integrator a</code>. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).</p>
+<p>This can also handle programs of type <code>MonadMeasure m =&gt; m a</code>, that is, programs with <code>factor</code> statements. For these cases, a function <code>normalize :: Weighted Integrator a -&gt; Integrator a</code> is employed. For example, </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="nf">model</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="w">  </span><span class="n">var</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">gamma</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="n">sqrt</span><span class="w"> </span><span class="n">var</span><span class="p">)</span>
+<a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">var</span>
+</code></pre></div>
+<p>is really an unnormalized measure, rather than a probability distribution. <code>normalize</code> views it as of type <code>Weighted Integrator Double</code>, which is isomorphic to <code>(Double -&gt; (Double, Log Double) -&gt; Double)</code>. This can be used to compute the normalization constant, and divide the integrator's output by it, all within <code>Integrator</code>. </p>
+<h3 id="independent-forward-sampling">Independent forward sampling<a class="headerlink" href="#independent-forward-sampling" title="Permanent link">&para;</a></h3>
+<p>For any program of type <code>p = MonadDistribution m =&gt; m a</code>, we may do <code>sampler p</code> or <code>runST $ sampleSTfixed p</code>. Note that if there are any calls to <code>factor</code> in the program, then it cannot have type <code>MonadDistribution m</code>. </p>
+<h3 id="independent-weighted-sampling">Independent weighted sampling<a class="headerlink" href="#independent-weighted-sampling" title="Permanent link">&para;</a></h3>
+<p>Consider </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p><code>(weighted . sampler) example :: IO (Bool, Log Double)</code> returns a tuple of a truth value and a probability mass (or more generally density). How does this work? Types are clarifying:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="nf">run</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a><span class="w">  </span><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="p">)</span>
+<a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a><span class="w">  </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">weighted</span><span class="w"> </span><span class="ow">::</span><span class="w">  </span><span class="kt">Weighted</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+</code></pre></div>
+<p>In other words, the program is being interpreted in the <code>Weighted SamplerIO</code> instance of <code>MonadMeasure</code>.</p>
+<h3 id="metropolis-hastings-mcmc">Metropolis Hastings MCMC<a class="headerlink" href="#metropolis-hastings-mcmc" title="Permanent link">&para;</a></h3>
+<p>The version of MCMC in monad-bayes performs its random walk on program traces of type <code>Trace a</code>. The motivation for doing this is that <strong>any</strong> probabilistic program can then be used with MCMC entirely automatically.</p>
+<p>A single step in this chain (in Metropolis Hasting MCMC) looks like this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="nf">mhTrans</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="p">(</span><span class="kt">State</span><span class="o">.</span><span class="kt">Density</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Trace</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Trace</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a><span class="nf">mhTrans</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">t</span><span class="o">@</span><span class="kt">Trace</span><span class="w"> </span><span class="p">{</span><span class="n">variables</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">us</span><span class="p">,</span><span class="w"> </span><span class="n">probDensity</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">p</span><span class="p">}</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a><span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="n">us</span>
+<a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a><span class="w">  </span><span class="n">us&#39;</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-53-5" name="__codelineno-53-5" href="#__codelineno-53-5"></a><span class="w">    </span><span class="n">i</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">discrete</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">discreteUniformAB</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-53-6" name="__codelineno-53-6" href="#__codelineno-53-6"></a><span class="w">    </span><span class="n">u&#39;</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">random</span>
+<a id="__codelineno-53-7" name="__codelineno-53-7" href="#__codelineno-53-7"></a><span class="w">    </span><span class="kr">case</span><span class="w"> </span><span class="n">splitAt</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="n">us</span><span class="w"> </span><span class="kr">of</span>
+<a id="__codelineno-53-8" name="__codelineno-53-8" href="#__codelineno-53-8"></a><span class="w">      </span><span class="p">(</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">ys</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="p">(</span><span class="n">u&#39;</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">ys</span><span class="p">)</span>
+<a id="__codelineno-53-9" name="__codelineno-53-9" href="#__codelineno-53-9"></a><span class="w">      </span><span class="kr">_</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="ne">error</span><span class="w"> </span><span class="s">&quot;impossible&quot;</span>
+<a id="__codelineno-53-10" name="__codelineno-53-10" href="#__codelineno-53-10"></a><span class="w">  </span><span class="p">((</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">),</span><span class="w"> </span><span class="n">vs</span><span class="p">)</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kt">State</span><span class="o">.</span><span class="n">density</span><span class="w"> </span><span class="p">(</span><span class="n">weighted</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">us&#39;</span>
+<a id="__codelineno-53-11" name="__codelineno-53-11" href="#__codelineno-53-11"></a><span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">ratio</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">exp</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">ln</span><span class="p">)</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">min</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">(</span><span class="n">q</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fromIntegral</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">fromIntegral</span><span class="w"> </span><span class="p">(</span><span class="n">length</span><span class="w"> </span><span class="n">vs</span><span class="p">)))</span>
+<a id="__codelineno-53-12" name="__codelineno-53-12" href="#__codelineno-53-12"></a><span class="w">  </span><span class="n">accept</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="n">ratio</span>
+<a id="__codelineno-53-13" name="__codelineno-53-13" href="#__codelineno-53-13"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">accept</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="kt">Trace</span><span class="w"> </span><span class="n">vs</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">t</span>
+</code></pre></div>
+<p>Our probabilistic program is interpreted in the type <code>Weighted (Density m) a</code>, which is an instance of <code>MonadMeasure</code>. We use this to define our kernel on traces. We begin by perturbing the list of doubles contained in the trace by selecting a random position in the list and resampling there. We could do this <em>proposal</em> in a variety of ways, but here, we do so by choosing a double from the list at random and resampling it (hence, <em>single site</em> trace MCMC). We then run the program on this new list of doubles; <code>((b,q), vs)</code> is the outcome, probability, and result of all calls to <code>random</code>, respectively (recalling that the list of doubles may be shorter than the number of calls to <code>random</code>). The value of these is probabilistic in the underlying monad <code>m</code>. We then use the MH criterion to decide whether to accept the new list of doubles as our trace.</p>
+<p>MH is then easily defined as taking steps with this kernel, in the usual fashion. Note that it works for any probabilistic program whatsoever.</p>
+<p><strong>Warning</strong>: the default proposal is single site, meaning that you change one random number in the trace at a time. As a result, the proposal may not be ergodic for models with hard constraints. As a simple example, suppose that you're doing a random walk, and trying to get from a trace corresponding to the output <code>(True, True)</code> to a trace corresponding to <code>(False, False)</code>. But if <code>(False, True)</code> and <code>(True, False)</code> have no probability, you have no hope of getting there. <strong>Don't expect MCMC to be efficient without designing your own proposal, or even correct when the proposal is not ergodic</strong>.</p>
+<h3 id="sequential-importance-sampling">Sequential Importance Sampling<a class="headerlink" href="#sequential-importance-sampling" title="Permanent link">&para;</a></h3>
+<p>This is provided by </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="nf">sequentially</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a><span class="w">  </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="w">  </span><span class="c1">-- | transformation</span>
+<a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a><span class="w">  </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">x</span><span class="o">.</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a><span class="w">  </span><span class="c1">-- | number of time steps</span>
+<a id="__codelineno-54-6" name="__codelineno-54-6" href="#__codelineno-54-6"></a><span class="w">  </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a><span class="w">  </span><span class="kt">Sequential</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-54-8" name="__codelineno-54-8" href="#__codelineno-54-8"></a><span class="w">  </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-54-9" name="__codelineno-54-9" href="#__codelineno-54-9"></a><span class="nf">sequentially</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">finish</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">composeCopies</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="p">(</span><span class="n">advance</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">hoistFirst</span><span class="w"> </span><span class="n">f</span><span class="p">)</span>
+</code></pre></div>
+<p>in <code>Control.Monad.Bayes.Sequential.Coroutine</code>. You provide a natural transformation in the underlying monad <code>m</code>, and <code>sequentially</code> applies that natural transformation at each point of conditioning in your program. The main use case is in defining <code>smc</code>, below, but here is a nice didactic use case:</p>
+<p>Consider the program:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>Naive enumeration, as in <code>enumerator example</code> is enormously and needlessly inefficient, because it will create a <span class="arithmatex">\(2^{100}\)</span> size list of possible values. What we'd like to do is to throw away values of <code>x</code> that are <code>False</code> at each condition statement, rather than carrying them along forever.</p>
+<p>Suppose we have a function <code>removeZeros :: Enumerator a -&gt; Enumerator a</code>, which removes values of the distribution with <span class="arithmatex">\(0\)</span> mass from <code>Enumerator</code>. We can then write <code>enumerator $ sequentially removeZeros 100 $ model</code> to run <code>removeZeros</code> at each of the 100 <code>condition</code> statements, making the algorithm run quickly. </p>
+<h3 id="sequential-monte-carlo">Sequential Monte Carlo<a class="headerlink" href="#sequential-monte-carlo" title="Permanent link">&para;</a></h3>
+<p>Sequential importance resampling works by doing <code>sequentially</code> with a resampler of your choice, such as <code>resampleMultinomial</code>, after first spawning a set of <code>n</code> particles.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="nf">smc</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a><span class="w">  </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a><span class="w">  </span><span class="c1">-- | resampler</span>
+<a id="__codelineno-56-4" name="__codelineno-56-4" href="#__codelineno-56-4"></a><span class="w">  </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">x</span><span class="o">.</span><span class="w"> </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-56-5" name="__codelineno-56-5" href="#__codelineno-56-5"></a><span class="w">  </span><span class="c1">-- | number of timesteps</span>
+<a id="__codelineno-56-6" name="__codelineno-56-6" href="#__codelineno-56-6"></a><span class="w">  </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-56-7" name="__codelineno-56-7" href="#__codelineno-56-7"></a><span class="w">  </span><span class="c1">-- | population size</span>
+<a id="__codelineno-56-8" name="__codelineno-56-8" href="#__codelineno-56-8"></a><span class="w">  </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-56-9" name="__codelineno-56-9" href="#__codelineno-56-9"></a><span class="w">  </span><span class="c1">-- | model</span>
+<a id="__codelineno-56-10" name="__codelineno-56-10" href="#__codelineno-56-10"></a><span class="w">  </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-56-11" name="__codelineno-56-11" href="#__codelineno-56-11"></a><span class="w">  </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-56-12" name="__codelineno-56-12" href="#__codelineno-56-12"></a><span class="nf">smc</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">sequentially</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="kt">Seq</span><span class="o">.</span><span class="n">hoistFirst</span><span class="w"> </span><span class="p">(</span><span class="n">spawn</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="particle-marginal-metropolis-hastings">Particle Marginal Metropolis Hastings<a class="headerlink" href="#particle-marginal-metropolis-hastings" title="Permanent link">&para;</a></h3>
+<p>Quoting the monad-bayes paper:</p>
+<p>"PMMH is only applicable to models with a specific structure, namely the probabilistic program needs to decompose to a prior over the global parameters <code>m param</code> and the rest of the model <code>param -&gt; m a</code>. Combining these using &gt;&gt;= would yield the complete model of type <code>m a</code>."</p>
+<p>"The idea is to do MH on the parameters of the model. Recall that for MH we need to compute the likelihood for the particular values of parameters but that involves integrating over the remaining random variables in the model which is intractable. Fortunately to obtain valid MH it is sufficient to have an unbiased estimator for the likelihood which is produced by a single sample from <code>Weighted</code>. MH with such an estimator is referred to as pseudo-marginal MH. If instead of taking a single weight from <code>Weighted</code> we take the sum of weights from <code>Population</code> we obtain an unbiased estimator with lower variance. In particular if such a <code>Population</code> is a result of smc the resulting algorithm is known as PMMH."</p>
+<p>Because of the modularity of monad-bayes, the implementation is remarkably simple, and directly linked to the algorithm:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="nf">pmmh</span><span class="w"> </span><span class="n">mcmcConf</span><span class="w"> </span><span class="n">smcConf</span><span class="w"> </span><span class="n">param</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="ow">=</span>
+<a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a><span class="w">  </span><span class="n">mcmc</span>
+<a id="__codelineno-57-3" name="__codelineno-57-3" href="#__codelineno-57-3"></a><span class="w">    </span><span class="n">mcmcConf</span>
+<a id="__codelineno-57-4" name="__codelineno-57-4" href="#__codelineno-57-4"></a><span class="w">    </span><span class="p">(</span><span class="w"> </span><span class="n">param</span>
+<a id="__codelineno-57-5" name="__codelineno-57-5" href="#__codelineno-57-5"></a><span class="w">        </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">population</span>
+<a id="__codelineno-57-6" name="__codelineno-57-6" href="#__codelineno-57-6"></a><span class="w">          </span><span class="o">.</span><span class="w"> </span><span class="n">pushEvidence</span>
+<a id="__codelineno-57-7" name="__codelineno-57-7" href="#__codelineno-57-7"></a><span class="w">          </span><span class="o">.</span><span class="w"> </span><span class="kt">Pop</span><span class="o">.</span><span class="n">hoist</span><span class="w"> </span><span class="n">lift</span>
+<a id="__codelineno-57-8" name="__codelineno-57-8" href="#__codelineno-57-8"></a><span class="w">          </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="n">smcConf</span>
+<a id="__codelineno-57-9" name="__codelineno-57-9" href="#__codelineno-57-9"></a><span class="w">          </span><span class="o">.</span><span class="w"> </span><span class="n">model</span>
+<a id="__codelineno-57-10" name="__codelineno-57-10" href="#__codelineno-57-10"></a><span class="w">    </span><span class="p">)</span>
+</code></pre></div>
+<p>There's a lot to unpack here. Here's the definition with more types. To shorten the signatures, the synonyms: <code>T = Traced, S = Sequential, P = Population</code> are used:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="nf">pmmh</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a><span class="w">  </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a><span class="w">  </span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-58-4" name="__codelineno-58-4" href="#__codelineno-58-4"></a><span class="w">  </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-58-5" name="__codelineno-58-5" href="#__codelineno-58-5"></a><span class="w">  </span><span class="kt">Traced</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a1</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-58-6" name="__codelineno-58-6" href="#__codelineno-58-6"></a><span class="w">  </span><span class="p">(</span><span class="n">a1</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a2</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-58-7" name="__codelineno-58-7" href="#__codelineno-58-7"></a><span class="w">  </span><span class="n">m</span><span class="w"> </span><span class="p">[[(</span><span class="n">a2</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]]</span>
+<a id="__codelineno-58-8" name="__codelineno-58-8" href="#__codelineno-58-8"></a><span class="nf">pmmh</span><span class="w"> </span><span class="n">mcmcConf</span><span class="w"> </span><span class="n">smcConf</span><span class="w"> </span><span class="n">param</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="ow">=</span>
+<a id="__codelineno-58-9" name="__codelineno-58-9" href="#__codelineno-58-9"></a><span class="w">  </span><span class="p">(</span><span class="n">mcmc</span><span class="w"> </span><span class="n">mcmcConf</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]])</span>
+<a id="__codelineno-58-10" name="__codelineno-58-10" href="#__codelineno-58-10"></a><span class="w">  </span><span class="p">((</span><span class="n">param</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">b</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span>
+<a id="__codelineno-58-11" name="__codelineno-58-11" href="#__codelineno-58-11"></a><span class="w">      </span><span class="p">(</span><span class="n">population</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)])</span><span class="w"> </span>
+<a id="__codelineno-58-12" name="__codelineno-58-12" href="#__codelineno-58-12"></a><span class="w">      </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">pushEvidence</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-58-13" name="__codelineno-58-13" href="#__codelineno-58-13"></a><span class="w">      </span><span class="o">.</span><span class="w"> </span><span class="kt">Pop</span><span class="o">.</span><span class="n">hoist</span><span class="w"> </span><span class="p">(</span><span class="n">lift</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">forall</span><span class="w"> </span><span class="n">x</span><span class="o">.</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-58-14" name="__codelineno-58-14" href="#__codelineno-58-14"></a><span class="w">      </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">smc</span><span class="w"> </span><span class="n">smcConf</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">S</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-58-15" name="__codelineno-58-15" href="#__codelineno-58-15"></a><span class="w">      </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">S</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="p">))</span>
+</code></pre></div>
+<p>(Note that this uses the version of <code>mcmc</code> that uses the <code>Traced</code> representation from <code>Control.Monad.Bayes.Traced.Static</code>.)</p>
+<p>To understand this, note that the outer algorithm is just <code>mcmc</code>. But the probabilistic program that we pass to <code>mcmc</code> does the following: run <code>param</code> to get values for the parameters and then pass these to <code>model</code>. Then run <code>n</code> steps of SMC with <code>k</code> particles. Then lift the underlying monad <code>m</code> into <code>Traced m</code>. Then calculate the sum of the weights of the particles and <code>factor</code> on this (this is what <code>pushEvidence</code> does). This <code>factor</code> takes place in <code>Traced m</code>, so it is "visible" to <code>mcmc</code>.</p>
+<h3 id="resample-move-sequential-monte-carlo">Resample-Move Sequential Monte Carlo<a class="headerlink" href="#resample-move-sequential-monte-carlo" title="Permanent link">&para;</a></h3>
+<!-- This is pretty complicated to think about, but again, the key is to think smart, not hard, and rely on the modularity of the architecture.  -->
+
+<p>The paper introducing monad-bayes has this to say about resample-move SMC:</p>
+<p>"A common problem with particle filters is that of particle degeneracy, where after resampling many particles are the same, effectively reducing the sample size. One way to ameliorate this problem is to introduce rejuvenation moves, where after each resampling we apply a number of MCMC transitions to each particle independently, thus spreading them around the space. If we use an MCMC kernel that preserves the target distribution at a given step, the resulting algorithm is correct"</p>
+<p>monad-bayes provides three versions of RMSMC, each of which uses one of the three <code>Traced</code> implementations respectively. Here is the simplest, which I have annotated with types. To shorten the signatures, the synonyms: <code>T = Traced, S = Sequential, P = Population</code> are used:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="nf">rmsmcBasic</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a><span class="w">  </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a><span class="w">  </span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-59-4" name="__codelineno-59-4" href="#__codelineno-59-4"></a><span class="w">  </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-59-5" name="__codelineno-59-5" href="#__codelineno-59-5"></a><span class="w">  </span><span class="c1">-- | model</span>
+<a id="__codelineno-59-6" name="__codelineno-59-6" href="#__codelineno-59-6"></a><span class="w">  </span><span class="kt">S</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-59-7" name="__codelineno-59-7" href="#__codelineno-59-7"></a><span class="w">  </span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<a id="__codelineno-59-8" name="__codelineno-59-8" href="#__codelineno-59-8"></a><span class="nf">rmsmc</span><span class="w"> </span><span class="p">(</span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="p">{</span><span class="o">..</span><span class="p">})</span><span class="w"> </span><span class="p">(</span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="o">..</span><span class="p">})</span><span class="w"> </span><span class="ow">=</span>
+<a id="__codelineno-59-9" name="__codelineno-59-9" href="#__codelineno-59-9"></a><span class="w">  </span><span class="p">(</span><span class="kt">TrBas</span><span class="o">.</span><span class="n">marginal</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">)</span>
+<a id="__codelineno-59-10" name="__codelineno-59-10" href="#__codelineno-59-10"></a><span class="w">  </span><span class="o">.</span><span class="w"> </span><span class="n">sequentially</span><span class="w"> </span>
+<a id="__codelineno-59-11" name="__codelineno-59-11" href="#__codelineno-59-11"></a><span class="w">      </span><span class="p">(</span>
+<a id="__codelineno-59-12" name="__codelineno-59-12" href="#__codelineno-59-12"></a><span class="w">      </span><span class="p">(</span><span class="n">composeCopies</span><span class="w"> </span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="kt">TrBas</span><span class="o">.</span><span class="n">mhStep</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">)</span>
+<a id="__codelineno-59-13" name="__codelineno-59-13" href="#__codelineno-59-13"></a><span class="w">      </span><span class="o">.</span><span class="w"> </span><span class="kt">TrBas</span><span class="o">.</span><span class="n">hoist</span><span class="w"> </span><span class="p">(</span><span class="n">resampleSystematic</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-59-14" name="__codelineno-59-14" href="#__codelineno-59-14"></a><span class="w">      </span><span class="n">numSteps</span>
+<a id="__codelineno-59-15" name="__codelineno-59-15" href="#__codelineno-59-15"></a><span class="w">  </span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="kt">S</span><span class="o">.</span><span class="n">hoistFirst</span><span class="w"> </span><span class="p">(</span><span class="kt">TrBas</span><span class="o">.</span><span class="n">hoist</span><span class="w"> </span><span class="p">(</span><span class="n">spawn</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="p">))</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">S</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">S</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="w"> </span><span class="p">(</span><span class="kt">P</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">))</span>
+</code></pre></div>
+<p>What is this doing? Recall that <code>S m a</code> represents an <code>m</code> of coroutines over <code>a</code>. Recall that <code>Traced m a</code> represents an <code>m</code> of  traced computations of <code>a</code>. Recall that <code>P m a</code> represents an <code>m</code> of a list of <code>a</code>s.</p>
+<p>This means that an <code>S (T (P m)) a</code> is a program "interpreted as a population of traced coroutines". The paper adds that this "allows us to apply MH transitions to partially executed coroutines, which is exactly what we require for the rejuvenation steps."</p>
+<p>So the algorithm works by creating <code>n</code> particles, and at each of the first <code>k</code> calls to <code>factor</code>, first resampling the population and then for each particle in the population, doing an MH-MCMC walk for <code>t</code> steps to update it. </p>
+<h3 id="sequential-monte-carlo-squared">Sequential Monte Carlo Squared<a class="headerlink" href="#sequential-monte-carlo-squared" title="Permanent link">&para;</a></h3>
+<p>This combines RMSMC and PMMH. That is, it is RMSMC, but for the MCMC rejuvenation procedure, PMMH is used instead of MH.</p>
+<p>There is one slight complication here, related to the fact that the MTL style effect system approach requires newtypes when more than one of a given effect appears in a stack, in order to differentiate them.</p>
+<!-- todo: finish -->
+
+<!-- ## Cheat Sheet
+
+
+Basic instances of `MonadDistribution`:
+- `SamplerIO`
+- `Traced m`
+- `Sequential m`
+
+Basic instances of `MonadFactor`:
+- `Weighted m`
+- `Sequential m`
+
+Basic instances of `MonadMeasure`:
+- `Enumerator` (discrete distributions only)
+
+Composed instances of `MonadMeasure`:
+
+- `Weighted SamplerIO` (used in weighted sampling)
+- `Traced (Weighted SamplerIO)` (used in MCMC)
+- `Sequential (Population (Weighted SamplerIO)` (used in SMC)
+-  more -->
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/tweag/monad-bayes" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.tooltips", "navigation.sections", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.12658920.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5cf534bf.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

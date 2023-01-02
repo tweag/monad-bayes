@@ -1,0 +1,945 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.0">
+    
+    
+      
+        <title>User Guide - Probabilistic Programming in Haskell</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.f79797b0.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#user-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Probabilistic Programming in Haskell" class="md-header__button md-logo" aria-label="Probabilistic Programming in Haskell" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Probabilistic Programming in Haskell
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              User Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Probabilistic Programming in Haskell" class="md-nav__button md-logo" aria-label="Probabilistic Programming in Haskell" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    Probabilistic Programming in Haskell
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../index.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../probprog.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage.md" class="md-nav__link">
+        None
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    Resources
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-distributions" class="md-nav__link">
+    Specifying distributions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constructing-distributions-as-programs" class="md-nav__link">
+    Constructing distributions as programs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hard-and-soft-conditioning" class="md-nav__link">
+    Hard and soft conditioning
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inference-methods" class="md-nav__link">
+    Inference methods
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exact-inference" class="md-nav__link">
+    Exact inference
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#near-exact-inference-for-continuous-distributions" class="md-nav__link">
+    Near exact inference for continuous distributions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-forward-sampling" class="md-nav__link">
+    Independent forward sampling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#independent-weighted-sampling" class="md-nav__link">
+    Independent weighted sampling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lazy-sampling" class="md-nav__link">
+    Lazy sampling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markov-chain-monte-carlo" class="md-nav__link">
+    Markov Chain Monte Carlo
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-mcmc" class="md-nav__link">
+    Streaming MCMC
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sequential-monte-carlo-particle-filtering" class="md-nav__link">
+    Sequential Monte Carlo (Particle Filtering)
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">&para;</a></h1>
+<p>Probabilistic programming is all about being able to write probabilistic models as programs. For instance, here is a Bayesian linear regression model, which we would write equationally as:</p>
+<div class="arithmatex">\[
+\beta \sim \operatorname{normal}(0, 2)
+\]</div>
+<div class="arithmatex">\[
+\alpha \sim \operatorname{normal}(0, 2)
+\]</div>
+<div class="arithmatex">\[
+\sigma^2 \sim \operatorname{gamma}(4, 4)
+\]</div>
+<div class="arithmatex">\[
+\epsilon_{n} \sim \operatorname{normal}(0, \sigma)
+\]</div>
+<div class="arithmatex">\[
+y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
+\]</div>
+<p>but in code as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">paramPriorRegression</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nf">paramPriorRegression</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">slope</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">2</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">intercept</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">2</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">noise</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">gamma</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="mi">4</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="p">,</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nf">regression</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Kernel</span><span class="w"> </span><span class="p">[(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nf">regression</span><span class="w"> </span><span class="n">xsys</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="p">,</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">paramPriorRegression</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="n">forM_</span><span class="w"> </span><span class="n">xsys</span><span class="w"> </span><span class="nf">\</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">normalPdf</span><span class="w"> </span><span class="p">(</span><span class="n">slope</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">intercept</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">sqrt</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span><span class="w"> </span><span class="n">y</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">slope</span><span class="p">,</span><span class="w"> </span><span class="n">intercept</span><span class="p">,</span><span class="w"> </span><span class="n">noise</span><span class="p">)</span>
+</code></pre></div>
+<p><code>regression</code> takes observations (a list of pairs of x and y values), and using the prior expressed by <code>paramPriorRegression</code>, returns the posterior conditioned on the observations.</p>
+<p>This is the <em>model</em>. To perform <em>inference</em> , suppose we have a data set <code>xsys</code> like:</p>
+<p><img alt="" src="../images/priorpred.png" /></p>
+<p>To run the model</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nf">mhRunsRegression</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="o">$</span><span class="w"> </span><span class="n">mcmc</span><span class="w"> </span><span class="kt">MCMCConfig</span><span class="w"> </span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span><span class="p">{</span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1500</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="n">proposal</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">SingleSiteMH</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="n">numBurnIn</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">500</span><span class="p">}</span><span class="w"> </span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="p">(</span><span class="n">regression</span><span class="w"> </span><span class="n">xsys</span><span class="p">)</span>
+</code></pre></div>
+<p>This yields 1000 samples from an MCMC walk using an MH kernel. <code>mh n</code> produces a distribution over chains of length <code>n</code>, along with the probability of that chain. Sampling a chain and plotting its final state gives:</p>
+<p><img alt="" src="/images/regress.png" /></p>
+<p>Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. </p>
+<!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerator` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
+
+`sprinkler` is specified as a program that has randomness (e.g. `bernoulli`) and scoring (e.g. `condition`). Hence the term *probabilistic programming*. The Grand Vision is that you write your statistical model as a probabilistic program and then choose or construct a method to perform inference in a statistically and computationally efficient way. -->
+
+<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
+<p>Other probabilistic programming languages with fairly similar APIs include WebPPL and Gen. This cognitive-science oriented introduction to <a href="https://probmods.org/">WebPPL</a> is an excellent resource for learning about probabilistic programming. The <a href="https://www.gen.dev/tutorials/">tutorials for Gen</a> are also very good, particularly for learning about traces.</p>
+<h2 id="specifying-distributions">Specifying distributions<a class="headerlink" href="#specifying-distributions" title="Permanent link">&para;</a></h2>
+<p>A distribution in monad-bayes over a set <span class="arithmatex">\(X\)</span>, is of type:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">X</span>
+</code></pre></div>
+<p>For beginner friendliness, a synonym <code>type Measure a = forall m . MonadDistribution m =&gt; m a</code> is provided (as well as <code>Distribution</code> shown above, for normalized distributions, and <code>Kernel</code> for functions into distributions).</p>
+<p>Monad-bayes provides standard distributions, such as</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nf">random</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="kt">Double</span>
+</code></pre></div>
+<p>which is distributed uniformly over <span class="arithmatex">\([0,1]\)</span>.</p>
+<p>The full set is listed at https://hackage.haskell.org/package/monad-bayes-0.1.1.0/docs/Control-Monad-Bayes-Class.html</p>
+<p>Note that these primitives already allows us to construct quite exotic distributions, like the uniform distribution over <code>(+) :: Int -&gt; Int -&gt; Int</code> and <code>(-) :: Int -&gt; Int -&gt; Int</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nf">distributionOverFunctions</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nf">distributionOverFunctions</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[(</span><span class="o">+</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="p">)]</span>
+</code></pre></div>
+<h2 id="constructing-distributions-as-programs">Constructing distributions as programs<a class="headerlink" href="#constructing-distributions-as-programs" title="Permanent link">&para;</a></h2>
+<p>monad-bayes also lets us construct new distributions out of these. <code>MonadMeasure m</code> implies <code>Monad m</code> and in turn <code>Functor m</code>, so we can do the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nf">fmap</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.5</span><span class="p">)</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+</code></pre></div>
+<p>This is the uniform distribution over <span class="arithmatex">\((0.5, 1]\)</span>.</p>
+<p>As an important special case, if <code>x :: MonadMeasure m =&gt; m (a,b)</code> is a joint distribution over two variables, then <code>fmap fst a :: MonadMeasure m =&gt; m a</code> <strong>marginalizes</strong> out the second variable. That is to say, <code>fmap fst a</code> is the distribution <span class="arithmatex">\(p(a)\)</span>, where <span class="arithmatex">\(p(a) = \int_b p(a,b)\)</span>.</p>
+<p>The above example use only the functor instance for <code>m</code>, but we also have the monad instance, as used in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="p">(</span><span class="nf">\</span><span class="n">x</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+<p>It's easiest to understand this distribution as a probabilistic program: it's the distribution you get by first sampling from <code>bernoulli 0.5</code>, then checking the result. If the result is <code>True</code>, then sample from <code>random</code>, else from <code>normal 0 1</code>. As a distribution, this has a PDF:</p>
+<div class="arithmatex">\[
+f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  
+\]</div>
+<p>Equivalently, we could write this in do-notation as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="n">bool</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="kr">if</span><span class="w"> </span><span class="n">bool</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+<p><strong>A technical note</strong>: it is often tempting to read the line <code>bool &lt;- bernoulli 0.5</code> as saying "take a sample from <code>bernoulli 0.5</code>. But although we'll see below that <code>example</code> can be interpreted as a sampler, there are many other interpretations, not least as a mathematical specification of a particular distribution.</p>
+<p>That said, it is often useful to think of probabilistic programs as specifying distributions over <strong>program executation traces</strong>. For example, one trace of <code>example</code> as defined above is (informally): <code>{bernoulli 0.5 : True, random : 0.7}</code>.</p>
+<h2 id="hard-and-soft-conditioning">Hard and soft conditioning<a class="headerlink" href="#hard-and-soft-conditioning" title="Permanent link">&para;</a></h2>
+<p>monad-bayes provides a function <code>score :: MonadMeasure m =&gt; Log Double -&gt; m ()</code>. (<strong>Note</strong>: <code>Log Double</code> is a wrapper for <code>Double</code> which stores doubles as their logarithm, and does multiplication by addition of logarithms.)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="n">bool</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="n">number</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">bool</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="n">score</span><span class="w"> </span><span class="n">number</span><span class="w"> </span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">bool</span>
+</code></pre></div>
+<p>It's easiest to understand this in terms of the "program execution trace" perspective described above. What the score statement does is to multiple every trace by the value of <code>number</code> in that particular trace.</p>
+<p><code>condition</code> in then defined as follows:</p>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nf">condition</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nf">condition</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+So <code>condition b</code> throws away every trace in which <code>b</code> is False, and keeps all traces in which <code>b</code> is True. For example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Int</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">poisson</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="o">%</span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">n</span>
+</code></pre></div>
+<p>This describes a Poisson distribution in which all even values of the random variable are marginalized out.</p>
+<h2 id="inference-methods">Inference methods<a class="headerlink" href="#inference-methods" title="Permanent link">&para;</a></h2>
+<p>To quote <a href="https://webppl.readthedocs.io/en/master/inference/">this page</a>, "marginal inference (or just inference) is the process of reifying the distribution on return values implicitly represented by a stochastic computation.". That is, a probabilistic program (stochastic computation) is an abstract object and inference transforms it into something concrete, like a histogram, a list of samples, or parameters of a known distribution.</p>
+<p>All inference methods in monad-bayes work with all distributions. The only exception is that exact inference only works with discrete distributions and will throw a runtime error on continuous distributions.</p>
+<p>The challenge of inference is that most distributions that are of interest are not as simple as <code>sprinkler</code>. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.</p>
+<p>Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given about are sufficient for that. </p>
+<p>The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.</p>
+<p>Two of the large classes of inference methods are <strong>sampling based methods</strong> and <strong>gradient based methods</strong>. The latter only apply to continuous probability distributions, and are not the focus of monad-bayes.</p>
+<!-- For the purposes of this section, let `dist :: MonadMeasure m => m a` be the distribution you want to perform inference on.  -->
+
+<h2 id="exact-inference">Exact inference<a class="headerlink" href="#exact-inference" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nf">enumerator</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Ord</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Enumerator</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+</code></pre></div>
+<p>So <code>enumerator (bernoulli 0.7)</code> gives you</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>[(False,0.3),(True,0.7)]
+</code></pre></div>
+<p>This works for distributions with <code>factor</code> statements (i.e. an instance of <code>MonadMeasure</code>), as in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nf">model</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.3</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="nf">enumerator</span><span class="w"> </span><span class="n">model</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="o">&gt;</span><span class="w"> </span><span class="p">[(</span><span class="kt">True</span><span class="p">,</span><span class="mf">0.7692307692307692</span><span class="p">),(</span><span class="kt">False</span><span class="p">,</span><span class="mf">0.23076923076923078</span><span class="p">)]</span>
+</code></pre></div>
+<p><strong>Note: <code>enumerator</code> only works on finite discrete distributions</strong></p>
+<p>It will run forever on infinite distributions like <code>enumerator (poisson 0.7)</code> and will throw the following <strong>runtime</strong> error on continuous distributions as in <code>enumerator (normal 0 1)</code>:</p>
+<p><em>"Exception: Infinitely supported random variables not supported in Enumerator"</em></p>
+<p><strong>However</strong>, it's totally fine to have the elements of the support themselves be infinite, as in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nf">fmap</span><span class="w"> </span><span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">ls</span><span class="p">,</span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">take</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">ls</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">))</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">enumerator</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="o">..</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">2</span><span class="o">..</span><span class="p">]]</span>
+</code></pre></div>
+<p>which gives</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>[([1,2,3,4],0.5),([2,3,4,5],0.5)]
+</code></pre></div>
+<h2 id="near-exact-inference-for-continuous-distributions">Near exact inference for continuous distributions<a class="headerlink" href="#near-exact-inference-for-continuous-distributions" title="Permanent link">&para;</a></h2>
+<p>Monad-Bayes does not currently support exact inference (via symbolic solving) for continuous distributions. However, it <em>does</em> support numerical integration. For example, for the distribution defined by</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nf">model</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="n">var</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">gamma</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="n">sqrt</span><span class="w"> </span><span class="n">var</span><span class="p">)</span>
+</code></pre></div>
+<p>you may run <code>probability (0, 1000) model</code> to obtain the probability in the range <code>(0,1000)</code>. As expected, this should be roughly <span class="arithmatex">\(0.5\)</span>, since the PDF of <code>model</code> is symmetric around <span class="arithmatex">\(0\)</span>.</p>
+<p>You can also try <code>expectation model</code>, <code>variance model</code>, <code>momentGeneratingFunction model n</code> or <code>cdf model n</code>. </p>
+<p>If the model has factor statements, as in</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nf">model</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Double</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="nf">model</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="n">var</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">gamma</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="n">sqrt</span><span class="w"> </span><span class="n">var</span><span class="p">)</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">var</span>
+</code></pre></div>
+<p>we must first <code>normalize</code> the model, as in <code>probability (0, 0.1) (normalize model)</code>.</p>
+<h2 id="independent-forward-sampling">Independent forward sampling<a class="headerlink" href="#independent-forward-sampling" title="Permanent link">&para;</a></h2>
+<p>For any probabilistic program <code>p</code> without any <code>condition</code> or <code>factor</code> statements, we may do <code>sampler p</code> or <code>sampleIOfixed p</code> (to run with a fixed seed) to obtain a sample in an ancestral fashion. For example, consider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="kr">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span>
+</code></pre></div>
+<p><code>sampler example</code> will produce a sample from a Bernoulli distribution with <span class="arithmatex">\(p=0.5\)</span>, and if it is <span class="arithmatex">\(True\)</span>, return a sample from a standard normal, else from a normal with mean 1 and std 2.</p>
+<p><code>(replicateM n . sampler) example</code> will produce a list of <code>n</code> independent samples. However, it is recommended to instead do <code>(sampler . replicateM n) example</code>, which will create a new model (<code>replicateM n example</code>) consisting of <code>n</code> independent draws from <code>example</code>. </p>
+<p>Because <code>sampler example</code> is totally pure, it is parallelizable. </p>
+<p>Monad-bayes gives the user freedom in the random number generator of the sampler: use <code>sampleWith</code> for full control.</p>
+<h2 id="independent-weighted-sampling">Independent weighted sampling<a class="headerlink" href="#independent-weighted-sampling" title="Permanent link">&para;</a></h2>
+<p>To perform weighted sampling, use:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">weighted</span><span class="p">)</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Weighted</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+</code></pre></div>
+<p><code>Weighted SamplerIO</code> is an instance of <code>MonadMeasure</code>, so we can apply this to any distribution. For example, suppose we have the distribution:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>Then:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="nf">run</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">(</span><span class="kt">Bool</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nf">run</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">weighted</span><span class="p">)</span><span class="w"> </span><span class="n">example</span>
+</code></pre></div>
+<p>is an IO operation which when run, will display either <code>(False, 0.0)</code> or <code>(True, 1.0)</code></p>
+<h2 id="lazy-sampling">Lazy sampling<a class="headerlink" href="#lazy-sampling" title="Permanent link">&para;</a></h2>
+<p>If you want to forward sample from an infinite program, just as a distribution over infinite lists, you can use monad-bayes's lazy sampler, which is based on LazyPPL. For example,</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Lazy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">Lazy</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Double</span><span class="p">]</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"> </span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">random</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="p">)</span><span class="w"> </span><span class="n">example</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="nf">infiniteList</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kt">Lazy</span><span class="o">.</span><span class="n">sampler</span><span class="w"> </span><span class="n">example</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="nf">take</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">infiniteList</span>
+</code></pre></div>
+<p>To perform weighted sampling, use <code>lwis</code> from <code>Control.Monad.Bayes.Inference.Lazy.WIS</code> as in <code>lwis 10 example</code>. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution. </p>
+<p>LazyPPL's <code>mh</code> implementation is also available.</p>
+<h2 id="markov-chain-monte-carlo">Markov Chain Monte Carlo<a class="headerlink" href="#markov-chain-monte-carlo" title="Permanent link">&para;</a></h2>
+<p>There are several versions of metropolis hastings MCMC defined in monad-bayes. The standard version is found in <code>Control.Monad.Bayes.Inference.MCMC</code>. You can use it as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">mcmc</span><span class="w"> </span><span class="p">(</span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span><span class="n">numBurnIn</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span><span class="n">proposal</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">SingleSiteMH</span><span class="p">}))</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Traced</span><span class="w"> </span><span class="p">(</span><span class="kt">Weighted</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+</code></pre></div>
+<p>As you can see, <code>mcmc</code> takes a <code>MCMCConfig</code> object, which is where you specify the number of steps in the MCMC chain, and the number of burn in steps. <code>SingleSiteMH</code> refers to the proposal used in the chain.</p>
+<p><code>Traced (Weighted SamplerIO)</code> is an instance of <code>MonadMeasure</code>, so we can apply this to any distribution. For instance:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>Then </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nf">run</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[</span><span class="kt">Bool</span><span class="p">]</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nf">run</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">mcmc</span><span class="w"> </span><span class="p">(</span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="n">numBurnIn</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="n">proposal</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">SingleSiteMH</span><span class="p">}))</span><span class="w"> </span><span class="n">example</span>
+</code></pre></div>
+<p>produces <span class="arithmatex">\(5\)</span> unbiased samples from the posterior, by using single-site trace MCMC with the Metropolis-Hastings (MH) method. This means that the random walk is over execution traces of the probabilistic program, and the proposal distribution modifies a single random variable as a time, and then uses MH for the accept-reject criterion. For example, from the above you'd get:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>[True,True,True,True,True]
+</code></pre></div>
+<p>The final element of the chain is the head of the list, so you can drop samples from the end of the list for burn-in.</p>
+<h2 id="streaming-mcmc">Streaming MCMC<a class="headerlink" href="#streaming-mcmc" title="Permanent link">&para;</a></h2>
+<p>You can also run <code>MCMC</code> using <code>mcmcP</code>. This creates an infinite chain, expressed as a stream or using the corresponding type from the <code>pipes</code> library, a <code>Producer</code>. This is a very natural representation of a random walk in Haskell.</p>
+<p>You can run this with a terminal user interface (TUI) by doing e.g.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="nf">tui</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="n">noVisual</span>
+</code></pre></div>
+<h2 id="sequential-monte-carlo-particle-filtering">Sequential Monte Carlo (Particle Filtering)<a class="headerlink" href="#sequential-monte-carlo-particle-filtering" title="Permanent link">&para;</a></h2>
+<p>Run SMC with two resampling steps and two particles as follows, given a model <code>m</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="nf">output</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="n">sampler</span><span class="w"> </span><span class="o">$</span><span class="w"> </span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="n">population</span><span class="w"> </span><span class="o">$</span><span class="w"> </span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">  </span><span class="n">smc</span><span class="w"> </span><span class="p">(</span><span class="kt">SMCConfig</span><span class="w"> </span>
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="w">    </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="w">    </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="w">    </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span><span class="p">)</span>
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="w">  </span><span class="n">m</span>
+</code></pre></div>
+<!-- Or if you prefer, think of the inference method as:
+
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span><span class="n">random</span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Numeric</span><span class="o">.</span><span class="kt">Log</span><span class="o">.</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="p">```</span><span class="w"> </span><span class="o">--&gt;</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="o">&lt;!--</span><span class="w"> </span><span class="p">`</span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)`</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span><span class="p">`</span><span class="kt">MonadMeasure</span><span class="p">`,</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">we</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">inference</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">distribution</span><span class="o">.</span><span class="w"> </span><span class="kt">For</span><span class="w"> </span><span class="kr">instance</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">our</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="n">familiar</span><span class="w"> </span><span class="p">`</span><span class="n">example</span><span class="p">`</span><span class="kt">:</span><span class="w"> </span><span class="o">--&gt;</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="kt">As</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">concrete</span><span class="w"> </span><span class="n">example</span><span class="p">,</span><span class="w"> </span><span class="n">here</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">probabilistic</span><span class="w"> </span><span class="n">program</span><span class="kt">:</span>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a><span class="p">```</span><span class="n">haskell</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span><span class="n">random</span><span class="p">)</span><span class="w"> </span>
+<a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a><span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Numeric</span><span class="o">.</span><span class="kt">Log</span><span class="o">.</span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+<a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a><span class="p">```</span><span class="w"> </span><span class="o">--&gt;</span>
+<a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>
+<a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a><span class="o">&lt;!--</span><span class="w"> </span><span class="p">`</span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="kt">SamplerIO</span><span class="p">)`</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span><span class="p">`</span><span class="kt">MonadMeasure</span><span class="p">`,</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">we</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">apply</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="n">inference</span><span class="w"> </span><span class="n">method</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">distribution</span><span class="o">.</span><span class="w"> </span><span class="kt">For</span><span class="w"> </span><span class="kr">instance</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="n">our</span><span class="w"> </span><span class="n">now</span><span class="w"> </span><span class="n">familiar</span><span class="w"> </span><span class="p">`</span><span class="n">example</span><span class="p">`</span><span class="kt">:</span><span class="w"> </span><span class="o">--&gt;</span>
+<a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>
+<a id="__codelineno-29-16" name="__codelineno-29-16" href="#__codelineno-29-16"></a><span class="kt">As</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">concrete</span><span class="w"> </span><span class="n">example</span><span class="p">,</span><span class="w"> </span><span class="n">here</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">probabilistic</span><span class="w"> </span><span class="n">program</span><span class="kt">:</span>
+<a id="__codelineno-29-17" name="__codelineno-29-17" href="#__codelineno-29-17"></a>
+<a id="__codelineno-29-18" name="__codelineno-29-18" href="#__codelineno-29-18"></a><span class="p">```</span><span class="n">haskell</span>
+<a id="__codelineno-29-19" name="__codelineno-29-19" href="#__codelineno-29-19"></a><span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Bool</span>
+<a id="__codelineno-29-20" name="__codelineno-29-20" href="#__codelineno-29-20"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-29-21" name="__codelineno-29-21" href="#__codelineno-29-21"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-29-22" name="__codelineno-29-22" href="#__codelineno-29-22"></a><span class="w">  </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-29-23" name="__codelineno-29-23" href="#__codelineno-29-23"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+
+And here is the inference: 
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nf">run</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="nf">run</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">population</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="p">(</span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">  </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}))</span><span class="w"> </span><span class="n">example</span>
+</code></pre></div>
+
+The result:
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>[(True,6.25e-2),(True,6.25e-2),(True,6.25e-2),(True,6.25e-2)]
+</code></pre></div>
+
+Each of these is a particle with a weight. In this simple case, there are all identical - obviously in general they won't be.
+
+`numSteps` is the number of steps that the `SMC` algorithm takes, i.e. how many times it resamples. Specify it as either `All` or `Only n` for `n` an integer. This should generally be the number of factor statements in the program. `numParticles` is the size of the population. Larger is better but slower.
+
+`resampler` is the mechanism used to resampling the population of particles after each `factor` statement.
+
+## Resample Move Sequential Monte Carlo
+
+This is a fancier variant of SMC, which has the particles take an MCMC walk through the solution space in order to spread out. This can avoid a common failure mode of SMC, where the population concentrates its weight too heavily on one mode.
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nf">rmsmcBasic</span><span class="w"> </span><span class="ow">::</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">  </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">  </span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">  </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="w">  </span><span class="c1">-- | model</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="w">  </span><span class="kt">Sequential</span><span class="w"> </span><span class="p">(</span><span class="kt">TrBas</span><span class="o">.</span><span class="kt">Traced</span><span class="w"> </span><span class="p">(</span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="w">  </span><span class="kt">Population</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+</code></pre></div>
+
+For instance:
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="nf">run</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="p">[(</span><span class="kt">Bool</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="nf">run</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="w">  </span><span class="n">sampler</span><span class="w"> </span><span class="o">.</span><span class="w"> </span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="w">  </span><span class="n">population</span><span class="w"> </span><span class="o">.</span><span class="w"> </span>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="w">  </span><span class="n">rmsmcBasic</span><span class="w"> </span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="w">    </span><span class="kt">MCMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">proposal</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">SingleSiteMH</span><span class="p">,</span><span class="w"> </span><span class="n">numBurnIn</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a><span class="w">    </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">4</span><span class="p">})</span><span class="w"> </span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a><span class="w">  </span><span class="n">example</span>
+</code></pre></div>
+
+What this returns is a population of samples, just like plain `SMC`. More MCMC steps is of course better, but slower.
+
+## Particle Marginal Metropolis Hastings
+
+This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
+
+Run it like this:
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nf">sampler</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">pmmh</span><span class="w"> </span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="w">    </span><span class="n">mcmcConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numMCMCSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">100</span><span class="p">}</span><span class="w"> </span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="w">    </span><span class="n">smcConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">100</span><span class="p">}</span><span class="w"> </span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">    </span><span class="n">random</span><span class="w"> </span><span class="p">(</span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+
+The model is specified in two parts, the prior is `random` and the likelihood is `(\x -> normal 0 x)`.
+
+This produces a list, representing the MCMC chain. Each element in the chain is a population of particles.
+
+<!-- todo -->
+
+<!-- Here I use "inference" to mean the process of getting from the distribution in the abstract the something concrete, like samples from it,  an expectation over it, parameters of it, or in the above case of `enumerator`, the mass of each element of the support. -->
+
+<!-- You then want to be able to convert this abstract specification of a distribution or model into something tangible, and in the case of this simple discrete distribution, we can do so by brute force. That's what `enumerator` does. -->
+
+<!-- It feels natural that a pure, functional, strongly typed language like Haskell should have a good story for Bayesian probability, inference, and probabilistic programming.  -->
+
+<!-- denotation of probabilistic programs, which we then are free to interpret in myriad ways: as weighted lists, samplers, or a variety of more sophisticated programs for performing inference -->
+
+<!-- In particular, these interpretations can be combined, and by so doing, you can built up really rather complex inference algorithms while being sure that your method is sound. And also intelligible.  -->
+
+<!-- *The interpretation of your model is the program which performs inference on it* -->
+
+<!-- # Example Gallery -->
+
+<!-- todo: link to monad-bayes examples, with graphs and how to run -->
+
+<!-- `sprinkler` above is a great example of the two new things you can do in a probabilistic program that you can't do in other programs: you can draw from distributions, and you can *condition* on observations. For example:
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">    </span><span class="n">ind</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="p">(</span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.9</span><span class="p">)</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">    </span><span class="n">val</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">gaussian</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">poisson</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">    </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">val</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">ind</span>
+</code></pre></div>
+
+This example is contrived, in order to show a few things. First, `m` in distributions like `bernoulli 0.9 :: MonadDistribution m => m Bool` (the distribution `{True : 0.9, False: 0.1}`) are functors, so we can fmap over them, e.g. with `not` to get the distribution `{True : 0.1, False: 0.9}`. Second, distributions are monads, so we can draw from them and use the results as the parameters of other distributions. Third, we have a `condition` function, which throws out all values of `ind` which would result in `val <= 1`.
+
+The fact that distributions are a monad is the essence of probabilistic programming. It allows you to express everything from simple models (Bayesian linear regression) to complex ones (hierarchical latent Dirichlet models) in a shared language. See the `models` folder (TODO LINK) for examples.
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nf">betaBernoulli</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">Bool</span><span class="p">]</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="nf">betaBernoulli</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="w">  </span><span class="n">weight</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">uniform</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">toss</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="n">weight</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="w">  </span><span class="n">replicateM</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">toss</span>
+</code></pre></div>
+
+ -->
+
+<h1 id="interoperating-with-other-haskell-code">Interoperating with other Haskell code<a class="headerlink" href="#interoperating-with-other-haskell-code" title="Permanent link">&para;</a></h1>
+<p>Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. </p>
+<p>For example, we can use ordinary monadic combinators, as in:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">  </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">(</span><span class="n">score</span><span class="w"> </span><span class="mf">0.8</span><span class="p">)</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">  </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
+</code></pre></div>
+<p>or </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">whileM</span><span class="w"> </span><span class="p">(</span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.99</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">normal</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+<p>You may write distributions over artibrary types. For example, rather than drawing a sample from a distribution and then using the sample to construct a histogram or a plot, you can directly define a distribution over histograms or plots, and sample from that.</p>
+<p>You can have distributions over arbitrary data structures, such as trees, JSONs, databases, and so on. You can use <code>MonadMeasure m =&gt; m</code> as the monad in libraries which are parametric in a monad, such as <code>megaparsec</code> or <code>pipes</code>.</p>
+<!-- We can use libraries like Pipes, to specify lazy distributions as in models/Pipes.hs
+
+We can write probabilistic optics to update or view latent variables, as in models/Lens.hs.
+
+We can define models like PCFGs using recursion schemes, as in models/PCFG.hs.
+
+We can write probabilistic parsers, as in models/Parser.hs.
+
+We can use monad transformers on top of our probability monad `m`, as in models/Failure.hs. -->
+
+<!-- And, because we're programming directly in Haskell, rather than a domain specific language (like Church, Gen, WebPPL and most other probabilistic programming languages), we can interoperate with any other Haskell concepts. Two examples: -->
+
+<h1 id="tips-on-writing-good-probabilistic-programs">Tips on writing good probabilistic programs<a class="headerlink" href="#tips-on-writing-good-probabilistic-programs" title="Permanent link">&para;</a></h1>
+<p>There are many ways to specify the same distribution, and some will lend themselves more readily to efficient inference than others. For instance,</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="nf">mixture1</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a><span class="w">    </span><span class="n">cluster</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="w">    </span><span class="n">prediction</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="mi">1</span>
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="w">    </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">prediction</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="p">)</span>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">cluster</span>
+</code></pre></div>
+<p>is a piece of code to infer whether an observed point was generated from a Gaussian of mean <span class="arithmatex">\(1\)</span> or <span class="arithmatex">\(5\)</span>. That is, <code>mixture1</code> is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with <code>mixture1</code> though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the <code>condition</code> requires.</p>
+<p>However, the same conditional distribution is represented by </p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nf">mixture2</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">    </span><span class="n">cluster</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">    </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="n">normalPdf</span><span class="w"> </span><span class="n">cluster</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">point</span><span class="p">)</span>
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">cluster</span>
+</code></pre></div>
+<p>This version, while <em>denotationally identical</em> (i.e. representing the same mathematical object), is perfectly amenable to exact inference:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="nf">enumerator</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">mixture2</span><span class="w"> </span><span class="mi">2</span>
+</code></pre></div>
+<p>yields</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="p">[(</span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.98</span><span class="o">...</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.017</span><span class="o">...</span><span class="p">)]</span>
+</code></pre></div>
+<p>as well as sampling methods. </p>
+<p>The local lesson here is that you shouldn't <code>condition</code> on samples from a continuous distribution and expect a sampling based inference method to work. But the more general lesson is that you aren't exempted from thinking about inference when specifying your model. Alas.</p>
+<p>As a second example of this general point, consider:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nf">allAtOnce</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a><span class="w">    </span><span class="n">condition</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+<a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nf">incremental</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="w">    </span><span class="n">condition</span><span class="w"> </span><span class="n">x</span>
+<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="w">    </span><span class="n">condition</span><span class="w"> </span><span class="n">y</span>
+<a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</code></pre></div>
+<p>Like in the previous example, <code>allAtOnce</code> and <code>incremental</code> denote the same distribution, namely <code>[(True, 1.0), (False, 0.0)]</code>. However, any inference algorithm for <code>allAtOnce</code> will have to explore all 4 possible variable assignments (<code>[(True,True), (True, False), (False, True), (False, False)]</code>). Meanwhile, <code>incremental</code> opens the possibility for inference algorithms to first determine the value of <code>x</code> and then of <code>y</code>.</p>
+<p>In this example, the performance difference is negligible, but it's easy to extend this to models where it's the difference between something tractable and something intractable. </p>
+<!-- todo: similar lesson about incremental factors: compare two models -->
+
+<!-- ## Executables
+
+monad-bayes comes with an executable called `example`. It's not particularly useful, except as a reference to see a compiled program which generates data, performs inference and reports the results. Once you've done `stack build`, run this with e.g.:
+
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a>stack exec example -- -m LDA4 -a MH
+</code></pre></div>
+
+where the options for `-m` (model) are "LDA" (latent dirichlet), "LR" (logistic regression) and "HMM" (hidden Markov model) and for `-a` (algorithm) are "MH" (Metropolis Hastings), "SMC" (sequential Monte Carlo), and "RMSMC" (resample-move sequential Monte Carlo). The number is the number of steps to take. -->
+
+<h1 id="api-docs">API docs<a class="headerlink" href="#api-docs" title="Permanent link">&para;</a></h1>
+<p>For API docs in the normal Haskell style, see <a href="https://hackage.haskell.org/package/monad-bayes">hackage</a>.</p>
+<h1 id="monad-bayes-vs-other-libraries">Monad-Bayes vs other libraries<a class="headerlink" href="#monad-bayes-vs-other-libraries" title="Permanent link">&para;</a></h1>
+<p>Monad-bayes is a universal probabilistic programming system, in the sense that you can express any computable distribution. In this respect it differs from Stan, which focuses instead on handling inference on an important subset well.</p>
+<p>There is a variety of universal probabilistic programming libraries and/or languages, which include WebPPL, Gen, Pyro and Edward.</p>
+<p><strong>What other approaches have that Monad-Bayes lacks</strong>:</p>
+<p>A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")</p>
+<p><strong>What Monad-Bayes has that is unique</strong>: </p>
+<p>Monad-Bayes is just a library, unlike almost all other PPLs, which are separate languages written inside another language. As such, probabilistic programs in monad-bayes are first class programs in Haskell with no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like <code>pipes</code>, <code>lens</code> and <code>Parsec</code>. Everything is pure. Everything is strongly typed. You can make use of laziness.</p>
+<p>Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+      
+      
+    
+    <a href="https://github.com/tweag/monad-bayes" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.tooltips", "navigation.sections", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.12658920.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5cf534bf.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
