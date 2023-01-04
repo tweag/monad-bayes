@@ -51,4 +51,4 @@ A **new major GHC version** has been released. Here's what you need to do:
 
 ## Documentation
 
-The docs are built with MkDocs.
+The docs are built with MkDocs. Serve locally with: `mkdocs serve`. Site is served online with Netlify.
