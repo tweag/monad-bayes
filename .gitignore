@@ -1,4 +1,5 @@
 src/data
+docs/site
 venv
 _cache
 docs/build
