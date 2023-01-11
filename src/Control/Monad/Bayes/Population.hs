@@ -22,6 +22,7 @@ module Control.Monad.Bayes.Population
     fromWeightedList,
     spawn,
     multinomial,
+    normalize,
     resampleMultinomial,
     systematic,
     resampleSystematic,
@@ -50,6 +51,7 @@ import Control.Monad.Bayes.Weighted
   ( Weighted,
     applyWeight,
     extractWeight,
+    unweighted,
     weighted,
     withWeight,
   )
@@ -274,3 +276,7 @@ hoist ::
   Population m a ->
   Population n a
 hoist f = fromWeightedList . f . population
+
+-- | Normalizes the weights in the population so that their sum is 1.
+normalize :: (Monad m) => Population m a -> Population m a
+normalize = hoist unweighted . extractEvidence
