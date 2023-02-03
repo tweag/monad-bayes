@@ -328,18 +328,20 @@ Summary of key info on `PopulationT`:
 - `instance MonadFactor m => instance MonadFactor (PopulationT m)`
 
 ```haskell
-newtype PopulationT m a = PopulationT (WeightedT (ListT m) a)
+newtype PopulationT m a = PopulationT (WeightedT (FreeT [] m) a)
 ```
 
-So:
+The `FreeT []` construction is for branching our probabilistic program into different branches,
+corresponding to different choices of a random variable.
+
+It is interpreted, using `runPopulationT`, to:
 
 ```haskell
-PopulationT m a ~ m [Log Double -> (a, Log Double)]
+m [(a, Log Double)]
 ```
 
-Note that while `ListT` isn't in general a valid monad transformer, we're not requiring it to be one here.
-
-`Population` is used to represent a collection of particles (in the statistical sense), along with their weights.
+This shows that `Population` is used to compute a collection of particles (in the statistical sense), along with their weights.
+Each `a` corresponds to one particle, and `Log Double` is the type of its weight.
 
 There are several useful functions associated with it:
 

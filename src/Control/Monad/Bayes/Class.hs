@@ -79,9 +79,9 @@ import Control.Monad (replicateM, when)
 import Control.Monad.Cont (ContT)
 import Control.Monad.Except (ExceptT, lift)
 import Control.Monad.Identity (IdentityT)
-import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
+import Control.Monad.Trans.Free.Ap (FreeT)
 import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H
@@ -390,15 +390,15 @@ instance (MonadFactor m) => MonadFactor (StateT s m) where
 
 instance (MonadMeasure m) => MonadMeasure (StateT s m)
 
-instance (MonadDistribution m) => MonadDistribution (ListT m) where
+instance (Applicative f, (MonadDistribution m)) => MonadDistribution (FreeT f m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
-instance (MonadFactor m) => MonadFactor (ListT m) where
+instance (Applicative f, (MonadFactor m)) => MonadFactor (FreeT f m) where
   score = lift . score
 
-instance (MonadMeasure m) => MonadMeasure (ListT m)
+instance (Applicative f, (MonadMeasure m)) => MonadMeasure (FreeT f m)
 
 instance (MonadDistribution m) => MonadDistribution (ContT r m) where
   random = lift random
