@@ -52,3 +52,18 @@ A **new major GHC version** has been released. Here's what you need to do:
 ## Documentation
 
 The docs are built with MkDocs. Serve locally with: `mkdocs serve`. Site is served online with Netlify.
+
+# Benchmarking
+
+## Quick benchmark
+
+* Run `cabal run single -- -m MODEL -a ALG`
+  * For `MODEL`, insert e.g. `LR100`
+  * For `ALG`, insert e.g. `SMC`
+  * See `benchmark/Single.hs` for details
+
+## Extensive benchmark
+
+* Run `cabal bench speed-bench`
+* It will run several benchmarks of differing complexity, and try to plot them using Python Pandas
+* Look at `samples.pdf`

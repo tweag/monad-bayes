@@ -26,6 +26,8 @@ import Data.Text qualified as T
 import HMM qualified
 import LDA qualified
 import LogReg qualified
+import System.Directory (removeFile)
+import System.IO.Error (catchIOError, isDoesNotExistError)
 import System.Process.Typed (runProcess)
 
 data ProbProgSys = MonadBayes
@@ -133,13 +135,34 @@ samplesBenchmarks lrData hmmData ldaData = benchmarks
           m <- models
           return (s, m, a)
 
+speedLengthCSV :: FilePath
+speedLengthCSV = "speed-length.csv"
+
+speedSamplesCSV :: FilePath
+speedSamplesCSV = "speed-samples.csv"
+
+rawDAT :: FilePath
+rawDAT = "raw.dat"
+
+cleanupLastRun :: IO ()
+cleanupLastRun = mapM_ removeIfExists [speedLengthCSV, speedSamplesCSV, rawDAT]
+
+removeIfExists :: FilePath -> IO ()
+removeIfExists file = do
+  putStrLn $ "Removing: " ++ file
+  catchIOError (removeFile file) $ \e ->
+    if isDoesNotExistError e
+      then putStrLn "Didn't find file, not removing"
+      else ioError e
+
 main :: IO ()
 main = do
+  cleanupLastRun
   lrData <- sampleIOfixed (LogReg.syntheticData 1000)
   hmmData <- sampleIOfixed (HMM.syntheticData 1000)
   ldaData <- sampleIOfixed (LDA.syntheticData 5 1000)
-  let configLength = defaultConfig {csvFile = Just "speed-length.csv", rawDataFile = Just "raw.dat"}
+  let configLength = defaultConfig {csvFile = Just speedLengthCSV, rawDataFile = Just rawDAT}
   defaultMainWith configLength (lengthBenchmarks lrData hmmData ldaData)
-  let configSamples = defaultConfig {csvFile = Just "speed-samples.csv", rawDataFile = Just "raw.dat"}
+  let configSamples = defaultConfig {csvFile = Just speedSamplesCSV, rawDataFile = Just rawDAT}
   defaultMainWith configSamples (samplesBenchmarks lrData hmmData ldaData)
   void $ runProcess "python plots.py"

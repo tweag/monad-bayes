@@ -239,6 +239,7 @@ benchmark speed-bench
     , base
     , containers
     , criterion
+    , directory
     , log-domain
     , monad-bayes
     , mwc-random
