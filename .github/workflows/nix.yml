@@ -38,5 +38,5 @@ jobs:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Build
         run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes
-      - name: Development environenment
+      - name: Development environment
         run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes --command echo Ready
