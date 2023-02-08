@@ -166,6 +166,7 @@ test-suite monad-bayes-test
     HMM
     LDA
     LogReg
+    NonlinearSSM
     Sprinkler
     TestAdvanced
     TestBenchmarks
@@ -177,6 +178,7 @@ test-suite monad-bayes-test
     TestPopulation
     TestSampler
     TestSequential
+    TestSSMFixtures
     TestStormerVerlet
     TestWeighted
 
