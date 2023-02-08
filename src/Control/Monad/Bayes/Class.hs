@@ -81,7 +81,7 @@ import Control.Monad.Except (ExceptT, lift)
 import Control.Monad.Identity (IdentityT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
-import Control.Monad.Trans.Free.Ap (FreeT)
+import Control.Monad.Trans.Free (FreeT)
 import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H

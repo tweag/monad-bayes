@@ -56,7 +56,7 @@ import Control.Monad.Bayes.Weighted
 import Control.Monad.Bayes.Weighted qualified as Weighted
 import Control.Monad.IO.Class
 import Control.Monad.Trans
-import Control.Monad.Trans.Free.Ap
+import Control.Monad.Trans.Free
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)
