@@ -296,7 +296,7 @@ runWeightedT (WeightedT m) = runStateT m 1
 
 `WeightedT m` is not an instance of `MonadDistribution`, but only as instance of `MonadFactor` (and that, only when `m` is an instance of `Monad`). However, since `StateT` is a monad transformer, there is a function `lift :: m Double -> WeightedT m Double`.
 
-So if we take a `MonadDistribution` instance like `SamplerIO`, then `WeightedT SamplerIO` is an instance of both `MonadDistribution` and `MonadFactor`. Which means it is an instance of `MonadMeasure`.
+So if we take a `MonadDistribution` instance like `SamplerIO`, then `Weighted SamplerIO` is an instance of both `MonadDistribution` and `MonadFactor`. Which means it is an instance of `MonadMeasure`.
 
 So we can successfully write `(sampler . runWeightedT) sprinkler` and get a program of type `IO (Bool, Log Double)`. When run, this will draw a sample from `sprinkler` along with an **unnormalized** density for that sample.
 
@@ -339,7 +339,7 @@ PopulationT m a ~ m [Log Double -> (a, Log Double)]
 
 Note that while `ListT` isn't in general a valid monad transformer, we're not requiring it to be one here.
 
-`PopulationT` is used to represent a collection of particles (in the statistical sense), along with their weights.
+`Population` is used to represent a collection of particles (in the statistical sense), along with their weights.
 
 There are several useful functions associated with it:
 
@@ -360,7 +360,7 @@ gives
 [([((),0.5),((),0.5)],1.0)]
 ```
 
-Observe how here we have interpreted `(spawn 2)` as of type `PopulationT Enumerator ()`.
+Observe how here we have interpreted `(spawn 2)` as of type `Population Enumerator ()`.
 
 `resampleGeneric` takes a function to probabilistically select a set of indices from a vector, and makes a new population by selecting those indices.
 
@@ -393,8 +393,8 @@ Summary of key info on `SequentialT`:
 
 
 ```haskell
-newtype SequentialT m a =
-    SequentialT {runSequentialT :: Coroutine (Await ()) m a}
+newtype Sequential m a =
+    Sequential {runSequential :: Coroutine (Await ()) m a}
 ```
 
 This is a wrapper for the `Coroutine` type applied to the `Await` constructor from `Control.Monad.Coroutine`, which is defined thus:
@@ -410,7 +410,7 @@ newtype Await x y = Await (x -> y)
 Unpacking that:
 
 ```haskell
-SequentialT m a ~ m (Either (() -> SequentialT m a) a)
+Sequential m a ~ m (Either (() -> Sequential m a) a)
 ```
 
 As usual, `m` is going to be some other probability monad, so understand `SequentialT m a` as representing a program which, after making a random choice or doing conditioning, we either obtain an `a` value, or a paused computation, which when resumed gets us back to a new `SequentialT m a`.
@@ -501,11 +501,11 @@ The latter is best understood if you're familiar with the standard use of a free
 
 ```haskell
 newtype SamF a = Random (Double -> a)
-newtype DensityT m a =
-    DensityT {getDensityT :: FT SamF m a}
+newtype Density m a =
+    Density {density :: FT SamF m a}
 
-instance Monad m => MonadDistribution (DensityT m) where
-  random = DensityT $ liftF (Random id)
+instance Monad m => MonadDistribution (Density m) where
+  random = Density $ liftF (Random id)
 ```
 
 The monad-bayes implementation uses a more efficient implementation of `FreeT`, namely `FT` from the `free` package, known as the *Church transformed Free monad*. This is a technique explained in https://begriffs.com/posts/2016-02-04-difference-lists-and-codennsity.html. But that only changes the operational semantics - performance aside, it works just the same as the standard `FreeT` datatype.
@@ -575,7 +575,7 @@ data Trace a = Trace
   }
 ```
 
-We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what `DensityT` is for.
+We also need a specification of the probabilistic program in question, free of any particular interpretation. That is precisely what `Density` is for.
 
 The simplest version of `TracedT` is in `Control.Monad.Bayes.TracedT.Basic`
 
@@ -635,13 +635,13 @@ example = do
   return x
 ```
 
-`(enumerator . runWeightedT) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampler . runWeightedT) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`.
+`(enumerator . weighted) example` gives `[((False,0.0),0.5),((True,1.0),0.5)]`. This is quite edifying for understanding `(sampler . weighted) example`. What it says is that there are precisely two ways the program will run, each with equal probability: either you get `False` with weight `0.0` or `True` with weight `1.0`.
 
 ### Quadrature
 
 As described on the section on `Integrator`, we can interpret our probabilistic program of type `MonadDistribution m => m a` as having concrete type `Integrator a`. This views our program as an integrator, allowing us to calculate expectations, probabilities and so on via quadrature (i.e. numerical approximation of an integral).
 
-This can also handle programs of type `MonadMeasure m => m a`, that is, programs with `factor` statements. For these cases, a function `normalize :: WeightedT Integrator a -> Integrator a` is employed. For example,
+This can also handle programs of type `MonadMeasure m => m a`, that is, programs with `factor` statements. For these cases, a function `normalize :: Weighted Integrator a -> Integrator a` is employed. For example,
 
 ```haskell
 model :: MonadMeasure m => m Double
@@ -652,7 +652,7 @@ model = do
   return var
 ```
 
-is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `WeightedT Integrator Double`, which is isomorphic to `(Double -> (Double, Log Double) -> Double)`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`.
+is really an unnormalized measure, rather than a probability distribution. `normalize` views it as of type `Weighted Integrator Double`, which is isomorphic to `(Double -> (Double, Log Double) -> Double)`. This can be used to compute the normalization constant, and divide the integrator's output by it, all within `Integrator`.
 
 ### Independent forward sampling
 
@@ -796,7 +796,7 @@ pmmh ::
 pmmh mcmcConf smcConf param model =
   (mcmc mcmcConf :: T m [(a, Log Double)] -> m [[(a, Log Double)]])
   ((param :: T m b) >>=
-      (runPopulationT :: P (T m) a -> T m [(a, Log Double)])
+      (population :: P (T m) a -> T m [(a, Log Double)])
       . (pushEvidence :: P (T m) a -> P (T m) a)
       . Pop.hoist (lift :: forall x. m x -> T m x)
       . (smc smcConf :: S (P m) a -> P m a)
