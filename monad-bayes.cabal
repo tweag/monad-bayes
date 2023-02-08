@@ -103,7 +103,7 @@ library
   if flag(dev)
     ghc-options:
       -Wall -Werror -Wno-missing-local-signatures -Wno-trustworthy-safe
-      -Wno-missing-import-lists -Wno-implicit-prelude
+      -Wno-missing-import-lists -Wno-implicit-prelude -Wno-name-shadowing
       -Wno-monomorphism-restriction -Wredundant-constraints
 
   else
