@@ -44,7 +44,7 @@ mcmcDynamic (MCMCConfig {..}) m = burnIn numBurnIn $ unweighted $ Dynamic.mh num
 
 -- -- | draw iid samples until you get one that has non-zero likelihood
 independentSamples :: Monad m => Static.Traced m a -> P.Producer (MHResult a) m (Trace a)
-independentSamples (Static.Traced w d) =
+independentSamples (Static.Traced _w d) =
   P.repeatM d
     >-> P.takeWhile' ((== 0) . probDensity)
     >-> P.map (MHResult False)

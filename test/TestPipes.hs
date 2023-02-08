@@ -7,9 +7,7 @@ import Control.Monad.Bayes.Class ()
 import Control.Monad.Bayes.Enumerator (enumerator)
 import Data.AEq (AEq ((~==)))
 import HMM (hmm, hmmPosterior)
-import Pipes ((>->))
 import Pipes.Prelude (toListM)
-import qualified Pipes.Prelude as Pipes
 
 urns :: Int -> Bool
 urns n = enumerator (urn n) ~== enumerator (urnP n)

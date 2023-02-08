@@ -20,7 +20,6 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Integrator (normalize)
 import Control.Monad.Bayes.Integrator qualified as Integrator
 import Control.Monad.Bayes.Population
-import Control.Monad.Bayes.Population (collapse, runPopulation)
 import Control.Monad.Bayes.Sampler.Strict (Sampler, sampleIOfixed)
 import Control.Monad.Bayes.Sampler.Strict qualified as Sampler
 import Control.Monad.Bayes.Weighted (Weighted)
@@ -28,7 +27,7 @@ import Control.Monad.Bayes.Weighted qualified as Weighted
 import Data.AEq (AEq ((~==)))
 import Numeric.Log (Log)
 import Sprinkler (soft)
-import System.Random.Stateful (IOGenM, StdGen, mkStdGen, newIOGenM)
+import System.Random.Stateful (IOGenM, StdGen)
 
 sprinkler :: MonadMeasure m => m Bool
 sprinkler = Sprinkler.soft

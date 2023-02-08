@@ -1,15 +1,7 @@
 module TestAdvanced where
 
-import ConjugatePriors
-  ( betaBernoulli',
-    betaBernoulliAnalytic,
-    gammaNormal',
-    gammaNormalAnalytic,
-    normalNormal',
-    normalNormalAnalytic,
-  )
 import Control.Arrow
-import Control.Monad (join, replicateM)
+import Control.Monad (join)
 import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Enumerator
 import Control.Monad.Bayes.Inference.MCMC
@@ -19,9 +11,6 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Inference.SMC2
 import Control.Monad.Bayes.Population
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Traced
-import Control.Monad.Bayes.Weighted
-import Numeric.Log (Log)
 
 mcmcConfig :: MCMCConfig
 mcmcConfig = MCMCConfig {numMCMCSteps = 0, numBurnIn = 0, proposal = SingleSiteMH}

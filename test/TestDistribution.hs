@@ -9,13 +9,10 @@ module TestDistribution
 where
 
 import Control.Monad (replicateM)
-import Control.Monad.Bayes.Class (MonadDistribution, mvNormal)
+import Control.Monad.Bayes.Class (mvNormal)
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Identity (runIdentity)
-import Control.Monad.State (evalStateT)
 import Data.Matrix (fromList)
 import Data.Vector qualified as V
-import System.Random.MWC (toSeed)
 
 -- Test the sampled covariance is approximately the same as the
 -- specified covariance.

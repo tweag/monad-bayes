@@ -14,7 +14,7 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Integrator
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Weighted (weighted)
-import Control.Monad.ST (ST, runST)
+import Control.Monad.ST (runST)
 import Data.AEq (AEq ((~==)))
 import Data.List (sortOn)
 import Data.Set (fromList)
