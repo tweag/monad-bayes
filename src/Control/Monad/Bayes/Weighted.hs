@@ -24,6 +24,8 @@ module Control.Monad.Bayes.Weighted
   )
 where
 
+import Control.Applicative (Alternative)
+import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
   ( MonadDistribution,
     MonadFactor (..),
@@ -36,7 +38,7 @@ import Numeric.Log (Log)
 -- | Execute the program using the prior distribution, while accumulating likelihood.
 newtype WeightedT m a = WeightedT (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
+  deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadTrans, MonadDistribution)
 
 instance (Monad m) => MonadFactor (WeightedT m) where
   score w = WeightedT (modify (* w))
