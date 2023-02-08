@@ -34,6 +34,7 @@ module Control.Monad.Bayes.Population
     collapse,
     popAvg,
     withParticles,
+    flatten,
   )
 where
 
@@ -274,3 +275,7 @@ hoist ::
   PopulationT m a ->
   PopulationT n a
 hoist f = PopulationT . Weighted.hoist (hoistFreeT f) . getPopulationT
+
+-- | Flatten all layers of the free structure
+flatten :: (Monad m) => PopulationT m a -> PopulationT m a
+flatten = fromWeightedList . runPopulationT
