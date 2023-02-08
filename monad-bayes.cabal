@@ -104,7 +104,7 @@ library
     ghc-options:
       -Wall -Werror -Wno-missing-local-signatures -Wno-trustworthy-safe
       -Wno-missing-import-lists -Wno-implicit-prelude
-      -Wno-monomorphism-restriction
+      -Wno-monomorphism-restriction -Wredundant-constraints
 
   else
     ghc-options: -Wall
