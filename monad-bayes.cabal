@@ -131,6 +131,7 @@ executable example
   hs-source-dirs:     benchmark models
   other-modules:
     Dice
+    Helper
     HMM
     LDA
     LogReg
@@ -161,9 +162,13 @@ test-suite monad-bayes-test
   other-modules:
     BetaBin
     ConjugatePriors
+    Helper
     HMM
+    LDA
+    LogReg
     Sprinkler
     TestAdvanced
+    TestBenchmarks
     TestDistribution
     TestEnumerator
     TestInference

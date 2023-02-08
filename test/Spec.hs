@@ -5,6 +5,7 @@ import Test.Hspec (context, describe, hspec, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (ioProperty, property, (==>))
 import TestAdvanced qualified
+import TestBenchmarks qualified
 import TestDistribution qualified
 import TestEnumerator qualified
 import TestInference qualified
@@ -166,3 +167,5 @@ main = hspec do
       passed6 `shouldBe` True
       passed7 <- TestAdvanced.passed7
       passed7 `shouldBe` True
+
+  TestBenchmarks.test
