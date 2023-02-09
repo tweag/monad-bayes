@@ -14,7 +14,7 @@ docs/build
 *.eventlog
 *.hi
 *.hp
-*.lock
+stack.yaml.lock
 .vscode/*
 *.o
 *.prof
