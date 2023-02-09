@@ -12,14 +12,27 @@
   };
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-compat.url = "github:edolstra/flake-compat";
-    flake-compat.flake = false;
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
     flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-    pre-commit-hooks.inputs.nixpkgs.follows = "nixpkgs";
-    pre-commit-hooks.inputs.flake-utils.follows = "flake-utils";
+    pre-commit-hooks = {
+      url = "github:cachix/pre-commit-hooks.nix";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jupyterWith.url = "github:tweag/jupyterWith";
+    jupyterWith = {
+      url = "github:tweag/jupyterWith";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-compat.follows = "flake-compat";
+        flake-utils.follows = "flake-utils";
+       };
+    };
   };
   outputs = {
     self,
