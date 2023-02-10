@@ -6,7 +6,7 @@
 -- | This is a port of the implementation of LazyPPL: https://lazyppl.bitbucket.io/
 module Control.Monad.Bayes.Sampler.Lazy where
 
-import Control.Monad (ap, liftM)
+import Control.Monad (ap)
 import Control.Monad.Bayes.Class (MonadDistribution (random))
 import Control.Monad.Bayes.Weighted (Weighted, weighted)
 import Numeric.Log (Log (..))

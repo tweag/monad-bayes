@@ -4,7 +4,7 @@
 
 module Main (main) where
 
-import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
+import Control.Monad.Bayes.Class (MonadMeasure)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
@@ -27,7 +27,6 @@ import HMM qualified
 import LDA qualified
 import LogReg qualified
 import System.Process.Typed (runProcess)
-import System.Random.Stateful (IOGenM, StatefulGen, StdGen, mkStdGen, newIOGenM)
 
 data ProbProgSys = MonadBayes
   deriving stock (Show)

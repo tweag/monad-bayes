@@ -14,7 +14,6 @@ import Control.Monad.Bayes.Population as Population
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
-import System.Random.Stateful (mkStdGen, newIOGenM)
 
 weightedSampleSize :: MonadDistribution m => Population m a -> m Int
 weightedSampleSize = fmap length . population

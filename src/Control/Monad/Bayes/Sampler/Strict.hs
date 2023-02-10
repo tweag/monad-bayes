@@ -77,7 +77,7 @@ instance StatefulGen g m => MonadDistribution (Sampler g m) where
 -- >>> import System.Random.Stateful hiding (random)
 -- >>> newIOGenM (mkStdGen 1729) >>= sampleWith random
 -- 4.690861245089605e-2
-sampleWith :: StatefulGen g m => Sampler g m a -> g -> m a
+sampleWith :: Sampler g m a -> g -> m a
 sampleWith (Sampler m) = runReaderT m
 
 -- | initialize random seed using system entropy, and sample

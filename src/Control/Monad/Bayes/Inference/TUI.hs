@@ -19,9 +19,8 @@ import Control.Monad.Bayes.Enumerator (toEmpirical)
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced (Traced)
-import Control.Monad.Bayes.Traced.Common
+import Control.Monad.Bayes.Traced.Common hiding (burnIn)
 import Control.Monad.Bayes.Weighted
-import Control.Monad.State.Class (put)
 import Data.Scientific (FPFormat (Exponent), formatScientific, fromFloatDigits)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL

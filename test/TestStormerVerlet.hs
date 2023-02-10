@@ -10,6 +10,7 @@ import qualified Data.Vector as V
 import qualified Linear as L
 import Linear.V
 import Math.Integrators.StormerVerlet
+import Statistics.Function (square)
 
 gConst :: Double
 gConst = 6.67384e-11
@@ -81,8 +82,8 @@ energy x = keJ + keS + peJ + peS
     qS = qs ^. _2
     pJ = ps ^. _1
     pS = ps ^. _2
-    keJ = (* 0.5) $ (/ jupiterMass) $ sum $ fmap (^ 2) pJ
-    keS = (* 0.5) $ (/ sunMass) $ sum $ fmap (^ 2) pS
+    keJ = (* 0.5) $ (/ jupiterMass) $ sum $ fmap square pJ
+    keS = (* 0.5) $ (/ sunMass) $ sum $ fmap square pS
     r = qJ L.^-^ qS
     ri = r `L.dot` r
     peJ = 0.5 * gConst * sunMass * jupiterMass / (sqrt ri)

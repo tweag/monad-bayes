@@ -85,7 +85,7 @@
             };
           };
 
-          cabal2nixOptions = "--benchmark";
+          cabal2nixOptions = "--benchmark -fdev";
         };
 
         jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};
