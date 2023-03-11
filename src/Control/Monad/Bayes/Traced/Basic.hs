@@ -12,8 +12,8 @@ module Control.Monad.Bayes.Traced.Basic
   ( Traced,
     hoist,
     marginal,
-    mhStep,
-    mh,
+    -- mhStep,
+    -- mh,
   )
 where
 
@@ -72,19 +72,19 @@ marginal :: Monad m => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadDistribution m => Traced m a -> Traced m a
-mhStep (Traced m d) = Traced m d'
-  where
-    d' = d >>= mhTrans' m
+-- mhStep :: MonadDistribution m => Traced m a -> Traced m a
+-- mhStep (Traced m d) = Traced m d'
+--   where
+--     d' = d >>= mhTrans' m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: MonadDistribution m => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map output . NE.toList) (f n)
-  where
-    f k
-      | k <= 0 = fmap (:| []) d
-      | otherwise = do
-        (x :| xs) <- f (k - 1)
-        y <- mhTrans' m x
-        return (y :| x : xs)
+-- mh :: MonadDistribution m => Int -> Traced m a -> m [a]
+-- mh n (Traced m d) = fmap (map output . NE.toList) (f n)
+--   where
+--     f k
+--       | k <= 0 = fmap (:| []) d
+--       | otherwise = do
+--         (x :| xs) <- f (k - 1)
+--         y <- mhTrans m x
+--         return (y :| x : xs)
