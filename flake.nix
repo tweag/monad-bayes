@@ -71,35 +71,21 @@
           "^.*\.md"
         ];
 
-        monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
-          name = "monad-bayes";
-          root = src;
-
-          # Remove this override when bumping nixpkgs
-          source-overrides = {
-            vty = pkgs.fetchzip {
-              url = "mirror://hackage/vty-5.37/vty-5.37.tar.gz";
-              sha256 = "sha256-OOrJBi/mSIyaibgObrp6NmUTWxRu9pxmjAL0EuPV9wY=";
-            };
-
-            text-zipper = pkgs.fetchzip {
-              url = "mirror://hackage/text-zipper-0.12/text-zipper-0.12.tar.gz";
-              sha256 = "sha256-P2/UHuG3UuSN7G31DyYvyUWSyIj2YXAOmjGkHtTaP8o=";
-            };
-
-            bimap = pkgs.fetchzip {
-              url = "mirror://hackage/bimap-0.5.0/bimap-0.5.0.tar.gz";
-              sha256 = "sha256-pbw+xg9Qz/c7YoXAJg8SR11RJGmgMw5hhnzKv+bGK9w=";
-            };
-
-            brick = pkgs.fetchzip {
-              url = "mirror://hackage/brick-1.4/brick-1.4.tar.gz";
-              sha256 = "sha256-KDa7RVQQPpinkJ0aKsYP0E50pn2auEIP38l6Uk7GmmE=";
-            };
+        monad-bayes-per-ghc = let
+          opts = {
+            name = "monad-bayes";
+            root = src;
+            cabal2nixOptions = "--benchmark -fdev";
           };
+          ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+            "ghc902"
+            "ghc927"
+          ];
+          buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
+          in lib.attrsets.genAttrs ghcs buildForVersion;
 
-          cabal2nixOptions = "--benchmark -fdev";
-        };
+        monad-bayes = monad-bayes-per-ghc.ghc902;
+        monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
         jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};
 
@@ -135,7 +121,9 @@
           };
         };
       in rec {
-        packages = {inherit monad-bayes pre-commit jupyterEnvironment;};
+        packages = {
+          inherit monad-bayes monad-bayes-per-ghc monad-bayes-all-ghcs pre-commit jupyterEnvironment;
+        };
         packages.default = packages.monad-bayes;
         checks = {inherit monad-bayes pre-commit;};
         devShells.default = monad-bayes-dev;
