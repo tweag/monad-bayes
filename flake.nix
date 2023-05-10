@@ -76,10 +76,14 @@
             name = "monad-bayes";
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
+            overrides = self: super: {
+              string-qq = pkgs.haskell.lib.dontCheck super.string-qq;
+            };
           };
           ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
             "ghc902"
             "ghc927"
+            "ghc945"
           ];
           buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
           in lib.attrsets.genAttrs ghcs buildForVersion;
