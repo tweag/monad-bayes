@@ -40,3 +40,5 @@ jobs:
         run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes
       - name: Development environment
         run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes --command echo Ready
+      - name: All GHCs
+        run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes-all-ghcs
