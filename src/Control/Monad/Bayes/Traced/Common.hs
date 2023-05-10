@@ -24,8 +24,8 @@ import Control.Monad.Bayes.Class
   ( MonadDistribution (bernoulli, random),
     discrete,
   )
-import qualified Control.Monad.Bayes.Density.Free as Free
-import qualified Control.Monad.Bayes.Density.State as State
+import Control.Monad.Bayes.Density.Free qualified as Free
+import Control.Monad.Bayes.Density.State qualified as State
 import Control.Monad.Bayes.Weighted as Weighted
   ( Weighted,
     hoist,

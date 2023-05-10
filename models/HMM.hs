@@ -15,7 +15,7 @@ import Data.Maybe (fromJust, isJust)
 import Data.Vector (fromList)
 import Pipes (MFunctor (hoist), MonadTrans (lift), each, yield, (>->))
 import Pipes.Core (Producer)
-import qualified Pipes.Prelude as Pipes
+import Pipes.Prelude qualified as Pipes
 
 -- | Observed values
 values :: [Double]

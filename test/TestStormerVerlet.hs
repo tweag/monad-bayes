@@ -6,8 +6,8 @@ where
 import Control.Lens
 import Control.Monad.ST
 import Data.Maybe (fromJust)
-import qualified Data.Vector as V
-import qualified Linear as L
+import Data.Vector qualified as V
+import Linear qualified as L
 import Linear.V
 import Math.Integrators.StormerVerlet
 import Statistics.Function (square)
