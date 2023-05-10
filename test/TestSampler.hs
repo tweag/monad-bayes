@@ -1,6 +1,6 @@
 module TestSampler where
 
-import qualified Control.Foldl as Fold
+import Control.Foldl qualified as Fold
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class (MonadDistribution (normal))
 import Control.Monad.Bayes.Sampler.Strict (sampleSTfixed)

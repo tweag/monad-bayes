@@ -8,7 +8,7 @@ where
 import Control.Lens
 import Control.Monad.Primitive
 import Data.Vector (Vector, (!))
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Data.Vector.Mutable
 import Linear (V2 (..))
 
@@ -71,7 +71,7 @@ integrateV integrator initial times = do
     compute y i out
       | i == V.length times = return ()
       | otherwise = do
-        let h = (times ! i) - (times ! (i - 1))
-            y' = integrator h y
-        write out i y'
-        compute y' (i + 1) out
+          let h = (times ! i) - (times ! (i - 1))
+              y' = integrator h y
+          write out i y'
+          compute y' (i + 1) out

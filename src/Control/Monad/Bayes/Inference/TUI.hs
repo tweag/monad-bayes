@@ -57,7 +57,9 @@ drawUI handleSamples state = [ui]
               (toDoAttr, B.progressIncompleteAttr)
             ]
         )
-        $ toBar $ fromIntegral $ numSteps state
+        $ toBar
+        $ fromIntegral
+        $ numSteps state
 
     likelihoodBar =
       updateAttrMap

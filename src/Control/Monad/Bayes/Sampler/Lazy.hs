@@ -15,7 +15,7 @@ import System.Random
     getStdGen,
     newStdGen,
   )
-import qualified System.Random as R
+import System.Random qualified as R
 
 -- | A 'Tree' is a lazy, infinitely wide and infinitely deep tree, labelled by Doubles
 -- | Our source of randomness will be a Tree, populated by uniform [0,1] choices for each label.
