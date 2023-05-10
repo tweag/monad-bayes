@@ -7,7 +7,7 @@ copyright:          2015-2020 Adam Scibior
 maintainer:         dominic.steinitz@tweag.io
 author:             Adam Scibior <adscib@gmail.com>
 stability:          experimental
-tested-with:        GHC ==9.2.2
+tested-with:        GHC ==9.0.2 || ==9.2.7
 homepage:           http://github.com/tweag/monad-bayes#readme
 bug-reports:        https://github.com/tweag/monad-bayes/issues
 synopsis:           A library for probabilistic programming.

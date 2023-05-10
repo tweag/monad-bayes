@@ -71,11 +71,21 @@
           "^.*\.md"
         ];
 
-        monad-bayes = pkgs.haskell.packages.ghc902.developPackage {
-          name = "monad-bayes";
-          root = src;
-          cabal2nixOptions = "--benchmark -fdev";
-        };
+        monad-bayes-per-ghc = let
+          opts = {
+            name = "monad-bayes";
+            root = src;
+            cabal2nixOptions = "--benchmark -fdev";
+          };
+          ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+            "ghc902"
+            "ghc927"
+          ];
+          buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
+          in lib.attrsets.genAttrs ghcs buildForVersion;
+
+        monad-bayes = monad-bayes-per-ghc.ghc902;
+        monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
         jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};
 
@@ -111,7 +121,9 @@
           };
         };
       in rec {
-        packages = {inherit monad-bayes pre-commit jupyterEnvironment;};
+        packages = {
+          inherit monad-bayes monad-bayes-per-ghc monad-bayes-all-ghcs pre-commit jupyterEnvironment;
+        };
         packages.default = packages.monad-bayes;
         checks = {inherit monad-bayes pre-commit;};
         devShells.default = monad-bayes-dev;
