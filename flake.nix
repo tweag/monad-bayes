@@ -76,7 +76,7 @@
             name = "monad-bayes";
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
-            overrides = self: super: {
+            overrides = self: super: { # Please periodically check whether some of these overrides can be removed
               string-qq = pkgs.haskell.lib.dontCheck super.string-qq;
             };
           };
