@@ -76,8 +76,8 @@
             name = "monad-bayes";
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
-            overrides = self: super: { # Please periodically check whether some of these overrides can be removed
-              string-qq = pkgs.haskell.lib.dontCheck super.string-qq;
+            overrides = self: super: with pkgs.haskell.lib; { # Please check after flake.lock updates whether some of these overrides can be removed
+              string-qq = dontCheck super.string-qq;
             };
           };
           ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
