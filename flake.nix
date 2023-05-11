@@ -77,7 +77,6 @@
             # https://github.com/tweag/monad-bayes/pull/256: Don't run tests on Mac because of machine precision issues
             modifier = drv: if system == "x86_64-linux" then drv else pkgs.haskell.lib.dontCheck drv;
             overrides = self: super: with pkgs.haskell.lib; { # Please check after flake.lock updates whether some of these overrides can be removed
-              hspec = super.hspec_2_11_7;
             };
           };
           ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
