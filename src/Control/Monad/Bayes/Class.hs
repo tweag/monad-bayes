@@ -71,6 +71,7 @@ module Control.Monad.Bayes.Class
     Measure,
     Kernel,
     Log (ln, Exp),
+    MonadMeasureTrans (..),
   )
 where
 
@@ -82,9 +83,11 @@ import Control.Monad.Identity (IdentityT)
 import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
+import Control.Monad.Trans (MonadTrans)
 import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H
+import Data.Kind (Type)
 import Data.Matrix
   ( Matrix,
     cholDecomp,
@@ -407,3 +410,41 @@ instance MonadFactor m => MonadFactor (ContT r m) where
   score = lift . score
 
 instance MonadMeasure m => MonadMeasure (ContT r m)
+
+-- * Utility for deriving MonadDistribution, MonadFactor and MonadMeasure
+
+-- | Newtype to derive 'MonadDistribution', 'MonadFactor' and 'MonadMeasure' automatically for monad transformers.
+--
+-- The typical usage is with the `StandaloneDeriving` and `DerivingVia` extensions.
+-- For example, to derive all instances for the 'IdentityT' transformer, one writes:
+--
+-- @
+-- deriving via (MonadMeasureTrans IdentityT m) instance MonadDistribution m => MonadDistribution (IdentityT m)
+-- deriving via (MonadMeasureTrans IdentityT m) instance MonadFactor m => MonadFactor (IdentityT m)
+-- instance MonadMeasure m => MonadMeasure (IdentityT m)
+-- @
+-- (The final 'MonadMeasure' could also be derived `via`, but this isn't necessary because it doesn't contain any methods.)
+newtype MonadMeasureTrans (t :: (Type -> Type) -> Type -> Type) (m :: Type -> Type) a = MonadMeasureTrans {getMonadMeasureTrans :: t m a}
+  deriving (Functor, Applicative, Monad)
+
+instance MonadTrans t => MonadTrans (MonadMeasureTrans t) where
+  lift = MonadMeasureTrans . lift
+
+instance (MonadTrans t, MonadDistribution m, Monad (t m)) => MonadDistribution (MonadMeasureTrans t m) where
+  random = lift random
+  uniform = (lift .) . uniform
+  normal = (lift .) . normal
+  gamma = (lift .) . gamma
+  beta = (lift .) . beta
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+  logCategorical = lift . logCategorical
+  uniformD = lift . uniformD
+  geometric = lift . geometric
+  poisson = lift . poisson
+  dirichlet = lift . dirichlet
+
+instance (MonadFactor m, MonadTrans t, Monad (t m)) => MonadFactor (MonadMeasureTrans t m) where
+  score = lift . score
+
+instance (MonadDistribution m, MonadFactor m, MonadTrans t, Monad (t m)) => MonadMeasure (MonadMeasureTrans t m)

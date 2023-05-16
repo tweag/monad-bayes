@@ -94,10 +94,14 @@ library
 
   default-extensions:
     BlockArguments
+    DerivingVia
     FlexibleContexts
+    GeneralizedNewtypeDeriving
     ImportQualifiedPost
+    KindSignatures
     LambdaCase
     OverloadedStrings
+    StandaloneDeriving
     TupleSections
 
   if flag(dev)
