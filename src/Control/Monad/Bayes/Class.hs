@@ -345,69 +345,45 @@ histogramToList = H.asList
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
-instance MonadDistribution m => MonadDistribution (IdentityT m) where
-  random = lift random
-  bernoulli = lift . bernoulli
+deriving via (MonadMeasureTrans IdentityT m) instance MonadDistribution m => MonadDistribution (IdentityT m)
 
-instance MonadFactor m => MonadFactor (IdentityT m) where
-  score = lift . score
+deriving via (MonadMeasureTrans IdentityT m) instance MonadFactor m => MonadFactor (IdentityT m)
 
 instance MonadMeasure m => MonadMeasure (IdentityT m)
 
-instance MonadDistribution m => MonadDistribution (ExceptT e m) where
-  random = lift random
-  uniformD = lift . uniformD
+deriving via (MonadMeasureTrans (ExceptT e) m) instance MonadDistribution m => MonadDistribution (ExceptT e m)
 
-instance MonadFactor m => MonadFactor (ExceptT e m) where
-  score = lift . score
+deriving via (MonadMeasureTrans (ExceptT e) m) instance MonadFactor m => MonadFactor (ExceptT e m)
 
 instance MonadMeasure m => MonadMeasure (ExceptT e m)
 
-instance MonadDistribution m => MonadDistribution (ReaderT r m) where
-  random = lift random
-  bernoulli = lift . bernoulli
+deriving via (MonadMeasureTrans (ReaderT r) m) instance MonadDistribution m => MonadDistribution (ReaderT r m)
 
-instance MonadFactor m => MonadFactor (ReaderT r m) where
-  score = lift . score
+deriving via (MonadMeasureTrans (ReaderT r) m) instance MonadFactor m => MonadFactor (ReaderT r m)
 
 instance MonadMeasure m => MonadMeasure (ReaderT r m)
 
-instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
+deriving via (MonadMeasureTrans (WriterT w) m) instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m)
 
-instance (Monoid w, MonadFactor m) => MonadFactor (WriterT w m) where
-  score = lift . score
+deriving via (MonadMeasureTrans (WriterT w) m) instance (Monoid w, MonadFactor m) => MonadFactor (WriterT w m)
 
 instance (Monoid w, MonadMeasure m) => MonadMeasure (WriterT w m)
 
-instance MonadDistribution m => MonadDistribution (StateT s m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
-  uniformD = lift . uniformD
+deriving via (MonadMeasureTrans (StateT s) m) instance MonadDistribution m => MonadDistribution (StateT s m)
 
-instance MonadFactor m => MonadFactor (StateT s m) where
-  score = lift . score
+deriving via (MonadMeasureTrans (StateT s) m) instance MonadFactor m => MonadFactor (StateT s m)
 
 instance MonadMeasure m => MonadMeasure (StateT s m)
 
-instance MonadDistribution m => MonadDistribution (ListT m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
+deriving via (MonadMeasureTrans ListT m) instance MonadDistribution m => MonadDistribution (ListT m)
 
-instance MonadFactor m => MonadFactor (ListT m) where
-  score = lift . score
+deriving via (MonadMeasureTrans ListT m) instance MonadFactor m => MonadFactor (ListT m)
 
 instance MonadMeasure m => MonadMeasure (ListT m)
 
-instance MonadDistribution m => MonadDistribution (ContT r m) where
-  random = lift random
+deriving via (MonadMeasureTrans (ContT r) m) instance MonadDistribution m => MonadDistribution (ContT r m)
 
-instance MonadFactor m => MonadFactor (ContT r m) where
-  score = lift . score
+deriving via (MonadMeasureTrans (ContT r) m) instance MonadFactor m => MonadFactor (ContT r m)
 
 instance MonadMeasure m => MonadMeasure (ContT r m)
 
