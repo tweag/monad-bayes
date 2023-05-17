@@ -23,7 +23,7 @@ jobs:
           name: tweag-monad-bayes
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Lint
-        run: nix --print-build-logs build .#pre-commit
+        run: nix --print-build-logs build .#pre-commit --accept-flake-config
 
 
   build:
