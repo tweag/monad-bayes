@@ -25,6 +25,7 @@ jobs:
       - name: Lint
         run: nix --print-build-logs build .#pre-commit
 
+
   build:
     needs: lint
     strategy:
