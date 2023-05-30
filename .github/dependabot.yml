@@ -11,3 +11,19 @@ updates:
     commit-message:
         prefix: "chore"
         include: "scope"
+
+# By default, when `package-ecosystem: github-actions` is set,
+# dependabot only looks in the `.github/workflows` directory,
+# even when setting `directory: "/"`.
+# But we need to keep updating the common nix setup as well.
+# Hopefully the following works.
+  - package-ecosystem: github-actions
+    directory: ".github/actions"
+    schedule:
+      interval: daily
+      time: '00:00'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    commit-message:
+        prefix: "chore-actions"
+        include: "scope"
