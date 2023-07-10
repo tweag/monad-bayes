@@ -78,6 +78,10 @@
             cabal2nixOptions = "--benchmark -fdev";
             overrides = self: super: with pkgs.haskell.lib; { # Please check after flake.lock updates whether some of these overrides can be removed
               string-qq = dontCheck super.string-qq;
+              hspec = super.hspec_2_11_1;
+              lens = super.lens_5_2_2;
+              linear = super.linear_1_22;
+              vty = super.vty_5_38;
             };
           };
           ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
