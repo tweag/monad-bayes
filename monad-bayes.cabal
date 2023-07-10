@@ -1,4 +1,4 @@
-cabal-version:      2.0
+cabal-version:      2.2
 name:               monad-bayes
 version:            1.1.0
 license:            MIT
@@ -34,7 +34,52 @@ flag dev
   default:     False
   manual:      True
 
+common deps
+  build-depends:
+    , base             >=4.15    && <4.18
+    , brick            >=1.0     && <2.0
+    , containers       >=0.5.10  && <0.7
+    , foldl            ^>=1.4
+    , free             >=5.0.2   && <5.2
+    , histogram-fill   ^>=0.9
+    , ieee754          ^>=0.8.0
+    , integration      ^>=0.2
+    , lens             ^>=5.2
+    , linear           ^>=1.22
+    , log-domain       >=0.12    && <0.14
+    , math-functions   >=0.2.1   && <0.4
+    , matrix           ^>=0.3
+    , monad-coroutine  ^>=0.9.0
+    , monad-extras     ^>=0.6
+    , mtl              ^>=2.2.2
+    , mwc-random       >=0.13.6  && <0.16
+    , pipes            ^>=4.3
+    , pretty-simple    ^>=4.1
+    , primitive        ^>=0.8
+    , random           ^>=1.2
+    , safe             ^>=0.3.17
+    , scientific       ^>=0.3
+    , statistics       >=0.14.0  && <0.17
+    , text             ^>=2
+    , vector           ^>=0.12.0
+    , vty              ^>=5.38
+
+common test-deps
+  build-depends:
+    , abstract-par          ^>=0.3
+    , criterion             ^>=1.6
+    , directory             ^>=1.3
+    , hspec                 ^>=2.11
+    , monad-bayes
+    , optparse-applicative  ^>=0.18
+    , process               ^>=1.6
+    , QuickCheck            ^>=2.14
+    , time                  ^>=1.12
+    , transformers          ^>=0.5.6
+    , typed-process         ^>=0.2
+
 library
+  import:             deps
   exposed-modules:
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Density.Free
@@ -63,35 +108,6 @@ library
   hs-source-dirs:     src
   other-modules:      Control.Monad.Bayes.Traced.Common
   default-language:   Haskell2010
-  build-depends:
-      base             >=4.11    && <4.18
-    , brick            >=1.0     && <2.0
-    , containers       >=0.5.10  && <0.7
-    , foldl
-    , free             >=5.0.2   && <5.2
-    , histogram-fill
-    , ieee754          ^>=0.8.0
-    , integration
-    , lens
-    , linear
-    , log-domain       >=0.12    && <0.14
-    , math-functions   >=0.2.1   && <0.4
-    , matrix
-    , monad-coroutine  ^>=0.9.0
-    , monad-extras
-    , mtl              ^>=2.2.2
-    , mwc-random       >=0.13.6  && <0.16
-    , pipes
-    , pretty-simple
-    , primitive
-    , random
-    , safe             ^>=0.3.17
-    , scientific
-    , statistics       >=0.14.0  && <0.17
-    , text
-    , vector           ^>=0.12.0
-    , vty
-
   default-extensions:
     BlockArguments
     FlexibleContexts
@@ -110,6 +126,7 @@ library
     ghc-options: -Wall
 
 executable example
+  import:             deps, test-deps
   main-is:            Single.hs
   hs-source-dirs:     benchmark models
   other-modules:
@@ -119,20 +136,6 @@ executable example
     LogReg
 
   default-language:   Haskell2010
-  build-depends:
-      base
-    , containers
-    , log-domain
-    , math-functions
-    , monad-bayes
-    , mwc-random
-    , optparse-applicative
-    , pipes
-    , pretty-simple
-    , random
-    , text
-    , time
-    , vector
 
   if flag(dev)
     ghc-options:
@@ -151,6 +154,7 @@ executable example
     TupleSections
 
 test-suite monad-bayes-test
+  import:             deps, test-deps
   type:               exitcode-stdio-1.0
   main-is:            Spec.hs
   hs-source-dirs:     test models
@@ -172,29 +176,6 @@ test-suite monad-bayes-test
     TestWeighted
 
   default-language:   Haskell2010
-  build-depends:
-      base
-    , containers
-    , foldl
-    , hspec
-    , ieee754
-    , lens
-    , linear
-    , log-domain
-    , math-functions
-    , matrix
-    , monad-bayes
-    , mtl
-    , mwc-random
-    , pipes
-    , pretty-simple
-    , profunctors
-    , QuickCheck
-    , random
-    , statistics
-    , text
-    , transformers
-    , vector
 
   if flag(dev)
     ghc-options:
@@ -213,18 +194,20 @@ test-suite monad-bayes-test
     TupleSections
 
 benchmark ssm-bench
+  import:           deps, test-deps
   type:             exitcode-stdio-1.0
   main-is:          SSM.hs
   hs-source-dirs:   models benchmark
   other-modules:    NonlinearSSM
   default-language: Haskell2010
   build-depends:
-      base
+    , base
     , monad-bayes
     , pretty-simple
     , random
 
 benchmark speed-bench
+  import:             deps, test-deps
   type:               exitcode-stdio-1.0
   main-is:            Speed.hs
   hs-source-dirs:     models benchmark
@@ -234,22 +217,6 @@ benchmark speed-bench
     LogReg
 
   default-language:   Haskell2010
-  build-depends:
-      abstract-par
-    , base
-    , containers
-    , criterion
-    , directory
-    , log-domain
-    , monad-bayes
-    , mwc-random
-    , pipes
-    , pretty-simple
-    , process
-    , random
-    , text
-    , typed-process
-    , vector
 
   if flag(dev)
     ghc-options:
