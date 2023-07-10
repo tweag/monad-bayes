@@ -1,3 +1,16 @@
+# 1.1.1
+
+- add fixture tests for benchmark models
+- extensive documentation improvements
+- add `poissonPdf`
+- Fix TUI inference
+- Fix flaky test
+- Support GHC 9.4
+
+# 1.1.0
+
+- extensive notebook improvements
+
 # 1.0.0 (2022-09-10)
 
 - host website from repo
