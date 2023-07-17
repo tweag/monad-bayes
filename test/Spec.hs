@@ -5,6 +5,7 @@ import Test.Hspec (context, describe, hspec, it, shouldBe)
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (ioProperty, property, (==>))
 import TestAdvanced qualified
+import TestBenchmarks qualified
 import TestDistribution qualified
 import TestEnumerator qualified
 import TestInference qualified
@@ -12,6 +13,7 @@ import TestIntegrator qualified
 import TestPipes (hmms)
 import TestPipes qualified
 import TestPopulation qualified
+import TestSSMFixtures qualified
 import TestSampler qualified
 import TestSequential qualified
 import TestStormerVerlet qualified
@@ -166,3 +168,6 @@ main = hspec do
       passed6 `shouldBe` True
       passed7 <- TestAdvanced.passed7
       passed7 `shouldBe` True
+
+  TestBenchmarks.test
+  TestSSMFixtures.test

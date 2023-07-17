@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad (forM_)
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.PMMH as PMMH (pmmh)
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
@@ -11,33 +12,14 @@ import Control.Monad.Bayes.Sampler.Strict (sampleIO, sampleIOfixed, sampleWith)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import NonlinearSSM (generateData, model, param)
+import NonlinearSSM.Algorithms
 import System.Random.Stateful (mkStdGen, newIOGenM)
 
 main :: IO ()
 main = sampleIOfixed $ do
-  let t = 5
   dat <- generateData t
   let ys = map snd dat
-  liftIO $ print "SMC"
-  smcRes <- population $ smc SMCConfig {numSteps = t, numParticles = 10, resampler = resampleMultinomial} (param >>= model ys)
-  liftIO $ print $ show smcRes
-  liftIO $ print "RM-SMC"
-  smcrmRes <-
-    population $
-      rmsmcDynamic
-        MCMCConfig {numMCMCSteps = 10, numBurnIn = 0, proposal = SingleSiteMH}
-        SMCConfig {numSteps = t, numParticles = 10, resampler = resampleSystematic}
-        (param >>= model ys)
-  liftIO $ print $ show smcrmRes
-  liftIO $ print "PMMH"
-  pmmhRes <-
-    unweighted $
-      pmmh
-        MCMCConfig {numMCMCSteps = 2, numBurnIn = 0, proposal = SingleSiteMH}
-        SMCConfig {numSteps = t, numParticles = 3, resampler = resampleSystematic}
-        param
-        (model ys)
-  liftIO $ print $ show pmmhRes
-  liftIO $ print "SMC2"
-  smc2Res <- population $ smc2 t 3 2 1 param (model ys)
-  liftIO $ print $ show smc2Res
+  forM_ [SMC, RMSMCDynamic, PMMH, SMC2] $ \alg -> do
+    liftIO $ print alg
+    result <- runAlgFixed ys alg
+    liftIO $ putStrLn result

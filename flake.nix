@@ -76,6 +76,9 @@
             name = "monad-bayes";
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
+
+            # https://github.com/tweag/monad-bayes/pull/256: Don't run tests on Mac because of machine precision issues
+            modifier = drv: if system == "x86_64-linux" then drv else pkgs.haskell.lib.dontCheck drv;
             overrides = self: super: with pkgs.haskell.lib; { # Please check after flake.lock updates whether some of these overrides can be removed
               string-qq = dontCheck super.string-qq;
               hspec = super.hspec_2_11_1;
@@ -93,6 +96,7 @@
           in lib.attrsets.genAttrs ghcs buildForVersion;
 
         monad-bayes = monad-bayes-per-ghc.ghc902;
+
         monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
         jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};

@@ -131,6 +131,7 @@ executable example
   hs-source-dirs:     benchmark models
   other-modules:
     Dice
+    Helper
     HMM
     LDA
     LogReg
@@ -161,9 +162,15 @@ test-suite monad-bayes-test
   other-modules:
     BetaBin
     ConjugatePriors
+    Helper
     HMM
+    LDA
+    LogReg
+    NonlinearSSM
+    NonlinearSSM.Algorithms
     Sprinkler
     TestAdvanced
+    TestBenchmarks
     TestDistribution
     TestEnumerator
     TestInference
@@ -172,6 +179,7 @@ test-suite monad-bayes-test
     TestPopulation
     TestSampler
     TestSequential
+    TestSSMFixtures
     TestStormerVerlet
     TestWeighted
 
@@ -198,7 +206,10 @@ benchmark ssm-bench
   type:             exitcode-stdio-1.0
   main-is:          SSM.hs
   hs-source-dirs:   models benchmark
-  other-modules:    NonlinearSSM
+  other-modules:
+    NonlinearSSM
+    NonlinearSSM.Algorithms
+
   default-language: Haskell2010
   build-depends:
     , base
