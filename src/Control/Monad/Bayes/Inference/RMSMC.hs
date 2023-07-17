@@ -24,7 +24,7 @@ import Control.Monad.Bayes.Class (MonadDistribution)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (..))
 import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
-  ( Population,
+  ( PopulationT,
     spawn,
     withParticles,
   )
@@ -33,7 +33,7 @@ import Control.Monad.Bayes.Sequential.Coroutine qualified as S
 import Control.Monad.Bayes.Traced.Basic qualified as TrBas
 import Control.Monad.Bayes.Traced.Dynamic qualified as TrDyn
 import Control.Monad.Bayes.Traced.Static as Tr
-  ( Traced,
+  ( TracedT,
     marginal,
     mhStep,
   )
@@ -46,8 +46,8 @@ rmsmc ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  Sequential (Traced (Population m)) a ->
-  Population m a
+  SequentialT (TracedT (PopulationT m)) a ->
+  PopulationT m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   marginal
     . S.sequentially (composeCopies numMCMCSteps mhStep . TrStat.hoist resampler) numSteps
@@ -60,8 +60,8 @@ rmsmcBasic ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  Sequential (TrBas.Traced (Population m)) a ->
-  Population m a
+  SequentialT (TrBas.TracedT (PopulationT m)) a ->
+  PopulationT m a
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
   TrBas.marginal
     . S.sequentially (composeCopies numMCMCSteps TrBas.mhStep . TrBas.hoist resampler) numSteps
@@ -75,8 +75,8 @@ rmsmcDynamic ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  Sequential (TrDyn.Traced (Population m)) a ->
-  Population m a
+  SequentialT (TrDyn.TracedT (PopulationT m)) a ->
+  PopulationT m a
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
   TrDyn.marginal
     . S.sequentially (TrDyn.freeze . composeCopies numMCMCSteps TrDyn.mhStep . TrDyn.hoist resampler) numSteps

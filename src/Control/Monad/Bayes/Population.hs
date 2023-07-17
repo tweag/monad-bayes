@@ -13,11 +13,10 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 'Population' turns a single sample into a collection of weighted samples.
+-- 'PopulationT' turns a single sample into a collection of weighted samples.
 module Control.Monad.Bayes.Population
-  ( Population,
-    population,
-    runPopulation,
+  ( PopulationT (..),
+    runPopulationT,
     explicitPopulation,
     fromWeightedList,
     spawn,
@@ -47,11 +46,11 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Weighted
-  ( Weighted,
+  ( WeightedT,
     applyWeight,
     extractWeight,
-    weighted,
-    withWeight,
+    runWeightedT,
+    weightedT,
   )
 import Control.Monad.List (ListT (..), MonadIO, MonadTrans (..))
 import Data.List (unfoldr)
@@ -64,46 +63,43 @@ import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
-newtype Population m a = Population (Weighted (ListT m) a)
+newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (ListT m) a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadDistribution, MonadFactor, MonadMeasure)
 
-instance MonadTrans Population where
-  lift = Population . lift . lift
+instance MonadTrans PopulationT where
+  lift = PopulationT . lift . lift
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-population, runPopulation :: Population m a -> m [(a, Log Double)]
-population (Population m) = runListT $ weighted m
-
--- | deprecated synonym
-runPopulation = population
+runPopulationT :: PopulationT m a -> m [(a, Log Double)]
+runPopulationT = runListT . runWeightedT . getPopulationT
 
 -- | Explicit representation of the weighted sample.
-explicitPopulation :: (Functor m) => Population m a -> m [(a, Double)]
-explicitPopulation = fmap (map (second (exp . ln))) . population
+explicitPopulation :: (Functor m) => PopulationT m a -> m [(a, Double)]
+explicitPopulation = fmap (map (second (exp . ln))) . runPopulationT
 
--- | Initialize 'Population' with a concrete weighted sample.
-fromWeightedList :: (Monad m) => m [(a, Log Double)] -> Population m a
-fromWeightedList = Population . withWeight . ListT
+-- | Initialize 'PopulationT' with a concrete weighted sample.
+fromWeightedList :: (Monad m) => m [(a, Log Double)] -> PopulationT m a
+fromWeightedList = PopulationT . weightedT . ListT
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
 -- It is therefore safe to use 'spawn' in arbitrary places in the program
 -- without introducing bias.
-spawn :: (Monad m) => Int -> Population m ()
+spawn :: (Monad m) => Int -> PopulationT m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
-withParticles :: (Monad m) => Int -> Population m a -> Population m a
+withParticles :: (Monad m) => Int -> PopulationT m a -> PopulationT m a
 withParticles n = (spawn n >>)
 
 resampleGeneric ::
   (MonadDistribution m) =>
   -- | resampler
   (V.Vector Double -> m [Int]) ->
-  Population m a ->
-  Population m a
+  PopulationT m a ->
+  PopulationT m a
 resampleGeneric resampler m = fromWeightedList $ do
-  pop <- population m
+  pop <- runPopulationT m
   let (xs, ps) = unzip pop
   let n = length xs
   let z = Log.sum ps
@@ -150,8 +146,8 @@ systematic u ps = f 0 (u / fromIntegral n) 0 0 []
 -- The total weight is preserved.
 resampleSystematic ::
   (MonadDistribution m) =>
-  Population m a ->
-  Population m a
+  PopulationT m a ->
+  PopulationT m a
 resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 
 -- | Stratified sampler.
@@ -192,8 +188,8 @@ stratified weights = do
 -- The total weight is preserved.
 resampleStratified ::
   (MonadDistribution m) =>
-  Population m a ->
-  Population m a
+  PopulationT m a ->
+  PopulationT m a
 resampleStratified = resampleGeneric stratified
 
 -- | Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
@@ -206,18 +202,18 @@ multinomial ps = replicateM (V.length ps) (categorical ps)
 -- The total weight is preserved.
 resampleMultinomial ::
   (MonadDistribution m) =>
-  Population m a ->
-  Population m a
+  PopulationT m a ->
+  PopulationT m a
 resampleMultinomial = resampleGeneric multinomial
 
--- | Separate the sum of weights into the 'Weighted' transformer.
+-- | Separate the sum of weights into the 'WeightedT' transformer.
 -- Weights are normalized after this operation.
 extractEvidence ::
   (Monad m) =>
-  Population m a ->
-  Population (Weighted m) a
+  PopulationT m a ->
+  PopulationT (WeightedT m) a
 extractEvidence m = fromWeightedList $ do
-  pop <- lift $ population m
+  pop <- lift $ runPopulationT m
   let (xs, ps) = unzip pop
   let z = sum ps
   let ws = map (if z > 0 then (/ z) else const (1 / fromIntegral (length ps))) ps
@@ -228,26 +224,26 @@ extractEvidence m = fromWeightedList $ do
 -- Weights are normalized after this operation.
 pushEvidence ::
   (MonadFactor m) =>
-  Population m a ->
-  Population m a
+  PopulationT m a ->
+  PopulationT m a
 pushEvidence = hoist applyWeight . extractEvidence
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
 proper ::
   (MonadDistribution m) =>
-  Population m a ->
-  Weighted m a
+  PopulationT m a ->
+  WeightedT m a
 proper m = do
-  pop <- population $ extractEvidence m
+  pop <- runPopulationT $ extractEvidence m
   let (xs, ps) = unzip pop
   index <- logCategorical $ V.fromList ps
   let x = xs !! index
   return x
 
 -- | Model evidence estimator, also known as pseudo-marginal likelihood.
-evidence :: (Monad m) => Population m a -> m (Log Double)
-evidence = extractWeight . population . extractEvidence
+evidence :: (Monad m) => PopulationT m a -> m (Log Double)
+evidence = extractWeight . runPopulationT . extractEvidence
 
 -- | Picks one point from the population and uses model evidence as a 'score'
 -- in the transformed monad.
@@ -255,12 +251,12 @@ evidence = extractWeight . population . extractEvidence
 -- introducing bias.
 collapse ::
   (MonadMeasure m) =>
-  Population m a ->
+  PopulationT m a ->
   m a
 collapse = applyWeight . proper
 
--- | Population average of a function, computed using unnormalized weights.
-popAvg :: (Monad m) => (a -> Double) -> Population m a -> m Double
+-- | PopulationT average of a function, computed using unnormalized weights.
+popAvg :: (Monad m) => (a -> Double) -> PopulationT m a -> m Double
 popAvg f p = do
   xs <- explicitPopulation p
   let ys = map (\(x, w) -> f x * w) xs
@@ -271,6 +267,6 @@ popAvg f p = do
 hoist ::
   (Monad n) =>
   (forall x. m x -> n x) ->
-  Population m a ->
-  Population n a
-hoist f = fromWeightedList . f . population
+  PopulationT m a ->
+  PopulationT n a
+hoist f = fromWeightedList . f . runPopulationT

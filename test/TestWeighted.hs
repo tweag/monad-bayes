@@ -8,7 +8,7 @@ import Control.Monad.Bayes.Class
     factor,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
-import Control.Monad.Bayes.Weighted (weighted)
+import Control.Monad.Bayes.Weighted (runWeightedT)
 import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
@@ -23,7 +23,7 @@ model = do
   return (n, x)
 
 result :: (MonadDistribution m) => m ((Int, Double), Double)
-result = second (exp . ln) <$> weighted model
+result = second (exp . ln) <$> runWeightedT model
 
 passed :: IO Bool
 passed = fmap check (sampleIOfixed result)

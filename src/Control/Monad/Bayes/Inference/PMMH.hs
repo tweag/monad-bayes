@@ -22,13 +22,13 @@ import Control.Monad.Bayes.Class (Bayesian (generative), MonadDistribution, Mona
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig, mcmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (), smc)
 import Control.Monad.Bayes.Population as Pop
-  ( Population,
+  ( PopulationT,
     hoist,
-    population,
     pushEvidence,
+    runPopulationT,
   )
-import Control.Monad.Bayes.Sequential.Coroutine (Sequential)
-import Control.Monad.Bayes.Traced.Static (Traced)
+import Control.Monad.Bayes.Sequential.Coroutine (SequentialT)
+import Control.Monad.Bayes.Traced.Static (TracedT)
 import Control.Monad.Bayes.Weighted
 import Control.Monad.Trans (lift)
 import Numeric.Log (Log)
@@ -37,15 +37,15 @@ import Numeric.Log (Log)
 pmmh ::
   (MonadDistribution m) =>
   MCMCConfig ->
-  SMCConfig (Weighted m) ->
-  Traced (Weighted m) a1 ->
-  (a1 -> Sequential (Population (Weighted m)) a2) ->
+  SMCConfig (WeightedT m) ->
+  TracedT (WeightedT m) a1 ->
+  (a1 -> SequentialT (PopulationT (WeightedT m)) a2) ->
   m [[(a2, Log Double)]]
 pmmh mcmcConf smcConf param model =
   mcmc
     mcmcConf
     ( param
-        >>= population
+        >>= runPopulationT
           . pushEvidence
           . Pop.hoist lift
           . smc smcConf
@@ -56,7 +56,7 @@ pmmh mcmcConf smcConf param model =
 pmmhBayesianModel ::
   (MonadMeasure m) =>
   MCMCConfig ->
-  SMCConfig (Weighted m) ->
+  SMCConfig (WeightedT m) ->
   (forall m'. (MonadMeasure m') => Bayesian m' a1 a2) ->
   m [[(a2, Log Double)]]
 pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (prior bm) (generative bm)

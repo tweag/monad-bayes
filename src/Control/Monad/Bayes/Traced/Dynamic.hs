@@ -9,7 +9,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Dynamic
-  ( Traced,
+  ( TracedT,
     hoist,
     marginal,
     freeze,
@@ -24,7 +24,7 @@ import Control.Monad.Bayes.Class
     MonadFactor (..),
     MonadMeasure,
   )
-import Control.Monad.Bayes.Density.Free (Density)
+import Control.Monad.Bayes.Density.Free (DensityT)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -32,75 +32,75 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Weighted (WeightedT)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | A tracing monad where only a subset of random choices are traced and this
 -- subset can be adjusted dynamically.
-newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace a)}
+newtype TracedT m a = TracedT {runTraced :: m (WeightedT (DensityT m) a, Trace a)}
 
-pushM :: (Monad m) => m (Weighted (Density m) a) -> Weighted (Density m) a
+pushM :: (Monad m) => m (WeightedT (DensityT m) a) -> WeightedT (DensityT m) a
 pushM = join . lift . lift
 
-instance (Monad m) => Functor (Traced m) where
-  fmap f (Traced c) = Traced $ do
+instance (Monad m) => Functor (TracedT m) where
+  fmap f (TracedT c) = TracedT $ do
     (m, t) <- c
     let m' = fmap f m
     let t' = fmap f t
     return (m', t')
 
-instance (Monad m) => Applicative (Traced m) where
-  pure x = Traced $ pure (pure x, pure x)
-  (Traced cf) <*> (Traced cx) = Traced $ do
+instance (Monad m) => Applicative (TracedT m) where
+  pure x = TracedT $ pure (pure x, pure x)
+  (TracedT cf) <*> (TracedT cx) = TracedT $ do
     (mf, tf) <- cf
     (mx, tx) <- cx
     return (mf <*> mx, tf <*> tx)
 
-instance (Monad m) => Monad (Traced m) where
-  (Traced cx) >>= f = Traced $ do
+instance (Monad m) => Monad (TracedT m) where
+  (TracedT cx) >>= f = TracedT $ do
     (mx, tx) <- cx
     let m = mx >>= pushM . fmap fst . runTraced . f
     t <- return tx `bind` (fmap snd . runTraced . f)
     return (m, t)
 
-instance MonadTrans Traced where
-  lift m = Traced $ fmap ((,) (lift $ lift m) . pure) m
+instance MonadTrans TracedT where
+  lift m = TracedT $ fmap ((,) (lift $ lift m) . pure) m
 
-instance (MonadDistribution m) => MonadDistribution (Traced m) where
-  random = Traced $ fmap ((,) random . singleton) random
+instance (MonadDistribution m) => MonadDistribution (TracedT m) where
+  random = TracedT $ fmap ((,) random . singleton) random
 
-instance (MonadFactor m) => MonadFactor (Traced m) where
-  score w = Traced $ fmap (score w,) (score w >> pure (scored w))
+instance (MonadFactor m) => MonadFactor (TracedT m) where
+  score w = TracedT $ fmap (score w,) (score w >> pure (scored w))
 
-instance (MonadMeasure m) => MonadMeasure (Traced m)
+instance (MonadMeasure m) => MonadMeasure (TracedT m)
 
-hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoist f (Traced c) = Traced (f c)
+hoist :: (forall x. m x -> m x) -> TracedT m a -> TracedT m a
+hoist f (TracedT c) = TracedT (f c)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: (Monad m) => Traced m a -> m a
-marginal (Traced c) = fmap (output . snd) c
+marginal :: (Monad m) => TracedT m a -> m a
+marginal (TracedT c) = fmap (output . snd) c
 
 -- | Freeze all traced random choices to their current values and stop tracing
 -- them.
-freeze :: (Monad m) => Traced m a -> Traced m a
-freeze (Traced c) = Traced $ do
+freeze :: (Monad m) => TracedT m a -> TracedT m a
+freeze (TracedT c) = TracedT $ do
   (_, t) <- c
   let x = output t
   return (return x, pure x)
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: (MonadDistribution m) => Traced m a -> Traced m a
-mhStep (Traced c) = Traced $ do
+mhStep :: (MonadDistribution m) => TracedT m a -> TracedT m a
+mhStep (TracedT c) = TracedT $ do
   (m, t) <- c
   t' <- mhTransFree m t
   return (m, t')
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: (MonadDistribution m) => Int -> Traced m a -> m [a]
-mh n (Traced c) = do
+mh :: (MonadDistribution m) => Int -> TracedT m a -> m [a]
+mh n (TracedT c) = do
   (m, t) <- c
   let f k
         | k <= 0 = return (t :| [])

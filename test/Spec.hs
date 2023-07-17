@@ -57,7 +57,7 @@ main = hspec do
         -- Because of rounding issues, require the variance to be a bit bigger than 0
         -- See https://github.com/tweag/monad-bayes/issues/275
         var > 0.1 ==> property $ TestIntegrator.normalVariance mean (sqrt var) ~== var
-  describe "Sampler mean and variance" do
+  describe "SamplerT mean and variance" do
     it "gets right mean and variance" $
       TestSampler.testMeanAndVariance `shouldBe` True
   describe "Integrator Volume" do

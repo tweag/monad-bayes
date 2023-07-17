@@ -9,7 +9,7 @@
 -- Stability   : experimental
 -- Portability : GHC
 module Control.Monad.Bayes.Traced.Basic
-  ( Traced,
+  ( TracedT,
     hoist,
     marginal,
     mhStep,
@@ -23,7 +23,7 @@ import Control.Monad.Bayes.Class
     MonadFactor (..),
     MonadMeasure,
   )
-import Control.Monad.Bayes.Density.Free (Density)
+import Control.Monad.Bayes.Density.Free (DensityT)
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -31,56 +31,56 @@ import Control.Monad.Bayes.Traced.Common
     scored,
     singleton,
   )
-import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Weighted (WeightedT)
 import Data.Functor.Identity (Identity)
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
 -- | Tracing monad that records random choices made in the program.
-data Traced m a = Traced
+data TracedT m a = TracedT
   { -- | Run the program with a modified trace.
-    model :: Weighted (Density Identity) a,
+    model :: WeightedT (DensityT Identity) a,
     -- | Record trace and output.
     traceDist :: m (Trace a)
   }
 
-instance (Monad m) => Functor (Traced m) where
-  fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
+instance (Monad m) => Functor (TracedT m) where
+  fmap f (TracedT m d) = TracedT (fmap f m) (fmap (fmap f) d)
 
-instance (Monad m) => Applicative (Traced m) where
-  pure x = Traced (pure x) (pure (pure x))
-  (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<*>) df dx)
+instance (Monad m) => Applicative (TracedT m) where
+  pure x = TracedT (pure x) (pure (pure x))
+  (TracedT mf df) <*> (TracedT mx dx) = TracedT (mf <*> mx) (liftA2 (<*>) df dx)
 
-instance (Monad m) => Monad (Traced m) where
-  (Traced mx dx) >>= f = Traced my dy
+instance (Monad m) => Monad (TracedT m) where
+  (TracedT mx dx) >>= f = TracedT my dy
     where
       my = mx >>= model . f
       dy = dx `bind` (traceDist . f)
 
-instance (MonadDistribution m) => MonadDistribution (Traced m) where
-  random = Traced random (fmap singleton random)
+instance (MonadDistribution m) => MonadDistribution (TracedT m) where
+  random = TracedT random (fmap singleton random)
 
-instance (MonadFactor m) => MonadFactor (Traced m) where
-  score w = Traced (score w) (score w >> pure (scored w))
+instance (MonadFactor m) => MonadFactor (TracedT m) where
+  score w = TracedT (score w) (score w >> pure (scored w))
 
-instance (MonadMeasure m) => MonadMeasure (Traced m)
+instance (MonadMeasure m) => MonadMeasure (TracedT m)
 
-hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
-hoist f (Traced m d) = Traced m (f d)
+hoist :: (forall x. m x -> m x) -> TracedT m a -> TracedT m a
+hoist f (TracedT m d) = TracedT m (f d)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: (Monad m) => Traced m a -> m a
-marginal (Traced _ d) = fmap output d
+marginal :: (Monad m) => TracedT m a -> m a
+marginal (TracedT _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: (MonadDistribution m) => Traced m a -> Traced m a
-mhStep (Traced m d) = Traced m d'
+mhStep :: (MonadDistribution m) => TracedT m a -> TracedT m a
+mhStep (TracedT m d) = TracedT m d'
   where
     d' = d >>= mhTrans' m
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: (MonadDistribution m) => Int -> Traced m a -> m [a]
-mh n (Traced m d) = fmap (map output . NE.toList) (f n)
+mh :: (MonadDistribution m) => Int -> TracedT m a -> m [a]
+mh n (TracedT m d) = fmap (map output . NE.toList) (f n)
   where
     f k
       | k <= 0 = fmap (:| []) d

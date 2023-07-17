@@ -22,14 +22,14 @@ where
 
 import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
 import Control.Monad.Bayes.Population
-  ( Population,
+  ( PopulationT,
     pushEvidence,
     withParticles,
   )
 import Control.Monad.Bayes.Sequential.Coroutine as Coroutine
 
 data SMCConfig m = SMCConfig
-  { resampler :: forall x. Population m x -> Population m x,
+  { resampler :: forall x. PopulationT m x -> PopulationT m x,
     numSteps :: Int,
     numParticles :: Int
   }
@@ -39,8 +39,8 @@ data SMCConfig m = SMCConfig
 smc ::
   (MonadDistribution m) =>
   SMCConfig m ->
-  Coroutine.Sequential (Population m) a ->
-  Population m a
+  Coroutine.SequentialT (PopulationT m) a ->
+  PopulationT m a
 smc SMCConfig {..} =
   Coroutine.sequentially resampler numSteps
     . Coroutine.hoistFirst (withParticles numParticles)
@@ -49,5 +49,5 @@ smc SMCConfig {..} =
 -- Weights are normalized at each timestep and the total weight is pushed
 -- as a score into the transformed monad.
 smcPush ::
-  (MonadMeasure m) => SMCConfig m -> Coroutine.Sequential (Population m) a -> Population m a
+  (MonadMeasure m) => SMCConfig m -> Coroutine.SequentialT (PopulationT m) a -> PopulationT m a
 smcPush config = smc config {resampler = (pushEvidence . resampler config)}

@@ -23,24 +23,24 @@ t = 5
 
 -- FIXME refactor such that it can be reused in ssm benchmark
 runAlgFixed :: (MonadDistribution m) => SSMData -> Alg -> m String
-runAlgFixed ys SMC = fmap show $ population $ smc SMCConfig {numSteps = t, numParticles = 10, resampler = resampleMultinomial} (param >>= model ys)
+runAlgFixed ys SMC = fmap show $ runPopulationT $ smc SMCConfig {numSteps = t, numParticles = 10, resampler = resampleMultinomial} (param >>= model ys)
 runAlgFixed ys RMSMC =
   fmap show $
-    population $
+    runPopulationT $
       rmsmc
         MCMCConfig {numMCMCSteps = 10, numBurnIn = 0, proposal = SingleSiteMH}
         SMCConfig {numSteps = t, numParticles = 10, resampler = resampleSystematic}
         (param >>= model ys)
 runAlgFixed ys RMSMCBasic =
   fmap show $
-    population $
+    runPopulationT $
       rmsmcBasic
         MCMCConfig {numMCMCSteps = 10, numBurnIn = 0, proposal = SingleSiteMH}
         SMCConfig {numSteps = t, numParticles = 10, resampler = resampleSystematic}
         (param >>= model ys)
 runAlgFixed ys RMSMCDynamic =
   fmap show $
-    population $
+    runPopulationT $
       rmsmcDynamic
         MCMCConfig {numMCMCSteps = 10, numBurnIn = 0, proposal = SingleSiteMH}
         SMCConfig {numSteps = t, numParticles = 10, resampler = resampleSystematic}
@@ -53,4 +53,4 @@ runAlgFixed ys PMMH =
         SMCConfig {numSteps = t, numParticles = 3, resampler = resampleSystematic}
         param
         (model ys)
-runAlgFixed ys SMC2 = fmap show $ population $ smc2 t 3 2 1 param (model ys)
+runAlgFixed ys SMC2 = fmap show $ runPopulationT $ smc2 t 3 2 1 param (model ys)

@@ -1,15 +1,15 @@
 module Control.Monad.Bayes.Inference.Lazy.WIS where
 
-import Control.Monad.Bayes.Sampler.Lazy (Sampler, weightedsamples)
-import Control.Monad.Bayes.Weighted (Weighted)
+import Control.Monad.Bayes.Sampler.Lazy (SamplerT, weightedsamples)
+import Control.Monad.Bayes.Weighted (WeightedT)
 import Numeric.Log (Log (Exp))
 import System.Random (Random (randoms), getStdGen, newStdGen)
 
--- | Weighted Importance Sampling
+-- | WeightedT Importance Sampling
 
 -- | Likelihood weighted importance sampling first draws n weighted samples,
 --    and then samples a stream of results from that regarded as an empirical distribution
-lwis :: Int -> Weighted Sampler a -> IO [a]
+lwis :: Int -> WeightedT SamplerT a -> IO [a]
 lwis n m = do
   xws <- weightedsamples m
   let xws' = take n $ accumulate xws 0

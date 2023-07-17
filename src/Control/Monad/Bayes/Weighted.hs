@@ -11,17 +11,16 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 'Weighted' is an instance of 'MonadFactor'. Apply a 'MonadDistribution' transformer to
+-- 'WeightedT' is an instance of 'MonadFactor'. Apply a 'MonadDistribution' transformer to
 -- obtain a 'MonadMeasure' that can execute probabilistic models.
 module Control.Monad.Bayes.Weighted
-  ( Weighted,
-    withWeight,
-    weighted,
+  ( WeightedT,
+    weightedT,
     extractWeight,
     unweighted,
     applyWeight,
     hoist,
-    runWeighted,
+    runWeightedT,
   )
 where
 
@@ -35,46 +34,45 @@ import Control.Monad.State (MonadIO, MonadTrans, StateT (..), lift, mapStateT, m
 import Numeric.Log (Log)
 
 -- | Execute the program using the prior distribution, while accumulating likelihood.
-newtype Weighted m a = Weighted (StateT (Log Double) m a)
+newtype WeightedT m a = WeightedT (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
 
-instance (Monad m) => MonadFactor (Weighted m) where
-  score w = Weighted (modify (* w))
+instance (Monad m) => MonadFactor (WeightedT m) where
+  score w = WeightedT (modify (* w))
 
-instance (MonadDistribution m) => MonadMeasure (Weighted m)
+instance (MonadDistribution m) => MonadMeasure (WeightedT m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
-weighted, runWeighted :: Weighted m a -> m (a, Log Double)
-weighted (Weighted m) = runStateT m 1
-runWeighted = weighted
+runWeightedT :: WeightedT m a -> m (a, Log Double)
+runWeightedT (WeightedT m) = runStateT m 1
 
 -- | Compute the sample and discard the weight.
 --
 -- This operation introduces bias.
-unweighted :: (Functor m) => Weighted m a -> m a
-unweighted = fmap fst . weighted
+unweighted :: (Functor m) => WeightedT m a -> m a
+unweighted = fmap fst . runWeightedT
 
 -- | Compute the weight and discard the sample.
-extractWeight :: (Functor m) => Weighted m a -> m (Log Double)
-extractWeight = fmap snd . weighted
+extractWeight :: (Functor m) => WeightedT m a -> m (Log Double)
+extractWeight = fmap snd . runWeightedT
 
 -- | Embed a random variable with explicitly given likelihood.
 --
--- > weighted . withWeight = id
-withWeight :: (Monad m) => m (a, Log Double) -> Weighted m a
-withWeight m = Weighted $ do
+-- > runWeightedT . weightedT = id
+weightedT :: (Monad m) => m (a, Log Double) -> WeightedT m a
+weightedT m = WeightedT $ do
   (x, w) <- lift m
   modify (* w)
   return x
 
 -- | Use the weight as a factor in the transformed monad.
-applyWeight :: (MonadFactor m) => Weighted m a -> m a
+applyWeight :: (MonadFactor m) => WeightedT m a -> m a
 applyWeight m = do
-  (x, w) <- weighted m
+  (x, w) <- runWeightedT m
   factor w
   return x
 
 -- | Apply a transformation to the transformed monad.
-hoist :: (forall x. m x -> n x) -> Weighted m a -> Weighted n a
-hoist t (Weighted m) = Weighted $ mapStateT t m
+hoist :: (forall x. m x -> n x) -> WeightedT m a -> WeightedT n a
+hoist t (WeightedT m) = WeightedT $ mapStateT t m

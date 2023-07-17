@@ -13,7 +13,7 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Integrator
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Weighted (weighted)
+import Control.Monad.Bayes.Weighted (runWeightedT)
 import Control.Monad.ST (runST)
 import Data.AEq (AEq ((~==)))
 import Data.List (sortOn)
@@ -98,7 +98,7 @@ passed7 =
 passed8 =
   1
     == ( volume $
-           fmap (ln . exp . snd) $ weighted do
+           fmap (ln . exp . snd) $ runWeightedT do
              x <- bernoulli 0.5
              factor $ if x then 0.2 else 0.1
              return x
@@ -137,7 +137,7 @@ passed13 =
     ~== 1
 -- sampler and integrator agree on a non-trivial model
 passed14 =
-  let sample = runST $ sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ weighted $ model1
+  let sample = runST $ sampleSTfixed $ fmap sampleMean $ replicateM 10000 $ runWeightedT $ model1
       quadrature = expectation $ normalize $ model1
    in abs (sample - quadrature) < 0.01
 

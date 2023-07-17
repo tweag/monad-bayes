@@ -55,7 +55,7 @@ runAlg model alg =
     SMC ->
       let n = 100
           (k, m) = getModel model
-       in show <$> population (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
+       in show <$> runPopulationT (smc SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic} m)
     MH ->
       let t = 100
           (_, m) = getModel model
@@ -64,7 +64,7 @@ runAlg model alg =
       let n = 10
           t = 1
           (k, m) = getModel model
-       in show <$> population (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
+       in show <$> runPopulationT (rmsmcBasic MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH} (SMCConfig {numSteps = k, numParticles = n, resampler = resampleSystematic}) m)
 
 runAlgFixed :: Model -> Alg -> IO String
 runAlgFixed model alg = sampleIOfixed $ runAlg model alg

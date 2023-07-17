@@ -20,7 +20,7 @@ $$
 $$
 
 $$
-y_{n}=\alpha+\beta x_{n}+\epsilon_{n} 
+y_{n}=\alpha+\beta x_{n}+\epsilon_{n}
 $$
 
 but in code as:
@@ -48,12 +48,12 @@ This is the *model*. To perform *inference* , suppose we have a data set `xsys` 
 
 To run the model
 
-```haskell   
-mhRunsRegression = sampler 
-  $ mcmc MCMCConfig 
-      {numMCMCSteps = 1500, 
-      proposal = SingleSiteMH, 
-      numBurnIn = 500} 
+```haskell
+mhRunsRegression = sampler
+  $ mcmc MCMCConfig
+      {numMCMCSteps = 1500,
+      proposal = SingleSiteMH,
+      numBurnIn = 500}
   (regression xsys)
 ```
 
@@ -61,7 +61,7 @@ This yields 1000 samples from an MCMC walk using an MH kernel. `mh n` produces a
 
 ![](/images/regress.png)
 
-Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two. 
+Monad-bayes provides a variety of MCMC and SMC methods, and methods arising from the composition of the two.
 
 
 <!-- `sprinkler` is a distribution over values for the Boolean `rain` variable given the likelihood and observation specified above. `enumerator` is a function which performs **inference**: it takes the abstract distribution `sprinkler` and calculates something concrete - in this case, the probability mass function.
@@ -122,7 +122,7 @@ example = bernoulli 0.5 >>= (\x -> if x then random else normal 0 1)
 It's easiest to understand this distribution as a probabilistic program: it's the distribution you get by first sampling from `bernoulli 0.5`, then checking the result. If the result is `True`, then sample from `random`, else from `normal 0 1`. As a distribution, this has a PDF:
 
 $$
-f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5  
+f(x) = 1[0\leq x \leq 1]*0.5  + \mathcal{N}(0,1)(x)*0.5
 $$
 
 
@@ -151,7 +151,7 @@ example :: MonadMeasure m => m Double
 example = do
   bool <- bernoulli 0.5
   number <- if bool then random else normal 0 1
-  score number 
+  score number
   return bool
 ```
 
@@ -185,7 +185,7 @@ All inference methods in monad-bayes work with all distributions. The only excep
 
 The challenge of inference is that most distributions that are of interest are not as simple as `sprinkler`. They could have continuous random variables, a huge number of them, or even a number of them that is itself random. They could involve a series of observations, interspersed with other sources of randomness.
 
-Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given above are sufficient for that. 
+Designing a language in which you can specify arbitrarily complex (computable) distributions as probabilistic programs turns out to be a largely solved problem. The tools given above are sufficient for that.
 
 The hard part is designing a language where you can specify how you want to do inference, because sophisticated, often approximate, inference methods are almost always necessary for the models involved in solving real world problems.
 
@@ -253,7 +253,7 @@ model = do
 
 you may run `probability (0, 1000) model` to obtain the probability in the range `(0,1000)`. As expected, this should be roughly $0.5$, since the PDF of `model` is symmetric around $0$.
 
-You can also try `expectation model`, `variance model`, `momentGeneratingFunction model n` or `cdf model n`. 
+You can also try `expectation model`, `variance model`, `momentGeneratingFunction model n` or `cdf model n`.
 
 If the model has factor statements, as in
 
@@ -280,9 +280,9 @@ example = do
 
 `sampler example` will produce a sample from a Bernoulli distribution with $p=0.5$, and if it is $True$, return a sample from a standard normal, else from a normal with mean 1 and std 2.
 
-`(replicateM n . sampler) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampler . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`. 
+`(replicateM n . sampler) example` will produce a list of `n` independent samples. However, it is recommended to instead do `(sampler . replicateM n) example`, which will create a new model (`replicateM n example`) consisting of `n` independent draws from `example`.
 
-Because `sampler example` is totally pure, it is parallelizable. 
+Because `sampler example` is totally pure, it is parallelizable.
 
 Monad-bayes gives the user freedom in the random number generator of the sampler: use `sampleWith` for full control.
 
@@ -291,10 +291,10 @@ Monad-bayes gives the user freedom in the random number generator of the sampler
 To perform weighted sampling, use:
 
 ```haskell
-(sampler . weighted) :: Weighted SamplerIO a -> IO (a, Log Double)
+(sampler . runWeightedT) :: WeightedT SamplerIO a -> IO (a, Log Double)
 ```
 
-`Weighted SamplerIO` is an instance of `MonadMeasure`, so we can apply this to any distribution. For example, suppose we have the distribution:
+`WeightedT SamplerIO` is an instance of `MonadMeasure`, so we can apply this to any distribution. For example, suppose we have the distribution:
 
 ```haskell
 example :: MonadMeasure m => m Bool
@@ -308,7 +308,7 @@ Then:
 
 ```haskell
 run :: IO (Bool, Log Double)
-run = (sampler . weighted) example
+run = (sampler . runWeightedT) example
 ```
 
 is an IO operation which when run, will display either `(False, 0.0)` or `(True, 1.0)`
@@ -322,7 +322,7 @@ If you want to forward sample from an infinite program, just as a distribution o
 import qualified Control.Monad.Bayes.Sampler.Lazy as Lazy
 
 example :: MonadDistribution m => m [Double]
-example = do 
+example = do
   x <- random
   fmap (x:) example
 
@@ -330,7 +330,7 @@ infiniteList <- Lazy.sampler example
 take 4 infiniteList
 ```
 
-To perform weighted sampling, use `lwis` from `Control.Monad.Bayes.Inference.Lazy.WIS` as in `lwis 10 example`. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution. 
+To perform weighted sampling, use `lwis` from `Control.Monad.Bayes.Inference.Lazy.WIS` as in `lwis 10 example`. This takes 10 weighted samples, and produces an infinite stream of samples, regarding those 10 as an empirical distribution.
 
 LazyPPL's `mh` implementation is also available.
 
@@ -340,14 +340,14 @@ There are several versions of metropolis hastings MCMC defined in monad-bayes. T
 
 ```haskell
 (sampler . mcmc (MCMCConfig {
-  numMCMCSteps = 10, 
-  numBurnIn = 5, 
-  proposal = SingleSiteMH})) :: Traced (Weighted SamplerIO) a -> IO [a]
+  numMCMCSteps = 10,
+  numBurnIn = 5,
+  proposal = SingleSiteMH})) :: TracedT (WeightedT SamplerIO) a -> IO [a]
 ```
 
 As you can see, `mcmc` takes a `MCMCConfig` object, which is where you specify the number of steps in the MCMC chain, and the number of burn in steps. `SingleSiteMH` refers to the proposal used in the chain.
 
-`Traced (Weighted SamplerIO)` is an instance of `MonadMeasure`, so we can apply this to any distribution. For instance:
+`TracedT (WeightedT SamplerIO)` is an instance of `MonadMeasure`, so we can apply this to any distribution. For instance:
 
 
 ```haskell
@@ -358,13 +358,13 @@ example = do
   return x
 ```
 
-Then 
+Then
 
 ```haskell
 run :: IO [Bool]
 run = (sampler . mcmc (MCMCConfig {
-  numMCMCSteps = 10, 
-  numBurnIn = 5, 
+  numMCMCSteps = 10,
+  numBurnIn = 5,
   proposal = SingleSiteMH})) example
 ```
 
@@ -391,12 +391,12 @@ tui 0 random noVisual
 Run SMC with two resampling steps and two particles as follows, given a model `m`:
 
 ```haskell
-output = 
-  sampler $ 
-  population $ 
-  smc (SMCConfig 
-    {numSteps = 2, 
-    numParticles = 2, 
+output =
+  sampler $
+  runPopulationT $
+  smc (SMCConfig
+    {numSteps = 2,
+    numParticles = 2,
     resampler = resampleMultinomial} )
   m
 ```
@@ -405,20 +405,20 @@ output =
 
 
 ```haskell
-(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
-  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+(sampler . runPopulationT . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random)
+  :: SequentialT (PopulationT SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
-<!-- `Sequential (Population SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+<!-- `SequentialT (PopulationT SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
 
 As a concrete example, here is a probabilistic program:
 
 ```haskell
-(sampler . population . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random) 
-  :: Sequential (Population SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
+(sampler . runPopulationT . smc SMCConfig {numSteps = 2, numParticles = 2, resampler = resampleMultinomial} random)
+  :: SequentialT (PopulationT SamplerIO) a -> IO [(a, Numeric.Log.Log Double)]
 ``` -->
 
-<!-- `Sequential (Population SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
+<!-- `SequentialT (PopulationT SamplerIO)` is an instance of `MonadMeasure`, so we can apply this inference method to any distribution. For instance, to use our now familiar `example`: -->
 
 As a concrete example, here is a probabilistic program:
 
@@ -430,13 +430,13 @@ example = do
   return x
 ```
 
-And here is the inference: 
+And here is the inference:
 
 ```haskell
 run :: IO [(Bool, Log Double)]
-run = (sampler . population . smc (SMCConfig {
-  numSteps = 2, 
-  numParticles = 4, 
+run = (sampler . runPopulationT . smc (SMCConfig {
+  numSteps = 2,
+  numParticles = 4,
   resampler = resampleMultinomial})) example
 ```
 
@@ -462,8 +462,8 @@ rmsmcBasic ::
   MCMCConfig ->
   SMCConfig m ->
   -- | model
-  Sequential (TrBas.Traced (Population m)) a ->
-  Population m a
+  SequentialT (TrBas.TracedT (PopulationT m)) a ->
+  PopulationT m a
 ```
 
 For instance:
@@ -471,11 +471,11 @@ For instance:
 ```haskell
 run :: IO [(Bool, Log Double)]
 run = (
-  sampler . 
-  population . 
-  rmsmcBasic 
+  sampler .
+  runPopulationT .
+  rmsmcBasic
     MCMCConfig {numMCMCSteps = 4, proposal = SingleSiteMH, numBurnIn = 0}
-    SMCConfig {numParticles = 4, numSteps = 4}) 
+    SMCConfig {numParticles = 4, numSteps = 4})
   example
 ```
 
@@ -483,14 +483,14 @@ What this returns is a population of samples, just like plain `SMC`. More MCMC s
 
 ## Particle Marginal Metropolis Hastings
 
-This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs. 
+This inference method takes a prior and a model separately, so it only applies to a (large) subset of probabilistic programs.
 
 Run it like this:
 
 ```haskell
-sampler $ pmmh 
-    mcmcConfig {numMCMCSteps = 100} 
-    smcConfig {numSteps = 0, numParticles = 100} 
+sampler $ pmmh
+    mcmcConfig {numMCMCSteps = 100}
+    smcConfig {numSteps = 0, numParticles = 100}
     random (normal 0)
 ```
 
@@ -551,7 +551,7 @@ betaBernoulli n = do
 
 # Interoperating with other Haskell code
 
-Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language. 
+Probabilistic programs in monad-bayes are Haskell programs. This contrasts to many probabilistic programming languages, which are deeply embedded and cannot smoothly interact with their host language.
 
 For example, we can use ordinary monadic combinators, as in:
 
@@ -562,7 +562,7 @@ example = do
   return x
 ```
 
-or 
+or
 
 ```haskell
 example = whileM (bernoulli 0.99) (normal 0 1)
@@ -598,7 +598,7 @@ mixture1 point = do
 
 is a piece of code to infer whether an observed point was generated from a Gaussian of mean $1$ or $5$. That is, `mixture1` is a conditional Bernoulli distribution over the mean given an observation. You're not going to be able to do much with `mixture1` though. Exact inference is impossible because of the sample from the normal, and as for sampling, there is zero probability of sampling the normal to exactly match the observed point, which is what the `condition` requires.
 
-However, the same conditional distribution is represented by 
+However, the same conditional distribution is represented by
 
 ```haskell
 mixture2 point = do
@@ -619,7 +619,7 @@ yields
 [(1.0, 0.98...), (5.0, 0.017...)]
 ```
 
-as well as sampling methods. 
+as well as sampling methods.
 
 The local lesson here is that you shouldn't `condition` on samples from a continuous distribution and expect a sampling based inference method to work. But the more general lesson is that you aren't exempted from thinking about inference when specifying your model. Alas.
 
@@ -646,7 +646,7 @@ incremental = do
 
 Like in the previous example, `allAtOnce` and `incremental` denote the same distribution, namely `[(True, 1.0), (False, 0.0)]`. However, any inference algorithm for `allAtOnce` will have to explore all 4 possible variable assignments (`[(True,True), (True, False), (False, True), (False, False)]`). Meanwhile, `incremental` opens the possibility for inference algorithms to first determine the value of `x` and then of `y`.
 
-In this example, the performance difference is negligible, but it's easy to extend this to models where it's the difference between something tractable and something intractable. 
+In this example, the performance difference is negligible, but it's easy to extend this to models where it's the difference between something tractable and something intractable.
 
 <!-- todo: similar lesson about incremental factors: compare two models -->
 
@@ -674,9 +674,8 @@ There is a variety of universal probabilistic programming libraries and/or langu
 
 A lot of engineering work has been put into the above libraries and languages to make them practical for real-world problems. While monad-bayes' core is very nice, it doesn't come with a lot of the batteries you might want. (The author's PhD thesis contains this relevant paragraph: "our library implements basic versions of advanced sampling algorithms. However, their successful application in practice requires incorporating established heuristics, such as: adaptive proposal distributions, controlling resampling with effective sample size, tuning rejuvenation kernels based on population in SMC2, and so on.")
 
-**What Monad-Bayes has that is unique**: 
+**What Monad-Bayes has that is unique**:
 
 Monad-Bayes is just a library, unlike almost all other PPLs, which are separate languages written inside another language. As such, probabilistic programs in monad-bayes are first class programs in Haskell with no new special syntax or keywords. This allows all of Haskell's expressive power to be brought to bear. You can write distributions over any datatype (lists, trees, functions, histograms, JSON files, graphs, diagrams, etc). You can use powerful libraries like `pipes`, `lens` and `Parsec`. Everything is pure. Everything is strongly typed. You can make use of laziness.
 
 Models are monadic and inference is modular. Complex inference algorithms like RMSMC or PMMH are built out of simple composable pieces, and so are expressable extraordinarily simply.
-
