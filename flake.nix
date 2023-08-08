@@ -3,12 +3,10 @@
   nixConfig = {
     extra-substituters = [
       "https://tweag-monad-bayes.cachix.org"
-      "https://tweag-wasm.cachix.org"
       "https://tweag-jupyter.cachix.org"
     ];
     extra-trusted-public-keys = [
       "tweag-monad-bayes.cachix.org-1:tmmTZ+WvtUMpYWD4LAkfSuNKqSuJyL3N8ZVm/qYtqdc="
-      "tweag-wasm.cachix.org-1:Eu5eBNIJvleiWMEzRBmH3/fzA6a604Umt4lZguKtAU4="
       "tweag-jupyter.cachix.org-1:UtNH4Zs6hVUFpFBTLaA4ejYavPo5EFFqgd7G7FxGW9g="
     ];
   };
@@ -26,7 +24,6 @@
         flake-utils.follows = "flake-utils";
       };
     };
-    haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
     jupyenv = {
       url = "github:tweag/jupyenv";
       inputs = {
@@ -43,7 +40,6 @@
     flake-compat,
     flake-utils,
     pre-commit-hooks,
-    haskell-nix-utils,
   } @ inputs:
     flake-utils.lib.eachSystem
     [
@@ -107,16 +103,6 @@
           ];
         };
 
-        cabal-docspec = let
-          ce =
-            haskell-nix-utils.packages.${system}.pkgs.callPackage
-            (import "${haskell-nix-utils}/project/cabal-extras.nix") {
-              self = haskell-nix-utils;
-              inherit (haskell-nix-utils.packages.${system}) compiler-nix-name index-state;
-            };
-        in
-          ce.cabal-docspec.components.exes.cabal-docspec;
-
         monad-bayes-dev = pkgs.mkShell {
           inputsFrom = [monad-bayes.env];
           packages = with pre-commit-hooks.packages.${system}; [
@@ -124,7 +110,6 @@
             cabal-fmt
             hlint
             ormolu
-            cabal-docspec
             jupyterEnvironment
           ];
           shellHook = pre-commit.shellHook;
