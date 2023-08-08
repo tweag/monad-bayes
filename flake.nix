@@ -4,10 +4,12 @@
     extra-substituters = [
       "https://tweag-monad-bayes.cachix.org"
       "https://tweag-wasm.cachix.org"
+      "https://tweag-jupyter.cachix.org"
     ];
     extra-trusted-public-keys = [
       "tweag-monad-bayes.cachix.org-1:tmmTZ+WvtUMpYWD4LAkfSuNKqSuJyL3N8ZVm/qYtqdc="
       "tweag-wasm.cachix.org-1:Eu5eBNIJvleiWMEzRBmH3/fzA6a604Umt4lZguKtAU4="
+      "tweag-jupyter.cachix.org-1:UtNH4Zs6hVUFpFBTLaA4ejYavPo5EFFqgd7G7FxGW9g="
     ];
   };
   inputs = {
@@ -25,8 +27,8 @@
       };
     };
     haskell-nix-utils.url = "github:TerrorJack/haskell-nix-utils";
-    jupyterWith = {
-      url = "github:tweag/jupyterWith";
+    jupyenv = {
+      url = "github:tweag/jupyenv";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-compat.follows = "flake-compat";
@@ -37,7 +39,7 @@
   outputs = {
     self,
     nixpkgs,
-    jupyterWith,
+    jupyenv,
     flake-compat,
     flake-utils,
     pre-commit-hooks,
@@ -55,7 +57,7 @@
     (
       system: let
         inherit (nixpkgs) lib;
-        inherit (jupyterWith.lib.${system}) mkJupyterlabFromPath;
+        inherit (jupyenv.lib.${system}) mkJupyterlabNew;
         pkgs = import nixpkgs {
           inherit system;
           config.allowBroken = true;
@@ -99,7 +101,11 @@
 
         monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
-        jupyterEnvironment = mkJupyterlabFromPath ./kernels {inherit pkgs monad-bayes;};
+        jupyterEnvironment = mkJupyterlabNew {
+          imports = [
+            (import ./kernels/haskell.nix {inherit monad-bayes;})
+          ];
+        };
 
         cabal-docspec = let
           ce =

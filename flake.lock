@@ -329,7 +329,7 @@
     "gitignore_2": {
       "inputs": {
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "pre-commit-hooks",
           "nixpkgs"
         ]
@@ -568,16 +568,16 @@
     "ihaskell": {
       "inputs": {
         "flake-compat": [
-          "jupyterWith",
+          "jupyenv",
           "flake-compat"
         ],
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "hls": "hls",
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ]
       },
@@ -595,7 +595,7 @@
         "type": "github"
       }
     },
-    "jupyterWith": {
+    "jupyenv": {
       "inputs": {
         "flake-compat": [
           "flake-compat"
@@ -619,13 +619,13 @@
         "lastModified": 1679071568,
         "narHash": "sha256-3LAo9uXGTmfS4OsiiIuoxX9knEshziCyI1MxR40VKeU=",
         "owner": "tweag",
-        "repo": "jupyterWith",
+        "repo": "jupyenv",
         "rev": "3ad2c9512c9efd586cf63adde454e734a8ce049c",
         "type": "github"
       },
       "original": {
         "owner": "tweag",
-        "repo": "jupyterWith",
+        "repo": "jupyenv",
         "type": "github"
       }
     },
@@ -685,11 +685,11 @@
     "nix-dart": {
       "inputs": {
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ],
         "pub2nix": "pub2nix"
@@ -934,16 +934,16 @@
     "opam-nix": {
       "inputs": {
         "flake-compat": [
-          "jupyterWith",
+          "jupyenv",
           "flake-compat"
         ],
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "mirage-opam-overlays": "mirage-opam-overlays",
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ],
         "opam-overlays": "opam-overlays",
@@ -1000,7 +1000,7 @@
     "opam2json": {
       "inputs": {
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "opam-nix",
           "nixpkgs"
         ]
@@ -1022,11 +1022,11 @@
     "poetry2nix": {
       "inputs": {
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ]
       },
@@ -1063,13 +1063,13 @@
     "pre-commit-hooks": {
       "inputs": {
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "ihaskell",
           "hls",
           "flake-utils"
         ],
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "ihaskell",
           "hls",
           "nixpkgs"
@@ -1093,12 +1093,12 @@
       "inputs": {
         "flake-compat": "flake-compat_3",
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "gitignore": "gitignore_2",
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ],
         "nixpkgs-stable": "nixpkgs-stable_2"
@@ -1164,7 +1164,7 @@
         "flake-compat": "flake-compat",
         "flake-utils": "flake-utils",
         "haskell-nix-utils": "haskell-nix-utils",
-        "jupyterWith": "jupyterWith",
+        "jupyenv": "jupyenv",
         "nixpkgs": "nixpkgs_3",
         "pre-commit-hooks": "pre-commit-hooks_3"
       }
@@ -1172,11 +1172,11 @@
     "rust-overlay": {
       "inputs": {
         "flake-utils": [
-          "jupyterWith",
+          "jupyenv",
           "flake-utils"
         ],
         "nixpkgs": [
-          "jupyterWith",
+          "jupyenv",
           "nixpkgs"
         ]
       },
