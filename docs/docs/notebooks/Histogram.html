@@ -36,6 +36,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
 .highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
 .highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .pm { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation.Marker */
 .highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
 .highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
 .highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
@@ -14464,10 +14465,6 @@ a.anchor-link {
   display: none;
 }
 
-.highlight  {
-  margin: 0.4em;
-}
-
 /* Input area styling */
 .jp-InputArea {
   overflow: hidden;
@@ -14477,9 +14474,26 @@ a.anchor-link {
   overflow: hidden;
 }
 
-.CodeMirror pre {
+.CodeMirror.cm-s-jupyter .highlight pre {
+/* weird, but --jp-code-padding defined to be 5px but 4px horizontal padding is hardcoded for pre.CodeMirror-line */
+  padding: var(--jp-code-padding) 4px;
   margin: 0;
-  padding: 0;
+
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+
+}
+
+.jp-OutputArea-output pre {
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.jp-RenderedText pre {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-code-font-size);
 }
 
 /* Using table instead of flexbox so that we can use break-inside property */
@@ -14523,6 +14537,10 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 /* Hiding the collapser by default */
 .jp-Collapser {
   display: none;
+}
+
+@page {
+    margin: 0.5in; /* Margin for each printed piece of paper */
 }
 
 @media print {
@@ -14581,14 +14599,14 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-Haskell"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Prelude</span><span class="w"> </span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Log</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Log</span>
 
-<span class="kt">:</span><span class="n">l</span><span class="w"> </span><span class="o">../</span><span class="n">plotting</span><span class="o">.</span><span class="n">hs</span><span class="w"></span>
+<span class="kt">:</span><span class="n">l</span><span class="w"> </span><span class="o">../</span><span class="n">plotting</span><span class="o">.</span><span class="n">hs</span>
 </pre></div>
 
      </div>
@@ -14616,24 +14634,24 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">unnormalizedDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Measure</span><span class="w"> </span><span class="kt">Double</span><span class="w"></span>
-<span class="nf">unnormalizedDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
-<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span><span class="w"></span>
-<span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
-<span class="w">    </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="n">normalPdf</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">y</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">unnormalizedDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Measure</span><span class="w"> </span><span class="kt">Double</span>
+<span class="nf">unnormalizedDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="n">y</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">normal</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="n">normalPdf</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">y</span>
 <span class="w">    </span>
-<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"></span>
-<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">weighted</span><span class="w"> </span><span class="n">unnormalizedDistribution</span><span class="w"></span>
+<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">weighted</span><span class="w"> </span><span class="n">unnormalizedDistribution</span>
 <span class="w">    </span>
-<span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">[(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span><span class="w"></span>
-<span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">100000</span><span class="w"> </span><span class="n">distributionOverWeightedSamples</span><span class="w"></span>
+<span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">[(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
+<span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">100000</span><span class="w"> </span><span class="n">distributionOverWeightedSamples</span>
 <span class="w">    </span>
-<span class="nf">histogramDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="kt">Histogram</span><span class="w"></span>
-<span class="nf">histogramDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">histogram</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">iidDistribution</span><span class="w"></span>
+<span class="nf">histogramDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="kt">Histogram</span>
+<span class="nf">histogramDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">histogram</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">iidDistribution</span>
 <span class="w">    </span>
-<span class="nf">plotDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="kt">Plot</span><span class="w"></span>
-<span class="nf">plotDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">plot</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">histogramToList</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">histogramDistribution</span><span class="w"></span>
+<span class="nf">plotDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="kt">Plot</span>
+<span class="nf">plotDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">plot</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">histogramToList</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">histogramDistribution</span>
 </pre></div>
 
      </div>
@@ -14665,7 +14683,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">sampler</span><span class="w"> </span><span class="n">plotDistribution</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">sampler</span><span class="w"> </span><span class="n">plotDistribution</span>
 </pre></div>
 
      </div>
@@ -14679,9 +14697,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 

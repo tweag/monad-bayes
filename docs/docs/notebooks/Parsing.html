@@ -36,6 +36,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
 .highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
 .highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .pm { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation.Marker */
 .highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
 .highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
 .highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
@@ -14464,10 +14465,6 @@ a.anchor-link {
   display: none;
 }
 
-.highlight  {
-  margin: 0.4em;
-}
-
 /* Input area styling */
 .jp-InputArea {
   overflow: hidden;
@@ -14477,9 +14474,26 @@ a.anchor-link {
   overflow: hidden;
 }
 
-.CodeMirror pre {
+.CodeMirror.cm-s-jupyter .highlight pre {
+/* weird, but --jp-code-padding defined to be 5px but 4px horizontal padding is hardcoded for pre.CodeMirror-line */
+  padding: var(--jp-code-padding) 4px;
   margin: 0;
-  padding: 0;
+
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+
+}
+
+.jp-OutputArea-output pre {
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.jp-RenderedText pre {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-code-font-size);
 }
 
 /* Using table instead of flexbox so that we can use break-inside property */
@@ -14523,6 +14537,10 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 /* Hiding the collapser by default */
 .jp-Collapser {
   display: none;
+}
+
+@page {
+    margin: 0.5in; /* Margin for each printed piece of paper */
 }
 
 @media print {
@@ -14591,26 +14609,26 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Text.Megaparsec</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Text.Megaparsec.Char</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Char</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Text</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">T</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Population</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Inference.SMC</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Trans</span><span class="w"> </span><span class="p">(</span><span class="nf">lift</span><span class="p">)</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span><span class="w"> </span><span class="p">(</span><span class="nf">join</span><span class="p">,</span><span class="w"> </span><span class="nf">replicateM</span><span class="p">)</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Void</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Text.Pretty.Simple</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="kr">import</span><span class="w"> </span><span class="nn">Text.Megaparsec</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Text.Megaparsec.Char</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Char</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Text</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">T</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Population</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Inference.SMC</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Trans</span><span class="w"> </span><span class="p">(</span><span class="nf">lift</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span><span class="w"> </span><span class="p">(</span><span class="nf">join</span><span class="p">,</span><span class="w"> </span><span class="nf">replicateM</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Void</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Text.Pretty.Simple</span>
 
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">OverloadedStrings</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">GADTs</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">LambdaCase</span><span class="w"></span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">OverloadedStrings</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">GADTs</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">LambdaCase</span>
 </pre></div>
 
      </div>
@@ -14639,31 +14657,31 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">alphabet</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="w"> </span><span class="kt">[]</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="sc">&#39;h&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">]</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">alphabet</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="w"> </span><span class="kt">[]</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="sc">&#39;h&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;i&#39;</span><span class="p">,</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">]</span>
 
-<span class="nf">noise</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
-<span class="w">    </span><span class="n">perturb</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.1</span><span class="w"></span>
-<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">perturb</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="n">alphabet</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="nf">noise</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="n">perturb</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">bernoulli</span><span class="w"> </span><span class="mf">0.1</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">perturb</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="n">alphabet</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="n">return</span><span class="w"> </span><span class="n">x</span>
 
-<span class="nf">letter</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
-<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w">  </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="s">&quot;x&quot;</span><span class="p">]</span><span class="w"></span>
-<span class="w">    </span><span class="n">predicted</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="n">true</span><span class="w"></span>
-<span class="w">    </span><span class="n">observed</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lookAhead</span><span class="w"> </span><span class="p">(</span><span class="n">foldr1</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;|&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="p">])</span><span class="w"></span>
-<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">condition</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
-<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">observed</span><span class="w"></span>
+<span class="nf">letter</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w">  </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">uniformD</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="s">&quot;x&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">predicted</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">noise</span><span class="w"> </span><span class="n">true</span>
+<span class="w">    </span><span class="n">observed</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">lookAhead</span><span class="w"> </span><span class="p">(</span><span class="n">foldr1</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;|&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;h&quot;</span><span class="p">,</span><span class="s">&quot;i&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="p">])</span>
+<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">condition</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">predicted</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">observed</span>
+<span class="w">    </span><span class="n">string</span><span class="w"> </span><span class="n">observed</span>
 <span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="n">true</span><span class="w"> </span>
 <span class="w">    </span>
 <span class="nf">word</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="kr">do</span><span class="w"> </span>
-<span class="w">    </span><span class="n">wd</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">some</span><span class="w"> </span><span class="n">letter</span><span class="w"></span>
-<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">wd</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;hi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;goodbye&quot;</span><span class="p">]</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">wd</span><span class="w"></span>
-<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">&lt;*</span><span class="w"> </span><span class="n">eof</span><span class="w"></span>
+<span class="w">    </span><span class="n">wd</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">some</span><span class="w"> </span><span class="n">letter</span>
+<span class="w">    </span><span class="n">lift</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">factor</span><span class="w"> </span><span class="p">(</span><span class="kr">if</span><span class="w"> </span><span class="n">wd</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;hi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;goodbye&quot;</span><span class="p">]</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">wd</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">&lt;*</span><span class="w"> </span><span class="n">eof</span>
 
 <span class="nf">errorBundlePretty&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">TraversableStream</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="kt">VisualStream</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">ParseErrorBundle</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="kt">Void</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span>
-<span class="nf">errorBundlePretty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">errorBundlePretty</span><span class="w"></span>
+<span class="nf">errorBundlePretty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">errorBundlePretty</span>
 
 
-<span class="nf">run</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">either</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">errorBundlePretty&#39;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">show</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">runParserT</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="n">input</span><span class="w"></span>
+<span class="nf">run</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">either</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">errorBundlePretty&#39;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">show</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="n">runParserT</span><span class="w"> </span><span class="n">parser</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="n">input</span>
 </pre></div>
 
      </div>
@@ -14681,14 +14699,14 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-Haskell"><pre><span></span><span class="nf">pPrintCustom</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">pPrintOpt</span><span class="w"> </span><span class="kt">CheckColorTty</span><span class="w"> </span><span class="n">defaultOutputOptionsNoColor</span><span class="w"> </span><span class="p">{</span><span class="n">outputOptionsCompact</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">True</span><span class="p">,</span><span class="w"> </span><span class="n">outputOptionsIndentAmount</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span><span class="w"> </span>
 
-<span class="nf">runWordParser</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
+<span class="nf">runWordParser</span><span class="w"> </span><span class="n">w</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
 <span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampler</span><span class="w"> </span>
 <span class="w">        </span><span class="o">.</span><span class="w"> </span><span class="n">population</span><span class="w"> </span>
 <span class="w">        </span><span class="o">.</span><span class="w"> </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">3000</span><span class="p">,</span><span class="w"> </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span>
-<span class="w">        </span><span class="o">$</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="n">w</span><span class="w"></span>
-<span class="w">    </span><span class="n">pPrintCustom</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toEmpiricalWeighted</span><span class="w"> </span><span class="n">x</span><span class="w"></span>
+<span class="w">        </span><span class="o">$</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="n">word</span><span class="w"> </span><span class="n">w</span>
+<span class="w">    </span><span class="n">pPrintCustom</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toEmpiricalWeighted</span><span class="w"> </span><span class="n">x</span>
 <span class="w">    </span>
-<span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hx&quot;</span><span class="w"></span>
+<span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hx&quot;</span>
 </pre></div>
 
      </div>
@@ -14702,9 +14720,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -14739,7 +14755,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;ii&quot;</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;ii&quot;</span>
 </pre></div>
 
      </div>
@@ -14753,9 +14769,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -14794,7 +14808,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hii&quot;</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">runWordParser</span><span class="w"> </span><span class="s">&quot;hii&quot;</span>
 </pre></div>
 
      </div>
@@ -14808,9 +14822,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
