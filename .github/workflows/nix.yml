@@ -50,8 +50,9 @@ jobs:
         include:
           - os: ubuntu-latest
             system: x86_64-linux
-          - os: macos-latest
-            system: x86_64-darwin
+          # Jupyenv doesn't support Darwin yet, https://github.com/tweag/jupyenv/issues/388
+          # - os: macos-latest
+          #   system: x86_64-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
