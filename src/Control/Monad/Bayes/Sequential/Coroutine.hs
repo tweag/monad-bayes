@@ -54,34 +54,34 @@ newtype Sequential m a = Sequential {runSequential :: Coroutine (Await ()) m a}
 extract :: Await () a -> a
 extract (Await f) = f ()
 
-instance MonadDistribution m => MonadDistribution (Sequential m) where
+instance (MonadDistribution m) => MonadDistribution (Sequential m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
 -- | Execution is 'suspend'ed after each 'score'.
-instance MonadFactor m => MonadFactor (Sequential m) where
+instance (MonadFactor m) => MonadFactor (Sequential m) where
   score w = lift (score w) >> suspend
 
-instance MonadMeasure m => MonadMeasure (Sequential m)
+instance (MonadMeasure m) => MonadMeasure (Sequential m)
 
 -- | A point where the computation is paused.
-suspend :: Monad m => Sequential m ()
+suspend :: (Monad m) => Sequential m ()
 suspend = Sequential await
 
 -- | Remove the remaining suspension points.
-finish :: Monad m => Sequential m a -> m a
+finish :: (Monad m) => Sequential m a -> m a
 finish = pogoStick extract . runSequential
 
 -- | Execute to the next suspension point.
 -- If the computation is finished, do nothing.
 --
 -- > finish = finish . advance
-advance :: Monad m => Sequential m a -> Sequential m a
+advance :: (Monad m) => Sequential m a -> Sequential m a
 advance = Sequential . bounce extract . runSequential
 
 -- | Return True if no more suspension points remain.
-finished :: Monad m => Sequential m a -> m Bool
+finished :: (Monad m) => Sequential m a -> m Bool
 finished = fmap isRight . resume . runSequential
 
 -- | Transform the inner monad.
@@ -106,7 +106,7 @@ composeCopies k f = foldr (.) id (replicate k f)
 -- Applies a given transformation after each time step.
 sequentially,
   sis ::
-    Monad m =>
+    (Monad m) =>
     -- | transformation
     (forall x. m x -> m x) ->
     -- | number of time steps

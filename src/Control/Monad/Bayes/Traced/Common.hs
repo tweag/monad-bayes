@@ -74,14 +74,14 @@ singleton u = Trace {variables = [u], output = u, probDensity = 1}
 scored :: Log Double -> Trace ()
 scored w = Trace {variables = [], output = (), probDensity = w}
 
-bind :: Monad m => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
+bind :: (Monad m) => m (Trace a) -> (a -> m (Trace b)) -> m (Trace b)
 bind dx f = do
   t1 <- dx
   t2 <- f (output t1)
   return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: MonadDistribution m => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
+mhTrans :: (MonadDistribution m) => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -95,11 +95,11 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
-mhTransFree :: MonadDistribution m => Weighted (Free.Density m) a -> Trace a -> m (Trace a)
+mhTransFree :: (MonadDistribution m) => Weighted (Free.Density m) a -> Trace a -> m (Trace a)
 mhTransFree m t = trace <$> mhTransWithBool m t
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTransWithBool :: MonadDistribution m => Weighted (Free.Density m) a -> Trace a -> m (MHResult a)
+mhTransWithBool :: (MonadDistribution m) => Weighted (Free.Density m) a -> Trace a -> m (MHResult a)
 mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -114,11 +114,11 @@ mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
   return if accept then MHResult True (Trace vs b q) else MHResult False t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
-mhTrans' :: MonadDistribution m => Weighted (Free.Density Identity) a -> Trace a -> m (Trace a)
+mhTrans' :: (MonadDistribution m) => Weighted (Free.Density Identity) a -> Trace a -> m (Trace a)
 mhTrans' m = mhTransFree (Weighted.hoist (Free.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
-burnIn :: Functor m => Int -> m [a] -> m [a]
+burnIn :: (Functor m) => Int -> m [a] -> m [a]
 burnIn n = fmap dropEnd
   where
     dropEnd ls = let len = length ls in take (len - n) ls

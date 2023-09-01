@@ -18,6 +18,6 @@ lwis n m = do
   rs <- randoms <$> getStdGen
   return $ fmap (\r -> fst $ head $ filter ((>= Exp (log r) * max') . snd) xws') rs
   where
-    accumulate :: Num t => [(a, t)] -> t -> [(a, t)]
+    accumulate :: (Num t) => [(a, t)] -> t -> [(a, t)]
     accumulate ((x, w) : xws) a = (x, w + a) : (x, w + a) : accumulate xws (w + a)
     accumulate [] _ = []

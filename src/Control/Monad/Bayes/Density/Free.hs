@@ -42,7 +42,7 @@ newtype Density m a = Density {runDensity :: FT SamF m a}
 instance MonadFree SamF (Density m) where
   wrap = Density . wrap . fmap runDensity
 
-instance Monad m => MonadDistribution (Density m) where
+instance (Monad m) => MonadDistribution (Density m) where
   random = Density $ liftF (Random id)
 
 -- | Hoist 'Density' through a monad transform.
@@ -50,13 +50,13 @@ hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density 
 hoist f (Density m) = Density (hoistFT f m)
 
 -- | Execute random sampling in the transformed monad.
-interpret :: MonadDistribution m => Density m a -> m a
+interpret :: (MonadDistribution m) => Density m a -> m a
 interpret (Density m) = iterT f m
   where
     f (Random k) = random >>= k
 
 -- | Execute computation with supplied values for random choices.
-withRandomness :: Monad m => [Double] -> Density m a -> m a
+withRandomness :: (Monad m) => [Double] -> Density m a -> m a
 withRandomness randomness (Density m) = evalStateT (iterTM f m) randomness
   where
     f (Random k) = do
@@ -68,7 +68,7 @@ withRandomness randomness (Density m) = evalStateT (iterTM f m) randomness
 -- | Execute computation with supplied values for a subset of random choices.
 -- Return the output value and a record of all random choices used, whether
 -- taken as input or drawn using the transformed monad.
-density :: MonadDistribution m => [Double] -> Density m a -> m (a, [Double])
+density :: (MonadDistribution m) => [Double] -> Density m a -> m (a, [Double])
 density randomness (Density m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness
   where
@@ -84,5 +84,5 @@ density randomness (Density m) =
       k x
 
 -- | Like 'density', but use an arbitrary sampling monad.
-traced :: MonadDistribution m => [Double] -> Density Identity a -> m (a, [Double])
+traced :: (MonadDistribution m) => [Double] -> Density Identity a -> m (a, [Double])
 traced randomness m = density randomness $ hoist (return . runIdentity) m

@@ -45,10 +45,10 @@ splitTree :: Tree -> (Tree, Tree)
 splitTree (Tree r (Trees t ts)) = (t, Tree r ts)
 
 -- | Preliminaries for the simulation methods. Generate a tree with uniform random labels. This uses 'split' to split a random seed
-randomTree :: RandomGen g => g -> Tree
+randomTree :: (RandomGen g) => g -> Tree
 randomTree g = let (a, g') = R.random g in Tree a (randomTrees g')
 
-randomTrees :: RandomGen g => g -> Trees
+randomTrees :: (RandomGen g) => g -> Trees
 randomTrees g = let (g1, g2) = split g in Trees (randomTree g1) (randomTrees g2)
 
 instance Applicative Sampler where
@@ -71,7 +71,7 @@ instance MonadDistribution Sampler where
 sampler :: Sampler a -> IO a
 sampler m = newStdGen *> (runSampler m . randomTree <$> getStdGen)
 
-independent :: Monad m => m a -> m [a]
+independent :: (Monad m) => m a -> m [a]
 independent = sequence . repeat
 
 -- | 'weightedsamples' runs a probability measure and gets out a stream of (result,weight) pairs

@@ -79,25 +79,25 @@ population (Population m) = runListT $ weighted m
 runPopulation = population
 
 -- | Explicit representation of the weighted sample.
-explicitPopulation :: Functor m => Population m a -> m [(a, Double)]
+explicitPopulation :: (Functor m) => Population m a -> m [(a, Double)]
 explicitPopulation = fmap (map (second (exp . ln))) . population
 
 -- | Initialize 'Population' with a concrete weighted sample.
-fromWeightedList :: Monad m => m [(a, Log Double)] -> Population m a
+fromWeightedList :: (Monad m) => m [(a, Log Double)] -> Population m a
 fromWeightedList = Population . withWeight . ListT
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
 -- It is therefore safe to use 'spawn' in arbitrary places in the program
 -- without introducing bias.
-spawn :: Monad m => Int -> Population m ()
+spawn :: (Monad m) => Int -> Population m ()
 spawn n = fromWeightedList $ pure $ replicate n ((), 1 / fromIntegral n)
 
-withParticles :: Monad m => Int -> Population m a -> Population m a
+withParticles :: (Monad m) => Int -> Population m a -> Population m a
 withParticles n = (spawn n >>)
 
 resampleGeneric ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   -- | resampler
   (V.Vector Double -> m [Int]) ->
   Population m a ->
@@ -171,7 +171,7 @@ resampleSystematic = resampleGeneric (\ps -> (`systematic` ps) <$> random)
 -- and \(w^{(k)}\) are the weights.
 --
 -- The conditional variance of stratified sampling is always smaller than that of multinomial sampling and it is also unbiased - see  [Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).
-stratified :: MonadDistribution m => V.Vector Double -> m [Int]
+stratified :: (MonadDistribution m) => V.Vector Double -> m [Int]
 stratified weights = do
   let bigN = V.length weights
   dithers <- V.replicateM bigN (uniform 0.0 1.0)
@@ -199,7 +199,7 @@ resampleStratified = resampleGeneric stratified
 -- | Multinomial sampler.  Sample from \(0, \ldots, n - 1\) \(n\)
 -- times drawn at random according to the weights where \(n\) is the
 -- length of vector of weights.
-multinomial :: MonadDistribution m => V.Vector Double -> m [Int]
+multinomial :: (MonadDistribution m) => V.Vector Double -> m [Int]
 multinomial ps = replicateM (V.length ps) (categorical ps)
 
 -- | Resample the population using the underlying monad and a multinomial resampling scheme.
@@ -213,7 +213,7 @@ resampleMultinomial = resampleGeneric multinomial
 -- | Separate the sum of weights into the 'Weighted' transformer.
 -- Weights are normalized after this operation.
 extractEvidence ::
-  Monad m =>
+  (Monad m) =>
   Population m a ->
   Population (Weighted m) a
 extractEvidence m = fromWeightedList $ do
@@ -227,7 +227,7 @@ extractEvidence m = fromWeightedList $ do
 -- | Push the evidence estimator as a score to the transformed monad.
 -- Weights are normalized after this operation.
 pushEvidence ::
-  MonadFactor m =>
+  (MonadFactor m) =>
   Population m a ->
   Population m a
 pushEvidence = hoist applyWeight . extractEvidence
@@ -269,7 +269,7 @@ popAvg f p = do
 
 -- | Applies a transformation to the inner monad.
 hoist ::
-  Monad n =>
+  (Monad n) =>
   (forall x. m x -> n x) ->
   Population m a ->
   Population n a

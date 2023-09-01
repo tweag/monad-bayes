@@ -40,24 +40,24 @@ import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 -- subset can be adjusted dynamically.
 newtype Traced m a = Traced {runTraced :: m (Weighted (Density m) a, Trace a)}
 
-pushM :: Monad m => m (Weighted (Density m) a) -> Weighted (Density m) a
+pushM :: (Monad m) => m (Weighted (Density m) a) -> Weighted (Density m) a
 pushM = join . lift . lift
 
-instance Monad m => Functor (Traced m) where
+instance (Monad m) => Functor (Traced m) where
   fmap f (Traced c) = Traced $ do
     (m, t) <- c
     let m' = fmap f m
     let t' = fmap f t
     return (m', t')
 
-instance Monad m => Applicative (Traced m) where
+instance (Monad m) => Applicative (Traced m) where
   pure x = Traced $ pure (pure x, pure x)
   (Traced cf) <*> (Traced cx) = Traced $ do
     (mf, tf) <- cf
     (mx, tx) <- cx
     return (mf <*> mx, tf <*> tx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad m) => Monad (Traced m) where
   (Traced cx) >>= f = Traced $ do
     (mx, tx) <- cx
     let m = mx >>= pushM . fmap fst . runTraced . f
@@ -67,31 +67,31 @@ instance Monad m => Monad (Traced m) where
 instance MonadTrans Traced where
   lift m = Traced $ fmap ((,) (lift $ lift m) . pure) m
 
-instance MonadDistribution m => MonadDistribution (Traced m) where
+instance (MonadDistribution m) => MonadDistribution (Traced m) where
   random = Traced $ fmap ((,) random . singleton) random
 
-instance MonadFactor m => MonadFactor (Traced m) where
+instance (MonadFactor m) => MonadFactor (Traced m) where
   score w = Traced $ fmap (score w,) (score w >> pure (scored w))
 
-instance MonadMeasure m => MonadMeasure (Traced m)
+instance (MonadMeasure m) => MonadMeasure (Traced m)
 
 hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoist f (Traced c) = Traced (f c)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: Monad m => Traced m a -> m a
+marginal :: (Monad m) => Traced m a -> m a
 marginal (Traced c) = fmap (output . snd) c
 
 -- | Freeze all traced random choices to their current values and stop tracing
 -- them.
-freeze :: Monad m => Traced m a -> Traced m a
+freeze :: (Monad m) => Traced m a -> Traced m a
 freeze (Traced c) = Traced $ do
   (_, t) <- c
   let x = output t
   return (return x, pure x)
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadDistribution m => Traced m a -> Traced m a
+mhStep :: (MonadDistribution m) => Traced m a -> Traced m a
 mhStep (Traced c) = Traced $ do
   (m, t) <- c
   t' <- mhTransFree m t
@@ -99,7 +99,7 @@ mhStep (Traced c) = Traced $ do
 
 -- | Full run of the Trace Metropolis-Hastings algorithm with a specified
 -- number of steps.
-mh :: MonadDistribution m => Int -> Traced m a -> m [a]
+mh :: (MonadDistribution m) => Int -> Traced m a -> m [a]
 mh n (Traced c) = do
   (m, t) <- c
   let f k

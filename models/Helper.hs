@@ -39,7 +39,7 @@ serializeModel (LDA _) = Nothing
 data Alg = SMC | MH | RMSMC
   deriving stock (Read, Show, Eq, Ord, Enum, Bounded)
 
-getModel :: MonadMeasure m => Model -> (Int, m String)
+getModel :: (MonadMeasure m) => Model -> (Int, m String)
 getModel model = (size model, program model)
   where
     size (LR n) = n
