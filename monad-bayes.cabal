@@ -110,10 +110,14 @@ library
   default-language:   Haskell2010
   default-extensions:
     BlockArguments
+    DerivingVia
     FlexibleContexts
+    GeneralizedNewtypeDeriving
     ImportQualifiedPost
+    KindSignatures
     LambdaCase
     OverloadedStrings
+    StandaloneDeriving
     TupleSections
 
   if flag(dev)

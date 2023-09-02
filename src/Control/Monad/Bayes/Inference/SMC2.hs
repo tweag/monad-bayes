@@ -20,7 +20,7 @@ module Control.Monad.Bayes.Inference.SMC2
 where
 
 import Control.Monad.Bayes.Class
-  ( MonadDistribution (random),
+  ( MonadDistribution,
     MonadFactor (..),
     MonadMeasure,
   )
@@ -35,19 +35,13 @@ import Numeric.Log (Log)
 
 -- | Helper monad transformer for preprocessing the model for 'smc2'.
 newtype SMC2 m a = SMC2 (Sequential (Traced (Population m)) a)
-  deriving newtype (Functor, Applicative, Monad)
+  deriving newtype (Functor, Applicative, Monad, MonadDistribution, MonadFactor)
 
 setup :: SMC2 m a -> Sequential (Traced (Population m)) a
 setup (SMC2 m) = m
 
 instance MonadTrans SMC2 where
   lift = SMC2 . lift . lift . lift
-
-instance MonadDistribution m => MonadDistribution (SMC2 m) where
-  random = lift random
-
-instance Monad m => MonadFactor (SMC2 m) where
-  score = SMC2 . score
 
 instance MonadDistribution m => MonadMeasure (SMC2 m)
 
