@@ -61,7 +61,7 @@ common deps
     , scientific       ^>=0.3
     , statistics       >=0.14.0  && <0.17
     , text             >=1.2     && <2.1
-    , vector           ^>=0.12.0
+    , vector           >=0.12.0  && <0.14
     , vty              ^>=5.38
 
 common test-deps
