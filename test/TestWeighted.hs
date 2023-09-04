@@ -14,7 +14,7 @@ import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
 import Numeric.Log (Log (Exp, ln))
 
-model :: MonadMeasure m => m (Int, Double)
+model :: (MonadMeasure m) => m (Int, Double)
 model = do
   n <- uniformD [0, 1, 2]
   unless (n == 0) (factor 0.5)
@@ -22,7 +22,7 @@ model = do
   when (n == 2) (factor $ (Exp . log) (x * x))
   return (n, x)
 
-result :: MonadDistribution m => m ((Int, Double), Double)
+result :: (MonadDistribution m) => m ((Int, Double), Double)
 result = second (exp . ln) <$> weighted model
 
 passed :: IO Bool

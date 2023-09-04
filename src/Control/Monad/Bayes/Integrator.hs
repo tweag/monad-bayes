@@ -68,20 +68,20 @@ fromDensityFunction d = Integrator $
   where
     integralWithQuadrature = result . last . (\z -> trap z 0 1)
 
-fromMassFunction :: Foldable f => (a -> Double) -> f a -> Integrator a
+fromMassFunction :: (Foldable f) => (a -> Double) -> f a -> Integrator a
 fromMassFunction f support = Integrator $ cont \g ->
   foldl' (\acc x -> acc + f x * g x) 0 support
 
-empirical :: Foldable f => f a -> Integrator a
+empirical :: (Foldable f) => f a -> Integrator a
 empirical = Integrator . cont . flip weightedAverage
   where
     weightedAverage :: (Foldable f, Fractional r) => (a -> r) -> f a -> r
     weightedAverage f = Foldl.fold (weightedAverageFold f)
 
-    weightedAverageFold :: Fractional r => (a -> r) -> Fold a r
+    weightedAverageFold :: (Fractional r) => (a -> r) -> Fold a r
     weightedAverageFold f = Foldl.premap f averageFold
 
-    averageFold :: Fractional a => Fold a a
+    averageFold :: (Fractional a) => Fold a a
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
 
 expectation :: Integrator Double -> Double
@@ -124,7 +124,7 @@ containing xs x
   | x `elem` xs = 1
   | otherwise = 0
 
-instance Num a => Num (Integrator a) where
+instance (Num a) => Num (Integrator a) where
   (+) = liftA2 (+)
   (-) = liftA2 (-)
   (*) = liftA2 (*)
@@ -132,10 +132,10 @@ instance Num a => Num (Integrator a) where
   signum = fmap signum
   fromInteger = pure . fromInteger
 
-probability :: Ord a => (a, a) -> Integrator a -> Double
+probability :: (Ord a) => (a, a) -> Integrator a -> Double
 probability (lower, upper) = integrator (\x -> if x < upper && x >= lower then 1 else 0)
 
-enumeratorWith :: Ord a => Set a -> Integrator a -> [(a, Double)]
+enumeratorWith :: (Ord a) => Set a -> Integrator a -> [(a, Double)]
 enumeratorWith ls meas =
   [ ( val,
       integrator

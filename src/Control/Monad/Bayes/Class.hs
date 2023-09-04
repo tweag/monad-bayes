@@ -107,7 +107,7 @@ import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
 
 -- | Monads that can draw random variables.
-class Monad m => MonadDistribution m where
+class (Monad m) => MonadDistribution m where
   -- | Draw from a uniform distribution.
   random ::
     -- | \(\sim \mathcal{U}(0, 1)\)
@@ -163,7 +163,7 @@ class Monad m => MonadDistribution m where
 
   -- | Draw from a categorical distribution.
   categorical ::
-    Vector v Double =>
+    (Vector v Double) =>
     -- | event probabilities
     v Double ->
     -- | outcome category
@@ -208,7 +208,7 @@ class Monad m => MonadDistribution m where
 
   -- | Draw from a Dirichlet distribution.
   dirichlet ::
-    Vector v Double =>
+    (Vector v Double) =>
     -- | concentration parameters @as@
     v Double ->
     -- | \(\sim \mathrm{Dir}(\mathrm{as})\)
@@ -226,7 +226,7 @@ draw d = fmap (quantile d) random
 
 -- | Draw from a discrete distribution using a sequence of draws from
 -- Bernoulli.
-fromPMF :: MonadDistribution m => (Int -> Double) -> m Int
+fromPMF :: (MonadDistribution m) => (Int -> Double) -> m Int
 fromPMF p = f 0 1
   where
     f i r = do
@@ -241,7 +241,7 @@ discrete :: (DiscreteDistr d, MonadDistribution m) => d -> m Int
 discrete = fromPMF . probability
 
 -- | Monads that can score different execution paths.
-class Monad m => MonadFactor m where
+class (Monad m) => MonadFactor m where
   -- | Record a likelihood.
   score ::
     -- | likelihood of the execution path
@@ -250,7 +250,7 @@ class Monad m => MonadFactor m where
 
 -- | Synonym for 'score'.
 factor ::
-  MonadFactor m =>
+  (MonadFactor m) =>
   -- | likelihood of the execution path
   Log Double ->
   m ()
@@ -258,17 +258,17 @@ factor = score
 
 -- | synonym for pretty type signatures, but note that (A -> Distribution B) won't work as intended: for that, use Kernel
 -- Also note that the use of RankNTypes means performance may take a hit: really the main point of these signatures is didactic
-type Distribution a = forall m. MonadDistribution m => m a
+type Distribution a = forall m. (MonadDistribution m) => m a
 
-type Measure a = forall m. MonadMeasure m => m a
+type Measure a = forall m. (MonadMeasure m) => m a
 
-type Kernel a b = forall m. MonadMeasure m => a -> m b
+type Kernel a b = forall m. (MonadMeasure m) => a -> m b
 
 -- | Hard conditioning.
-condition :: MonadFactor m => Bool -> m ()
+condition :: (MonadFactor m) => Bool -> m ()
 condition b = score $ if b then 1 else 0
 
-independent :: Applicative m => Int -> m a -> m [a]
+independent :: (Applicative m) => Int -> m a -> m [a]
 independent = replicateM
 
 -- | Monads that support both sampling and scoring.
@@ -290,7 +290,7 @@ poissonPdf :: Double -> Integer -> Log Double
 poissonPdf rate n = Exp $ logProbability (Poisson.poisson rate) (fromIntegral n)
 
 -- | multivariate normal
-mvNormal :: MonadDistribution m => V.Vector Double -> Matrix Double -> m (V.Vector Double)
+mvNormal :: (MonadDistribution m) => V.Vector Double -> Matrix Double -> m (V.Vector Double)
 mvNormal mu bigSigma = do
   let n = length mu
   ss <- replicateM n (normal 0 1)
@@ -312,7 +312,7 @@ posterior Bayesian {..} os = do
   factor $ product $ fmap (likelihood z) os
   return z
 
-priorPredictive :: Monad m => Bayesian m a b -> m b
+priorPredictive :: (Monad m) => Bayesian m a b -> m b
 priorPredictive bm = prior bm >>= generative bm
 
 posteriorPredictive ::
@@ -342,32 +342,32 @@ histogramToList = H.asList
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
-instance MonadDistribution m => MonadDistribution (IdentityT m) where
+instance (MonadDistribution m) => MonadDistribution (IdentityT m) where
   random = lift random
   bernoulli = lift . bernoulli
 
-instance MonadFactor m => MonadFactor (IdentityT m) where
+instance (MonadFactor m) => MonadFactor (IdentityT m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (IdentityT m)
+instance (MonadMeasure m) => MonadMeasure (IdentityT m)
 
-instance MonadDistribution m => MonadDistribution (ExceptT e m) where
+instance (MonadDistribution m) => MonadDistribution (ExceptT e m) where
   random = lift random
   uniformD = lift . uniformD
 
-instance MonadFactor m => MonadFactor (ExceptT e m) where
+instance (MonadFactor m) => MonadFactor (ExceptT e m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (ExceptT e m)
+instance (MonadMeasure m) => MonadMeasure (ExceptT e m)
 
-instance MonadDistribution m => MonadDistribution (ReaderT r m) where
+instance (MonadDistribution m) => MonadDistribution (ReaderT r m) where
   random = lift random
   bernoulli = lift . bernoulli
 
-instance MonadFactor m => MonadFactor (ReaderT r m) where
+instance (MonadFactor m) => MonadFactor (ReaderT r m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (ReaderT r m)
+instance (MonadMeasure m) => MonadMeasure (ReaderT r m)
 
 instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
   random = lift random
@@ -379,31 +379,31 @@ instance (Monoid w, MonadFactor m) => MonadFactor (WriterT w m) where
 
 instance (Monoid w, MonadMeasure m) => MonadMeasure (WriterT w m)
 
-instance MonadDistribution m => MonadDistribution (StateT s m) where
+instance (MonadDistribution m) => MonadDistribution (StateT s m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
   uniformD = lift . uniformD
 
-instance MonadFactor m => MonadFactor (StateT s m) where
+instance (MonadFactor m) => MonadFactor (StateT s m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (StateT s m)
+instance (MonadMeasure m) => MonadMeasure (StateT s m)
 
-instance MonadDistribution m => MonadDistribution (ListT m) where
+instance (MonadDistribution m) => MonadDistribution (ListT m) where
   random = lift random
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
-instance MonadFactor m => MonadFactor (ListT m) where
+instance (MonadFactor m) => MonadFactor (ListT m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (ListT m)
+instance (MonadMeasure m) => MonadMeasure (ListT m)
 
-instance MonadDistribution m => MonadDistribution (ContT r m) where
+instance (MonadDistribution m) => MonadDistribution (ContT r m) where
   random = lift random
 
-instance MonadFactor m => MonadFactor (ContT r m) where
+instance (MonadFactor m) => MonadFactor (ContT r m) where
   score = lift . score
 
-instance MonadMeasure m => MonadMeasure (ContT r m)
+instance (MonadMeasure m) => MonadMeasure (ContT r m)

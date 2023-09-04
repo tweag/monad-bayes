@@ -106,7 +106,7 @@ showEmpirical =
     . (fmap (second (formatScientific Exponent (Just 3) . fromFloatDigits)))
     . toEmpirical
 
-showVal :: Show a => [a] -> Widget n
+showVal :: (Show a) => [a] -> Widget n
 showVal = txt . T.pack . (\case [] -> ""; a -> show $ head a)
 
 -- | handler for events received by the TUI
@@ -130,7 +130,7 @@ theMap =
       (attrName "highlight", fg yellow)
     ]
 
-tui :: Show a => Int -> Traced (Weighted SamplerIO) a -> ([a] -> Widget ()) -> IO ()
+tui :: (Show a) => Int -> Traced (Weighted SamplerIO) a -> ([a] -> Widget ()) -> IO ()
 tui burnIn distribution visualizer = void do
   eventChan <- B.newBChan 10
   initialVty <- buildVty

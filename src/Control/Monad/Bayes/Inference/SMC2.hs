@@ -43,17 +43,17 @@ setup (SMC2 m) = m
 instance MonadTrans SMC2 where
   lift = SMC2 . lift . lift . lift
 
-instance MonadDistribution m => MonadDistribution (SMC2 m) where
+instance (MonadDistribution m) => MonadDistribution (SMC2 m) where
   random = lift random
 
-instance Monad m => MonadFactor (SMC2 m) where
+instance (Monad m) => MonadFactor (SMC2 m) where
   score = SMC2 . score
 
-instance MonadDistribution m => MonadMeasure (SMC2 m)
+instance (MonadDistribution m) => MonadMeasure (SMC2 m)
 
 -- | Sequential Monte Carlo squared.
 smc2 ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   -- | number of time steps
   Int ->
   -- | number of inner particles

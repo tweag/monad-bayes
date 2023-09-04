@@ -61,7 +61,7 @@ mh p m = do
         else return (t, x, w)
 
 -- Replace the labels of a tree randomly, with probability p
-mutateTree :: forall g. RandomGen g => Double -> g -> Tree -> Tree
+mutateTree :: forall g. (RandomGen g) => Double -> g -> Tree -> Tree
 mutateTree p g (Tree a ts) =
   let (a', g') = (R.random g :: (Double, g))
       (a'', g'') = R.random g'
@@ -70,7 +70,7 @@ mutateTree p g (Tree a ts) =
           lazyUniforms = mutateTrees p g'' ts
         }
 
-mutateTrees :: RandomGen g => Double -> g -> Trees -> Trees
+mutateTrees :: (RandomGen g) => Double -> g -> Trees -> Trees
 mutateTrees p g (Trees t ts) =
   let (g1, g2) = split g
    in Trees

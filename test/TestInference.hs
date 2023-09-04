@@ -29,7 +29,7 @@ import Numeric.Log (Log)
 import Sprinkler (soft)
 import System.Random.Stateful (IOGenM, StdGen)
 
-sprinkler :: MonadMeasure m => m Bool
+sprinkler :: (MonadMeasure m) => m Bool
 sprinkler = Sprinkler.soft
 
 -- | Count the number of particles produced by SMC

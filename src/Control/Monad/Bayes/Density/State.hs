@@ -18,16 +18,16 @@ newtype Density m a = Density {runDensity :: WriterT [Double] (StateT [Double] m
 instance MonadTrans Density where
   lift = Density . lift . lift
 
-instance Monad m => MonadState [Double] (Density m) where
+instance (Monad m) => MonadState [Double] (Density m) where
   get = Density $ lift $ get
   put = Density . lift . put
 
-instance Monad m => MonadWriter [Double] (Density m) where
+instance (Monad m) => MonadWriter [Double] (Density m) where
   tell = Density . tell
   listen = Density . listen . runDensity
   pass = Density . pass . runDensity
 
-instance MonadDistribution m => MonadDistribution (Density m) where
+instance (MonadDistribution m) => MonadDistribution (Density m) where
   random = do
     trace <- get
     x <- case trace of
@@ -36,5 +36,5 @@ instance MonadDistribution m => MonadDistribution (Density m) where
     tell [x]
     pure x
 
-density :: Monad m => Density m b -> [Double] -> m (b, [Double])
+density :: (Monad m) => Density m b -> [Double] -> m (b, [Double])
 density (Density m) = evalStateT (runWriterT m)

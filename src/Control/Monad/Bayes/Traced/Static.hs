@@ -45,14 +45,14 @@ data Traced m a = Traced
     traceDist :: m (Trace a)
   }
 
-instance Monad m => Functor (Traced m) where
+instance (Monad m) => Functor (Traced m) where
   fmap f (Traced m d) = Traced (fmap f m) (fmap (fmap f) d)
 
-instance Monad m => Applicative (Traced m) where
+instance (Monad m) => Applicative (Traced m) where
   pure x = Traced (pure x) (pure (pure x))
   (Traced mf df) <*> (Traced mx dx) = Traced (mf <*> mx) (liftA2 (<*>) df dx)
 
-instance Monad m => Monad (Traced m) where
+instance (Monad m) => Monad (Traced m) where
   (Traced mx dx) >>= f = Traced my dy
     where
       my = mx >>= model . f
@@ -61,23 +61,23 @@ instance Monad m => Monad (Traced m) where
 instance MonadTrans Traced where
   lift m = Traced (lift $ lift m) (fmap pure m)
 
-instance MonadDistribution m => MonadDistribution (Traced m) where
+instance (MonadDistribution m) => MonadDistribution (Traced m) where
   random = Traced random (fmap singleton random)
 
-instance MonadFactor m => MonadFactor (Traced m) where
+instance (MonadFactor m) => MonadFactor (Traced m) where
   score w = Traced (score w) (score w >> pure (scored w))
 
-instance MonadMeasure m => MonadMeasure (Traced m)
+instance (MonadMeasure m) => MonadMeasure (Traced m)
 
 hoist :: (forall x. m x -> m x) -> Traced m a -> Traced m a
 hoist f (Traced m d) = Traced m (f d)
 
 -- | Discard the trace and supporting infrastructure.
-marginal :: Monad m => Traced m a -> m a
+marginal :: (Monad m) => Traced m a -> m a
 marginal (Traced _ d) = fmap output d
 
 -- | A single step of the Trace Metropolis-Hastings algorithm.
-mhStep :: MonadDistribution m => Traced m a -> Traced m a
+mhStep :: (MonadDistribution m) => Traced m a -> Traced m a
 mhStep (Traced m d) = Traced m d'
   where
     d' = d >>= mhTransFree m
@@ -111,7 +111,7 @@ mhStep (Traced m d) = Traced m d'
 -- [True,True,True]
 --
 -- Of course, it will need to be run more than twice to get a reasonable estimate.
-mh :: MonadDistribution m => Int -> Traced m a -> m [a]
+mh :: (MonadDistribution m) => Int -> Traced m a -> m [a]
 mh n (Traced m d) = fmap (map output . NE.toList) (f n)
   where
     f k

@@ -39,7 +39,7 @@ values =
   ]
 
 -- | The transition model.
-trans :: MonadDistribution m => Int -> m Int
+trans :: (MonadDistribution m) => Int -> m Int
 trans 0 = categorical $ fromList [0.1, 0.4, 0.5]
 trans 1 = categorical $ fromList [0.2, 0.6, 0.2]
 trans 2 = categorical $ fromList [0.15, 0.7, 0.15]
@@ -53,7 +53,7 @@ emissionMean 2 = 0
 emissionMean _ = error "unreachable"
 
 -- | Initial state distribution
-start :: MonadDistribution m => m Int
+start :: (MonadDistribution m) => m Int
 start = uniformD [0, 1, 2]
 
 -- | Example HMM from http://dl.acm.org/citation.cfm?id=2804317
@@ -67,7 +67,7 @@ hmm dataset = f dataset (const . return)
     f [] k = start >>= k []
     f (y : ys) k = f ys (\xs x -> expand x y >>= k (x : xs))
 
-syntheticData :: MonadDistribution m => Int -> m [Double]
+syntheticData :: (MonadDistribution m) => Int -> m [Double]
 syntheticData n = replicateM n syntheticPoint
   where
     syntheticPoint = uniformD [0, 1, 2]
@@ -75,14 +75,14 @@ syntheticData n = replicateM n syntheticPoint
 -- | Equivalent model, but using pipes for simplicity
 
 -- | Prior expressed as a stream
-hmmPrior :: MonadDistribution m => Producer Int m b
+hmmPrior :: (MonadDistribution m) => Producer Int m b
 hmmPrior = do
   x <- lift start
   yield x
   Pipes.unfoldr (fmap (Right . (\k -> (k, k))) . trans) x
 
 -- | Observations expressed as a stream
-hmmObservations :: Functor m => [a] -> Producer (Maybe a) m ()
+hmmObservations :: (Functor m) => [a] -> Producer (Maybe a) m ()
 hmmObservations dataset = each (Nothing : (Just <$> reverse dataset))
 
 -- | Posterior expressed as a stream
@@ -93,12 +93,12 @@ hmmPosterior dataset =
     hmmPrior
     (hmmObservations dataset)
   where
-    hmmLikelihood :: MonadFactor f => (Int, Maybe Double) -> f ()
+    hmmLikelihood :: (MonadFactor f) => (Int, Maybe Double) -> f ()
     hmmLikelihood (l, o) = when (isJust o) (factor $ normalPdf (emissionMean l) 1 (fromJust o))
 
     zipWithM f p1 p2 = Pipes.zip p1 p2 >-> Pipes.chain f >-> Pipes.map fst
 
-hmmPosteriorPredictive :: MonadDistribution m => [Double] -> Producer Double m ()
+hmmPosteriorPredictive :: (MonadDistribution m) => [Double] -> Producer Double m ()
 hmmPosteriorPredictive dataset =
   Pipes.hoist enumerateToDistribution (hmmPosterior dataset)
     >-> Pipes.mapM (\x -> normal (emissionMean x) 1)

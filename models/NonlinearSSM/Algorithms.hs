@@ -22,7 +22,7 @@ t :: Int
 t = 5
 
 -- FIXME refactor such that it can be reused in ssm benchmark
-runAlgFixed :: MonadDistribution m => SSMData -> Alg -> m String
+runAlgFixed :: (MonadDistribution m) => SSMData -> Alg -> m String
 runAlgFixed ys SMC = fmap show $ population $ smc SMCConfig {numSteps = t, numParticles = 10, resampler = resampleMultinomial} (param >>= model ys)
 runAlgFixed ys RMSMC =
   fmap show $

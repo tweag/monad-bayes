@@ -35,7 +35,7 @@ import Numeric.Log (Log)
 
 -- | Particle Marginal Metropolis-Hastings sampling.
 pmmh ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
   Traced (Weighted m) a1 ->
@@ -54,9 +54,9 @@ pmmh mcmcConf smcConf param model =
 
 -- | Particle Marginal Metropolis-Hastings sampling from a Bayesian model
 pmmhBayesianModel ::
-  MonadMeasure m =>
+  (MonadMeasure m) =>
   MCMCConfig ->
   SMCConfig (Weighted m) ->
-  (forall m'. MonadMeasure m' => Bayesian m' a1 a2) ->
+  (forall m'. (MonadMeasure m') => Bayesian m' a1 a2) ->
   m [[(a2, Log Double)]]
 pmmhBayesianModel mcmcConf smcConf bm = pmmh mcmcConf smcConf (prior bm) (generative bm)

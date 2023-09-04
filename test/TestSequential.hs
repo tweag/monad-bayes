@@ -10,7 +10,7 @@ import Control.Monad.Bayes.Sequential.Coroutine (advance, finish, finished)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 
-twoSync :: MonadMeasure m => m Int
+twoSync :: (MonadMeasure m) => m Int
 twoSync = do
   x <- uniformD [0, 1]
   factor (fromIntegral x)
@@ -18,7 +18,7 @@ twoSync = do
   factor (fromIntegral y)
   return (x + y)
 
-finishedTwoSync :: MonadMeasure m => Int -> m Bool
+finishedTwoSync :: (MonadMeasure m) => Int -> m Bool
 finishedTwoSync n = finished (run n twoSync)
   where
     run 0 d = d
@@ -30,7 +30,7 @@ checkTwoSync 1 = mass (finishedTwoSync 1) False ~== 1
 checkTwoSync 2 = mass (finishedTwoSync 2) True ~== 1
 checkTwoSync _ = error "Unexpected argument"
 
-sprinkler :: MonadMeasure m => m Bool
+sprinkler :: (MonadMeasure m) => m Bool
 sprinkler = Sprinkler.soft
 
 checkPreserve :: Bool
@@ -42,7 +42,7 @@ pFinished 1 = 0.9988062077198566
 pFinished 2 = 1
 pFinished _ = error "Unexpected argument"
 
-isFinished :: MonadMeasure m => Int -> m Bool
+isFinished :: (MonadMeasure m) => Int -> m Bool
 isFinished n = finished (run n sprinkler)
   where
     run 0 d = d

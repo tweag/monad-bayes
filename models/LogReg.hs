@@ -13,7 +13,7 @@ import Control.Monad.Bayes.Class
   )
 import Numeric.Log (Log (Exp))
 
-logisticRegression :: MonadMeasure m => [(Double, Bool)] -> m Double
+logisticRegression :: (MonadMeasure m) => [(Double, Bool)] -> m Double
 logisticRegression dat = do
   m <- normal 0 1
   b <- normal 0 1
@@ -27,7 +27,7 @@ logisticRegression dat = do
   sigmoid 8
 
 -- make a synthetic dataset by randomly choosing input-label pairs
-syntheticData :: MonadDistribution m => Int -> m [(Double, Bool)]
+syntheticData :: (MonadDistribution m) => Int -> m [(Double, Bool)]
 syntheticData n = replicateM n do
   x <- uniform (-1) 1
   label <- bernoulli 0.5

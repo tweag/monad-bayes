@@ -42,7 +42,7 @@ import Data.Monoid (Endo (..))
 
 -- | Resample-move Sequential Monte Carlo.
 rmsmc ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model
@@ -56,7 +56,7 @@ rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.
 rmsmcBasic ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model
@@ -71,7 +71,7 @@ rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
 -- where only random variables since last resampling are considered
 -- for rejuvenation.
 rmsmcDynamic ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   MCMCConfig ->
   SMCConfig m ->
   -- | model

@@ -39,10 +39,10 @@ newtype Weighted m a = Weighted (StateT (Log Double) m a)
   -- StateT is more efficient than WriterT
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadTrans, MonadDistribution)
 
-instance Monad m => MonadFactor (Weighted m) where
+instance (Monad m) => MonadFactor (Weighted m) where
   score w = Weighted (modify (* w))
 
-instance MonadDistribution m => MonadMeasure (Weighted m)
+instance (MonadDistribution m) => MonadMeasure (Weighted m)
 
 -- | Obtain an explicit value of the likelihood for a given value.
 weighted, runWeighted :: Weighted m a -> m (a, Log Double)
@@ -52,11 +52,11 @@ runWeighted = weighted
 -- | Compute the sample and discard the weight.
 --
 -- This operation introduces bias.
-unweighted :: Functor m => Weighted m a -> m a
+unweighted :: (Functor m) => Weighted m a -> m a
 unweighted = fmap fst . weighted
 
 -- | Compute the weight and discard the sample.
-extractWeight :: Functor m => Weighted m a -> m (Log Double)
+extractWeight :: (Functor m) => Weighted m a -> m (Log Double)
 extractWeight = fmap snd . weighted
 
 -- | Embed a random variable with explicitly given likelihood.
@@ -69,7 +69,7 @@ withWeight m = Weighted $ do
   return x
 
 -- | Use the weight as a factor in the transformed monad.
-applyWeight :: MonadFactor m => Weighted m a -> m a
+applyWeight :: (MonadFactor m) => Weighted m a -> m a
 applyWeight m = do
   (x, w) <- weighted m
   factor w

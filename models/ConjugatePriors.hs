@@ -41,16 +41,16 @@ betaBernoulliAnalytic (a, b) points = beta a' b'
     a' = a + s
     b' = b + fromIntegral n - s
 
-bernoulliPdf :: Floating a => a -> Bool -> Log a
+bernoulliPdf :: (Floating a) => a -> Bool -> Log a
 bernoulliPdf p x = let numBool = if x then 1.0 else 0 in Exp $ log (p ** numBool * (1 - p) ** (1 - numBool))
 
-betaBernoulli' :: MonadMeasure m => (Double, Double) -> Bayesian m Double Bool
+betaBernoulli' :: (MonadMeasure m) => (Double, Double) -> Bayesian m Double Bool
 betaBernoulli' (a, b) = Bayesian (beta a b) bernoulli bernoulliPdf
 
-normalNormal' :: MonadMeasure m => Double -> (Double, Double) -> Bayesian m Double Double
+normalNormal' :: (MonadMeasure m) => Double -> (Double, Double) -> Bayesian m Double Double
 normalNormal' var (mu0, var0) = Bayesian (normal mu0 (sqrt var0)) (`normal` (sqrt var)) (`normalPdf` (sqrt var))
 
-gammaNormal' :: MonadMeasure m => (Double, Double) -> Bayesian m Double Double
+gammaNormal' :: (MonadMeasure m) => (Double, Double) -> Bayesian m Double Double
 gammaNormal' (a, b) = Bayesian (gamma a (recip b)) (normal 0 . sqrt . recip) (normalPdf 0 . sqrt . recip)
 
 normalNormalAnalytic ::

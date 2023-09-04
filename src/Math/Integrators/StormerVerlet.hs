@@ -53,7 +53,7 @@ stormerVerlet2H hh nablaQ nablaP prev =
 -- of solutions corrensdonded to times that was requested.
 -- It takes Vector of time points as a parameter and returns a vector of results
 integrateV ::
-  PrimMonad m =>
+  (PrimMonad m) =>
   -- | Internal integrator
   Integrator a ->
   -- | initial  value

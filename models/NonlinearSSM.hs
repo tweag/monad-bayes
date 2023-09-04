@@ -7,7 +7,7 @@ import Control.Monad.Bayes.Class
     normalPdf,
   )
 
-param :: MonadDistribution m => m (Double, Double)
+param :: (MonadDistribution m) => m (Double, Double)
 param = do
   let a = 0.01
   let b = 0.01
@@ -43,7 +43,7 @@ model obs (sigmaX, sigmaY) = do
   return $ reverse xs
 
 generateData ::
-  MonadDistribution m =>
+  (MonadDistribution m) =>
   -- | T
   Int ->
   -- | list of latent and observable states from t=1

@@ -80,7 +80,7 @@ evidence :: Enumerator a -> Log Double
 evidence = Log.sum . map snd . logExplicit
 
 -- | Normalized probability mass of a specific value.
-mass :: Ord a => Enumerator a -> a -> Double
+mass :: (Ord a) => Enumerator a -> a -> Double
 mass d = f
   where
     f a = fromMaybe 0 $ lookup a m
@@ -95,7 +95,7 @@ compact = sortOn (Down . snd) . Map.toAscList . Map.fromListWith (+)
 -- The resulting list is sorted ascendingly according to values.
 --
 -- > enumerator = compact . explicit
-enumerator, enumerate :: Ord a => Enumerator a -> [(a, Double)]
+enumerator, enumerate :: (Ord a) => Enumerator a -> [(a, Double)]
 enumerator d = filter ((/= 0) . snd) $ compact (zip xs ws)
   where
     (xs, ws) = second (map (exp . ln) . normalize) $ unzip (logExplicit d)
@@ -107,20 +107,20 @@ enumerate = enumerator
 expectation :: (a -> Double) -> Enumerator a -> Double
 expectation f = Prelude.sum . map (\(x, w) -> f x * (exp . ln) w) . normalizeWeights . logExplicit
 
-normalize :: Fractional b => [b] -> [b]
+normalize :: (Fractional b) => [b] -> [b]
 normalize xs = map (/ z) xs
   where
     z = Prelude.sum xs
 
 -- | Divide all weights by their sum.
-normalizeWeights :: Fractional b => [(a, b)] -> [(a, b)]
+normalizeWeights :: (Fractional b) => [(a, b)] -> [(a, b)]
 normalizeWeights ls = zip xs ps
   where
     (xs, ws) = unzip ls
     ps = normalize ws
 
 -- | 'compact' followed by removing values with zero weight.
-normalForm :: Ord a => Enumerator a -> [(a, Double)]
+normalForm :: (Ord a) => Enumerator a -> [(a, Double)]
 normalForm = filter ((/= 0) . snd) . compact . explicit
 
 toEmpirical :: (Fractional b, Ord a, Ord b) => [a] -> [(a, b)]
@@ -139,10 +139,10 @@ enumerateToDistribution model = do
 removeZeros :: Enumerator a -> Enumerator a
 removeZeros (Enumerator (WriterT a)) = Enumerator $ WriterT $ filter ((\(Product x) -> x /= 0) . snd) a
 
-instance Ord a => Eq (Enumerator a) where
+instance (Ord a) => Eq (Enumerator a) where
   p == q = normalForm p == normalForm q
 
-instance Ord a => AEq (Enumerator a) where
+instance (Ord a) => AEq (Enumerator a) where
   p === q = xs == ys && ps === qs
     where
       (xs, ps) = unzip (normalForm p)
