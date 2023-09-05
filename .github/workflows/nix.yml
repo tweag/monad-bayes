@@ -12,7 +12,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Nix Environment
         uses: ./.github/actions/nix-common-setup
         with:
@@ -31,7 +31,7 @@ jobs:
             system: x86_64-darwin
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Nix Environment
         uses: ./.github/actions/nix-common-setup
         with:
