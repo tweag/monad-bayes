@@ -23,16 +23,16 @@ passed1 = do
   sample <- sampleIOfixed $ mcmc MCMCConfig {numMCMCSteps = 10000, numBurnIn = 5000, proposal = SingleSiteMH} random
   return $ abs (0.5 - (expectation id $ fromList $ toEmpirical sample)) < 0.01
 passed2 = do
-  sample <- sampleIOfixed $ population $ smc (SMCConfig {numSteps = 0, numParticles = 10000, resampler = resampleMultinomial}) random
+  sample <- sampleIOfixed $ runPopulationT $ smc (SMCConfig {numSteps = 0, numParticles = 10000, resampler = resampleMultinomial}) random
   return $ close 0.5 sample
 passed3 = do
-  sample <- sampleIOfixed $ population $ rmsmcDynamic mcmcConfig smcConfig random
+  sample <- sampleIOfixed $ runPopulationT $ rmsmcDynamic mcmcConfig smcConfig random
   return $ close 0.5 sample
 passed4 = do
-  sample <- sampleIOfixed $ population $ rmsmcBasic mcmcConfig smcConfig random
+  sample <- sampleIOfixed $ runPopulationT $ rmsmcBasic mcmcConfig smcConfig random
   return $ close 0.5 sample
 passed5 = do
-  sample <- sampleIOfixed $ population $ rmsmc mcmcConfig smcConfig random
+  sample <- sampleIOfixed $ runPopulationT $ rmsmc mcmcConfig smcConfig random
   return $ close 0.5 sample
 passed6 = do
   sample <-
@@ -48,7 +48,7 @@ passed6 = do
 close :: Double -> [(Double, Log Double)] -> Bool
 
 passed7 = do
-  sample <- fmap join $ sampleIOfixed $ fmap (fmap (\(x, y) -> fmap (second (* y)) x)) $ population $ smc2 0 100 100 100 random (normal 0)
+  sample <- fmap join $ sampleIOfixed $ fmap (fmap (\(x, y) -> fmap (second (* y)) x)) $ runPopulationT $ smc2 0 100 100 100 random (normal 0)
   return $ close 0.0 sample
 
 close n sample = abs (n - (expectation id $ fromList $ toEmpiricalWeighted sample)) < 0.01

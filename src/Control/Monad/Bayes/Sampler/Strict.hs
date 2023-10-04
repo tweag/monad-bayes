@@ -15,7 +15,7 @@
 -- 'SamplerIO' and 'SamplerST' are instances of 'MonadDistribution'. Apply a 'MonadFactor'
 -- transformer to obtain a 'MonadMeasure' that can execute probabilistic models.
 module Control.Monad.Bayes.Sampler.Strict
-  ( Sampler,
+  ( SamplerT (..),
     SamplerIO,
     SamplerST,
     sampleIO,
@@ -48,27 +48,27 @@ import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStd
 
 -- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
-newtype Sampler g m a = Sampler (ReaderT g m a) deriving (Functor, Applicative, Monad, MonadIO)
+newtype SamplerT g m a = SamplerT {runSamplerT :: ReaderT g m a} deriving (Functor, Applicative, Monad, MonadIO)
 
--- | convenient type synonym to show specializations of Sampler
+-- | convenient type synonym to show specializations of SamplerT
 -- to particular pairs of monad and RNG
-type SamplerIO = Sampler (IOGenM StdGen) IO
+type SamplerIO = SamplerT (IOGenM StdGen) IO
 
--- | convenient type synonym to show specializations of Sampler
+-- | convenient type synonym to show specializations of SamplerT
 -- to particular pairs of monad and RNG
-type SamplerST s = Sampler (STGenM StdGen s) (ST s)
+type SamplerST s = SamplerT (STGenM StdGen s) (ST s)
 
-instance (StatefulGen g m) => MonadDistribution (Sampler g m) where
-  random = Sampler (ReaderT uniformDouble01M)
+instance (StatefulGen g m) => MonadDistribution (SamplerT g m) where
+  random = SamplerT (ReaderT uniformDouble01M)
 
-  uniform a b = Sampler (ReaderT $ uniformRM (a, b))
-  normal m s = Sampler (ReaderT (MWC.normal m s))
-  gamma shape scale = Sampler (ReaderT $ MWC.gamma shape scale)
-  beta a b = Sampler (ReaderT $ MWC.beta a b)
+  uniform a b = SamplerT (ReaderT $ uniformRM (a, b))
+  normal m s = SamplerT (ReaderT (MWC.normal m s))
+  gamma shape scale = SamplerT (ReaderT $ MWC.gamma shape scale)
+  beta a b = SamplerT (ReaderT $ MWC.beta a b)
 
-  bernoulli p = Sampler (ReaderT $ MWC.bernoulli p)
-  categorical ps = Sampler (ReaderT $ MWC.categorical ps)
-  geometric p = Sampler (ReaderT $ MWC.geometric0 p)
+  bernoulli p = SamplerT (ReaderT $ MWC.bernoulli p)
+  categorical ps = SamplerT (ReaderT $ MWC.categorical ps)
+  geometric p = SamplerT (ReaderT $ MWC.geometric0 p)
 
 -- | Sample with a random number generator of your choice e.g. the one
 -- from `System.Random`.
@@ -77,8 +77,8 @@ instance (StatefulGen g m) => MonadDistribution (Sampler g m) where
 -- >>> import System.Random.Stateful hiding (random)
 -- >>> newIOGenM (mkStdGen 1729) >>= sampleWith random
 -- 4.690861245089605e-2
-sampleWith :: Sampler g m a -> g -> m a
-sampleWith (Sampler m) = runReaderT m
+sampleWith :: SamplerT g m a -> g -> m a
+sampleWith (SamplerT m) = runReaderT m
 
 -- | initialize random seed using system entropy, and sample
 sampleIO, sampler :: SamplerIO a -> IO a

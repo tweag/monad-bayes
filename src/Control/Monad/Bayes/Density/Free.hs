@@ -12,13 +12,13 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- 'Density' is a free monad transformer over random sampling.
+-- 'DensityT' is a free monad transformer over random sampling.
 module Control.Monad.Bayes.Density.Free
-  ( Density,
+  ( DensityT (..),
     hoist,
     interpret,
     withRandomness,
-    density,
+    runDensityT,
     traced,
   )
 where
@@ -36,40 +36,40 @@ newtype SamF a = Random (Double -> a) deriving (Functor)
 -- | Free monad transformer over random sampling.
 --
 -- Uses the Church-encoded version of the free monad for efficiency.
-newtype Density m a = Density {runDensity :: FT SamF m a}
+newtype DensityT m a = DensityT {getDensityT :: FT SamF m a}
   deriving newtype (Functor, Applicative, Monad, MonadTrans)
 
-instance MonadFree SamF (Density m) where
-  wrap = Density . wrap . fmap runDensity
+instance MonadFree SamF (DensityT m) where
+  wrap = DensityT . wrap . fmap getDensityT
 
-instance (Monad m) => MonadDistribution (Density m) where
-  random = Density $ liftF (Random id)
+instance (Monad m) => MonadDistribution (DensityT m) where
+  random = DensityT $ liftF (Random id)
 
--- | Hoist 'Density' through a monad transform.
-hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> Density m a -> Density n a
-hoist f (Density m) = Density (hoistFT f m)
+-- | Hoist 'DensityT' through a monad transform.
+hoist :: (Monad m, Monad n) => (forall x. m x -> n x) -> DensityT m a -> DensityT n a
+hoist f (DensityT m) = DensityT (hoistFT f m)
 
 -- | Execute random sampling in the transformed monad.
-interpret :: (MonadDistribution m) => Density m a -> m a
-interpret (Density m) = iterT f m
+interpret :: (MonadDistribution m) => DensityT m a -> m a
+interpret (DensityT m) = iterT f m
   where
     f (Random k) = random >>= k
 
 -- | Execute computation with supplied values for random choices.
-withRandomness :: (Monad m) => [Double] -> Density m a -> m a
-withRandomness randomness (Density m) = evalStateT (iterTM f m) randomness
+withRandomness :: (Monad m) => [Double] -> DensityT m a -> m a
+withRandomness randomness (DensityT m) = evalStateT (iterTM f m) randomness
   where
     f (Random k) = do
       xs <- get
       case xs of
-        [] -> error "Density: the list of randomness was too short"
+        [] -> error "DensityT: the list of randomness was too short"
         y : ys -> put ys >> k y
 
 -- | Execute computation with supplied values for a subset of random choices.
 -- Return the output value and a record of all random choices used, whether
 -- taken as input or drawn using the transformed monad.
-density :: (MonadDistribution m) => [Double] -> Density m a -> m (a, [Double])
-density randomness (Density m) =
+runDensityT :: (MonadDistribution m) => [Double] -> DensityT m a -> m (a, [Double])
+runDensityT randomness (DensityT m) =
   runWriterT $ evalStateT (iterTM f $ hoistFT lift m) randomness
   where
     f (Random k) = do
@@ -84,5 +84,5 @@ density randomness (Density m) =
       k x
 
 -- | Like 'density', but use an arbitrary sampling monad.
-traced :: (MonadDistribution m) => [Double] -> Density Identity a -> m (a, [Double])
-traced randomness m = density randomness $ hoist (return . runIdentity) m
+traced :: (MonadDistribution m) => [Double] -> DensityT Identity a -> m (a, [Double])
+traced randomness m = runDensityT randomness $ hoist (return . runIdentity) m

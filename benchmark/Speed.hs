@@ -8,7 +8,7 @@ import Control.Monad.Bayes.Class (MonadMeasure)
 import Control.Monad.Bayes.Inference.MCMC (MCMCConfig (MCMCConfig, numBurnIn, numMCMCSteps, proposal), Proposal (SingleSiteMH))
 import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
-import Control.Monad.Bayes.Population (population, resampleSystematic)
+import Control.Monad.Bayes.Population (resampleSystematic, runPopulationT)
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed)
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
@@ -59,10 +59,10 @@ instance Show Alg where
 
 runAlg :: Model -> Alg -> SamplerIO String
 runAlg model (MH n) = show <$> unweighted (mh n (buildModel model))
-runAlg model (SMC n) = show <$> population (smc SMCConfig {numSteps = (modelLength model), numParticles = n, resampler = resampleSystematic} (buildModel model))
+runAlg model (SMC n) = show <$> runPopulationT (smc SMCConfig {numSteps = (modelLength model), numParticles = n, resampler = resampleSystematic} (buildModel model))
 runAlg model (RMSMC n t) =
   show
-    <$> population
+    <$> runPopulationT
       ( rmsmcDynamic
           MCMCConfig {numMCMCSteps = t, numBurnIn = 0, proposal = SingleSiteMH}
           SMCConfig {numSteps = modelLength model, numParticles = n, resampler = resampleSystematic}

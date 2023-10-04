@@ -35,7 +35,7 @@ import Control.Applicative (Applicative (..))
 import Control.Foldl (Fold)
 import Control.Foldl qualified as Foldl
 import Control.Monad.Bayes.Class (MonadDistribution (bernoulli, random, uniformD))
-import Control.Monad.Bayes.Weighted (Weighted, weighted)
+import Control.Monad.Bayes.Weighted (WeightedT, runWeightedT)
 import Control.Monad.Cont
   ( Cont,
     ContT (ContT),
@@ -49,12 +49,14 @@ import Numeric.Log (Log (ln))
 import Statistics.Distribution qualified as Statistics
 import Statistics.Distribution.Uniform qualified as Statistics
 
-newtype Integrator a = Integrator {getCont :: Cont Double a}
+newtype Integrator a = Integrator {getIntegrator :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
 
-integrator, runIntegrator :: (a -> Double) -> Integrator a -> Double
-integrator f (Integrator a) = runCont a f
-runIntegrator = integrator
+runIntegrator :: (a -> Double) -> Integrator a -> Double
+runIntegrator f (Integrator a) = runCont a f
+
+integrator :: ((a -> Double) -> Double) -> Integrator a
+integrator = Integrator . cont
 
 instance MonadDistribution Integrator where
   random = fromDensityFunction $ Statistics.density $ Statistics.uniformDistr 0 1
@@ -85,28 +87,28 @@ empirical = Integrator . cont . flip weightedAverage
     averageFold = (/) <$> Foldl.sum <*> Foldl.genericLength
 
 expectation :: Integrator Double -> Double
-expectation = integrator id
+expectation = runIntegrator id
 
 variance :: Integrator Double -> Double
-variance nu = integrator (^ 2) nu - expectation nu ^ 2
+variance nu = runIntegrator (^ 2) nu - expectation nu ^ 2
 
 momentGeneratingFunction :: Integrator Double -> Double -> Double
-momentGeneratingFunction nu t = integrator (\x -> exp (t * x)) nu
+momentGeneratingFunction nu t = runIntegrator (\x -> exp (t * x)) nu
 
 cumulantGeneratingFunction :: Integrator Double -> Double -> Double
 cumulantGeneratingFunction nu = log . momentGeneratingFunction nu
 
-normalize :: Weighted Integrator a -> Integrator a
+normalize :: WeightedT Integrator a -> Integrator a
 normalize m =
-  let m' = weighted m
-      z = integrator (ln . exp . snd) m'
+  let m' = runWeightedT m
+      z = runIntegrator (ln . exp . snd) m'
    in do
-        (x, d) <- weighted m
+        (x, d) <- runWeightedT m
         Integrator $ cont $ \f -> (f () * (ln $ exp d)) / z
         return x
 
 cdf :: Integrator Double -> Double -> Double
-cdf nu x = integrator (negativeInfinity `to` x) nu
+cdf nu x = runIntegrator (negativeInfinity `to` x) nu
   where
     negativeInfinity :: Double
     negativeInfinity = negate (1 / 0)
@@ -117,7 +119,7 @@ cdf nu x = integrator (negativeInfinity `to` x) nu
       | otherwise = 0
 
 volume :: Integrator Double -> Double
-volume = integrator (const 1)
+volume = runIntegrator (const 1)
 
 containing :: (Num a, Eq b) => [b] -> b -> a
 containing xs x
@@ -133,12 +135,12 @@ instance (Num a) => Num (Integrator a) where
   fromInteger = pure . fromInteger
 
 probability :: (Ord a) => (a, a) -> Integrator a -> Double
-probability (lower, upper) = integrator (\x -> if x < upper && x >= lower then 1 else 0)
+probability (lower, upper) = runIntegrator (\x -> if x < upper && x >= lower then 1 else 0)
 
 enumeratorWith :: (Ord a) => Set a -> Integrator a -> [(a, Double)]
 enumeratorWith ls meas =
   [ ( val,
-      integrator
+      runIntegrator
         (\x -> if x == val then 1 else 0)
         meas
     )
@@ -149,7 +151,7 @@ histogram ::
   (Enum a, Ord a, Fractional a) =>
   Int ->
   a ->
-  Weighted Integrator a ->
+  WeightedT Integrator a ->
   [(a, Double)]
 histogram nBins binSize model = do
   x <- take nBins [1 ..]

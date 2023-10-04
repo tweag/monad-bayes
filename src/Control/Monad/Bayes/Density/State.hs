@@ -13,21 +13,21 @@ import Control.Monad.Bayes.Class (MonadDistribution (random))
 import Control.Monad.State (MonadState (get, put), StateT, evalStateT)
 import Control.Monad.Writer
 
-newtype Density m a = Density {runDensity :: WriterT [Double] (StateT [Double] m) a} deriving newtype (Functor, Applicative, Monad)
+newtype DensityT m a = DensityT {getDensityT :: WriterT [Double] (StateT [Double] m) a} deriving newtype (Functor, Applicative, Monad)
 
-instance MonadTrans Density where
-  lift = Density . lift . lift
+instance MonadTrans DensityT where
+  lift = DensityT . lift . lift
 
-instance (Monad m) => MonadState [Double] (Density m) where
-  get = Density $ lift $ get
-  put = Density . lift . put
+instance (Monad m) => MonadState [Double] (DensityT m) where
+  get = DensityT $ lift $ get
+  put = DensityT . lift . put
 
-instance (Monad m) => MonadWriter [Double] (Density m) where
-  tell = Density . tell
-  listen = Density . listen . runDensity
-  pass = Density . pass . runDensity
+instance (Monad m) => MonadWriter [Double] (DensityT m) where
+  tell = DensityT . tell
+  listen = DensityT . listen . getDensityT
+  pass = DensityT . pass . getDensityT
 
-instance (MonadDistribution m) => MonadDistribution (Density m) where
+instance (MonadDistribution m) => MonadDistribution (DensityT m) where
   random = do
     trace <- get
     x <- case trace of
@@ -36,5 +36,5 @@ instance (MonadDistribution m) => MonadDistribution (Density m) where
     tell [x]
     pure x
 
-density :: (Monad m) => Density m b -> [Double] -> m (b, [Double])
-density (Density m) = evalStateT (runWriterT m)
+runDensityT :: (Monad m) => DensityT m b -> [Double] -> m (b, [Double])
+runDensityT (DensityT m) = evalStateT (runWriterT m)

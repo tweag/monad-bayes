@@ -14642,7 +14642,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <span class="w">    </span><span class="n">return</span><span class="w"> </span><span class="n">y</span>
 <span class="w">    </span>
 <span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
-<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">weighted</span><span class="w"> </span><span class="n">unnormalizedDistribution</span>
+<span class="nf">distributionOverWeightedSamples</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">runWeightedT</span><span class="w"> </span><span class="n">unnormalizedDistribution</span>
 <span class="w">    </span>
 <span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Distribution</span><span class="w"> </span><span class="p">[(</span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">Log</span><span class="w"> </span><span class="kt">Double</span><span class="p">)]</span>
 <span class="nf">iidDistribution</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="mi">100000</span><span class="w"> </span><span class="n">distributionOverWeightedSamples</span>

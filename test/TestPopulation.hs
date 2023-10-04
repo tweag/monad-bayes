@@ -3,20 +3,20 @@ module TestPopulation (weightedSampleSize, popSize, manySize, sprinkler, sprinkl
 import Control.Monad.Bayes.Class (MonadDistribution, MonadMeasure)
 import Control.Monad.Bayes.Enumerator (enumerator, expectation)
 import Control.Monad.Bayes.Population as Population
-  ( Population,
+  ( PopulationT,
     collapse,
     popAvg,
-    population,
     pushEvidence,
     resampleMultinomial,
+    runPopulationT,
     spawn,
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import Data.AEq (AEq ((~==)))
 import Sprinkler (soft)
 
-weightedSampleSize :: (MonadDistribution m) => Population m a -> m Int
-weightedSampleSize = fmap length . population
+weightedSampleSize :: (MonadDistribution m) => PopulationT m a -> m Int
+weightedSampleSize = fmap length . runPopulationT
 
 popSize :: IO Int
 popSize =

@@ -26,10 +26,10 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Density.Free qualified as Free
 import Control.Monad.Bayes.Density.State qualified as State
-import Control.Monad.Bayes.Weighted as Weighted
-  ( Weighted,
+import Control.Monad.Bayes.Weighted as WeightedT
+  ( WeightedT,
     hoist,
-    weighted,
+    runWeightedT,
   )
 import Control.Monad.Writer (WriterT (WriterT, runWriterT))
 import Data.Functor.Identity (Identity (runIdentity))
@@ -81,7 +81,7 @@ bind dx f = do
   return $ t2 {variables = variables t1 ++ variables t2, probDensity = probDensity t1 * probDensity t2}
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTrans :: (MonadDistribution m) => (Weighted (State.Density m)) a -> Trace a -> m (Trace a)
+mhTrans :: (MonadDistribution m) => (WeightedT (State.DensityT m)) a -> Trace a -> m (Trace a)
 mhTrans m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -90,16 +90,16 @@ mhTrans m t@Trace {variables = us, probDensity = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- State.density (weighted m) us'
+  ((b, q), vs) <- State.runDensityT (runWeightedT m) us'
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return $ if accept then Trace vs b q else t
 
-mhTransFree :: (MonadDistribution m) => Weighted (Free.Density m) a -> Trace a -> m (Trace a)
+mhTransFree :: (MonadDistribution m) => WeightedT (Free.DensityT m) a -> Trace a -> m (Trace a)
 mhTransFree m t = trace <$> mhTransWithBool m t
 
 -- | A single Metropolis-corrected transition of single-site Trace MCMC.
-mhTransWithBool :: (MonadDistribution m) => Weighted (Free.Density m) a -> Trace a -> m (MHResult a)
+mhTransWithBool :: (MonadDistribution m) => WeightedT (Free.DensityT m) a -> Trace a -> m (MHResult a)
 mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
   let n = length us
   us' <- do
@@ -108,14 +108,14 @@ mhTransWithBool m t@Trace {variables = us, probDensity = p} = do
     case splitAt i us of
       (xs, _ : ys) -> return $ xs ++ (u' : ys)
       _ -> error "impossible"
-  ((b, q), vs) <- runWriterT $ weighted $ Weighted.hoist (WriterT . Free.density us') m
+  ((b, q), vs) <- runWriterT $ runWeightedT $ WeightedT.hoist (WriterT . Free.runDensityT us') m
   let ratio = (exp . ln) $ min 1 (q * fromIntegral n / (p * fromIntegral (length vs)))
   accept <- bernoulli ratio
   return if accept then MHResult True (Trace vs b q) else MHResult False t
 
 -- | A variant of 'mhTrans' with an external sampling monad.
-mhTrans' :: (MonadDistribution m) => Weighted (Free.Density Identity) a -> Trace a -> m (Trace a)
-mhTrans' m = mhTransFree (Weighted.hoist (Free.hoist (return . runIdentity)) m)
+mhTrans' :: (MonadDistribution m) => WeightedT (Free.DensityT Identity) a -> Trace a -> m (Trace a)
+mhTrans' m = mhTransFree (WeightedT.hoist (Free.hoist (return . runIdentity)) m)
 
 -- | burn in an MCMC chain for n steps (which amounts to dropping samples of the end of the list)
 burnIn :: (Functor m) => Int -> m [a] -> m [a]
