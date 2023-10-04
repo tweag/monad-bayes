@@ -40,3 +40,5 @@ venv/
 .ipynb_checkpoints/
 .netlify/
 .jupyter/
+build/
+cache/

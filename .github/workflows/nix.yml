@@ -38,7 +38,31 @@ jobs:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Build
         run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes
-      - name: Development environment
+      - name: Development environment (package only)
         run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes --command echo Ready
       - name: All GHCs
         run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes-all-ghcs
+
+  notebooks:
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          # Jupyenv doesn't support Darwin yet, https://github.com/tweag/jupyenv/issues/388
+          # - os: macos-latest
+          #   system: x86_64-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Nix Environment
+        uses: ./.github/actions/nix-common-setup
+        with:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Development environment (complete)
+        run: nix --print-build-logs develop --command echo Ready
+      - name: Check whether notebook *.html files are up to date
+        run: |
+          ./regenerate_notebooks.sh
+          git diff --exit-code || (echo "Please update notebooks by running regenerate_notebooks.sh, and inspecting and committing the result." && exit 1)

@@ -36,6 +36,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .m { color: var(--jp-mirror-editor-number-color) } /* Literal.Number */
 .highlight .s { color: var(--jp-mirror-editor-string-color) } /* Literal.String */
 .highlight .ow { color: var(--jp-mirror-editor-operator-color); font-weight: bold } /* Operator.Word */
+.highlight .pm { color: var(--jp-mirror-editor-punctuation-color) } /* Punctuation.Marker */
 .highlight .w { color: var(--jp-mirror-editor-variable-color) } /* Text.Whitespace */
 .highlight .mb { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Bin */
 .highlight .mf { color: var(--jp-mirror-editor-number-color) } /* Literal.Number.Float */
@@ -14464,10 +14465,6 @@ a.anchor-link {
   display: none;
 }
 
-.highlight  {
-  margin: 0.4em;
-}
-
 /* Input area styling */
 .jp-InputArea {
   overflow: hidden;
@@ -14477,9 +14474,26 @@ a.anchor-link {
   overflow: hidden;
 }
 
-.CodeMirror pre {
+.CodeMirror.cm-s-jupyter .highlight pre {
+/* weird, but --jp-code-padding defined to be 5px but 4px horizontal padding is hardcoded for pre.CodeMirror-line */
+  padding: var(--jp-code-padding) 4px;
   margin: 0;
-  padding: 0;
+
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+
+}
+
+.jp-OutputArea-output pre {
+  line-height: inherit;
+  font-family: inherit;
+}
+
+.jp-RenderedText pre {
+  color: var(--jp-content-font-color1);
+  font-size: var(--jp-code-font-size);
 }
 
 /* Using table instead of flexbox so that we can use break-inside property */
@@ -14523,6 +14537,10 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 /* Hiding the collapser by default */
 .jp-Collapser {
   display: none;
+}
+
+@page {
+    margin: 0.5in; /* Margin for each printed piece of paper */
 }
 
 @media print {
@@ -14593,44 +14611,44 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">ImportQualifiedPost</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">BlockArguments</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">TupleSections</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">OverloadedStrings</span><span class="w"></span>
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">LambdaCase</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">ImportQualifiedPost</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">BlockArguments</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">TupleSections</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">FlexibleContexts</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">OverloadedStrings</span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">LambdaCase</span>
 
 
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Density.Free</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Population</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sequential.Coroutine</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Inference.SMC</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Class</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Enumerator</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Weighted</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sampler.Strict</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Density.Free</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Population</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Sequential.Coroutine</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad.Bayes.Inference.SMC</span>
 
-<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Graphics.Vega.VegaLite</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">VL</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">IHaskell.Display.Hvega</span><span class="w"> </span><span class="p">(</span><span class="nf">vlShow</span><span class="p">)</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Applicative</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Text</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">T</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Pipes</span><span class="w"> </span><span class="p">(</span><span class="kt">Producer</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;-&gt;</span><span class="p">))</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Pipes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">P</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Pipes.Prelude</span><span class="w"> </span><span class="p">(</span><span class="nf">unfoldr</span><span class="p">)</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Pipes.Prelude</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">P</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Ord</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.List</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Arrow</span><span class="w"> </span><span class="p">(</span><span class="nf">first</span><span class="p">)</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Log</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Vector</span><span class="w"> </span><span class="n">qualified</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="kt">V</span><span class="w"></span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Graphics.Vega.VegaLite</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">VL</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">IHaskell.Display.Hvega</span><span class="w"> </span><span class="p">(</span><span class="nf">vlShow</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Applicative</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Data.Text</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">T</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Pipes</span><span class="w"> </span><span class="p">(</span><span class="kt">Producer</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;-&gt;</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Pipes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">P</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Pipes.Prelude</span><span class="w"> </span><span class="p">(</span><span class="nf">unfoldr</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="k">qualified</span><span class="w"> </span><span class="nn">Pipes.Prelude</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">P</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Ord</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.List</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Monad</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Control.Arrow</span><span class="w"> </span><span class="p">(</span><span class="nf">first</span><span class="p">)</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Numeric.Log</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Vector</span><span class="w"> </span><span class="n">qualified</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="kt">V</span>
 
-<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">PackageImports</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="s">&quot;matrix&quot;</span><span class="w"> </span><span class="nn">Data.Matrix</span><span class="w"> </span><span class="k">hiding</span><span class="w"> </span><span class="p">((</span><span class="o">!</span><span class="p">))</span><span class="w"></span>
-<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Vector.Generic</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">VG</span><span class="w"> </span><span class="p">(</span><span class="kt">Vector</span><span class="p">,</span><span class="w"> </span><span class="n">map</span><span class="p">,</span><span class="w"> </span><span class="n">mapM</span><span class="p">,</span><span class="w"> </span><span class="n">null</span><span class="p">,</span><span class="w"> </span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">))</span><span class="w"></span>
+<span class="kt">:</span><span class="n">e</span><span class="w"> </span><span class="kt">PackageImports</span>
+<span class="kr">import</span><span class="w"> </span><span class="s">&quot;matrix&quot;</span><span class="w"> </span><span class="nn">Data.Matrix</span><span class="w"> </span><span class="k">hiding</span><span class="w"> </span><span class="p">((</span><span class="o">!</span><span class="p">))</span>
+<span class="kr">import</span><span class="w"> </span><span class="nn">Data.Vector.Generic</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">VG</span><span class="w"> </span><span class="p">(</span><span class="kt">Vector</span><span class="p">,</span><span class="w"> </span><span class="n">map</span><span class="p">,</span><span class="w"> </span><span class="n">mapM</span><span class="p">,</span><span class="w"> </span><span class="n">null</span><span class="p">,</span><span class="w"> </span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="p">))</span>
 
-<span class="kt">:</span><span class="n">l</span><span class="w"> </span><span class="o">../</span><span class="n">plotting</span><span class="o">.</span><span class="n">hs</span><span class="w"></span>
+<span class="kt">:</span><span class="n">l</span><span class="w"> </span><span class="o">../</span><span class="n">plotting</span><span class="o">.</span><span class="n">hs</span>
 </pre></div>
 
      </div>
@@ -14659,18 +14677,18 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- how to move from one latent state to the next</span><span class="w"></span>
-<span class="nf">transition</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"></span>
-<span class="nf">transition</span><span class="w"> </span><span class="n">vector</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mvNormal</span><span class="w"> </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span><span class="w"> </span><span class="n">vector</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fromLists</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span><span class="w"></span>
-<span class="w">    </span><span class="c1">-- (normal (x+0.5) 1) (normal (y+0.5) 1)</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- how to move from one latent state to the next</span>
+<span class="nf">transition</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span>
+<span class="nf">transition</span><span class="w"> </span><span class="n">vector</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mvNormal</span><span class="w"> </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span><span class="w"> </span><span class="n">vector</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fromLists</span><span class="w"> </span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+<span class="w">    </span><span class="c1">-- (normal (x+0.5) 1) (normal (y+0.5) 1)</span>
 
-<span class="c1">-- a Markovian random walk starting at (0,0), with latentTransition as the kernel</span><span class="w"></span>
-<span class="c1">-- a Producer is an infinite stream of values</span><span class="w"></span>
-<span class="nf">prior</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">r</span><span class="w"></span>
-<span class="nf">prior</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">flip</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">unfoldr</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="n">fromList</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="nf">\</span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">Right</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
-<span class="w">        </span><span class="n">new</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">transition</span><span class="w"> </span><span class="n">s</span><span class="w"></span>
-<span class="w">        </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">new</span><span class="p">,</span><span class="w"> </span><span class="n">new</span><span class="p">)</span><span class="w"></span>
+<span class="c1">-- a Markovian random walk starting at (0,0), with latentTransition as the kernel</span>
+<span class="c1">-- a Producer is an infinite stream of values</span>
+<span class="nf">prior</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">prior</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">flip</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">unfoldr</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="n">fromList</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="nf">\</span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kt">Right</span><span class="w"> </span><span class="o">&lt;$&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">        </span><span class="n">new</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">transition</span><span class="w"> </span><span class="n">s</span>
+<span class="w">        </span><span class="n">return</span><span class="w"> </span><span class="p">(</span><span class="n">new</span><span class="p">,</span><span class="w"> </span><span class="n">new</span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14698,16 +14716,16 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- convert the stream to a list, taking only the first 100 steps</span><span class="w"></span>
-<span class="nf">toList</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"></span>
-<span class="nf">toList</span><span class="w"> </span><span class="n">prod</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">toListM</span><span class="w"> </span><span class="p">(</span><span class="n">prod</span><span class="w"> </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">take</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- convert the stream to a list, taking only the first 100 steps</span>
+<span class="nf">toList</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Monad</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+<span class="nf">toList</span><span class="w"> </span><span class="n">prod</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">toListM</span><span class="w"> </span><span class="p">(</span><span class="n">prod</span><span class="w"> </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">take</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span>
 
-<span class="nf">trueVectors</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIOfixed</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toList</span><span class="w"> </span><span class="n">prior</span><span class="w"></span>
+<span class="nf">trueVectors</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIOfixed</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toList</span><span class="w"> </span><span class="n">prior</span>
 
 <span class="nf">plot</span><span class="w"> </span>
 <span class="w">    </span><span class="p">(</span><span class="n">zip</span><span class="w"> </span>
 <span class="w">        </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="nf">\</span><span class="n">v</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">trueVectors</span><span class="p">)</span><span class="w"> </span>
-<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Latent&quot;</span><span class="p">)))</span><span class="w"></span>
+<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Latent&quot;</span><span class="p">)))</span>
 </pre></div>
 
      </div>
@@ -14721,9 +14739,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -14763,10 +14779,10 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">observationModel</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(`</span><span class="n">mvNormal</span><span class="p">`</span><span class="w"> </span><span class="n">fromLists</span><span class="w"> </span><span class="p">[[</span><span class="mi">20</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">20</span><span class="p">]])</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">observationModel</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(`</span><span class="n">mvNormal</span><span class="p">`</span><span class="w"> </span><span class="n">fromLists</span><span class="w"> </span><span class="p">[[</span><span class="mi">20</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">20</span><span class="p">]])</span>
 
-<span class="nf">observations</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="kt">Pipe</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"></span>
-<span class="nf">observations</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">mapM</span><span class="w"> </span><span class="n">observationModel</span><span class="w"></span>
+<span class="nf">observations</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadDistribution</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="kt">Pipe</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
+<span class="nf">observations</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">mapM</span><span class="w"> </span><span class="n">observationModel</span>
 </pre></div>
 
      </div>
@@ -14782,13 +14798,13 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">observedVectors</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIOfixed</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toList</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="n">trueVectors</span><span class="w"> </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="n">observations</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">observedVectors</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIOfixed</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">toList</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="n">trueVectors</span><span class="w"> </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="n">observations</span>
 
 
 <span class="nf">plot</span><span class="w"> </span>
 <span class="w">    </span><span class="p">(</span><span class="n">zip</span><span class="w"> </span>
 <span class="w">        </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="nf">\</span><span class="n">v</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">trueVectors</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">observedVectors</span><span class="p">)</span><span class="w"> </span>
-<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Latent&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Observed&quot;</span><span class="p">)))</span><span class="w"></span>
+<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Latent&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Observed&quot;</span><span class="p">)))</span>
 </pre></div>
 
      </div>
@@ -14802,9 +14818,7 @@ class="
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -14844,27 +14858,27 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- take the original random walk as a prior and condition on the observations</span><span class="w"></span>
-<span class="c1">-- to obtain a posterior random walk</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="c1">-- take the original random walk as a prior and condition on the observations</span>
+<span class="c1">-- to obtain a posterior random walk</span>
 <span class="nf">conditioning</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span>
 <span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>
 <span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span>
-<span class="w">    </span><span class="p">((</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="w"></span>
+<span class="w">    </span><span class="p">((</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">,</span><span class="w"> </span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="kt">Producer</span><span class="w"> </span><span class="p">(</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="nb">()</span>
 <span class="nf">conditioning</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="n">observations</span><span class="w"> </span><span class="n">observationModel</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>
-<span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="n">zip</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="n">observations</span><span class="w"></span>
-<span class="w">    </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">chain</span><span class="w"> </span><span class="n">observationModel</span><span class="w"></span>
+<span class="w">    </span><span class="kt">P</span><span class="o">.</span><span class="n">zip</span><span class="w"> </span><span class="n">prior</span><span class="w"> </span><span class="n">observations</span>
+<span class="w">    </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">chain</span><span class="w"> </span><span class="n">observationModel</span>
 <span class="w">    </span><span class="o">&gt;-&gt;</span><span class="w"> </span><span class="kt">P</span><span class="o">.</span><span class="n">map</span><span class="w"> </span><span class="n">fst</span><span class="w"> </span>
 
 
-<span class="nf">posterior</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">]</span><span class="w"></span>
+<span class="nf">posterior</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadMeasure</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">[</span><span class="kt">V</span><span class="o">.</span><span class="kt">Vector</span><span class="w"> </span><span class="kt">Double</span><span class="p">]</span>
 <span class="nf">posterior</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">toList</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">conditioning</span><span class="w"> </span>
-<span class="w">    </span><span class="n">prior</span><span class="w"></span>
-<span class="w">    </span><span class="p">(</span><span class="kt">P</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="n">observedVectors</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span><span class="w"></span>
-<span class="w">        </span><span class="n">prediction</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">observationModel</span><span class="w"> </span><span class="n">v</span><span class="w"></span>
-<span class="w">        </span><span class="kr">let</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">x&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">y&#39;</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">prediction</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">prediction</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="n">factor</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">normalPdf</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">x&#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">normalPdf</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">y&#39;</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">prior</span>
+<span class="w">    </span><span class="p">(</span><span class="kt">P</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="n">observedVectors</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="nf">\</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">        </span><span class="n">prediction</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">observationModel</span><span class="w"> </span><span class="n">v</span>
+<span class="w">        </span><span class="kr">let</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">x&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">y&#39;</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">prediction</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">prediction</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">v&#39;</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span><span class="n">factor</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">normalPdf</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">x&#39;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">normalPdf</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">y&#39;</span><span class="w"> </span><span class="p">)</span>
 </pre></div>
 
      </div>
@@ -14893,11 +14907,11 @@ class="
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
 <div class=" highlight hl-Haskell"><pre><span></span><span class="nf">particles</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">sampleIOfixed</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">runPopulation</span><span class="w"> </span><span class="o">$</span><span class="w"> </span>
-<span class="w">    </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">smc</span><span class="w"> </span><span class="kt">SMCConfig</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">numSteps</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span>
 <span class="w">        </span><span class="n">numParticles</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span>
 <span class="w">        </span><span class="n">resampler</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">resampleMultinomial</span><span class="p">}</span><span class="w"> </span>
-<span class="w">    </span><span class="n">posterior</span><span class="w"></span>
+<span class="w">    </span><span class="n">posterior</span>
 </pre></div>
 
      </div>
@@ -14911,9 +14925,7 @@ class="
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
@@ -14938,13 +14950,13 @@ class="
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">inferredVectors</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fst</span><span class="w"> </span><span class="o">=&lt;&lt;</span><span class="w"> </span><span class="n">particles</span><span class="w"></span>
+<div class=" highlight hl-Haskell"><pre><span></span><span class="nf">inferredVectors</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fst</span><span class="w"> </span><span class="o">=&lt;&lt;</span><span class="w"> </span><span class="n">particles</span>
 
 
 <span class="nf">plot</span><span class="w"> </span>
 <span class="w">    </span><span class="p">(</span><span class="n">zip</span><span class="w"> </span>
 <span class="w">        </span><span class="p">(</span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="nf">\</span><span class="n">v</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="kt">V</span><span class="o">.!</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">trueVectors</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">inferredVectors</span><span class="p">)</span><span class="w"> </span>
-<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;True&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">replicate</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Inferred&quot;</span><span class="p">)))</span><span class="w"></span>
+<span class="w">        </span><span class="p">(</span><span class="n">replicate</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;True&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">replicate</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">(</span><span class="kt">T</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="s">&quot;Inferred&quot;</span><span class="p">)))</span>
 </pre></div>
 
      </div>
@@ -14958,9 +14970,7 @@ class="
 
 
 <div class="jp-OutputArea jp-Cell-outputArea">
-
 <div class="jp-OutputArea-child">
-
     
     <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 
