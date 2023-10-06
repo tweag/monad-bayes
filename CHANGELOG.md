@@ -1,3 +1,8 @@
+# 1.2.0
+
+- Renamed monad transformers idiomatically
+  (https://github.com/tweag/monad-bayes/pull/295)
+
 # 1.1.1
 
 - add fixture tests for benchmark models
