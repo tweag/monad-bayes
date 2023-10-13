@@ -42,13 +42,14 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Reader (MonadIO, ReaderT (..))
 import Control.Monad.ST (ST)
+import Control.Monad.Trans (MonadTrans)
 import Numeric.Log (Log (ln))
 import System.Random.MWC.Distributions qualified as MWC
 import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
 
 -- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
-newtype SamplerT g m a = SamplerT {runSamplerT :: ReaderT g m a} deriving (Functor, Applicative, Monad, MonadIO)
+newtype SamplerT g m a = SamplerT {runSamplerT :: ReaderT g m a} deriving (Functor, Applicative, Monad, MonadIO, MonadTrans)
 
 -- | convenient type synonym to show specializations of SamplerT
 -- to particular pairs of monad and RNG

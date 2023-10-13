@@ -7,10 +7,11 @@ module Control.Monad.Bayes.Inference.Lazy.MH where
 
 import Control.Monad.Bayes.Class (Log (ln))
 import Control.Monad.Bayes.Sampler.Lazy
-  ( SamplerT (runSamplerT),
+  ( Sampler,
     Tree (..),
     Trees (..),
     randomTree,
+    runSampler,
   )
 import Control.Monad.Bayes.Weighted (WeightedT, runWeightedT)
 import Control.Monad.Extra (iterateM)
@@ -18,7 +19,7 @@ import Control.Monad.State.Lazy (MonadState (get, put), runState)
 import System.Random (RandomGen (split), getStdGen, newStdGen)
 import System.Random qualified as R
 
-mh :: forall a. Double -> WeightedT SamplerT a -> IO [(a, Log Double)]
+mh :: forall a. Double -> WeightedT Sampler a -> IO [(a, Log Double)]
 mh p m = do
   -- Top level: produce a stream of samples.
   -- Split the random number generator in two
@@ -27,7 +28,7 @@ mh p m = do
   g <- newStdGen >> getStdGen
   let (g1, g2) = split g
   let t = randomTree g1
-  let (x, w) = runSamplerT (runWeightedT m) t
+  let (x, w) = runSampler (runWeightedT m) t
   -- Now run step over and over to get a stream of (tree,result,weight)s.
   let (samples, _) = runState (iterateM step (t, x, w)) g2
   -- The stream of seeds is used to produce a stream of result/weight pairs.
@@ -50,7 +51,7 @@ mh p m = do
       let t' = mutateTree p g1 t
       -- Rerun the model with the new tree, to get a new
       -- weight w'.
-      let (x', w') = runSamplerT (runWeightedT m) t'
+      let (x', w') = runSampler (runWeightedT m) t'
       -- MH acceptance ratio. This is the probability of either
       -- returning the new seed or the old one.
       let ratio = w' / w
