@@ -57,6 +57,7 @@ common deps
     , pretty-simple    ^>=4.1
     , primitive        >=0.7     && <0.9
     , random           ^>=1.2
+    , random-fu
     , safe             ^>=0.3.17
     , scientific       ^>=0.3
     , statistics       >=0.14.0  && <0.17
