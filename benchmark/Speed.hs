@@ -11,6 +11,7 @@ import Control.Monad.Bayes.Inference.RMSMC (rmsmcDynamic)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smc)
 import Control.Monad.Bayes.Population (resampleSystematic, runPopulationT)
 import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIOfixed)
+import Control.Monad.Bayes.Sampler.StrictFu qualified as FU
 import Control.Monad.Bayes.Traced (mh)
 import Control.Monad.Bayes.Weighted (unweighted)
 import Criterion.Main
@@ -141,22 +142,19 @@ normalBenchmarks :: [Benchmark]
 normalBenchmarks = [ bench "Normal single sample monad bayes" $ nfIO $ do
                        sampleIOfixed (do xs <- replicateM 1000 $ normal 0.0 1.0
                                          return $ sum xs)
+                   , bench "Normal single sample monad bayes fu" $ nfIO $ do
+                       FU.sampleIOfixed (do xs <- replicateM 1000 $ normal 0.0 1.0
+                                            return $ sum xs)
                    ]
-
-speedLengthCSV :: FilePath
-speedLengthCSV = "speed-length.csv"
 
 speedSamplesCSV :: FilePath
 speedSamplesCSV = "speed-samples.csv"
-
-normalSamplesCSV :: FilePath
-normalSamplesCSV = "normal-samples.csv"
 
 rawDAT :: FilePath
 rawDAT = "raw.dat"
 
 cleanupLastRun :: IO ()
-cleanupLastRun = mapM_ removeIfExists [speedLengthCSV, speedSamplesCSV, rawDAT]
+cleanupLastRun = mapM_ removeIfExists [speedSamplesCSV, rawDAT]
 
 removeIfExists :: FilePath -> IO ()
 removeIfExists file = do
@@ -168,14 +166,14 @@ removeIfExists file = do
 
 main :: IO ()
 main = do
-  -- cleanupLastRun
-  -- lrData <- sampleIOfixed (LogReg.syntheticData 1000)
-  -- hmmData <- sampleIOfixed (HMM.syntheticData 1000)
-  -- ldaData <- sampleIOfixed (LDA.syntheticData 5 1000)
-  -- let configLength = defaultConfig {csvFile = Just speedLengthCSV, rawDataFile = Just rawDAT}
-  -- defaultMainWith configLength (lengthBenchmarks lrData hmmData ldaData)
-  -- let configSamples = defaultConfig {csvFile = Just speedSamplesCSV, rawDataFile = Just rawDAT}
-  -- defaultMainWith configSamples (samplesBenchmarks lrData hmmData ldaData)
-  let configNormal = defaultConfig {csvFile = Just normalSamplesCSV, rawDataFile = Just rawDAT}
-  defaultMainWith configNormal normalBenchmarks
-  -- void $ runProcess "python plots.py"
+  cleanupLastRun
+  lrData <- sampleIOfixed (LogReg.syntheticData 1000)
+  hmmData <- sampleIOfixed (HMM.syntheticData 1000)
+  ldaData <- sampleIOfixed (LDA.syntheticData 5 1000)
+  defaultMainWith defaultConfig {csvFile = Just speedSamplesCSV, rawDataFile = Just rawDAT}
+                  (concat [ lengthBenchmarks lrData hmmData ldaData
+                          , samplesBenchmarks lrData hmmData ldaData
+                          , normalBenchmarks
+                          ]
+                  )
+  void $ runProcess "python plots.py"

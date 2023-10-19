@@ -98,6 +98,7 @@ library
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
+    Control.Monad.Bayes.Sampler.StrictFu
     Control.Monad.Bayes.Sequential.Coroutine
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic

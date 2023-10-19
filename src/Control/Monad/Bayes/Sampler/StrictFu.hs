@@ -14,7 +14,7 @@
 --
 -- 'SamplerIO' and 'SamplerST' are instances of 'MonadDistribution'. Apply a 'MonadFactor'
 -- transformer to obtain a 'MonadMeasure' that can execute probabilistic models.
-module Control.Monad.Bayes.Sampler.Strict
+module Control.Monad.Bayes.Sampler.StrictFu
   ( SamplerT (..),
     SamplerIO,
     SamplerST,
@@ -32,19 +32,24 @@ import Control.Monad.Bayes.Class
   ( MonadDistribution
       ( bernoulli,
         beta,
-        categorical,
+        -- categorical,
         gamma,
-        geometric,
+        -- geometric,
         normal,
         random,
         uniform
       ),
   )
-import Control.Monad.Reader (MonadIO, ReaderT (..))
+import Control.Monad.Reader (ReaderT (..))
 import Control.Monad.ST (ST)
+import Control.Monad.State
 import Numeric.Log (Log (ln))
-import System.Random.MWC.Distributions qualified as MWC
-import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM, uniformDouble01M, uniformRM)
+import Data.Random qualified as RF
+import Data.Random.Distribution.Beta qualified as RF
+import Data.Random.Distribution.Bernoulli qualified as RF
+import Data.Random.Distribution.Uniform as RF
+import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStdGen, mkStdGen, newIOGenM, newSTGenM)
+
 
 -- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
@@ -58,17 +63,17 @@ type SamplerIO = SamplerT (IOGenM StdGen) IO
 -- to particular pairs of monad and RNG
 type SamplerST s = SamplerT (STGenM StdGen s) (ST s)
 
-instance (StatefulGen g m) => MonadDistribution (SamplerT g m) where
-  random = SamplerT (ReaderT uniformDouble01M)
+instance StatefulGen g m => MonadDistribution (SamplerT g m) where
+  random = SamplerT (ReaderT $ RF.runRVar $ RF.stdUniform)
 
-  uniform a b = SamplerT (ReaderT $ uniformRM (a, b))
-  normal m s = SamplerT (ReaderT (MWC.normal m s))
-  gamma shape scale = SamplerT (ReaderT $ MWC.gamma shape scale)
-  beta a b = SamplerT (ReaderT $ MWC.beta a b)
+  uniform a b = SamplerT (ReaderT $ RF.runRVar $ RF.doubleUniform a b)
+  normal m s = SamplerT (ReaderT $ RF.runRVar $ RF.normal m s)
+  gamma shape scale = SamplerT (ReaderT $ RF.runRVar $ RF.gamma shape scale)
+  beta a b = SamplerT (ReaderT $ RF.runRVar $ RF.beta a b)
 
-  bernoulli p = SamplerT (ReaderT $ MWC.bernoulli p)
-  categorical ps = SamplerT (ReaderT $ MWC.categorical ps)
-  geometric p = SamplerT (ReaderT $ MWC.geometric0 p)
+  bernoulli p = SamplerT (ReaderT $ RF.runRVar $ RF.bernoulli p)
+  -- categorical ps = error "categorical"
+  -- geometric p = error "geometric"
 
 -- | Sample with a random number generator of your choice e.g. the one
 -- from `System.Random`.
