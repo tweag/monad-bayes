@@ -25,6 +25,8 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
+data-files:         test/fixtures/*.txt
+
 source-repository head
   type:     git
   location: https://github.com/tweag/monad-bayes.git
@@ -77,6 +79,9 @@ common test-deps
     , time                  >=1.9    && <1.13
     , transformers          ^>=0.5.6
     , typed-process         ^>=0.2
+
+  autogen-modules: Paths_monad_bayes
+  other-modules:   Paths_monad_bayes
 
 library
   import:             deps

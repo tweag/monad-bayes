@@ -3,16 +3,18 @@ module TestSSMFixtures where
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import NonlinearSSM
 import NonlinearSSM.Algorithms
+import Paths_monad_bayes (getDataDir)
 import System.IO (readFile')
 import System.IO.Error (catchIOError, isDoesNotExistError)
 import Test.Hspec
 
 fixtureToFilename :: Alg -> FilePath
-fixtureToFilename alg = "test/fixtures/SSM-" ++ show alg ++ ".txt"
+fixtureToFilename alg = "/test/fixtures/SSM-" ++ show alg ++ ".txt"
 
 testFixture :: Alg -> SpecWith ()
 testFixture alg = do
-  let filename = fixtureToFilename alg
+  dataDir <- runIO getDataDir
+  let filename = dataDir <> fixtureToFilename alg
   it ("should agree with the fixture " ++ filename) $ do
     ys <- sampleIOfixed $ generateData t
     fixture <- catchIOError (readFile' filename) $ \e ->

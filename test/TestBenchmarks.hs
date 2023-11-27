@@ -3,12 +3,13 @@ module TestBenchmarks where
 import Control.Monad (forM_)
 import Data.Maybe (fromJust)
 import Helper
+import Paths_monad_bayes (getDataDir)
 import System.IO (readFile')
 import System.IO.Error (catchIOError, isDoesNotExistError)
 import Test.Hspec
 
 fixtureToFilename :: Model -> Alg -> String
-fixtureToFilename model alg = fromJust (serializeModel model) ++ "-" ++ show alg ++ ".txt"
+fixtureToFilename model alg = "/test/fixtures/" ++ fromJust (serializeModel model) ++ "-" ++ show alg ++ ".txt"
 
 models :: [Model]
 models = [LR 10, HMM 10, LDA (5, 10)]
@@ -21,7 +22,8 @@ test = describe "Benchmarks" $ forM_ models $ \model -> forM_ algs $ testFixture
 
 testFixture :: Model -> Alg -> SpecWith ()
 testFixture model alg = do
-  let filename = "test/fixtures/" ++ fixtureToFilename model alg
+  dataDir <- runIO getDataDir
+  let filename = dataDir <> fixtureToFilename model alg
   it ("should agree with the fixture " ++ filename) $ do
     fixture <- catchIOError (readFile' filename) $ \e ->
       if isDoesNotExistError e
