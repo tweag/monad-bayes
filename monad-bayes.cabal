@@ -86,6 +86,7 @@ common test-deps
 library
   import:             deps
   exposed-modules:
+    Control.Applicative.List
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Density.Free
     Control.Monad.Bayes.Density.State
@@ -114,8 +115,11 @@ library
   other-modules:      Control.Monad.Bayes.Traced.Common
   default-language:   Haskell2010
   default-extensions:
+    ApplicativeDo
     BlockArguments
+    DerivingStrategies
     FlexibleContexts
+    GeneralizedNewtypeDeriving
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings
