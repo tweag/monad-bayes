@@ -35,10 +35,12 @@ module Control.Monad.Bayes.Population
     popAvg,
     withParticles,
     flatten,
+    single,
   )
 where
 
 import Control.Applicative (Alternative)
+import Control.Applicative.List qualified as ApplicativeListT
 import Control.Arrow (second)
 import Control.Monad (MonadPlus, replicateM)
 import Control.Monad.Bayes.Class
@@ -277,5 +279,11 @@ hoist ::
 hoist f = PopulationT . Weighted.hoist (hoistFreeT f) . getPopulationT
 
 -- | Flatten all layers of the free structure
-flatten :: (Monad m) => PopulationT m a -> PopulationT m a
-flatten = fromWeightedList . runPopulationT
+flatten :: (Monad m) => PopulationT m a -> ApplicativeListT.PopulationT m a
+flatten = ApplicativeListT.fromWeightedList . runPopulationT
+
+-- | Create a population from a single layer of branching computations.
+--
+-- Similar to 'fromWeightedListT'.
+single :: (Monad m) => ApplicativeListT.PopulationT m a -> PopulationT m a
+single = fromWeightedList . ApplicativeListT.runPopulationT

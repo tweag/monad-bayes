@@ -26,6 +26,7 @@ import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Population
   ( PopulationT,
     flatten,
+    single,
     withParticles,
   )
 import Control.Monad.Bayes.Sequential.Coroutine as Seq
@@ -50,7 +51,7 @@ rmsmc ::
   PopulationT m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   marginal
-    . S.sequentially (composeCopies numMCMCSteps (TrStat.hoist flatten . mhStep) . TrStat.hoist resampler) numSteps
+    . S.sequentially (composeCopies numMCMCSteps (TrStat.hoist (single . flatten) . mhStep) . TrStat.hoist resampler) numSteps
     . S.hoistFirst (TrStat.hoist (withParticles numParticles))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
@@ -64,7 +65,7 @@ rmsmcBasic ::
   PopulationT m a
 rmsmcBasic (MCMCConfig {..}) (SMCConfig {..}) =
   TrBas.marginal
-    . S.sequentially (TrBas.hoist flatten . composeCopies numMCMCSteps (TrBas.hoist flatten . TrBas.mhStep) . TrBas.hoist resampler) numSteps
+    . S.sequentially (TrBas.hoist (single . flatten) . composeCopies numMCMCSteps (TrBas.hoist (single . flatten) . TrBas.mhStep) . TrBas.hoist resampler) numSteps
     . S.hoistFirst (TrBas.hoist (withParticles numParticles))
 
 -- | A variant of resample-move Sequential Monte Carlo
@@ -79,7 +80,7 @@ rmsmcDynamic ::
   PopulationT m a
 rmsmcDynamic (MCMCConfig {..}) (SMCConfig {..}) =
   TrDyn.marginal
-    . S.sequentially (TrDyn.freeze . composeCopies numMCMCSteps (TrDyn.hoist flatten . TrDyn.mhStep) . TrDyn.hoist resampler) numSteps
+    . S.sequentially (TrDyn.freeze . composeCopies numMCMCSteps (TrDyn.hoist (single . flatten) . TrDyn.mhStep) . TrDyn.hoist resampler) numSteps
     . S.hoistFirst (TrDyn.hoist (withParticles numParticles))
 
 -- | Apply a function a given number of times.
