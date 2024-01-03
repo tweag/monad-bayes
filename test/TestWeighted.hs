@@ -2,6 +2,7 @@
 
 module TestWeighted (check, passed, result, model) where
 
+import Control.Monad (unless, when)
 import Control.Monad.Bayes.Class
   ( MonadDistribution (normal, uniformD),
     MonadMeasure,
@@ -9,7 +10,6 @@ import Control.Monad.Bayes.Class
   )
 import Control.Monad.Bayes.Sampler.Strict (sampleIOfixed)
 import Control.Monad.Bayes.Weighted (runWeightedT)
-import Control.Monad.State (unless, when)
 import Data.AEq (AEq ((~==)))
 import Data.Bifunctor (second)
 import Numeric.Log (Log (Exp, ln))

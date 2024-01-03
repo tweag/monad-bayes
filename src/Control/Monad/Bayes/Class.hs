@@ -77,11 +77,11 @@ where
 import Control.Arrow (Arrow (second))
 import Control.Monad (replicateM, when)
 import Control.Monad.Cont (ContT)
-import Control.Monad.Except (ExceptT, lift)
+import Control.Monad.Except (ExceptT)
 import Control.Monad.Identity (IdentityT)
-import Control.Monad.List (ListT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.State (StateT)
+import Control.Monad.Trans.Class (lift)
 import Control.Monad.Writer (WriterT)
 import Data.Histogram qualified as H
 import Data.Histogram.Fill qualified as H
@@ -389,16 +389,6 @@ instance (MonadFactor m) => MonadFactor (StateT s m) where
   score = lift . score
 
 instance (MonadMeasure m) => MonadMeasure (StateT s m)
-
-instance (MonadDistribution m) => MonadDistribution (ListT m) where
-  random = lift random
-  bernoulli = lift . bernoulli
-  categorical = lift . categorical
-
-instance (MonadFactor m) => MonadFactor (ListT m) where
-  score = lift . score
-
-instance (MonadMeasure m) => MonadMeasure (ListT m)
 
 instance (MonadDistribution m) => MonadDistribution (ContT r m) where
   random = lift random
