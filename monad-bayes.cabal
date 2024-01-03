@@ -63,21 +63,21 @@ common deps
     , scientific       ^>=0.3
     , statistics       >=0.14.0  && <0.17
     , text             >=1.2     && <2.1
+    , transformers     ^>=0.5.6
     , vector           >=0.12.0  && <0.14
     , vty              ^>=5.38
 
 common test-deps
   build-depends:
     , abstract-par          ^>=0.3
-    , criterion             >=1.5    && <1.7
+    , criterion             >=1.5   && <1.7
     , directory             ^>=1.3
     , hspec                 ^>=2.11
     , monad-bayes
-    , optparse-applicative  >=0.17   && <0.19
+    , optparse-applicative  >=0.17  && <0.19
     , process               ^>=1.6
     , QuickCheck            ^>=2.14
-    , time                  >=1.9    && <1.13
-    , transformers          ^>=0.5.6
+    , time                  >=1.9   && <1.13
     , typed-process         ^>=0.2
 
   autogen-modules: Paths_monad_bayes
@@ -86,6 +86,7 @@ common test-deps
 library
   import:             deps
   exposed-modules:
+    Control.Applicative.List
     Control.Monad.Bayes.Class
     Control.Monad.Bayes.Density.Free
     Control.Monad.Bayes.Density.State
@@ -100,6 +101,7 @@ library
     Control.Monad.Bayes.Inference.TUI
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
+    Control.Monad.Bayes.Population.Applicative
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
     Control.Monad.Bayes.Sequential.Coroutine
@@ -114,8 +116,11 @@ library
   other-modules:      Control.Monad.Bayes.Traced.Common
   default-language:   Haskell2010
   default-extensions:
+    ApplicativeDo
     BlockArguments
+    DerivingStrategies
     FlexibleContexts
+    GeneralizedNewtypeDeriving
     ImportQualifiedPost
     LambdaCase
     OverloadedStrings

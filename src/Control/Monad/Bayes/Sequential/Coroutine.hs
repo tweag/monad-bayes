@@ -22,6 +22,8 @@ module Control.Monad.Bayes.Sequential.Coroutine
     hoist,
     sequentially,
     sis,
+    runSequentialT,
+    extract,
   )
 where
 

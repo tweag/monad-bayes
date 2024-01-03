@@ -27,8 +27,10 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
 import Control.Monad.Bayes.Inference.SMC (SMCConfig (SMCConfig, numParticles, numSteps, resampler), smcPush)
-import Control.Monad.Bayes.Population as Pop (PopulationT, resampleMultinomial, runPopulationT)
+import Control.Monad.Bayes.Population as Pop (PopulationT, flatten, resampleMultinomial, runPopulationT, single)
+import Control.Monad.Bayes.Population qualified as PopulationT
 import Control.Monad.Bayes.Sequential.Coroutine (SequentialT)
+import Control.Monad.Bayes.Sequential.Coroutine qualified as SequentialT
 import Control.Monad.Bayes.Traced
 import Control.Monad.Trans (MonadTrans (..))
 import Numeric.Log (Log)
@@ -71,4 +73,10 @@ smc2 k n p t param m =
   rmsmc
     MCMCConfig {numMCMCSteps = t, proposal = SingleSiteMH, numBurnIn = 0}
     SMCConfig {numParticles = p, numSteps = k, resampler = resampleMultinomial}
-    (param >>= setup . runPopulationT . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . m)
+    (flattenSequentiallyTraced param >>= setup . runPopulationT . smcPush (SMCConfig {numSteps = k, numParticles = n, resampler = resampleMultinomial}) . flattenSMC2 . m)
+
+flattenSequentiallyTraced :: (Monad m) => SequentialT (TracedT (PopulationT m)) a -> SequentialT (TracedT (PopulationT m)) a
+flattenSequentiallyTraced = SequentialT.hoist $ hoistModel (single . flatten) . hoist (single . flatten)
+
+flattenSMC2 :: (Monad m) => SequentialT (PopulationT (SMC2 m)) a -> SequentialT (PopulationT (SMC2 m)) a
+  flattenSMC2 = SequentialT.hoist $ single . flatten . PopulationT.hoist (SMC2 . flattenSequentiallyTraced . setup)

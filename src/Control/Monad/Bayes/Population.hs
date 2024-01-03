@@ -34,17 +34,21 @@ module Control.Monad.Bayes.Population
     collapse,
     popAvg,
     withParticles,
+    flatten,
+    single,
   )
 where
 
+import Control.Applicative (Alternative)
 import Control.Arrow (second)
-import Control.Monad (replicateM)
+import Control.Monad (MonadPlus, replicateM)
 import Control.Monad.Bayes.Class
   ( MonadDistribution (categorical, logCategorical, random, uniform),
     MonadFactor,
     MonadMeasure,
     factor,
   )
+import Control.Monad.Bayes.Population.Applicative qualified as Applicative
 import Control.Monad.Bayes.Weighted
   ( WeightedT,
     applyWeight,
@@ -52,7 +56,10 @@ import Control.Monad.Bayes.Weighted
     runWeightedT,
     weightedT,
   )
-import Control.Monad.List (ListT (..), MonadIO, MonadTrans (..))
+import Control.Monad.Bayes.Weighted qualified as Weighted
+import Control.Monad.IO.Class
+import Control.Monad.Trans
+import Control.Monad.Trans.Free
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)
@@ -63,24 +70,29 @@ import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
-newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (ListT m) a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadDistribution, MonadFactor, MonadMeasure)
+--
+-- This monad transformer is internally represented as a free monad,
+-- which means that each layer of its computation contains a collection of weighted samples.
+-- These can be flattened with 'flatten',
+-- but the result is not a monad anymore.
+newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (FreeT [] m) a}
+  deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadDistribution, MonadFactor, MonadMeasure)
 
 instance MonadTrans PopulationT where
   lift = PopulationT . lift . lift
 
 -- | Explicit representation of the weighted sample with weights in the log
 -- domain.
-runPopulationT :: PopulationT m a -> m [(a, Log Double)]
-runPopulationT = runListT . runWeightedT . getPopulationT
+runPopulationT :: (Monad m) => PopulationT m a -> m [(a, Log Double)]
+runPopulationT = iterT (fmap concat . sequence) . fmap pure . runWeightedT . getPopulationT
 
 -- | Explicit representation of the weighted sample.
-explicitPopulation :: (Functor m) => PopulationT m a -> m [(a, Double)]
+explicitPopulation :: (Monad m) => PopulationT m a -> m [(a, Double)]
 explicitPopulation = fmap (map (second (exp . ln))) . runPopulationT
 
 -- | Initialize 'PopulationT' with a concrete weighted sample.
 fromWeightedList :: (Monad m) => m [(a, Log Double)] -> PopulationT m a
-fromWeightedList = PopulationT . weightedT . ListT
+fromWeightedList = PopulationT . weightedT . FreeT . fmap (Free . fmap pure)
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
@@ -226,7 +238,7 @@ pushEvidence ::
   (MonadFactor m) =>
   PopulationT m a ->
   PopulationT m a
-pushEvidence = hoist applyWeight . extractEvidence
+pushEvidence = single . flatten . hoist applyWeight . extractEvidence
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
@@ -265,8 +277,18 @@ popAvg f p = do
 
 -- | Applies a transformation to the inner monad.
 hoist ::
-  (Monad n) =>
+  (Monad m, (Monad n)) =>
   (forall x. m x -> n x) ->
   PopulationT m a ->
   PopulationT n a
-hoist f = fromWeightedList . f . runPopulationT
+hoist f = PopulationT . Weighted.hoist (hoistFreeT f) . getPopulationT
+
+-- | Flatten all layers of the free structure.
+flatten :: (Monad m) => PopulationT m a -> Applicative.PopulationT m a
+flatten = Applicative.fromWeightedList . runPopulationT
+
+-- | Create a population from a single layer of branching computations.
+--
+-- Similar to 'fromWeightedListT'.
+single :: (Monad m) => Applicative.PopulationT m a -> PopulationT m a
+single = fromWeightedList . Applicative.runPopulationT
