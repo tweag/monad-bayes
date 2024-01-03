@@ -101,6 +101,7 @@ library
     Control.Monad.Bayes.Inference.TUI
     Control.Monad.Bayes.Integrator
     Control.Monad.Bayes.Population
+    Control.Monad.Bayes.Population.Applicative
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
     Control.Monad.Bayes.Sequential.Coroutine

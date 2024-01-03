@@ -40,7 +40,6 @@ module Control.Monad.Bayes.Population
 where
 
 import Control.Applicative (Alternative)
-import Control.Applicative.List qualified as ApplicativeListT
 import Control.Arrow (second)
 import Control.Monad (MonadPlus, replicateM)
 import Control.Monad.Bayes.Class
@@ -49,6 +48,7 @@ import Control.Monad.Bayes.Class
     MonadMeasure,
     factor,
   )
+import Control.Monad.Bayes.Population.Applicative qualified as Applicative
 import Control.Monad.Bayes.Weighted
   ( WeightedT,
     applyWeight,
@@ -70,6 +70,11 @@ import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | A collection of weighted samples, or particles.
+--
+-- This monad transformer is internally represented as a free monad,
+-- which means that each layer of its computation contains a collection of weighted samples.
+-- These can be flattened with 'flatten',
+-- but the result is not a monad anymore.
 newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (FreeT [] m) a}
   deriving newtype (Functor, Applicative, Alternative, Monad, MonadIO, MonadPlus, MonadDistribution, MonadFactor, MonadMeasure)
 
@@ -278,12 +283,12 @@ hoist ::
   PopulationT n a
 hoist f = PopulationT . Weighted.hoist (hoistFreeT f) . getPopulationT
 
--- | Flatten all layers of the free structure
-flatten :: (Monad m) => PopulationT m a -> ApplicativeListT.PopulationT m a
-flatten = ApplicativeListT.fromWeightedList . runPopulationT
+-- | Flatten all layers of the free structure.
+flatten :: (Monad m) => PopulationT m a -> Applicative.PopulationT m a
+flatten = Applicative.fromWeightedList . runPopulationT
 
 -- | Create a population from a single layer of branching computations.
 --
 -- Similar to 'fromWeightedListT'.
-single :: (Monad m) => ApplicativeListT.PopulationT m a -> PopulationT m a
-single = fromWeightedList . ApplicativeListT.runPopulationT
+single :: (Monad m) => Applicative.PopulationT m a -> PopulationT m a
+single = fromWeightedList . Applicative.runPopulationT
