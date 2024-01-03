@@ -51,8 +51,8 @@ rmsmc ::
   PopulationT m a
 rmsmc (MCMCConfig {..}) (SMCConfig {..}) =
   marginal
-    . S.sequentially (composeCopies numMCMCSteps (TrStat.hoist (single . flatten) . mhStep) . TrStat.hoist resampler) numSteps
-    . S.hoistFirst (TrStat.hoist (withParticles numParticles))
+    . S.sequentially (composeCopies numMCMCSteps (TrStat.hoistModel (single . flatten) . TrStat.hoist (single . flatten) . mhStep) . TrStat.hoist resampler) numSteps
+    . S.hoistFirst (TrStat.hoistModel (single . flatten) . TrStat.hoist (withParticles numParticles))
 
 -- | Resample-move Sequential Monte Carlo with a more efficient
 -- tracing representation.

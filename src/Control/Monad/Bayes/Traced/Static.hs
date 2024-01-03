@@ -12,6 +12,7 @@
 module Control.Monad.Bayes.Traced.Static
   ( TracedT (..),
     hoist,
+    hoistModel,
     marginal,
     mhStep,
     mh,
@@ -25,6 +26,7 @@ import Control.Monad.Bayes.Class
     MonadMeasure,
   )
 import Control.Monad.Bayes.Density.Free (DensityT)
+import Control.Monad.Bayes.Density.Free qualified as DensityT
 import Control.Monad.Bayes.Traced.Common
   ( Trace (..),
     bind,
@@ -33,6 +35,7 @@ import Control.Monad.Bayes.Traced.Common
     singleton,
   )
 import Control.Monad.Bayes.Weighted (WeightedT)
+import Control.Monad.Bayes.Weighted qualified as WeightedT
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
 
@@ -72,6 +75,9 @@ instance (MonadMeasure m) => MonadMeasure (TracedT m)
 hoist :: (forall x. m x -> m x) -> TracedT m a -> TracedT m a
 hoist f (TracedT m d) = TracedT m (f d)
 
+hoistModel :: (Monad m) => (forall x. m x -> m x) -> TracedT m a -> TracedT m a
+hoistModel f (TracedT m d) = TracedT (WeightedT.hoist (DensityT.hoist f) m) d
+
 -- | Discard the trace and supporting infrastructure.
 marginal :: (Monad m) => TracedT m a -> m a
 marginal (TracedT _ d) = fmap output d
@@ -98,15 +104,15 @@ mhStep (TracedT m d) = TracedT m d'
 -- * What is the probability that it is the weekend?
 --
 -- >>> :{
---  let
---    bus = do x <- bernoulli (2/7)
---             let rate = if x then 3 else 10
---             factor $ poissonPdf rate 4
---             return x
---    mhRunBusSingleObs = do
---      let nSamples = 2
---      sampleIOfixed $ unweighted $ mh nSamples bus
---  in mhRunBusSingleObs
+-- let
+--   bus = do x <- bernoulli (2/7)
+--            let rate = if x then 3 else 10
+--            factor $ poissonPdf rate 4
+--            return x
+--   mhRunBusSingleObs = do
+--     let nSamples = 2
+--     sampleIOfixed $ unweighted $ mh nSamples bus
+-- in mhRunBusSingleObs
 -- :}
 -- [True,True,True]
 --

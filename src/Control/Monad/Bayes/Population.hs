@@ -238,7 +238,7 @@ pushEvidence ::
   (MonadFactor m) =>
   PopulationT m a ->
   PopulationT m a
-pushEvidence = hoist applyWeight . extractEvidence
+pushEvidence = single . flatten . hoist applyWeight . extractEvidence
 
 -- | A properly weighted single sample, that is one picked at random according
 -- to the weights, with the sum of all weights.
