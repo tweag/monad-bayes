@@ -1,6 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-deprecations #-}
 
@@ -37,11 +38,12 @@ module Control.Monad.Bayes.Population
   )
 where
 
+import Control.Applicative (Alternative)
 import Control.Arrow (second)
-import Control.Monad (replicateM)
+import Control.Monad (forM, replicateM)
 import Control.Monad.Bayes.Class
-  ( MonadDistribution (categorical, logCategorical, random, uniform),
-    MonadFactor,
+  ( MonadDistribution (..),
+    MonadFactor (..),
     MonadMeasure,
     factor,
   )
@@ -52,7 +54,9 @@ import Control.Monad.Bayes.Weighted
     runWeightedT,
     weightedT,
   )
-import Control.Monad.List (ListT (..), MonadIO, MonadTrans (..))
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
+import Data.Functor.Compose
 import Data.List (unfoldr)
 import Data.List qualified
 import Data.Maybe (catMaybes)
@@ -61,6 +65,40 @@ import Data.Vector qualified as V
 import Numeric.Log (Log, ln, sum)
 import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
+
+-- | The old-fashioned, broken list transformer, adding a list/nondeterminism/choice effect.
+--   It is not a valid monad transformer, but it is a valid 'Applicative'.
+newtype ListT m a = ListT {getListT :: Compose m [] a}
+  deriving newtype (Functor, Applicative, Alternative)
+
+listT :: m [a] -> ListT m a
+listT = ListT . Compose
+
+runListT :: ListT m a -> m [a]
+runListT = getCompose . getListT
+
+-- | This monad instance is _unlawful_,
+-- it is only by accident and careful construction that it can be used here.
+instance (Monad m) => Monad (ListT m) where
+  ma >>= f = ListT $ Compose $ do
+    as <- runListT ma
+    fmap concat $ forM as $ runListT . f
+
+instance MonadTrans ListT where
+  lift = ListT . Compose . fmap pure
+
+instance (MonadIO m) => MonadIO (ListT m) where
+  liftIO = lift . liftIO
+
+instance (MonadDistribution m) => MonadDistribution (ListT m) where
+  random = lift random
+  bernoulli = lift . bernoulli
+  categorical = lift . categorical
+
+instance (MonadFactor m) => MonadFactor (ListT m) where
+  score = lift . score
+
+instance (MonadMeasure m) => MonadMeasure (ListT m)
 
 -- | A collection of weighted samples, or particles.
 newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (ListT m) a}
@@ -80,7 +118,7 @@ explicitPopulation = fmap (map (second (exp . ln))) . runPopulationT
 
 -- | Initialize 'PopulationT' with a concrete weighted sample.
 fromWeightedList :: (Monad m) => m [(a, Log Double)] -> PopulationT m a
-fromWeightedList = PopulationT . weightedT . ListT
+fromWeightedList = PopulationT . weightedT . listT
 
 -- | Increase the sample size by a given factor.
 -- The weights are adjusted such that their sum is preserved.
