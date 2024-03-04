@@ -32,16 +32,18 @@ where
 
 import Control.Applicative (Alternative)
 import Control.Arrow (second)
+import Control.Monad (MonadPlus)
 import Control.Monad.Bayes.Class
   ( MonadDistribution (bernoulli, categorical, logCategorical, random),
     MonadFactor (..),
     MonadMeasure,
   )
-import Control.Monad.Writer
+import Control.Monad.Writer (WriterT (..))
 import Data.AEq (AEq, (===), (~==))
 import Data.List (sortOn)
 import Data.Map qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.Monoid (Product (..))
 import Data.Ord (Down (Down))
 import Data.Vector qualified as VV
 import Data.Vector.Generic qualified as V

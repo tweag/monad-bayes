@@ -3,13 +3,17 @@ module Dice (diceHard, diceSoft) where
 -- A toy model for dice rolling from http://dl.acm.org/citation.cfm?id=2804317
 -- Exact results can be obtained using Dist monad
 
-import Control.Applicative (liftA2)
+import Control.Applicative (Applicative (..))
 import Control.Monad.Bayes.Class
   ( MonadDistribution (uniformD),
     MonadFactor (score),
     MonadMeasure,
     condition,
   )
+-- Prelude exports liftA2 from GHC 9.6 on, see https://github.com/haskell/core-libraries-committee/blob/main/guides/export-lifta2-prelude.md
+-- import Control.Applicative further up can be removed once we don't support GHC <= 9.4 anymore
+
+import Prelude hiding (Applicative (..))
 
 -- | A toss of a six-sided die.
 die :: (MonadDistribution m) => m Int

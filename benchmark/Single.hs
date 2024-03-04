@@ -1,12 +1,12 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 
+import Control.Applicative (Applicative (..))
 import Control.Monad.Bayes.Sampler.Strict
 import Data.Time (diffUTCTime, getCurrentTime)
 import Helper
 import Options.Applicative
-  ( Applicative (liftA2),
-    ParserInfo,
+  ( ParserInfo,
     auto,
     execParser,
     fullDesc,
@@ -17,6 +17,10 @@ import Options.Applicative
     option,
     short,
   )
+-- Prelude exports liftA2 from GHC 9.6 on, see https://github.com/haskell/core-libraries-committee/blob/main/guides/export-lifta2-prelude.md
+-- import Control.Applicative further up can be removed once we don't support GHC <= 9.4 anymore
+
+import Prelude hiding (Applicative (..))
 
 infer :: Model -> Alg -> IO ()
 infer model alg = do
