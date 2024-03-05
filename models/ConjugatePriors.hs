@@ -4,12 +4,15 @@
 
 module ConjugatePriors where
 
-import Control.Applicative (Applicative (liftA2))
+import Control.Applicative (Applicative (..))
 import Control.Foldl (fold)
 import Control.Foldl qualified as F
 import Control.Monad.Bayes.Class (Bayesian (..), MonadDistribution (bernoulli, beta, gamma, normal), MonadMeasure, normalPdf)
 import Numeric.Log (Log (Exp))
-import Prelude
+-- Prelude exports liftA2 from GHC 9.6 on, see https://github.com/haskell/core-libraries-committee/blob/main/guides/export-lifta2-prelude.md
+-- import Control.Applicative further up can be removed once we don't support GHC <= 9.4 anymore
+
+import Prelude hiding (Applicative (..))
 
 type GammaParams = (Double, Double)
 

@@ -18,7 +18,7 @@ module Control.Monad.Bayes.Traced.Static
   )
 where
 
-import Control.Applicative (liftA2)
+import Control.Applicative (Applicative (..))
 import Control.Monad.Bayes.Class
   ( MonadDistribution (random),
     MonadFactor (..),
@@ -35,6 +35,10 @@ import Control.Monad.Bayes.Traced.Common
 import Control.Monad.Bayes.Weighted (WeightedT)
 import Control.Monad.Trans (MonadTrans (..))
 import Data.List.NonEmpty as NE (NonEmpty ((:|)), toList)
+-- Prelude exports liftA2 from GHC 9.6 on, see https://github.com/haskell/core-libraries-committee/blob/main/guides/export-lifta2-prelude.md
+-- import Control.Applicative further up can be removed once we don't support GHC <= 9.4 anymore
+
+import Prelude hiding (Applicative (..))
 
 -- | A tracing monad where only a subset of random choices are traced.
 --
