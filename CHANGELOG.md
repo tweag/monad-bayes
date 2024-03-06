@@ -1,3 +1,10 @@
+# 1.3.0
+
+- Support for GHC 9.6
+- Replaced transformers' `ListT` by
+  (https://github.com/tweag/monad-bayes/pull/295)
+- Naming fixes for `Sampler` and `SamplerT`
+
 # 1.2.0
 
 - Renamed monad transformers idiomatically
