@@ -84,6 +84,7 @@
             "ghc927"
             "ghc945"
             "ghc964"
+            "ghc981"
           ];
           buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
           in lib.attrsets.genAttrs ghcs buildForVersion;
