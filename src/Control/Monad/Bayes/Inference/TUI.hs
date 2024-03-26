@@ -28,6 +28,7 @@ import Data.Text.Lazy.IO qualified as TL
 import GHC.Float (double2Float)
 import Graphics.Vty
 import Graphics.Vty qualified as V
+import Graphics.Vty.Platform.Unix qualified as V
 import Numeric.Log (Log (ln))
 import Pipes (runEffect, (>->))
 import Pipes qualified as P
