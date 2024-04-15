@@ -21,6 +21,7 @@ import Control.Monad.Bayes.Sampler.Strict (SamplerIO, sampleIO)
 import Control.Monad.Bayes.Traced (TracedT)
 import Control.Monad.Bayes.Traced.Common hiding (burnIn)
 import Control.Monad.Bayes.Weighted
+import Data.Maybe (listToMaybe)
 import Data.Scientific (FPFormat (Exponent), formatScientific, fromFloatDigits)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
@@ -70,7 +71,7 @@ drawUI handleSamples state = [ui]
             ]
         )
         $ B.progressBar
-          (Just $ "Mean likelihood for last 1000 samples: " <> take 10 (show (head $ lk state <> [0])))
+          (Just $ "Mean likelihood for last 1000 samples: " <> take 10 (maybe "(error)" show (listToMaybe $ lk state <> [0])))
           (double2Float (Fold.fold Fold.mean $ take 1000 $ lk state) / double2Float (maximum $ 0 : lk state))
 
     displayStep c = Just $ "Step " <> show c
@@ -108,7 +109,7 @@ showEmpirical =
     . toEmpirical
 
 showVal :: (Show a) => [a] -> Widget n
-showVal = txt . T.pack . (\case [] -> ""; a -> show $ head a)
+showVal = txt . T.pack . (\case [] -> ""; a -> maybe "(error)" show $ listToMaybe a)
 
 -- | handler for events received by the TUI
 appEvent :: B.BrickEvent n s -> B.EventM n s ()

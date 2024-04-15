@@ -22,6 +22,7 @@ import Criterion.Main
   )
 import Criterion.Types (Config (csvFile, rawDataFile))
 import Data.Functor (void)
+import Data.Maybe (listToMaybe)
 import Data.Text qualified as T
 import HMM qualified
 import LDA qualified
@@ -38,7 +39,7 @@ data Model = LR [(Double, Bool)] | HMM [Double] | LDA [[T.Text]]
 instance Show Model where
   show (LR xs) = "LR" ++ show (length xs)
   show (HMM xs) = "HMM" ++ show (length xs)
-  show (LDA xs) = "LDA" ++ show (length $ head xs)
+  show (LDA xs) = "LDA" ++ show (maybe 0 length $ listToMaybe xs)
 
 buildModel :: (MonadMeasure m) => Model -> m String
 buildModel (LR dataset) = show <$> LogReg.logisticRegression dataset
