@@ -1,7 +1,9 @@
 module Control.Monad.Bayes.Inference.Lazy.WIS where
 
+import Control.Monad (guard)
 import Control.Monad.Bayes.Sampler.Lazy (SamplerT, weightedSamples)
 import Control.Monad.Bayes.Weighted (WeightedT)
+import Data.Maybe (mapMaybe)
 import Numeric.Log (Log (Exp))
 import System.Random (Random (randoms), getStdGen, newStdGen)
 
@@ -16,7 +18,7 @@ lwis n m = do
   let max' = snd $ last xws'
   _ <- newStdGen
   rs <- randoms <$> getStdGen
-  return $ fmap (\r -> fst $ head $ filter ((>= Exp (log r) * max') . snd) xws') rs
+  return $ take 1 =<< fmap (\r -> mapMaybe (\(a, p) -> guard (p >= Exp (log r) * max') >> Just a) xws') rs
   where
     accumulate :: (Num t) => [(a, t)] -> t -> [(a, t)]
     accumulate ((x, w) : xws) a = (x, w + a) : (x, w + a) : accumulate xws (w + a)

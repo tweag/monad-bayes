@@ -81,4 +81,4 @@ syntheticData d w = List.replicateM d (List.replicateM w syntheticWord)
 runLDA :: IO ()
 runLDA = do
   s <- sampleIOfixed $ unweighted $ mh 1000 $ lda documents
-  pPrint (head s)
+  pPrint $ take 1 s
