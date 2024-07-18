@@ -1,3 +1,7 @@
+# 1.3.0.3
+
+- Relaxed some version bounds
+
 # 1.3.0.2
 
 - Relaxed some version bounds
