@@ -27,6 +27,8 @@ module Control.Monad.Bayes.Population
     resampleSystematic,
     stratified,
     resampleStratified,
+    onlyBelowEffectiveSampleSize,
+    effectiveSampleSize,
     extractEvidence,
     pushEvidence,
     proper,
@@ -243,6 +245,31 @@ resampleMultinomial ::
   PopulationT m a ->
   PopulationT m a
 resampleMultinomial = resampleGeneric multinomial
+
+-- | Only use the given resampler when the effective sample size is below a certain threshold
+onlyBelowEffectiveSampleSize ::
+  (MonadDistribution m) =>
+  -- | The threshold under which the effective sample size must fall before the resampler is used.
+  --   For example, this may be half of the number of particles.
+  Double ->
+  -- | The resampler to user under the threshold
+  ((MonadDistribution m) => PopulationT m a -> PopulationT m a) ->
+  -- | The new resampler
+  (PopulationT m a -> PopulationT m a)
+onlyBelowEffectiveSampleSize threshold resampler pop = do
+  ess <- lift $ effectiveSampleSize pop
+  if ess < threshold then resampler pop else pop
+
+-- | Compute the effective sample size of a population from the weights.
+--
+--   See https://en.wikipedia.org/wiki/Design_effect#Effective_sample_size
+effectiveSampleSize :: (Functor m) => PopulationT m a -> m Double
+effectiveSampleSize = fmap (effectiveSampleSizeKish . map (exp . ln . snd)) . runPopulationT
+  where
+    effectiveSampleSizeKish :: [Double] -> Double
+    effectiveSampleSizeKish weights = square (Data.List.sum weights) / Data.List.sum (square <$> weights)
+    square :: Double -> Double
+    square x = x * x
 
 -- | Separate the sum of weights into the 'WeightedT' transformer.
 -- Weights are normalized after this operation.
