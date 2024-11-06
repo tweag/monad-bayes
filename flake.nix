@@ -86,7 +86,8 @@
               };
           };
           ghcs = [
-            # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+            # Always keep this up to date with the tested-with section in monad-bayes.cabal,
+            # and the build-all-ghcs job in .github/workflows/nix.yml!
             "ghc902"
             "ghc927"
             "ghc945"

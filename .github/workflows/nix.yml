@@ -40,11 +40,33 @@ jobs:
         run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes
       - name: Development environment (package only)
         run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes --command echo Ready
-      - name: All GHCs
-        run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes-all-ghcs
+
+  build-all-ghcs:
+    needs: lint
+    strategy:
+      matrix:
+        ghc: ["ghc902", "ghc927", "ghc945", "ghc964", "ghc982", "ghc9101"]
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          - os: macos-latest
+            system: x86_64-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Nix Environment
+        uses: ./.github/actions/nix-common-setup
+        with:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Build
+        run: nix --print-build-logs build .#packages.${{ matrix.system }}.monad-bayes-per-ghc.${{ matrix.ghc }}
+      - name: Development environment (package only)
+        run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes-per-ghc.${{ matrix.ghc }} --command echo Ready
 
   notebooks:
-    needs: build
+    needs:
+      - build
+      - build-all-ghcs
     strategy:
       matrix:
         include:
