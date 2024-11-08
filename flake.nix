@@ -81,19 +81,12 @@
               else pkgs.haskell.lib.dontCheck drv;
             overrides = self: super:
               with pkgs.haskell.lib;
-                lib.optionalAttrs (lib.versionOlder super.ghc.version "9.10") {
+                {
                   # Please check after flake.lock updates whether some of these overrides can be removed
-                  brick = super.brick_2_3_1;
+                  brick = super.brick_2_4;
                 }
                 // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
                   # Please check after flake.lock updates whether some of these overrides can be removed
-                  brick =
-                    super.callHackageDirect
-                    {
-                      pkg = "brick";
-                      ver = "2.3.1";
-                      sha256 = "sha256-hOf9hcK0JT/mJWi0WWGqKR34OgZMycqWo3DFMdphHuQ=";
-                    } {};
                   microstache = doJailbreak super.microstache;
                 };
           };
