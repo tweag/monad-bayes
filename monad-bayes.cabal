@@ -42,7 +42,7 @@ common deps
   build-depends:
     , base             >=4.15     && <4.21
     , brick            >=2.3.1    && <2.5
-    , containers       >=0.5.10   && <0.7
+    , containers       >=0.5.10   && <0.8
     , foldl            ^>=1.4
     , free             ^>=5.2
     , histogram-fill   ^>=0.9
