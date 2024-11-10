@@ -1,3 +1,8 @@
+# 1.3.0.4
+
+- Allowed GHC 9.10
+- Updated some version bounds
+
 # 1.3.0.3
 
 - Relaxed some version bounds
