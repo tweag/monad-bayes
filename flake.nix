@@ -29,7 +29,7 @@
       inputs = {
         flake-compat.follows = "flake-compat";
         flake-utils.follows = "flake-utils";
-       };
+      };
     };
   };
   outputs = {
@@ -75,20 +75,34 @@
             cabal2nixOptions = "--benchmark -fdev";
 
             # https://github.com/tweag/monad-bayes/pull/256: Don't run tests on Mac because of machine precision issues
-            modifier = drv: if system == "x86_64-linux" then drv else pkgs.haskell.lib.dontCheck drv;
-            overrides = self: super: with pkgs.haskell.lib; { # Please check after flake.lock updates whether some of these overrides can be removed
-              brick = super.brick_2_3_1;
-            };
+            modifier = drv:
+              if system == "x86_64-linux"
+              then drv
+              else pkgs.haskell.lib.dontCheck drv;
+            overrides = self: super:
+              with pkgs.haskell.lib;
+                {
+                  # Please check after flake.lock updates whether some of these overrides can be removed
+                  brick = super.brick_2_4;
+                }
+                // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
+                  # Please check after flake.lock updates whether some of these overrides can be removed
+                  microstache = doJailbreak super.microstache;
+                };
           };
-          ghcs = [ # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+          ghcs = [
+            # Always keep this up to date with the tested-with section in monad-bayes.cabal,
+            # and the build-all-ghcs job in .github/workflows/nix.yml!
             "ghc902"
             "ghc927"
             "ghc945"
             "ghc964"
             "ghc982"
+            "ghc9101"
           ];
           buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
-          in lib.attrsets.genAttrs ghcs buildForVersion;
+        in
+          lib.attrsets.genAttrs ghcs buildForVersion;
 
         monad-bayes = monad-bayes-per-ghc.ghc902;
 

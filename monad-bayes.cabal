@@ -1,13 +1,15 @@
 cabal-version:   2.2
 name:            monad-bayes
-version:         1.3.0.2
+version:         1.3.0.3
 license:         MIT
 license-file:    LICENSE.md
 copyright:       2015-2020 Adam Scibior
 maintainer:      dominic.steinitz@tweag.io
 author:          Adam Scibior <adscib@gmail.com>
 stability:       experimental
-tested-with:     GHC ==9.0.2 || ==9.2.7 || ==9.4.5 || ==9.6.4 || ==9.8.2
+tested-with:
+  GHC ==9.0.2 || ==9.2.7 || ==9.4.5 || ==9.6.4 || ==9.8.2 || ==9.10.1
+
 homepage:        http://github.com/tweag/monad-bayes#readme
 bug-reports:     https://github.com/tweag/monad-bayes/issues
 synopsis:        A library for probabilistic programming.
@@ -38,9 +40,9 @@ flag dev
 
 common deps
   build-depends:
-    , base             >=4.15     && <4.20
-    , brick            >=2.3.1    && <2.5
-    , containers       >=0.5.10   && <0.7
+    , base             >=4.15     && <4.21
+    , brick            >=2.3.1    && <2.6
+    , containers       >=0.6      && <0.8
     , foldl            ^>=1.4
     , free             ^>=5.2
     , histogram-fill   ^>=0.9
@@ -71,14 +73,14 @@ common deps
 common test-deps
   build-depends:
     , abstract-par          ^>=0.3
-    , criterion             >=1.5   && <1.7
+    , criterion             >=1.5  && <1.7
     , directory             ^>=1.3
-    , hspec                 >=2.10  && <2.12
+    , hspec                 >=2.10 && <2.12
     , monad-bayes
-    , optparse-applicative  >=0.17  && <0.19
+    , optparse-applicative  >=0.17 && <0.19
     , process               ^>=1.6
-    , QuickCheck            ^>=2.14
-    , time                  >=1.9   && <1.13
+    , QuickCheck            >=2.14 && <2.16
+    , time                  >=1.9  && <1.13
     , typed-process         ^>=0.2
 
   autogen-modules: Paths_monad_bayes

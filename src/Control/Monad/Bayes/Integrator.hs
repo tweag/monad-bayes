@@ -42,7 +42,7 @@ import Control.Monad.Cont
     cont,
     runCont,
   )
-import Data.Foldable (Foldable (foldl'))
+import Data.Foldable (Foldable (..))
 import Data.Set (Set, elems)
 import Numeric.Integration.TanhSinh (Result (result), trap)
 import Numeric.Log (Log (ln))
@@ -51,7 +51,7 @@ import Statistics.Distribution.Uniform qualified as Statistics
 -- Prelude exports liftA2 from GHC 9.6 on, see https://github.com/haskell/core-libraries-committee/blob/main/guides/export-lifta2-prelude.md
 -- import Control.Applicative further up can be removed once we don't support GHC <= 9.4 anymore
 
-import Prelude hiding (Applicative (..))
+import Prelude hiding (Applicative (..), Foldable (..))
 
 newtype Integrator a = Integrator {getIntegrator :: Cont Double a}
   deriving newtype (Functor, Applicative, Monad)
