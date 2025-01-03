@@ -71,6 +71,8 @@ module Control.Monad.Bayes.Class
     Measure,
     Kernel,
     Log (ln, Exp),
+    MonadUniformRange,
+    uniformR,
   )
 where
 
@@ -105,6 +107,7 @@ import Statistics.Distribution.Geometric (geometric0)
 import Statistics.Distribution.Normal (normalDistr)
 import Statistics.Distribution.Poisson qualified as Poisson
 import Statistics.Distribution.Uniform (uniformDistr)
+import System.Random (UniformRange)
 
 -- | Monads that can draw random variables.
 class (Monad m) => MonadDistribution m where
@@ -114,6 +117,8 @@ class (Monad m) => MonadDistribution m where
     m Double
 
   -- | Draw from a uniform distribution.
+  --
+  -- See also 'MonadUniformRange.uniformR' for types other than 'Double'.
   uniform ::
     -- | lower bound a
     Double ->
@@ -339,6 +344,19 @@ histogram n v = H.fillBuilder buildr $ fmap (second (ln . exp)) v
 histogramToList :: Histogram -> [(Double, Double)]
 histogramToList = H.asList
 
+-- | Monads that can efficiently draw uniform variables of
+-- 'UniformRange' types.
+class (Monad m) => MonadUniformRange m where
+  -- | Draw from a uniform distribution for some 'UniformRange' type.
+  uniformR ::
+    (UniformRange a) =>
+    -- | lower bound l (inclusive for discrete types)
+    a ->
+    -- | upper bound u (inclusive for discrete types)
+    a ->
+    -- | \(\sim \mathcal{U}(l, u)\).
+    m a
+
 ----------------------------------------------------------------------------
 -- Instances that lift probabilistic effects to standard tranformers.
 
@@ -350,6 +368,9 @@ instance (MonadFactor m) => MonadFactor (IdentityT m) where
   score = lift . score
 
 instance (MonadMeasure m) => MonadMeasure (IdentityT m)
+
+instance (MonadUniformRange m) => MonadUniformRange (IdentityT m) where
+  uniformR l u = lift $ uniformR l u
 
 instance (MonadDistribution m) => MonadDistribution (ExceptT e m) where
   random = lift random
@@ -364,10 +385,16 @@ instance (MonadDistribution m) => MonadDistribution (ReaderT r m) where
   random = lift random
   bernoulli = lift . bernoulli
 
+instance (MonadUniformRange m) => MonadUniformRange (ExceptT e m) where
+  uniformR l u = lift $ uniformR l u
+
 instance (MonadFactor m) => MonadFactor (ReaderT r m) where
   score = lift . score
 
 instance (MonadMeasure m) => MonadMeasure (ReaderT r m)
+
+instance (MonadUniformRange m) => MonadUniformRange (ReaderT r m) where
+  uniformR l u = lift $ uniformR l u
 
 instance (Monoid w, MonadDistribution m) => MonadDistribution (WriterT w m) where
   random = lift random
@@ -378,6 +405,9 @@ instance (Monoid w, MonadFactor m) => MonadFactor (WriterT w m) where
   score = lift . score
 
 instance (Monoid w, MonadMeasure m) => MonadMeasure (WriterT w m)
+
+instance (Monoid w, MonadUniformRange m) => MonadUniformRange (WriterT w m) where
+  uniformR l u = lift $ uniformR l u
 
 instance (MonadDistribution m) => MonadDistribution (StateT s m) where
   random = lift random
@@ -390,6 +420,9 @@ instance (MonadFactor m) => MonadFactor (StateT s m) where
 
 instance (MonadMeasure m) => MonadMeasure (StateT s m)
 
+instance (MonadUniformRange m) => MonadUniformRange (StateT s m) where
+  uniformR l u = lift $ uniformR l u
+
 instance (MonadDistribution m) => MonadDistribution (ContT r m) where
   random = lift random
 
@@ -397,3 +430,6 @@ instance (MonadFactor m) => MonadFactor (ContT r m) where
   score = lift . score
 
 instance (MonadMeasure m) => MonadMeasure (ContT r m)
+
+instance (MonadUniformRange m) => MonadUniformRange (ContT r m) where
+  uniformR l u = lift $ uniformR l u
