@@ -39,6 +39,9 @@ import Control.Monad.Bayes.Class
         random,
         uniform
       ),
+    MonadUniformRange
+      ( uniformR
+      ),
   )
 import Control.Monad.Reader (MonadIO, ReaderT (..))
 import Control.Monad.ST (ST)
@@ -70,6 +73,9 @@ instance (StatefulGen g m) => MonadDistribution (SamplerT g m) where
   bernoulli p = SamplerT (ReaderT $ MWC.bernoulli p)
   categorical ps = SamplerT (ReaderT $ MWC.categorical ps)
   geometric p = SamplerT (ReaderT $ MWC.geometric0 p)
+
+instance (StatefulGen g m) => MonadUniformRange (SamplerT g m) where
+  uniformR l u = SamplerT (ReaderT $ uniformRM (l, u))
 
 -- | Sample with a random number generator of your choice e.g. the one
 -- from `System.Random`.

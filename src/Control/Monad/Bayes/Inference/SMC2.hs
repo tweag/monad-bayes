@@ -23,6 +23,7 @@ import Control.Monad.Bayes.Class
   ( MonadDistribution (random),
     MonadFactor (..),
     MonadMeasure,
+    MonadUniformRange (uniformR),
   )
 import Control.Monad.Bayes.Inference.MCMC
 import Control.Monad.Bayes.Inference.RMSMC (rmsmc)
@@ -45,6 +46,9 @@ instance MonadTrans SMC2 where
 
 instance (MonadDistribution m) => MonadDistribution (SMC2 m) where
   random = lift random
+
+instance (MonadUniformRange m) => MonadUniformRange (SMC2 m) where
+  uniformR l u = lift $ uniformR l u
 
 instance (Monad m) => MonadFactor (SMC2 m) where
   score = SMC2 . score

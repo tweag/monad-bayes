@@ -45,6 +45,7 @@ import Control.Monad.Bayes.Class
   ( MonadDistribution (..),
     MonadFactor (..),
     MonadMeasure,
+    MonadUniformRange (..),
     factor,
   )
 import Control.Monad.Bayes.Weighted
@@ -95,6 +96,9 @@ instance (MonadDistribution m) => MonadDistribution (ListT m) where
   bernoulli = lift . bernoulli
   categorical = lift . categorical
 
+instance (MonadUniformRange m) => MonadUniformRange (ListT m) where
+  uniformR l u = lift $ uniformR l u
+
 instance (MonadFactor m) => MonadFactor (ListT m) where
   score = lift . score
 
@@ -102,7 +106,7 @@ instance (MonadMeasure m) => MonadMeasure (ListT m)
 
 -- | A collection of weighted samples, or particles.
 newtype PopulationT m a = PopulationT {getPopulationT :: WeightedT (ListT m) a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadDistribution, MonadFactor, MonadMeasure)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadDistribution, MonadFactor, MonadMeasure, MonadUniformRange)
 
 instance MonadTrans PopulationT where
   lift = PopulationT . lift . lift
