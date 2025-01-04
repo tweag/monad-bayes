@@ -69,7 +69,7 @@ import Numeric.Log qualified as Log
 import Prelude hiding (all, sum)
 
 -- | The old-fashioned, broken list transformer, adding a list/nondeterminism/choice effect.
---   It is not a valid monad transformer, but it is a valid 'Applicative'.
+--  It is not a valid monad transformer, but it is a valid 'Applicative'.
 newtype ListT m a = ListT {getListT :: Compose m [] a}
   deriving newtype (Functor, Applicative, Alternative)
 
