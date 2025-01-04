@@ -2,6 +2,8 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE UnboxedTuples #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- |
 -- Module      : Control.Monad.Bayes.Sampler
@@ -43,6 +45,7 @@ import Control.Monad.Bayes.Class
       ( uniformR
       ),
   )
+import Control.Monad.Primitive (PrimMonad)
 import Control.Monad.Reader (MonadIO, ReaderT (..))
 import Control.Monad.ST (ST)
 import Control.Monad.Trans (MonadTrans)
@@ -52,7 +55,7 @@ import System.Random.Stateful (IOGenM (..), STGenM, StatefulGen, StdGen, initStd
 
 -- | The sampling interpretation of a probabilistic program
 -- Here m is typically IO or ST
-newtype SamplerT g m a = SamplerT {runSamplerT :: ReaderT g m a} deriving (Functor, Applicative, Monad, MonadIO, MonadTrans)
+newtype SamplerT g m a = SamplerT {runSamplerT :: ReaderT g m a} deriving (Functor, Applicative, Monad, MonadIO, MonadTrans, PrimMonad)
 
 -- | convenient type synonym to show specializations of SamplerT
 -- to particular pairs of monad and RNG
