@@ -21,7 +21,6 @@
       url = "github:cachix/pre-commit-hooks.nix";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
     jupyenv = {
@@ -68,8 +67,21 @@
           "^.*\.md"
         ];
 
-        monad-bayes-per-ghc = let
-          opts = {
+        # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+        # and the build-all-ghcs job in .github/workflows/nix.yml!
+        ghcs = [
+          "ghc90"
+          "ghc92"
+          "ghc94"
+          "ghc96"
+          "ghc98"
+          "ghc910"
+          "default"
+        ];
+
+        allHaskellPackages = lib.filterAttrs (ghcVersion: _: builtins.elem ghcVersion ghcs) (pkgs.haskell.packages // {default = pkgs.haskellPackages;});
+
+        monad-bayes-for = haskellPackages: haskellPackages.developPackage {
             name = "monad-bayes";
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
@@ -90,21 +102,10 @@
                   microstache = doJailbreak super.microstache;
                 };
           };
-          ghcs = [
-            # Always keep this up to date with the tested-with section in monad-bayes.cabal,
-            # and the build-all-ghcs job in .github/workflows/nix.yml!
-            "ghc902"
-            "ghc927"
-            "ghc945"
-            "ghc964"
-            "ghc982"
-            "ghc9101"
-          ];
-          buildForVersion = ghcVersion: (builtins.getAttr ghcVersion pkgs.haskell.packages).developPackage opts;
-        in
-          lib.attrsets.genAttrs ghcs buildForVersion;
 
-        monad-bayes = monad-bayes-per-ghc.ghc902;
+        monad-bayes-per-ghc = lib.mapAttrs (_: monad-bayes-for) allHaskellPackages;
+
+        monad-bayes = monad-bayes-per-ghc.default;
 
         monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
@@ -114,17 +115,6 @@
           ];
         };
 
-        monad-bayes-dev = pkgs.mkShell {
-          inputsFrom = [monad-bayes.env];
-          packages = with pre-commit-hooks.packages.${system}; [
-            alejandra
-            cabal-fmt
-            hlint
-            ormolu
-            jupyterEnvironment
-          ];
-          shellHook = pre-commit.shellHook;
-        };
         pre-commit = pre-commit-hooks.lib.${system}.run {
           inherit src;
           hooks = {
@@ -134,13 +124,30 @@
             ormolu.enable = true;
           };
         };
+        devShellFor = ghcVersion: haskellPackages: addJupyter: haskellPackages.shellFor {
+            packages = hps: [
+              (monad-bayes-for haskellPackages)
+            ];
+            nativeBuildInputs =           with pre-commit-hooks.packages.${system}; [
+              alejandra
+              cabal-fmt
+              hlint
+              ormolu
+            ] ++ lib.optional addJupyter jupyterEnvironment
+            ++ (with haskellPackages; [
+              haskell-language-server
+            ]);
+        };
       in rec {
         packages = {
           inherit monad-bayes monad-bayes-per-ghc monad-bayes-all-ghcs pre-commit jupyterEnvironment;
         };
         packages.default = packages.monad-bayes;
         checks = {inherit monad-bayes pre-commit;};
-        devShells.default = monad-bayes-dev;
+        devShells = lib.concatMapAttrs (ghcVersion: haskellPackages: {
+          "${ghcVersion}" = devShellFor ghcVersion haskellPackages false;
+          "${ghcVersion}-jupyter" = devShellFor ghcVersion haskellPackages true;
+          }) allHaskellPackages;
         # Needed for backwards compatibility with Nix versions <2.8
         defaultPackage = warnToUpdateNix packages.default;
         devShell = warnToUpdateNix devShells.default;
