@@ -61,6 +61,7 @@ common deps
     , pretty-simple    ^>=4.1
     , primitive        >=0.8      && <0.10
     , random           ^>=1.2
+    , random-fu
     , safe             ^>=0.3.17
     , scientific       ^>=0.3
     , statistics       >=0.14.0   && <0.17
@@ -105,6 +106,7 @@ library
     Control.Monad.Bayes.Population
     Control.Monad.Bayes.Sampler.Lazy
     Control.Monad.Bayes.Sampler.Strict
+    Control.Monad.Bayes.Sampler.StrictFu
     Control.Monad.Bayes.Sequential.Coroutine
     Control.Monad.Bayes.Traced
     Control.Monad.Bayes.Traced.Basic
