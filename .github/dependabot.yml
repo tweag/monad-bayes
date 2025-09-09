@@ -18,7 +18,7 @@ updates:
 # But we need to keep updating the common nix setup as well.
 # Hopefully the following works.
   - package-ecosystem: github-actions
-    directory: "/.github/actions"
+    directory: "/.github/actions/nix-common-setup"
     schedule:
       interval: daily
       time: '00:00'
