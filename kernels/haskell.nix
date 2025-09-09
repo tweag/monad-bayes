@@ -1,6 +1,6 @@
-{monad-bayes}:
+{ monad-bayes }:
 
-{pkgs, ...}: {
+{ pkgs, ... }: {
   kernel.haskell.monad-bayes = {
     enable = true;
     name = "monad-bayes";
