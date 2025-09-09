@@ -98,11 +98,6 @@
               with pkgs.haskell.lib;
               {
                 # Please check after flake.lock updates whether some of these overrides can be removed
-                brick = super.brick_2_4;
-              }
-              // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
-                # Please check after flake.lock updates whether some of these overrides can be removed
-                microstache = doJailbreak super.microstache;
               };
           };
 
