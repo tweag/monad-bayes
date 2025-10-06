@@ -69,7 +69,7 @@
             "^.*\.md"
           ];
 
-          # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+          # If possible keep this up to date with the tested-with section in monad-bayes.cabal!
           # and the build-all-ghcs job in .github/workflows/nix.yml!
           ghcs = [
             "ghc94"
