@@ -78,7 +78,7 @@ common test-deps
     , optparse-applicative  >=0.17 && <0.19
     , process               ^>=1.6
     , QuickCheck            >=2.14 && <2.16
-    , time                  >=1.9  && <1.13
+    , time                  >=1.9  && <1.16
     , typed-process         ^>=0.2
 
   autogen-modules: Paths_monad_bayes
