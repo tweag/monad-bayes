@@ -45,7 +45,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ghc: ["ghc90", "ghc92", "ghc94", "ghc96", "ghc98", "ghc910"]
+        ghc: ["ghc94", "ghc96", "ghc98", "ghc910"]
         include:
           - os: ubuntu-latest
             system: x86_64-linux
