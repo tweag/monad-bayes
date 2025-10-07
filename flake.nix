@@ -78,7 +78,6 @@
             "ghc96"
             "ghc98"
             "ghc910"
-            "ghc912"
             "default"
           ];
 
@@ -98,7 +97,16 @@
               with pkgs.haskell.lib;
               {
                 # Please check after flake.lock updates whether some of these overrides can be removed
-                brick = super.brick_2_4;
+                brick = super.callHackageDirect {
+                  pkg = "brick";
+                  ver = "2.10";
+                  sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
+                } { };
+                vty = super.callHackageDirect {
+                  pkg = "vty";
+                  ver = "6.4";
+                  sha256 = "sha256-xHtMfRaJVk95UTwh2QU8VL3MgXuLQOzTwqTa5oevZ5U=";
+                } { };
               }
               // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
                 # Please check after flake.lock updates whether some of these overrides can be removed
