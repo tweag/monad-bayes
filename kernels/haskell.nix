@@ -1,6 +1,8 @@
 { monad-bayes }:
 
-{ pkgs, ... }: {
+{ pkgs, ... }:
+with pkgs.haskell.lib;
+{
   kernel.haskell.monad-bayes = {
     enable = true;
     name = "monad-bayes";
@@ -10,7 +12,7 @@
       p.lens
       p.log-domain
       p.katip
-      p.ihaskell-hvega
+      (markUnbroken p.ihaskell-hvega)
       p.ihaskell-diagrams
       p.diagrams
       p.diagrams-cairo
@@ -22,7 +24,9 @@
       # hamilton seems unmaintained, unclear whether we can keep it. See https://github.com/tweag/monad-bayes/issues/300
       # p.hamilton
       p.hmatrix
-      p.vector-sized
+      (p.vector-sized.override {
+        finite-typelits = doJailbreak p.finite-typelits;
+      })
       p.linear
       p.recursion-schemes
       p.data-fix

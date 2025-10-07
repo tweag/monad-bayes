@@ -69,11 +69,9 @@
             "^.*\.md"
           ];
 
-          # Always keep this up to date with the tested-with section in monad-bayes.cabal!
+          # If possible keep this up to date with the tested-with section in monad-bayes.cabal!
           # and the build-all-ghcs job in .github/workflows/nix.yml!
           ghcs = [
-            "ghc90"
-            "ghc92"
             "ghc94"
             "ghc96"
             "ghc98"
@@ -111,6 +109,10 @@
               // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
                 # Please check after flake.lock updates whether some of these overrides can be removed
                 microstache = doJailbreak super.microstache;
+              }
+              // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.12") {
+                # Please check after flake.lock updates whether some of these overrides can be removed
+                statistics = doJailbreak super.statistics;
               };
           };
 
