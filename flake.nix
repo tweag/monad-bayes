@@ -34,10 +34,14 @@
       [
         # Tier 1 - Tested in CI
         flake-utils.lib.system.x86_64-linux
-        flake-utils.lib.system.x86_64-darwin
+        flake-utils.lib.system.aarch64-darwin
         # Tier 2 - Not tested in CI (at least for now)
         flake-utils.lib.system.aarch64-linux
-        flake-utils.lib.system.aarch64-darwin
+        # Note: no x86_64-darwin. nixpkgs 26.11 dropped support for it, and
+        # importing nixpkgs for that system now throws rather than merely warns.
+        # See https://github.com/NixOS/nixpkgs/pull/535508 and
+        # https://nixos.org/manual/nixpkgs/unstable/release-notes#x86_64-darwin-26.11
+        # If you still need it, the 26.05 branch supports it until end of 2026.
       ]
       (
         system:
