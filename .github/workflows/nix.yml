@@ -78,19 +78,13 @@ jobs:
       - name: Development environment (package only)
         run: nix --print-build-logs develop .#packages.${{ matrix.system }}.monad-bayes-per-ghc.${{ matrix.ghc }} --command echo Ready
 
+  # Only on x86_64-linux: this job asserts that the committed *.html matches what
+  # regenerating the notebooks produces, and that output is platform dependent.
   notebooks:
     needs:
       - build
       - build-all-ghcs
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            system: x86_64-linux
-          # The Jupyter kernel is only tested on Linux so far
-          # - os: macos-latest
-          #   system: x86_64-darwin
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Setup Nix Environment

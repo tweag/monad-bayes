@@ -28,11 +28,12 @@
   outputs =
     { self
     , nixpkgs
-    , flake-compat
+    , # Not used here, but default.nix and shell.nix read it out of flake.lock
+      flake-compat
     , flake-utils
     , pre-commit-hooks
     ,
-    } @ inputs:
+    }:
     flake-utils.lib.eachSystem
       [
         # All of these are built in CI, see .github/workflows/nix.yml. The test
@@ -52,17 +53,15 @@
           inherit (nixpkgs) lib;
           pkgs = import nixpkgs {
             inherit system;
-            config.allowBroken = true;
           };
 
-          warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
           src = lib.sourceByRegex self [
             "^benchmark.*$"
             "^models.*$"
-            "^monad-bayes\.cabal$"
+            "^monad-bayes\\.cabal$"
             "^src.*$"
             "^test.*$"
-            "^.*\.md"
+            "^.*\\.md"
           ];
 
           # Always keep this up to date with the tested-with section in monad-bayes.cabal!
@@ -79,19 +78,14 @@
           allHaskellPackages = lib.filterAttrs (ghcVersion: _: builtins.elem ghcVersion ghcs) (pkgs.haskell.packages // { default = pkgs.haskellPackages; });
 
           # Please check after flake.lock updates whether some of these overrides can be removed
-          haskellOverrides = self: super:
-            with pkgs.haskell.lib;
-            {
-              # nixpkgs still ships brick 2.9, but we need >= 2.10
-              brick = super.callHackageDirect {
-                pkg = "brick";
-                ver = "2.10";
-                sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
-              } { };
-            }
-            // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
-              microstache = doJailbreak super.microstache;
-            };
+          haskellOverrides = self: super: {
+            # nixpkgs still ships brick 2.9, but we need >= 2.10
+            brick = super.callHackageDirect {
+              pkg = "brick";
+              ver = "2.10";
+              sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
+            } { };
+          };
 
           haskellPackagesFor = haskellPackages: haskellPackages.extend haskellOverrides;
 
@@ -167,7 +161,6 @@
             ];
           };
 
-
           pre-commit = pre-commit-hooks.lib.${system}.run {
             inherit src;
             hooks = {
@@ -176,7 +169,7 @@
               ormolu.enable = true;
             };
           };
-          devShellFor = ghcVersion: haskellPackages: addJupyter: haskellPackages.shellFor {
+          devShellFor = haskellPackages: addJupyter: haskellPackages.shellFor {
             packages = hps: [
               (monad-bayes-for haskellPackages)
             ];
@@ -190,9 +183,10 @@
             # Cabal-syntax from source, which fails on GHC 9.4.
             ++ [ pkgs.cabal-install ]
             ++ lib.optional addJupyter jupyterEnvironment
-            ++ (with haskellPackages; [
-              haskell-language-server
-            ]);
+            # haskell-language-server dropped GHC 9.4 in 2.12.0.0, and nixpkgs
+            # `throw`s on it rather than marking it broken.
+            ++ lib.optional (lib.versionAtLeast haskellPackages.ghc.version "9.6")
+              haskellPackages.haskell-language-server;
           };
         in
         rec {
@@ -203,13 +197,10 @@
           checks = { inherit monad-bayes pre-commit; };
           devShells = lib.concatMapAttrs
             (ghcVersion: haskellPackages: {
-              "${ghcVersion}" = devShellFor ghcVersion haskellPackages false;
-              "${ghcVersion}-jupyter" = devShellFor ghcVersion haskellPackages true;
+              "${ghcVersion}" = devShellFor haskellPackages false;
+              "${ghcVersion}-jupyter" = devShellFor haskellPackages true;
             })
             allHaskellPackages;
-          # Needed for backwards compatibility with Nix versions <2.8
-          defaultPackage = warnToUpdateNix packages.default;
-          devShell = warnToUpdateNix devShells.default;
           formatter = pkgs.nixpkgs-fmt;
         }
       );
