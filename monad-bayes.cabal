@@ -7,7 +7,7 @@ copyright:       2015-2020 Adam Scibior
 maintainer:      dominic.steinitz@tweag.io
 author:          Adam Scibior <adscib@gmail.com>
 stability:       experimental
-tested-with:     GHC ==9.0 || ==9.2 || ==9.4 || ==9.6 || ==9.8 || ==9.10
+tested-with:     GHC ==9.4 || ==9.6 || ==9.8 || ==9.10 || ==9.12
 homepage:        http://github.com/tweag/monad-bayes#readme
 bug-reports:     https://github.com/tweag/monad-bayes/issues
 synopsis:        A library for probabilistic programming.
@@ -38,7 +38,7 @@ flag dev
 
 common deps
   build-depends:
-    , base             >=4.15     && <4.22
+    , base             >=4.17     && <4.22
     , brick            ^>=2.10
     , containers       >=0.6      && <0.8
     , foldl            ^>=1.4
@@ -78,7 +78,7 @@ common test-deps
     , optparse-applicative  >=0.17 && <0.19
     , process               ^>=1.6
     , QuickCheck            >=2.14 && <2.16
-    , time                  >=1.9  && <1.13
+    , time                  >=1.9  && <1.16
     , typed-process         ^>=0.2
 
   autogen-modules: Paths_monad_bayes
