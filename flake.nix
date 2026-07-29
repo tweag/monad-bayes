@@ -3,11 +3,9 @@
   nixConfig = {
     extra-substituters = [
       "https://tweag-monad-bayes.cachix.org"
-      "https://tweag-jupyter.cachix.org"
     ];
     extra-trusted-public-keys = [
       "tweag-monad-bayes.cachix.org-1:tmmTZ+WvtUMpYWD4LAkfSuNKqSuJyL3N8ZVm/qYtqdc="
-      "tweag-jupyter.cachix.org-1:UtNH4Zs6hVUFpFBTLaA4ejYavPo5EFFqgd7G7FxGW9g="
     ];
   };
   inputs = {
@@ -23,18 +21,10 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
-    jupyenv = {
-      url = "github:tweag/jupyenv";
-      inputs = {
-        flake-compat.follows = "flake-compat";
-        flake-utils.follows = "flake-utils";
-      };
-    };
   };
   outputs =
     { self
     , nixpkgs
-    , jupyenv
     , flake-compat
     , flake-utils
     , pre-commit-hooks
@@ -53,7 +43,6 @@
         system:
         let
           inherit (nixpkgs) lib;
-          inherit (jupyenv.lib.${system}) mkJupyterlabNew;
           pkgs = import nixpkgs {
             inherit system;
             config.allowBroken = true;
@@ -82,6 +71,23 @@
 
           allHaskellPackages = lib.filterAttrs (ghcVersion: _: builtins.elem ghcVersion ghcs) (pkgs.haskell.packages // { default = pkgs.haskellPackages; });
 
+          # Please check after flake.lock updates whether some of these overrides can be removed
+          haskellOverrides = self: super:
+            with pkgs.haskell.lib;
+            {
+              # nixpkgs still ships brick 2.9, but we need >= 2.10
+              brick = super.callHackageDirect {
+                pkg = "brick";
+                ver = "2.10";
+                sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
+              } { };
+            }
+            // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
+              microstache = doJailbreak super.microstache;
+            };
+
+          haskellPackagesFor = haskellPackages: haskellPackages.extend haskellOverrides;
+
           monad-bayes-for = haskellPackages: haskellPackages.developPackage {
             name = "monad-bayes";
             root = src;
@@ -92,25 +98,7 @@
               if system == "x86_64-linux"
               then drv
               else pkgs.haskell.lib.dontCheck drv;
-            overrides = self: super:
-              with pkgs.haskell.lib;
-              {
-                # Please check after flake.lock updates whether some of these overrides can be removed
-                brick = super.callHackageDirect {
-                  pkg = "brick";
-                  ver = "2.10";
-                  sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
-                } { };
-                vty = super.callHackageDirect {
-                  pkg = "vty";
-                  ver = "6.4";
-                  sha256 = "sha256-xHtMfRaJVk95UTwh2QU8VL3MgXuLQOzTwqTa5oevZ5U=";
-                } { };
-              }
-              // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
-                # Please check after flake.lock updates whether some of these overrides can be removed
-                microstache = doJailbreak super.microstache;
-              };
+            overrides = haskellOverrides;
           };
 
           monad-bayes-per-ghc = lib.mapAttrs (_: monad-bayes-for) allHaskellPackages;
@@ -119,9 +107,46 @@
 
           monad-bayes-all-ghcs = pkgs.linkFarm "monad-bayes-all-ghcs" monad-bayes-per-ghc;
 
-          jupyterEnvironment = mkJupyterlabNew {
-            imports = [
-              (import ./kernels/haskell.nix { inherit monad-bayes; })
+          # A GHC that has IHaskell, monad-bayes and everything the notebooks need.
+          ihaskellEnv = (haskellPackagesFor pkgs.haskellPackages).ghcWithPackages (p:
+            [
+              p.ihaskell
+              p.ihaskell-blaze
+              p.ihaskell-diagrams
+            ]
+            ++ (import ./kernels/haskell.nix { inherit monad-bayes; }) p);
+
+          # Launcher for the kernel. This is what `ihaskell install` would write into
+          # the kernelspec, except that we let GHC report its own paths instead of
+          # hardcoding them.
+          ihaskellKernel = pkgs.writeShellScript "monad-bayes-kernel" ''
+            export GHC_PACKAGE_PATH="$(${ihaskellEnv}/bin/ghc --print-global-package-db)''${GHC_PACKAGE_PATH:+:$GHC_PACKAGE_PATH}"
+            exec ${ihaskellEnv}/bin/ihaskell kernel "$1" \
+              --ghclib "$(${ihaskellEnv}/bin/ghc --print-libdir)" \
+              +RTS -M3g -N2 -RTS
+          '';
+
+          # A JupyterLab with an IHaskell kernel that has monad-bayes available.
+          # Built straight from nixpkgs; we used to use tweag/jupyenv for this, but it
+          # is unmaintained and pinned this flake to a years-old nixpkgs.
+          jupyterEnvironment = pkgs.python3.buildEnv.override {
+            extraLibs = with pkgs.python3.pkgs; [
+              jupyterlab
+              nbconvert
+              notebook
+            ];
+            makeWrapperArgs = [
+              "--prefix JUPYTER_PATH : ${pkgs.jupyter-kernel.create {
+                definitions = pkgs.jupyter-kernel.default // {
+                  monad-bayes = {
+                    displayName = "monad-bayes";
+                    language = "haskell";
+                    argv = [ "${ihaskellKernel}" "{connection_file}" ];
+                    logo32 = null;
+                    logo64 = null;
+                  };
+                };
+              }}"
             ];
           };
 

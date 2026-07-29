@@ -53,7 +53,7 @@ Now you can use `stack build`, `stack test` and `stack ghci`.
 
 1. Compile the source: `stack build`
 2. If you do not have `nix` [install it](https://nixos.org/download.html).
-3. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes` - this should open a nix shell. For Linux use `x86_64-linux` for `--system` option instead. 
+3. Run `nix develop .#default-jupyter --extra-experimental-features nix-command --extra-experimental-features flakes` - this should open a nix shell.
 4. Run `jupyter-lab` from the nix shell to load the notebooks.
 
 Your mileage may vary. 
