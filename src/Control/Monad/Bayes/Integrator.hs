@@ -148,7 +148,7 @@ enumeratorWith ls meas =
         (\x -> if x == val then 1 else 0)
         meas
     )
-    | val <- elems ls
+  | val <- elems ls
   ]
 
 histogram ::
