@@ -35,11 +35,11 @@
     } @ inputs:
     flake-utils.lib.eachSystem
       [
-        # Tier 1 - Tested in CI
+        # All of these are built in CI, see .github/workflows/nix.yml. The test
+        # suite only runs on x86_64 though, see the `modifier` below.
         flake-utils.lib.system.x86_64-linux
-        flake-utils.lib.system.aarch64-darwin
-        # Tier 2 - Not tested in CI (at least for now)
         flake-utils.lib.system.aarch64-linux
+        flake-utils.lib.system.aarch64-darwin
         # Note: no x86_64-darwin. nixpkgs 26.11 dropped support for it, and
         # importing nixpkgs for that system now throws rather than merely warns.
         # See https://github.com/NixOS/nixpkgs/pull/535508 and
@@ -100,11 +100,21 @@
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
 
-            # https://github.com/tweag/monad-bayes/pull/256: Don't run tests on Mac because of machine precision issues
-            modifier = drv:
-              if system == "x86_64-linux"
-              then drv
-              else pkgs.haskell.lib.dontCheck drv;
+            # Only run the tests on x86_64, they fail on aarch64 because of machine
+            # precision issues: the fixture tests compare `show`n `Double`s against
+            # committed fixtures that were generated on x86_64, and IEEE 754 only
+            # mandates correct rounding for the basic operations and `sqrt`, not for
+            # `log`, `exp`, `log1p` or `**`. Those come from the platform's libm and
+            # differ in the last ulp.
+            # It is the architecture, not Apple's libm: five of the 45 examples fail
+            # the same way on aarch64-linux against glibc, which is why we build
+            # there in CI. See https://github.com/tweag/monad-bayes/pull/256,
+            # https://github.com/tweag/monad-bayes/pull/389 and
+            # https://github.com/tweag/monad-bayes/issues/368.
+            modifier =
+              if pkgs.stdenv.hostPlatform.isx86_64
+              then lib.id
+              else pkgs.haskell.lib.dontCheck;
             overrides = haskellOverrides;
           };
 

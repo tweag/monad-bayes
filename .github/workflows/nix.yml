@@ -27,6 +27,12 @@ jobs:
         include:
           - os: ubuntu-latest
             system: x86_64-linux
+          # aarch64-linux told us that the fixture test failures are about the
+          # architecture and not about Apple's libm, see the `modifier` in
+          # flake.nix. Keep building it so the platform nixpkgs ships from stays
+          # green, and so we notice when the tests can be turned back on there.
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
           # The macos-latest runners are arm64, and nixpkgs 26.11 dropped
           # x86_64-darwin altogether.
           - os: macos-latest
