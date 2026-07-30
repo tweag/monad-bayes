@@ -9,7 +9,10 @@
     ];
   };
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    # Not the indirect `nixpkgs/nixos-unstable`: that is resolved through the
+    # flake registry of whoever runs `nix flake update`, which makes the shape
+    # of the lock entry depend on the machine.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
