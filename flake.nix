@@ -176,7 +176,12 @@
               cabal-fmt
               hlint
               ormolu
-            ] ++ lib.optional addJupyter jupyterEnvironment
+            ]
+            # Not haskellPackages.cabal-install: cabal is a tool, not a library
+            # dependency, and on the older compilers the per-GHC one has to build
+            # Cabal-syntax from source, which fails on GHC 9.4.
+            ++ [ pkgs.cabal-install ]
+            ++ lib.optional addJupyter jupyterEnvironment
             ++ (with haskellPackages; [
               haskell-language-server
             ]);
