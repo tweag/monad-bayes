@@ -161,7 +161,6 @@
           pre-commit = pre-commit-hooks.lib.${system}.run {
             inherit src;
             hooks = {
-              alejandra.enable = true;
               cabal-fmt.enable = true;
               hlint.enable = false;
               ormolu.enable = true;
@@ -172,7 +171,6 @@
               (monad-bayes-for haskellPackages)
             ];
             nativeBuildInputs = with pre-commit-hooks.packages.${system}; [
-              alejandra
               cabal-fmt
               hlint
               ormolu
