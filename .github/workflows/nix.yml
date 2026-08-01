@@ -27,8 +27,10 @@ jobs:
         include:
           - os: ubuntu-latest
             system: x86_64-linux
+          # The macos-latest runners are arm64, and nixpkgs 26.11 dropped
+          # x86_64-darwin altogether.
           - os: macos-latest
-            system: x86_64-darwin
+            system: aarch64-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -45,12 +47,19 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ghc: ["ghc90", "ghc92", "ghc94", "ghc96", "ghc98", "ghc910"]
+        ghc: ["ghc94", "ghc96", "ghc98", "ghc910", "ghc912"]
+        os: [ubuntu-latest, macos-latest]
+        # `os` has to be a real matrix dimension for this to be the 5x2 cross
+        # product. An `include` entry that names an existing dimension only adds
+        # keys to the combinations it matches; one that names none gets merged
+        # into *every* combination, so two of those would silently mean "the last
+        # one wins" rather than "both platforms" (which is what used to happen
+        # here: this job only ever ran on macOS).
         include:
           - os: ubuntu-latest
             system: x86_64-linux
           - os: macos-latest
-            system: x86_64-darwin
+            system: aarch64-darwin
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -72,7 +81,7 @@ jobs:
         include:
           - os: ubuntu-latest
             system: x86_64-linux
-          # Jupyenv doesn't support Darwin yet, https://github.com/tweag/jupyenv/issues/388
+          # The Jupyter kernel is only tested on Linux so far
           # - os: macos-latest
           #   system: x86_64-darwin
     runs-on: ${{ matrix.os }}
@@ -83,7 +92,7 @@ jobs:
         with:
           CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Development environment (complete)
-        run: nix --print-build-logs develop --command echo Ready
+        run: nix --print-build-logs develop .#default-jupyter --command echo Ready
       - name: Check whether notebook *.html files are up to date
         run: |
           ./regenerate_notebooks.sh

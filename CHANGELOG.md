@@ -1,3 +1,9 @@
+# 1.3.0.5
+
+- Support for GHC 9.12
+- Dropped support for GHC 9.0 and 9.2, raising the lower bound on `base` to 4.17
+- Relaxed the upper bound on `time` to admit the 1.14 shipped with GHC 9.12
+
 # 1.3.0.4
 
 - Allowed GHC 9.10

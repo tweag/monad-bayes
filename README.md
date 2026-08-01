@@ -39,7 +39,9 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
 
 ## Hacking
 
-1. Install `stack` by following [these instructions][stack-install].
+1. If you do not have `nix` [install it](https://nixos.org/download.html). The
+   commands below need flakes; if you have not enabled them globally, add
+   `--extra-experimental-features 'nix-command flakes'` to each `nix` call.
 
 2. Clone the repository using one of these URLs:
    ```
@@ -47,14 +49,18 @@ for probabilistic programs][thesis-doi]. Thesis. University of Cambridge.
    git clone https://github.com/tweag/monad-bayes.git
    ```
 
-Now you can use `stack build`, `stack test` and `stack ghci`.
+3. Run `nix develop` - this should open a nix shell with GHC and `cabal`.
+
+Now you can use `cabal build`, `cabal test` and `cabal repl`.
+
+To develop against a specific compiler, use e.g. `nix develop .#ghc912`; see
+the `tested-with` field in `monad-bayes.cabal` for the versions we support.
 
 **To view the notebooks, go to the website**. To use the notebooks interactively:
 
-1. Compile the source: `stack build`
-2. If you do not have `nix` [install it](https://nixos.org/download.html).
-3. Run `nix develop --system x86_64-darwin --extra-experimental-features nix-command --extra-experimental-features flakes` - this should open a nix shell. For Linux use `x86_64-linux` for `--system` option instead. 
-4. Run `jupyter-lab` from the nix shell to load the notebooks.
+1. Run `nix develop .#default-jupyter` - this opens a nix shell that
+   additionally has JupyterLab and an IHaskell kernel with `monad-bayes` in it.
+2. Run `jupyter-lab` from the nix shell to load the notebooks.
 
 Your mileage may vary. 
 
@@ -65,6 +71,5 @@ Your mileage may vary.
 [haskell2015-tag]: https://github.com/tweag/monad-bayes/tree/haskell2015
 [icfp2018-doi]: https://doi.org/10.1145/3236778
 [models]: https://github.com/tweag/monad-bayes/tree/master/models
-[stack-install]: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 [thesis-doi]: https://doi.org/10.17863/CAM.42233
 [tweagio]: https://tweag.io
