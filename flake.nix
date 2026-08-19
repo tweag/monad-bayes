@@ -28,18 +28,19 @@
   outputs =
     { self
     , nixpkgs
-    , flake-compat
+    , # Not used here, but default.nix and shell.nix read it out of flake.lock
+      flake-compat
     , flake-utils
     , pre-commit-hooks
     ,
-    } @ inputs:
+    }:
     flake-utils.lib.eachSystem
       [
-        # Tier 1 - Tested in CI
+        # All of these are built in CI, see .github/workflows/nix.yml. The test
+        # suite only runs on x86_64 though, see the `modifier` below.
         flake-utils.lib.system.x86_64-linux
-        flake-utils.lib.system.aarch64-darwin
-        # Tier 2 - Not tested in CI (at least for now)
         flake-utils.lib.system.aarch64-linux
+        flake-utils.lib.system.aarch64-darwin
         # Note: no x86_64-darwin. nixpkgs 26.11 dropped support for it, and
         # importing nixpkgs for that system now throws rather than merely warns.
         # See https://github.com/NixOS/nixpkgs/pull/535508 and
@@ -52,17 +53,15 @@
           inherit (nixpkgs) lib;
           pkgs = import nixpkgs {
             inherit system;
-            config.allowBroken = true;
           };
 
-          warnToUpdateNix = pkgs.lib.warn "Consider updating to Nix > 2.7 to remove this warning!";
           src = lib.sourceByRegex self [
             "^benchmark.*$"
             "^models.*$"
-            "^monad-bayes\.cabal$"
+            "^monad-bayes\\.cabal$"
             "^src.*$"
             "^test.*$"
-            "^.*\.md"
+            "^.*\\.md"
           ];
 
           # Always keep this up to date with the tested-with section in monad-bayes.cabal!
@@ -79,19 +78,14 @@
           allHaskellPackages = lib.filterAttrs (ghcVersion: _: builtins.elem ghcVersion ghcs) (pkgs.haskell.packages // { default = pkgs.haskellPackages; });
 
           # Please check after flake.lock updates whether some of these overrides can be removed
-          haskellOverrides = self: super:
-            with pkgs.haskell.lib;
-            {
-              # nixpkgs still ships brick 2.9, but we need >= 2.10
-              brick = super.callHackageDirect {
-                pkg = "brick";
-                ver = "2.10";
-                sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
-              } { };
-            }
-            // lib.optionalAttrs (lib.versionAtLeast super.ghc.version "9.10") {
-              microstache = doJailbreak super.microstache;
-            };
+          haskellOverrides = self: super: {
+            # nixpkgs still ships brick 2.9, but we need >= 2.10
+            brick = super.callHackageDirect {
+              pkg = "brick";
+              ver = "2.10";
+              sha256 = "sha256-m1PvPySOuTZbcnCm4j7M7AihK0w8OGKumyRR3jU5nfw=";
+            } { };
+          };
 
           haskellPackagesFor = haskellPackages: haskellPackages.extend haskellOverrides;
 
@@ -100,11 +94,21 @@
             root = src;
             cabal2nixOptions = "--benchmark -fdev";
 
-            # https://github.com/tweag/monad-bayes/pull/256: Don't run tests on Mac because of machine precision issues
-            modifier = drv:
-              if system == "x86_64-linux"
-              then drv
-              else pkgs.haskell.lib.dontCheck drv;
+            # Only run the tests on x86_64, they fail on aarch64 because of machine
+            # precision issues: the fixture tests compare `show`n `Double`s against
+            # committed fixtures that were generated on x86_64, and IEEE 754 only
+            # mandates correct rounding for the basic operations and `sqrt`, not for
+            # `log`, `exp`, `log1p` or `**`. Those come from the platform's libm and
+            # differ in the last ulp.
+            # It is the architecture, not Apple's libm: five of the 45 examples fail
+            # the same way on aarch64-linux against glibc, which is why we build
+            # there in CI. See https://github.com/tweag/monad-bayes/pull/256,
+            # https://github.com/tweag/monad-bayes/pull/389 and
+            # https://github.com/tweag/monad-bayes/issues/368.
+            modifier =
+              if pkgs.stdenv.hostPlatform.isx86_64
+              then lib.id
+              else pkgs.haskell.lib.dontCheck;
             overrides = haskellOverrides;
           };
 
@@ -157,7 +161,6 @@
             ];
           };
 
-
           pre-commit = pre-commit-hooks.lib.${system}.run {
             inherit src;
             hooks = {
@@ -166,7 +169,7 @@
               ormolu.enable = true;
             };
           };
-          devShellFor = ghcVersion: haskellPackages: addJupyter: haskellPackages.shellFor {
+          devShellFor = haskellPackages: addJupyter: haskellPackages.shellFor {
             packages = hps: [
               (monad-bayes-for haskellPackages)
             ];
@@ -180,9 +183,10 @@
             # Cabal-syntax from source, which fails on GHC 9.4.
             ++ [ pkgs.cabal-install ]
             ++ lib.optional addJupyter jupyterEnvironment
-            ++ (with haskellPackages; [
-              haskell-language-server
-            ]);
+            # haskell-language-server dropped GHC 9.4 in 2.12.0.0, and nixpkgs
+            # `throw`s on it rather than marking it broken.
+            ++ lib.optional (lib.versionAtLeast haskellPackages.ghc.version "9.6")
+              haskellPackages.haskell-language-server;
           };
         in
         rec {
@@ -193,13 +197,10 @@
           checks = { inherit monad-bayes pre-commit; };
           devShells = lib.concatMapAttrs
             (ghcVersion: haskellPackages: {
-              "${ghcVersion}" = devShellFor ghcVersion haskellPackages false;
-              "${ghcVersion}-jupyter" = devShellFor ghcVersion haskellPackages true;
+              "${ghcVersion}" = devShellFor haskellPackages false;
+              "${ghcVersion}-jupyter" = devShellFor haskellPackages true;
             })
             allHaskellPackages;
-          # Needed for backwards compatibility with Nix versions <2.8
-          defaultPackage = warnToUpdateNix packages.default;
-          devShell = warnToUpdateNix devShells.default;
           formatter = pkgs.nixpkgs-fmt;
         }
       );
